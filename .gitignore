@@ -1,0 +1,4 @@
+*.so
+main
+old
+build
