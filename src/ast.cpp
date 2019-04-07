@@ -8,14 +8,20 @@ using namespace Hana;
 //-----------------------------
 // constant
 void AST::Constant::evaluate(Environment *env) {
-    env->stack.push_back(value);
+    env->stack.emplace_back(value);
 }
 
 void AST::Identifier::evaluate(Environment *env) {
     // Constants
     LOG(id);
     if(id == "nil") env->stack.emplace_back();
-    else env->stack.push_back(env->get_var(id));
+    else {
+        auto &val = env->get_var(id);
+        if(val.is_type<Value::Dictionary>())
+            env->stack.emplace_back(Value(static_cast<Value::Ref>(&val)));
+        else
+            env->stack.emplace_back(val);
+    }
 }
 
 // expressions
@@ -27,25 +33,28 @@ void AST::UnaryExpression::evaluate(Environment *env) {
 }
 
 void AST::MemberExpression::evaluate(Environment *env) {
-    FATAL("", "member");
-    /*auto dict = env->get_var(id[0]).get<Value::Dictionary>();
-    for(size_t i = 1; i < id.size()-1; i++) {
-        try {
-            dict = dict.data.at(id[i]).get<Value::Dictionary>();
-        } catch(const std::out_of_range&) {
-            FATAL("Interpreter error", "Expected ", id[i], " key to exist");
-        }
-    }
+    left->evaluate(env);
+    auto l = env->pop();
+    Value::Dictionary dict;
+    if(l.is_type<Value::Dictionary>())
+        dict = l.get<Value::Dictionary>();
+    else if(l.is_type<Value::Ref>() && l.get<Value::Ref>()->is_type<Value::Dictionary>())
+        dict = l.get<Value::Ref>()->get<Value::Dictionary>();
+    LOG(right->type());
+    right->evaluate(env);
+    auto key = env->pop().get<std::string>();
+    LOG(dict.data.size());
     try {
-        env->stack.push_back(dict.data.at(id[id.size()-1]));
+        env->stack.push_back(dict.data.at(key));
     } catch(const std::out_of_range&) {
-        FATAL("Interpreter error", "Expected ", id[id.size()-1], " key to exist");
-    } */
+        FATAL("Interpreter error", "Expected ", key, " key to exist");
+    }
 }
 
 void AST::CallExpression::evaluate(Environment *env) {
     callee->evaluate(env);
-    const auto &value = env->pop();
+    const auto value = env->pop();
+    LOG(value.index());
     if(!value.is_type<Value::IFunction*>())
         FATAL("Interpreter error", "value is not callable");
     auto fn = value.get<Value::IFunction*>();
@@ -86,7 +95,7 @@ void AST::BinaryExpression::evaluate(Environment *env) {
     ) {
         right->evaluate(env);
         if(left->type() == IDENTIFIER) {
-            const auto &id = dynamic_cast<Identifier*>(left.get())->id;
+            const auto &id = static_cast<Identifier*>(left.get())->id;
 #define doop(ot, o) \
         if(op == OpType::ot) { env->set_var(id, env->get_var(id) o env->stack.front()); }
             if(op == OpType::SET) env->set_var(id, env->stack.front());
@@ -95,20 +104,22 @@ void AST::BinaryExpression::evaluate(Environment *env) {
             else doop(MULS, *)
             else doop(DIVS, /)
 #undef doop
-        } /*else { // member expression
-            const auto &id = dynamic_cast<MemberExpression*>(left.get())->id;
-            auto dict = env->get_var(id[0]).get<Value::Dictionary>();
-            for(size_t i = 1; i < id.size()-1; i++) {
-                dict = dict.data.at(id[i]).get<Value::Dictionary>();
-            }
-            const auto &name = id[id.size()-1];
+        } else { // member expression
+            const auto expr = static_cast<MemberExpression*>(left.get());
+            expr->left->evaluate(env);
+            const auto &l = env->pop();
+            if(!l.is_type<Value::Ref>())
+                FATAL("", "not type dictionary");
+            auto &dict = l.get<Value::Ref>()->get<Value::Dictionary>();
+            expr->right->evaluate(env);
+            const auto &name = env->pop().get<std::string>();
             const auto &val = env->stack.front();
 #define doop(ot, o) \
         if(op == OpType::ot) { dict.data[name] = dict.data[name] o val; }
-            if(!dict.type.empty()) {
-                if(dict.type.find(name) == dict.type.end())
+            if(!dict.types.empty()) {
+                if(dict.types.find(name) == dict.types.end())
                     FATAL("Interpreter error", "Cannot set '" + name + "'");
-                else if(val.index() != dict.type[name])
+                else if(val.index() != dict.types[name])
                     FATAL("Interpreter error", "Invalid type for '" + name + "'");
             }
             if(op == OpType::SET) dict.data[name] = val;
@@ -117,7 +128,8 @@ void AST::BinaryExpression::evaluate(Environment *env) {
             else doop(MULS, *)
             else doop(DIVS, /)
 #undef doop
-        }*/
+            LOG(dict.data.size());
+        }
     } else {
         left->evaluate(env);
         auto left = env->pop();
@@ -195,20 +207,20 @@ void AST::StructStatement::evaluate(Environment *env) {
     for(auto &d : dict) {
         auto k = d.first, v = d.second;
         if(v == "integer")
-            s.type[k] = Value::variant_index<int>();
+            s.types[k] = Value::variant_index<int>();
         else if(v == "float")
-            s.type[k] = Value::variant_index<float>();
+            s.types[k] = Value::variant_index<float>();
         else if(v == "string")
-            s.type[k] = Value::variant_index<std::string>();
+            s.types[k] = Value::variant_index<std::string>();
         else if(v == "array")
-            s.type[k] = Value::variant_index<Value::Array>();
+            s.types[k] = Value::variant_index<Value::Array>();
         else if(v == "function")
-            s.type[k] = Value::variant_index<Value::IFunction*>();
+            s.types[k] = Value::variant_index<Value::IFunction*>();
         else if(v == "dict")
-            s.type[k] = Value::variant_index<Value::Dictionary>();
+            s.types[k] = Value::variant_index<Value::Dictionary>();
         else {
             // TODO struct
-//             s->type[k] = Value::Type::DICTIONARY;
+//             s->types[k] = Value::Type::DICTIONARY;
 //             s->structs[k] = env->get_var(v).get_struct();
         }
     }

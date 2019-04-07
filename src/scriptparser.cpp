@@ -180,8 +180,10 @@ AST::AST *ScriptParser::parse_call() {
                         FATAL("Parser error", "Expected operator");
                 }
             } else if(op.strv == ".") {
+                LOG("member");
                 fpop();
-                expr = new AST::MemberExpression(expr, parse_expression());
+                const auto id = nexts();
+                expr = new AST::MemberExpression(expr, new AST::Constant(Value(id)));
             } else {
                 fload();
                 return expr;
@@ -293,10 +295,23 @@ AST::AST *ScriptParser::parse_assignment() {
         floadn();
         auto left = parse_factor();
         auto op = next();
+        if(op.strv == ".") {
+            left = new AST::MemberExpression(left, new AST::Constant(Value(nexts())));
+            op = next();/*
+            do { // TODO
+                if(op.strv == ".") {
+                    fpop();
+                    left = new AST::MemberExpression(left, new AST::Constant(Value(nexts())));
+                } else {
+                    LOG("break");
+                    break;
+                }
+                fsave();
+                op = next();
+            } while (!f.eof()); */
+        }
         AST::BinaryExpression::OpType opt;
-        if( op.type == Token::Type::OPERATOR &&
-            (opt = optype(op.strv)) != AST::BinaryExpression::OpType::NONE
-        ) {
+        if((opt = optype(op.strv)) != AST::BinaryExpression::OpType::NONE) {
             LOG("assignment");
             if (left->type() != AST::Type::MEMBER_EXPR &&
                 left->type() != AST::Type::IDENTIFIER)

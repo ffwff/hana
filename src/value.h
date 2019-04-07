@@ -53,22 +53,24 @@ public:
 
     struct Dictionary {
         std::map<std::string, Value> data;
-        TypeMap type;
+        TypeMap types;
         Dictionary() {}
-        Dictionary(std::map<std::string, Value> data) : data(data) {}
-        Dictionary(TypeMap type) : type(type) {}
+        Dictionary(std::map<std::string, Value> &data) : data(data) {}
+        Dictionary(TypeMap types) : types(types) {}
+        ~Dictionary() {LOG("DEL", data.size());}
     };
     struct Struct {
-        TypeMap type;
+        TypeMap types;
 //         std::map<std::string, Struct*> structs;
     };
 
     typedef std::vector<Value> Array;
+    typedef Value* Ref;
 
     typedef std::variant<
         int, float, std::string, Identifier,
         Array, Dictionary, Struct,
-        IFunction*> Variant;
+        Ref, IFunction*> Variant;
 
 private:
     Variant v;
@@ -93,6 +95,7 @@ public:
 
     template<class T> inline bool is_type() const { return std::holds_alternative<T>(v); };
     template<class T> inline T get() const { return std::get<T>(v); };
+    template<class T> inline T &get() { return std::get<T>(v); };
     Value operator+(const Value &r) const;
     Value operator+() const;
     Value operator-(const Value &r) const;
@@ -110,6 +113,7 @@ public:
     inline bool operator<(const Value &r)  const { return v <  r.v; };
     inline bool operator>=(const Value &r) const { return v >= r.v; };
     inline bool operator<=(const Value &r) const { return v <= r.v; };
+
 };
 
 #define uncomp(op, type) \

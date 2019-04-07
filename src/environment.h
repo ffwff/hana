@@ -32,7 +32,7 @@ public:
     std::vector<Value> stack;
     inline const Value pop() {
         assert(stack.size() > 0);
-        auto val = stack.front();
+        auto val = stack.back();
         stack.pop_back();
         return val;
     }
