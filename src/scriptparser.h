@@ -15,6 +15,7 @@ private:
         assert(t.strv == s);
     };
 
+    AST::AST *parse_call();
     AST::AST *parse_factor();
     AST::AST *parse_unary();
     AST::AST *parse_expression();

@@ -13,9 +13,9 @@ void AST::Constant::evaluate(Environment *env) {
 
 void AST::Identifier::evaluate(Environment *env) {
     // Constants
+    LOG(id);
     if(id == "nil") env->stack.emplace_back();
-    else
-        env->stack.push_back(env->get_var(id));
+    else env->stack.push_back(env->get_var(id));
 }
 
 // expressions
@@ -27,7 +27,8 @@ void AST::UnaryExpression::evaluate(Environment *env) {
 }
 
 void AST::MemberExpression::evaluate(Environment *env) {
-    auto dict = env->get_var(id[0]).get<Value::Dictionary>();
+    FATAL("", "member");
+    /*auto dict = env->get_var(id[0]).get<Value::Dictionary>();
     for(size_t i = 1; i < id.size()-1; i++) {
         try {
             dict = dict.data.at(id[i]).get<Value::Dictionary>();
@@ -39,11 +40,15 @@ void AST::MemberExpression::evaluate(Environment *env) {
         env->stack.push_back(dict.data.at(id[id.size()-1]));
     } catch(const std::out_of_range&) {
         FATAL("Interpreter error", "Expected ", id[id.size()-1], " key to exist");
-    }
+    } */
 }
 
 void AST::CallExpression::evaluate(Environment *env) {
-    auto fn = env->get_var(name).get<Value::IFunction*>();
+    callee->evaluate(env);
+    const auto &value = env->pop();
+    if(!value.is_type<Value::IFunction*>())
+        FATAL("Interpreter error", "value is not callable");
+    auto fn = value.get<Value::IFunction*>();
     std::unique_ptr<Environment> scoped(env->inherit());
     if(fn->is_variable) {
         // pass argument to scoped for further processing
@@ -53,12 +58,13 @@ void AST::CallExpression::evaluate(Environment *env) {
         }
     } else {
         if(arguments.size() != fn->arguments.size())
-            FATAL("Interpreter error", "argument sizes don't match for ", name);
+            FATAL("Interpreter error", "argument sizes don't match for");
         // set function arguments
         for(size_t i = 0; i < arguments.size(); i++) {
             arguments[i]->evaluate(env);
             auto &arg = env->pop();
             const auto &id = fn->arguments[i];
+            LOG(id);
             scoped->set_local_var(id, arg);
         }
     }
@@ -89,7 +95,7 @@ void AST::BinaryExpression::evaluate(Environment *env) {
             else doop(MULS, *)
             else doop(DIVS, /)
 #undef doop
-        } else { // member expression
+        } /*else { // member expression
             const auto &id = dynamic_cast<MemberExpression*>(left.get())->id;
             auto dict = env->get_var(id[0]).get<Value::Dictionary>();
             for(size_t i = 1; i < id.size()-1; i++) {
@@ -111,7 +117,7 @@ void AST::BinaryExpression::evaluate(Environment *env) {
             else doop(MULS, *)
             else doop(DIVS, /)
 #undef doop
-        }
+        }*/
     } else {
         left->evaluate(env);
         auto left = env->pop();
@@ -121,6 +127,7 @@ void AST::BinaryExpression::evaluate(Environment *env) {
         else if(op == OpType::SUB) env->stack.emplace_back(left -  right);
         else if(op == OpType::MUL) env->stack.emplace_back(left *  right);
         else if(op == OpType::DIV) env->stack.emplace_back(left /  right);
+        else if(op == OpType::MOD) env->stack.emplace_back(left %  right);
         else if(op == OpType::EQ)  env->stack.emplace_back(left == right);
         else if(op == OpType::NEQ) env->stack.emplace_back(left != right);
         else if(op == OpType::GT)  env->stack.emplace_back(left >  right);
@@ -129,6 +136,7 @@ void AST::BinaryExpression::evaluate(Environment *env) {
         else if(op == OpType::LEQ) env->stack.emplace_back(left <= right);
         else if(op == OpType::AND) env->stack.emplace_back(left && right);
         else if(op == OpType::OR)  env->stack.emplace_back(left || right);
+        else FATAL("not implemented here", op);
     }
 }
 
@@ -155,19 +163,22 @@ void AST::WhileStatement::evaluate(Environment *env) {
 
 void AST::ForStatement::evaluate(Environment *env) {
     std::unique_ptr<Environment> scoped(env->inherit());
+
     this->from->evaluate(env);
+    const auto fi = env->pop().get<int>();
+
     this->to->evaluate(env);
     const auto ti = env->pop().get<int>();
-    const auto fi = env->pop().get<int>();
+
     if(this->step == nullptr) {
-        for(int i = fi; i < ti; i += stepN) {
+        for(int i = fi; i != ti; i += stepN) {
             scoped->set_local_var(id, i);
             statement->evaluate(scoped.get());
         }
     } else {
         step->evaluate(env);
         const auto si = env->pop().get<int>();
-        for(int i = fi; i < ti; i += si) {
+        for(int i = fi; i != ti; i += si) {
             scoped->set_local_var(id, i);
             statement->evaluate(scoped.get());
         }
@@ -205,9 +216,10 @@ void AST::StructStatement::evaluate(Environment *env) {
 }
 
 void AST::ExpressionStatement::evaluate(Environment *env) {
-//     LOG("expression stmt");
+    LOG("expression stmt");
     expression->evaluate(env);
     env->pop();
+    LOG(env->stack.size());
 }
 
 void AST::ReturnStatement::evaluate(Environment *env) {

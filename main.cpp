@@ -1,13 +1,19 @@
 #include "src/scriptparser.h"
 #include <iostream>
 
-int main() {
+int main(int argc, char **argv) {
+    if(argc != 2) {
+        std::cout << "expects at least 2!";
+        return 1;
+    }
     Hana::ScriptParser p;
-    p.loads("print(\"Hello World!\")");
+    p.loadf(argv[1]);
     auto ast = p.parse();
     Hana::Environment e;
     e.set_var("print", new Hana::Value::NativeFunction([](Hana::Environment *e){
-        std::cout << e->pop().to_string() << "\n";
+        auto size = e->stack.size();
+        for(size_t i = 0; i < size; i++) std::cout << e->stack[i].to_string();
+        std::cout << '\n';
     }));
     e.execute(ast);
 }

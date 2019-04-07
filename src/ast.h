@@ -23,6 +23,7 @@ enum Type {
 inline const Type type() override { return x; }
 
 struct AST {
+    virtual ~AST() {};
     virtual const Type type() { return NONE; }
     virtual void evaluate(Environment *env) {}
     virtual void print(int indent=0) {}
@@ -59,15 +60,16 @@ struct UnaryExpression : Expression {
 
 struct MemberExpression : Expression {
     TYPE(MEMBER_EXPR)
-    std::vector<std::string> id;
+    std::unique_ptr<AST> left, right;
+    MemberExpression(AST *left, AST *right) : left(left), right(right) {};
     void evaluate(Environment *env) override;
 };
 
 struct CallExpression : Expression {
     TYPE(CALL_EXPR)
-    std::string name;
+    std::unique_ptr<AST> callee;
     std::vector<std::unique_ptr<AST>> arguments;
-    CallExpression(std::string name) : name(name) {}
+    CallExpression(AST *callee) : callee(callee) {}
     void evaluate(Environment *env) override;
 };
 
@@ -76,7 +78,7 @@ struct BinaryExpression : Expression {
     std::unique_ptr<AST> left, right;
     enum OpType {
         NONE,
-        ADD, SUB, MUL, DIV,
+        ADD, SUB, MUL, DIV, MOD,
         AND, OR,
         EQ, NEQ, GT, LT, GEQ, LEQ,
         SET, ADDS, SUBS, MULS, DIVS,

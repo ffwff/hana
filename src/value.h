@@ -20,7 +20,6 @@ public:
     struct Identifier {
         std::string s;
         Identifier(std::string s) : s(s) {};
-
     };
 
     // Functions
@@ -88,9 +87,11 @@ public:
     }
     const std::size_t index() const { return v.index(); };
 
+
     Value() {};
     template<class T> Value(T v) : v(v) {};
 
+    template<class T> inline bool is_type() const { return std::holds_alternative<T>(v); };
     template<class T> inline T get() const { return std::get<T>(v); };
     Value operator+(const Value &r) const;
     Value operator+() const;
@@ -98,6 +99,7 @@ public:
     Value operator-() const;
     Value operator*(const Value &r) const;
     Value operator/(const Value &r) const;
+    Value operator%(const Value &r) const;
     Value operator!() const { return Value(!((bool)this)); };
     operator bool() const;
     std::string to_string() const;

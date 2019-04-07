@@ -18,16 +18,16 @@ else
 CXXFLAGS += -g -Wfatal-errors -DDEBUG
 endif
 
-libhana.so: $(OBJS)
-	$(CXX) -shared -o $@ $^
-
 main: build/main.o $(OBJS)
 	$(CXX) -o $@ $^
 build/main.o: main.cpp build
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
+libhana.so: $(OBJS)
+	$(CXX) -shared -o $@ $^
+
 build:
-	mkdir build
+	mkdir -p build
 
 build/%.o: src/%.cpp build
 	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD
