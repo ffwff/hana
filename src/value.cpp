@@ -82,7 +82,7 @@ Value Value::operator+() const {
     FATAL("Value error", "Cannot negate value of wrong type!");
 }
 
-// string
+// conversions
 std::string Value::to_string() const {
     if(is_type<int>()) return std::to_string(get<int>());
     else if(is_type<float>()) return std::to_string(get<float>());
@@ -91,6 +91,20 @@ std::string Value::to_string() const {
     else if(is_type<Dictionary>()) return "[dictionary]";
     else if(is_type<Struct>()) return "[struct]";
     else if(is_type<IFunction*>()) return "[function]";
+    else if(is_type<Type::Value>()) return "[type]";
     return "nil";
+}
 
+int Value::to_int() const {
+    if(is_type<int>()) return get<int>();
+    else if(is_type<float>()) return (int)(get<float>());
+    else if(is_type<std::string>()) return std::stoi(get<std::string>());
+    FATAL("Value error", "Can't convert to integer");
+}
+
+float Value::to_float() const {
+    if(is_type<float>()) return get<float>();
+    else if(is_type<int>()) return (float)(get<int>());
+    else if(is_type<std::string>()) return std::stof(get<std::string>());
+    FATAL("Value error", "Can't convert to integer");
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include <unordered_map>
+#include <map>
 #include <string>
 #include <stack>
 #include <cassert>
@@ -14,7 +14,7 @@ namespace AST {
 class Environment {
 
 private:
-    std::unordered_map<std::string, Value> variables;
+    std::map<std::string, Value> variables;
     Environment *parent = nullptr;
 public:
     Environment() {};

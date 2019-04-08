@@ -17,10 +17,7 @@ void AST::Identifier::evaluate(Environment *env) {
     if(id == "nil") env->stack.emplace_back();
     else {
         auto &val = env->get_var(id);
-        if(val.is_type<Value::Dictionary>())
-            env->stack.emplace_back(Value(static_cast<Value::Ref>(&val)));
-        else
-            env->stack.emplace_back(val);
+        env->stack.emplace_back(Value(static_cast<Value::Ref>(&val)));
     }
 }
 
@@ -40,12 +37,14 @@ void AST::MemberExpression::evaluate(Environment *env) {
         dict = l.get<Value::Dictionary>();
     else if(l.is_type<Value::Ref>() && l.get<Value::Ref>()->is_type<Value::Dictionary>())
         dict = l.get<Value::Ref>()->get<Value::Dictionary>();
+    else
+        FATAL("Interpreter error", "Left hand side must be dictionary");
     LOG(right->type());
     right->evaluate(env);
     auto key = env->pop().get<std::string>();
     LOG(dict.data.size());
     try {
-        env->stack.push_back(dict.data.at(key));
+        env->stack.emplace_back(Value(static_cast<Value::Ref>(&dict.data.at(key))));
     } catch(const std::out_of_range&) {
         FATAL("Interpreter error", "Expected ", key, " key to exist");
     }
@@ -54,11 +53,24 @@ void AST::MemberExpression::evaluate(Environment *env) {
 void AST::CallExpression::evaluate(Environment *env) {
     callee->evaluate(env);
     const auto value = env->pop();
-    LOG(value.index());
+    std::unique_ptr<Environment> scoped(env->inherit());
+
+    // type cast
+    if(value.is_type<Hana::Type::Value>()) {
+        // pass argument to scoped for further processing
+        for(size_t i = 0; i < arguments.size(); i++) {
+            arguments[i]->evaluate(env);
+            scoped->stack.emplace_back(env->pop());
+        }
+        value.get<Hana::Type::Value>()->fn(scoped.get());
+        env->stack.emplace_back(scoped->pop());
+        return;
+    }
+
+    // function call
     if(!value.is_type<Value::IFunction*>())
         FATAL("Interpreter error", "value is not callable");
     auto fn = value.get<Value::IFunction*>();
-    std::unique_ptr<Environment> scoped(env->inherit());
     if(fn->is_variable) {
         // pass argument to scoped for further processing
         for(size_t i = 0; i < arguments.size(); i++) {
@@ -180,9 +192,11 @@ void AST::ForStatement::evaluate(Environment *env) {
     const auto fi = env->pop().get<int>();
 
     this->to->evaluate(env);
-    const auto ti = env->pop().get<int>();
+    auto ti = env->pop().get<int>();
 
     if(this->step == nullptr) {
+        if(stepN == 1) ti++;
+        else if(stepN == -1) ti--;
         for(int i = fi; i != ti; i += stepN) {
             scoped->set_local_var(id, i);
             statement->evaluate(scoped.get());

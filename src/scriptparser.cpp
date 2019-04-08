@@ -297,7 +297,7 @@ AST::AST *ScriptParser::parse_assignment() {
         auto op = next();
         if(op.strv == ".") {
             left = new AST::MemberExpression(left, new AST::Constant(Value(nexts())));
-            op = next();/*
+            op = next();
             do { // TODO
                 if(op.strv == ".") {
                     fpop();
@@ -308,7 +308,7 @@ AST::AST *ScriptParser::parse_assignment() {
                 }
                 fsave();
                 op = next();
-            } while (!f.eof()); */
+            } while (!f.eof());
         }
         AST::BinaryExpression::OpType opt;
         if((opt = optype(op.strv)) != AST::BinaryExpression::OpType::NONE) {
