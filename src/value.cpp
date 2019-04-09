@@ -92,6 +92,7 @@ std::string Value::to_string() const {
     else if(is_type<Struct>()) return "[struct]";
     else if(is_type<IFunction*>()) return "[function]";
     else if(is_type<Type::Value>()) return "[type]";
+    else if(is_type<Ref>()) return get<Ref>()->to_string();
     return "nil";
 }
 

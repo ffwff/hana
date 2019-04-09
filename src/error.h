@@ -26,7 +26,11 @@ static void _LOG(First && first, Rest && ...rest)
 #define __TOSTRING(x) __STRINGIFY(x)
 #define __AT __FILE__ ":" __TOSTRING(__LINE__)
 #define FATAL(why, ...) _FATAL(__AT " " why, __VA_ARGS__)
+#ifdef NOLOG
+#define LOG(...)
+#else
 #define LOG(...) _LOG(__AT, __VA_ARGS__)
+#endif
 #else
 #define FATAL(...) _FATAL(__VA_ARGS__)
 #define LOG(...)

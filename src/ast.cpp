@@ -17,7 +17,10 @@ void AST::Identifier::evaluate(Environment *env) {
     if(id == "nil") env->stack.emplace_back();
     else {
         auto &val = env->get_var(id);
-        env->stack.emplace_back(Value(static_cast<Value::Ref>(&val)));
+        if(val.is_type<Value::Dictionary>())
+            env->stack.emplace_back(Value(static_cast<Value::Ref>(&val)));
+        else
+            env->stack.emplace_back(val);
     }
 }
 
@@ -32,19 +35,21 @@ void AST::UnaryExpression::evaluate(Environment *env) {
 void AST::MemberExpression::evaluate(Environment *env) {
     left->evaluate(env);
     auto l = env->pop();
-    Value::Dictionary dict;
-    if(l.is_type<Value::Dictionary>())
-        dict = l.get<Value::Dictionary>();
-    else if(l.is_type<Value::Ref>() && l.get<Value::Ref>()->is_type<Value::Dictionary>())
-        dict = l.get<Value::Ref>()->get<Value::Dictionary>();
-    else
+    if(!(l.is_type<Value::Ref>() && l.get<Value::Ref>()->is_type<Value::Dictionary>()))
         FATAL("Interpreter error", "Left hand side must be dictionary");
+    auto &dict = l.get<Value::Ref>()->get<Value::Dictionary>();
     LOG(right->type());
     right->evaluate(env);
     auto key = env->pop().get<std::string>();
     LOG(dict.data.size());
     try {
-        env->stack.emplace_back(Value(static_cast<Value::Ref>(&dict.data.at(key))));
+        auto &r = dict.data.at(key);
+        if(r.is_type<Value::Dictionary>()) {
+            auto v = Value(static_cast<Value::Ref>(&r));
+            LOG(v.index());
+            env->stack.emplace_back(v);
+        } else
+            env->stack.emplace_back(r);
     } catch(const std::out_of_range&) {
         FATAL("Interpreter error", "Expected ", key, " key to exist");
     }
@@ -52,7 +57,7 @@ void AST::MemberExpression::evaluate(Environment *env) {
 
 void AST::CallExpression::evaluate(Environment *env) {
     callee->evaluate(env);
-    const auto value = env->pop();
+    const auto &value = env->pop();
     std::unique_ptr<Environment> scoped(env->inherit());
 
     // type cast
@@ -62,7 +67,8 @@ void AST::CallExpression::evaluate(Environment *env) {
             arguments[i]->evaluate(env);
             scoped->stack.emplace_back(env->pop());
         }
-        value.get<Hana::Type::Value>()->fn(scoped.get());
+        const auto &type = value.get<Hana::Type::Value>();
+        type->fn(scoped.get());
         env->stack.emplace_back(scoped->pop());
         return;
     }
@@ -117,10 +123,10 @@ void AST::BinaryExpression::evaluate(Environment *env) {
             else doop(DIVS, /)
 #undef doop
         } else { // member expression
-            const auto expr = static_cast<MemberExpression*>(left.get());
+            const auto &expr = static_cast<MemberExpression*>(left.get());
             expr->left->evaluate(env);
             const auto &l = env->pop();
-            if(!l.is_type<Value::Ref>())
+            if(!(l.is_type<Value::Ref>() && l.get<Value::Ref>()->is_type<Value::Dictionary>()))
                 FATAL("", "not type dictionary");
             auto &dict = l.get<Value::Ref>()->get<Value::Dictionary>();
             expr->right->evaluate(env);

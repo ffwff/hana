@@ -57,7 +57,7 @@ public:
         Dictionary() {}
         Dictionary(std::map<std::string, Value> &data) : data(data) {}
         Dictionary(TypeMap types) : types(types) {}
-        ~Dictionary() {LOG("DEL", data.size());}
+        ~Dictionary() { std::cout << "DEL " << this << '\n'; }
     };
     struct Struct {
         TypeMap types;
@@ -93,28 +93,9 @@ public:
     Value() {};
     template<class T> Value(T v) : v(v) {};
 
-    template<class T> bool is_type() const {
-        if (std::is_same<T, Ref>::value)
-            return std::holds_alternative<Ref>(v);
-        if(is_type<Ref>())
-            return std::holds_alternative<T>(std::get<Ref>(v)->v);
-        return std::holds_alternative<T>(v);
-    }
-    template<class T> T get() const {
-        if (std::is_same<T, Ref>::value)
-            return std::get<T>(v);
-        LOG("get");
-        if(is_type<Ref>()) {
-            return std::get<T>(std::get<Ref>(v)->v);
-        }
-        return std::get<T>(v);
-    }
-    template<class T> inline T &get() {
-        LOG("get");
-        if (std::is_same<T, Ref>::value)
-            return std::get<T>(v);
-        return std::get<T>(v);
-    };
+    template<class T> inline bool is_type() const { return std::holds_alternative<T>(v); };
+    template<class T> inline T get() const { return std::get<T>(v); };
+    template<class T> inline T &get() { return std::get<T>(v); };
     Value operator+(const Value &r) const;
     Value operator+() const;
     Value operator-(const Value &r) const;

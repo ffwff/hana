@@ -44,6 +44,9 @@ protected:
     void fpop() {
         fposs.pop();
     }
+    size_t fpsize() const {
+        return fposs.size();
+    }
 
     // Tokeniser
     class Token {

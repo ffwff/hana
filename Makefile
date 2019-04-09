@@ -18,6 +18,10 @@ else
 CXXFLAGS += -g -Wfatal-errors -DDEBUG
 endif
 
+ifdef NOLOG
+CXXFLAGS += -DNOLOG
+endif
+
 main: build/main.o $(OBJS)
 	$(CXX) -o $@ $^
 build/main.o: main.cpp build

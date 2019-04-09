@@ -150,6 +150,7 @@ AST::AST *ScriptParser::parse_call() {
     if(op.type == Token::Type::OPERATOR &&
         (op.strv == "(" || op.strv == ".")) {
         AST::AST *expr = factor;
+        LOG(op.strv);
         do {
 
             if(op.strv == "(") {
@@ -172,7 +173,7 @@ AST::AST *ScriptParser::parse_call() {
                         if(op.strv == ",") {
                             static_cast<AST::CallExpression*>(expr)->arguments.push_back(std::unique_ptr<AST::AST>(parse_expression()));
                         } else if(op.strv == ")") {
-                            LOG("break");
+                            LOG("break", f.tellg());
                             goto next;
                         } else
                             FATAL("Parser error", "Expected , or ) operator");
@@ -185,15 +186,19 @@ AST::AST *ScriptParser::parse_call() {
                 const auto id = nexts();
                 expr = new AST::MemberExpression(expr, new AST::Constant(Value(id)));
             } else {
+                LOG("LOAD");
                 fload();
                 return expr;
             }
 
         next:
+            LOG("save");
             fsave();
             op = next();
 
         } while(!f.eof());
+
+        fload();
         return expr;
     } else {
         fload();
@@ -277,6 +282,7 @@ non_unary:
 }
 
 AST::AST *ScriptParser::parse_expression() {
+    LOG("expr");
     return parse_assignment();
 }
 
@@ -293,23 +299,9 @@ AST::AST *ScriptParser::parse_assignment() {
     };
     if(token.type == Token::Type::STRING) {
         floadn();
-        auto left = parse_factor();
+        LOG("assign!!");
+        auto left = parse_call();
         auto op = next();
-        if(op.strv == ".") {
-            left = new AST::MemberExpression(left, new AST::Constant(Value(nexts())));
-            op = next();
-            do { // TODO
-                if(op.strv == ".") {
-                    fpop();
-                    left = new AST::MemberExpression(left, new AST::Constant(Value(nexts())));
-                } else {
-                    LOG("break");
-                    break;
-                }
-                fsave();
-                op = next();
-            } while (!f.eof());
-        }
         AST::BinaryExpression::OpType opt;
         if((opt = optype(op.strv)) != AST::BinaryExpression::OpType::NONE) {
             LOG("assignment");
@@ -323,6 +315,7 @@ AST::AST *ScriptParser::parse_assignment() {
     }
 
     fload();
+    LOG(f.tellg());
     return parse_binexpr();
 }
 
@@ -475,9 +468,13 @@ AST::AST *ScriptParser::parse_statement() {
 //             LOG("end function");
             return stmt;
         } else if(token.strv == "record") {
-            fpop();
             LOG("struct");
-            auto id = nexts();
+            auto token = next();
+            if(token.type != Token::Type::STRING) {
+                goto expression_stmt;
+            }
+            fpop();
+            auto id = token.strv;
             auto stmt = new AST::StructStatement(id);
             nextnl();
             while(!f.eof()) {
