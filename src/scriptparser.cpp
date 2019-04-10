@@ -132,11 +132,11 @@ AST::AST *ScriptParser::parse_factor() {
     } else if(token.type == Token::Type::STRING) {
         return new AST::Identifier(token.strv);
     } else if(token.type == Token::Type::STRLITERAL) {
-        return new AST::Constant(Value(token.strv));
+        return new AST::StrLiteral(token.strv);
     } else if(token.type == Token::Type::INTEGER) {
-        return new AST::Constant(Value(token.intv));
+        return new AST::IntLiteral(token.intv);
     } else if(token.type == Token::Type::FLOAT) {
-        return new AST::Constant(Value(token.floatv));
+        return new AST::FloatLiteral(token.floatv);
     }
     LOG(token.type);
     FATAL("Parser error", "Expected factor token: ", lines); // TODO
@@ -181,10 +181,11 @@ AST::AST *ScriptParser::parse_call() {
                         FATAL("Parser error", "Expected operator");
                 }
             } else if(op.strv == ".") {
+                // TODO
                 LOG("member");
                 fpop();
                 const auto id = nexts();
-                expr = new AST::MemberExpression(expr, new AST::Constant(Value(id)));
+                //expr = new AST::MemberExpression(expr, new AST::Constant(Value(id)));
             } else {
                 LOG("LOAD");
                 fload();

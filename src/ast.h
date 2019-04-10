@@ -1,7 +1,7 @@
 #pragma once
 #include <map>
-#include "value.h"
-#include "environment.h"
+#include <memory>
+#include <vector>
 
 namespace Hana {
 
@@ -25,23 +25,34 @@ inline const Type type() override { return x; }
 struct AST {
     virtual ~AST() {};
     virtual const Type type() { return NONE; }
-    virtual void evaluate(Environment *env) {}
     virtual void print(int indent=0) {}
 };
 
 // Constant
-struct Constant : AST {
+struct StrLiteral : AST {
     TYPE(CONSTANT)
-    Value value;
-    Constant(const Value &value) : value(value) {};
-    void evaluate(Environment *env) override;
+    std::string str;
+    StrLiteral(std::string str) : str(str) {};
+    void print(int indent=0) override;
+};
+struct IntLiteral : AST {
+    TYPE(CONSTANT)
+    int i;
+    IntLiteral(int i) : i(i) {};
+    void print(int indent=0) override;
+};
+struct FloatLiteral : AST {
+    TYPE(CONSTANT)
+    float f;
+    FloatLiteral(float f) : f(f) {};
+    void print(int indent=0) override;
 };
 
 struct Identifier : AST {
     TYPE(IDENTIFIER)
     std::string id;
     Identifier(std::string id) : id(id) {};
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 // Expressions
@@ -55,14 +66,14 @@ struct UnaryExpression : Expression {
     } op;
     std::unique_ptr<AST> body;
     UnaryExpression(OpType op, AST *body) : op(op), body(body) {};
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct MemberExpression : Expression {
     TYPE(MEMBER_EXPR)
     std::unique_ptr<AST> left, right;
     MemberExpression(AST *left, AST *right) : left(left), right(right) {};
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct CallExpression : Expression {
@@ -70,7 +81,7 @@ struct CallExpression : Expression {
     std::unique_ptr<AST> callee;
     std::vector<std::unique_ptr<AST>> arguments;
     CallExpression(AST *callee) : callee(callee) {}
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct BinaryExpression : Expression {
@@ -85,7 +96,7 @@ struct BinaryExpression : Expression {
     } op;
     BinaryExpression() : op(NONE) {};
     BinaryExpression(AST *left, AST *right, OpType op) : left(left), right(right), op(op) {};
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 // Statements
@@ -97,7 +108,7 @@ struct IfStatement : Statement {
     std::unique_ptr<AST> statement, alt;
     IfStatement(AST *condition, AST *statement) : condition(condition), statement(statement)
     {};
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct WhileStatement : Statement {
@@ -106,7 +117,7 @@ struct WhileStatement : Statement {
     std::unique_ptr<AST> statement;
     WhileStatement(AST *condition, AST *statement) : condition(condition), statement(statement)
     {};
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct ForStatement : Statement {
@@ -117,7 +128,7 @@ struct ForStatement : Statement {
     std::unique_ptr<AST> statement;
     ForStatement(const std::string &id, AST *from, AST *to, AST *step, AST *statement) : id(id), from(from), to(to), step(step), statement(statement) {}
     ForStatement(const std::string &id, AST *from, AST *to, const int stepN, AST *statement) : id(id), from(from), to(to), stepN(stepN), statement(statement) {}
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct FunctionStatement : Statement {
@@ -126,7 +137,7 @@ struct FunctionStatement : Statement {
     std::unique_ptr<AST> statement;
     std::vector<std::string> arguments;
     FunctionStatement(std::string &id) : id(id) {}
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct StructStatement : Statement {
@@ -134,14 +145,14 @@ struct StructStatement : Statement {
     std::map<std::string,std::string> dict; // name : type
     std::string id;
     StructStatement(std::string &id) : id(id) {}
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct ExpressionStatement : Statement {
     TYPE(EXPR_STMT)
     std::unique_ptr<AST> expression;
     ExpressionStatement(AST *expression) : expression(expression) {}
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 struct ReturnStatement : Statement {
@@ -149,22 +160,20 @@ struct ReturnStatement : Statement {
     std::unique_ptr<AST> expression;
     ReturnStatement() {}
     ReturnStatement(AST *expression) : expression(expression) {}
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 // Block
 struct Block : AST {
     TYPE(BLOCK)
     std::vector<std::unique_ptr<AST>> statements;
-    void print(int indent=0) override {}
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 struct BlockStatement : Statement {
     TYPE(BLOCK_STMT)
     std::vector<std::unique_ptr<AST>> statements;
     BlockStatement() {};
-    void print(int indent=0) override {}
-    void evaluate(Environment *env) override;
+    void print(int indent=0) override;
 };
 
 #undef TYPE

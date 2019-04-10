@@ -5,7 +5,7 @@
 #include <stack>
 #include "error.h"
 
-namespace Hana {
+namespace {
 
 class Parser {
 private:
