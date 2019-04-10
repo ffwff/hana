@@ -10,8 +10,8 @@ int main() {
     array_push(m.code, OP_PUSH8);
     array_push(m.code, 10);
 
-    array_push(m.code, OP_PUSH16);
-    vm_code_push16(&m, (uint16_t)256);
+    array_push(m.code, OP_PUSH32);
+    vm_code_push32(&m, 65538);
 
     array_push(m.code, OP_ADD);
 

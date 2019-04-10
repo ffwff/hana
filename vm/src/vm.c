@@ -24,25 +24,34 @@ int vm_step(struct vm *vm) {
     }
 
     // stack manip
-    else if (op == OP_PUSH8) {
-        vm->ip++;
-        const uint8_t data = vm->code.data[vm->ip++];
-        printf("PUSH %d\n", data);
-
-        array_push(vm->stack, (struct value){});
-        value_int(&array_top(vm->stack), data);
+#define push_int_op(optype, type, _data) \
+    else if (op == optype) { \
+        vm->ip++; \
+        const type data = _data; \
+        vm->ip += sizeof(type); \
+        printf("PUSH %d\n", data); \
+\
+        array_push(vm->stack, (struct value){}); \
+        value_int(&array_top(vm->stack), data); \
     }
-    else if (op == OP_PUSH16) {
-        vm->ip++;
-        //const uint16_t data =  << 8 | ;
-        const uint8_t a = vm->code.data[vm->ip++],
-                      b = vm->code.data[vm->ip++];
-        printf("%x %x\n", a,b);
-        const uint16_t data = a << 8 | b;
+    push_int_op(OP_PUSH8,  uint8_t,  vm->code.data[vm->ip+0])
 
-        array_push(vm->stack, (struct value){});
-        value_int(&array_top(vm->stack), data);
-    }
+    push_int_op(OP_PUSH16, uint16_t, vm->code.data[vm->ip+0] << 4 |
+                                     vm->code.data[vm->ip+1])
+
+    push_int_op(OP_PUSH32, uint32_t, vm->code.data[vm->ip+0] << 12 |
+                                     vm->code.data[vm->ip+1] << 8  |
+                                     vm->code.data[vm->ip+2] << 4  |
+                                     vm->code.data[vm->ip+3])
+
+    push_int_op(OP_PUSH64, uint64_t, vm->code.data[vm->ip+0] << 28 |
+                                     vm->code.data[vm->ip+1] << 24 |
+                                     vm->code.data[vm->ip+2] << 20 |
+                                     vm->code.data[vm->ip+3] << 16 |
+                                     vm->code.data[vm->ip+4] << 12 |
+                                     vm->code.data[vm->ip+5] << 8  |
+                                     vm->code.data[vm->ip+6] << 4  |
+                                     vm->code.data[vm->ip+7])
 
     else if (op == OP_POP) {
         printf("POP\n");
@@ -99,14 +108,24 @@ void vm_print_stack(const struct vm *vm) {
 
 // push bits
 void vm_code_push16(struct vm *vm, uint16_t n) {
-    printf("%x %x\n", (uint8_t)(n >> 8),n & 0x00ff);
-    array_push(vm->code, (uint8_t)(n >> 8));
-    array_push(vm->code, (uint8_t)(n & 0x00ff));
+    array_push(vm->code, (n >> 4) & 0xff);
+    array_push(vm->code, (n >> 0) & 0xff);
 }
 
 void vm_code_push32(struct vm *vm, uint32_t n) {
-    array_push(vm->code, n & 0xff000000);
-    array_push(vm->code, n & 0x00ff0000);
-    array_push(vm->code, n & 0x0000ff00);
-    array_push(vm->code, n & 0x000000ff);
+    array_push(vm->code, (n >> 12) & 0xff);
+    array_push(vm->code, (n >> 8)  & 0xff);
+    array_push(vm->code, (n >> 4)  & 0xff);
+    array_push(vm->code, (n >> 0)  & 0xff);
+}
+
+void vm_code_push64(struct vm *vm, uint64_t n) {
+    array_push(vm->code, (n >> 28) & 0xff);
+    array_push(vm->code, (n >> 24) & 0xff);
+    array_push(vm->code, (n >> 20) & 0xff);
+    array_push(vm->code, (n >> 16) & 0xff);
+    array_push(vm->code, (n >> 12) & 0xff);
+    array_push(vm->code, (n >> 8)  & 0xff);
+    array_push(vm->code, (n >> 4)  & 0xff);
+    array_push(vm->code, (n >> 0)  & 0xff);
 }
