@@ -1,18 +1,21 @@
 # Program
 SRC = $(wildcard src/*.c)
 OBJS = ${subst src/,build/,$(SRC:.c=.o)}
-CCFLAGS += -g -Wall
+CCFLAGS += -g -Wall -Isrc
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
 LDDFLAGS =
 
 main: build/main.o $(OBJS)
 	$(CC) -o $@ $^
+tests: build/tests.o $(OBJS)
+	$(CC) -o $@ $^
 
-build:
-	mkdir -p build
-
-build/%.o: src/%.c build
+build/main.o: main.c
+	$(CC) -c -o $@ $< $(CCFLAGS) -MMD
+build/tests.o: tests.c
+	$(CC) -c -o $@ $< $(CCFLAGS) -MMD
+build/%.o: src/%.c
 	$(CC) -c -o $@ $< $(CCFLAGS) -MMD
 
 clean:

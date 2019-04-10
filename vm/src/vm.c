@@ -6,16 +6,17 @@
 // notes: architecture is big endian!
 
 void vm_init(struct vm *vm) {
+    map_init(&vm->env);
     vm->code = (a_uint8)array_init(uint8_t);
     vm->stack = (a_value)array_init(struct value);
     vm->ip = 0;
 }
 
 void vm_free(struct vm *vm) {
+    map_free(&vm->env);
     array_free(vm->code);
-    for(size_t i = 0; i < vm->stack.length; i++) {
+    for(size_t i = 0; i < vm->stack.length; i++)
         value_free(&vm->stack.data[i]);
-    }
     array_free(vm->stack);
 }
 
@@ -73,7 +74,7 @@ int vm_step(struct vm *vm) {
         assert(vm->stack.length > 0);
         vm->ip++;
         value_free(&array_top(vm->stack));
-        vm->stack.length--;
+        array_pop(vm->stack);
     }
 
     // arith
@@ -99,6 +100,26 @@ int vm_step(struct vm *vm) {
     arith_op(OP_DIV, value_div)
     arith_op(OP_MOD, value_mod)
 
+    // variables
+    else if(op == OP_SET) {
+        vm->ip++;
+        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(key)+1;
+        printf("SET %s\n", key);
+        map_set(&vm->env, key, &array_top(vm->stack));
+        value_free(&array_top(vm->stack));
+        array_pop(vm->stack);
+    }
+    else if(op == OP_GET) {
+        vm->ip++;
+        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(key)+1;
+        printf("GET %s\n", key);
+        array_push(vm->stack, (struct value){});
+        value_copy(&array_top(vm->stack), map_get(&vm->env, key));
+    }
+
+    // end
     else {
         printf("undefined opcode: %d\n", op);
         assert(0);

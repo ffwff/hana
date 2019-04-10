@@ -2,13 +2,18 @@
 #include <stdint.h>
 #include "array.h"
 #include "value.h"
+#include "map.h"
 
 enum vm_opcode {
     OP_HALT,
+    // stack manip
     OP_PUSH8, OP_PUSH16, OP_PUSH32, OP_PUSH64,
     OP_PUSHSTR,
     OP_POP,
-    OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD
+    // arith
+    OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
+    // variables
+    OP_SET, OP_GET
 };
 
 typedef array(uint8_t) a_uint8;
@@ -16,6 +21,7 @@ typedef array(struct value) a_value;
 
 struct vm {
     uint64_t ip;
+    struct map env;
     a_uint8 code;
     a_value stack;
 };
