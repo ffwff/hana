@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 #include "vm.h"
 
 // notes: architecture is big endian!
@@ -12,6 +13,9 @@ void vm_init(struct vm *vm) {
 
 void vm_free(struct vm *vm) {
     array_free(vm->code);
+    for(size_t i = 0; i < vm->stack.length; i++) {
+        value_free(&vm->stack.data[i]);
+    }
     array_free(vm->stack);
 }
 
@@ -24,6 +28,7 @@ int vm_step(struct vm *vm) {
     }
 
     // stack manip
+    // push int
 #define push_int_op(optype, type, _data) \
     else if (op == optype) { \
         vm->ip++; \
@@ -52,7 +57,17 @@ int vm_step(struct vm *vm) {
                                      vm->code.data[vm->ip+5] << 8  |
                                      vm->code.data[vm->ip+6] << 4  |
                                      vm->code.data[vm->ip+7])
+    // pushstr
+    else if(op == OP_PUSHSTR) {
+        vm->ip++;
+        char *str = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(str)+1;
+        printf("PUSH %s\n", str);
+        array_push(vm->stack, (struct value){});
+        value_str(&array_top(vm->stack), str);
+    }
 
+    // pop
     else if (op == OP_POP) {
         printf("POP\n");
         assert(vm->stack.length > 0);
@@ -63,7 +78,7 @@ int vm_step(struct vm *vm) {
 
     // arith
 #define arith_op(optype, fn) \
-    else if (op == OP_ADD) { \
+    else if (op == optype) { \
         printf("" #optype "\n"); \
         assert(vm->stack.length >= 2); \
         vm->ip++; \
@@ -85,7 +100,7 @@ int vm_step(struct vm *vm) {
     arith_op(OP_MOD, value_mod)
 
     else {
-        printf("undefined opcode: %d", op);
+        printf("undefined opcode: %d\n", op);
         assert(0);
     }
 
@@ -128,4 +143,12 @@ void vm_code_push64(struct vm *vm, uint64_t n) {
     array_push(vm->code, (n >> 8)  & 0xff);
     array_push(vm->code, (n >> 4)  & 0xff);
     array_push(vm->code, (n >> 0)  & 0xff);
+}
+
+void vm_code_pushstr(struct vm *vm, char *s) {
+    while(*s) {
+        array_push(vm->code, *s);
+        s++;
+    }
+    array_push(vm->code, 0);
 }
