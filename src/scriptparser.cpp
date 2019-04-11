@@ -469,7 +469,6 @@ AST::AST *ScriptParser::parse_statement() {
             fpop();
 
             auto expr = parse_expression();
-            nextop(")");
             auto stmt = parse_statement();
             return new AST::WhileStatement(expr, stmt);
         } else if(token.strv == "for") {

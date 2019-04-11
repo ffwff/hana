@@ -103,7 +103,7 @@ void value_mod(struct value *result, struct value *left, struct value *right) {
 // logic
 #define logic_op(name, op) \
 void value_ ## name (struct value *result, struct value *left, struct value *right) { \
-    value_int(result, value_is_true(left) op value_is_true(left)); \
+    value_int(result, value_is_true(left) op value_is_true(right)); \
 }
 logic_op(and, &&)
 logic_op(or, ||)

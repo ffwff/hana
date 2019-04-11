@@ -6,9 +6,9 @@
 #ifdef NOLOG
 #define LOG(...)
 #else
-#define LOG(fmt, ...) LOG(fmt, __VA_ARGS__)
+#define LOG(fmt, ...) do { printf(fmt __VA_OPT__(,) __VA_ARGS__); } while(0)
 #endif
-#define FATAL(fmt, ...) LOG(fmt, __VA_ARGS__)
+#define FATAL(fmt, ...) printf(fmt __VA_OPT__(,) __VA_ARGS__)
 
 // notes: architecture is big endian!
 
@@ -126,8 +126,6 @@ int vm_step(struct vm *vm) {
         vm->ip += strlen(key)+1;
         LOG("SET %s\n", key);
         map_set(&vm->env, key, &array_top(vm->stack));
-        value_free(&array_top(vm->stack));
-        array_pop(vm->stack);
     }
     else if(op == OP_GET) {
         vm->ip++;
@@ -172,7 +170,7 @@ int vm_step(struct vm *vm) {
                              vm->code.data[vm->ip+5] << 8  |
                              vm->code.data[vm->ip+6] << 4  |
                              vm->code.data[vm->ip+7];
-        FATAL("JMP %ld\n", pos);
+        LOG("JMP %ld\n", pos);
         vm->ip = pos;
     }
     else if(op == OP_JCOND || op == OP_JNCOND) { // jcond [64-bit position]
@@ -188,11 +186,11 @@ int vm_step(struct vm *vm) {
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         if(op == OP_JCOND) {
-            FATAL("JCOND %ld\n", pos);
+            LOG("JCOND %ld\n", pos);
             if(value_is_true(&val)) vm->ip = pos;
             else vm->ip += 8;
         } else {
-            FATAL("JNCOND %ld\n", pos);
+            LOG("JNCOND %ld\n", pos);
             if(!value_is_true(&val)) vm->ip = pos;
             else vm->ip += 8;
         }
@@ -203,7 +201,7 @@ int vm_step(struct vm *vm) {
         array_pop(vm->stack);
         int nargs = vm->code.data[vm->ip++];
         assert(vm->stack.length >= nargs);
-        FATAL("call %d\n", nargs);
+        LOG("call %d\n", nargs);
         if(val->type == TYPE_NATIVE_FN) {
             val->as.fn(vm, nargs);
         } else {
@@ -224,7 +222,6 @@ int vm_step(struct vm *vm) {
 
 #ifndef NOLOG
     vm_print_stack(vm);
-    printf("\n");
 #endif
     return 1;
 }
@@ -234,12 +231,12 @@ void vm_execute(struct vm *vm) {
 }
 
 void vm_print_stack(const struct vm *vm) {
-    LOG("[");
+    printf("[");
     for(size_t i = 0; i < vm->stack.length; i++) {
         value_print(&vm->stack.data[i]);
-        LOG(" ");
+        printf(" ");
     }
-    LOG("]\n");
+    printf("]\n");
 }
 
 // push bits

@@ -190,47 +190,86 @@ void AST::CallExpression::emit(struct vm *vm) {
     array_push(vm->code, arguments.size());
 }
 void AST::BinaryExpression::emit(struct vm *vm) {
-    left->emit(vm);
-    right->emit(vm);
-    if(op == ADD)      array_push(vm->code, OP_ADD);
-    else if(op == SUB) array_push(vm->code, OP_SUB);
-    else if(op == MUL) array_push(vm->code, OP_MUL);
-    else if(op == DIV) array_push(vm->code, OP_DIV);
-    else if(op == MOD) array_push(vm->code, OP_MOD);
-    else if(op == AND) array_push(vm->code, OP_AND);
-    else if(op == OR)  array_push(vm->code, OP_OR );
-    else if(op == EQ)  array_push(vm->code, OP_EQ );
-    else if(op == NEQ) array_push(vm->code, OP_NEQ);
-    else if(op == GT)  array_push(vm->code, OP_GT );
-    else if(op == LT)  array_push(vm->code, OP_LT );
-    else if(op == GEQ) array_push(vm->code, OP_GEQ);
-    else if(op == LEQ) array_push(vm->code, OP_LEQ);
+    if(op == SET) {
+        right->emit(vm);
+        if(left->type() == IDENTIFIER) {
+            auto s = static_cast<Identifier*>(left.get())->id;
+            array_push(vm->code, OP_SET);
+            vm_code_pushstr(vm, s.data());
+        }
+    } else {
+        left->emit(vm);
+        right->emit(vm);
+        if(op == ADD)      array_push(vm->code, OP_ADD);
+        else if(op == SUB) array_push(vm->code, OP_SUB);
+        else if(op == MUL) array_push(vm->code, OP_MUL);
+        else if(op == DIV) array_push(vm->code, OP_DIV);
+        else if(op == MOD) array_push(vm->code, OP_MOD);
+        else if(op == AND) array_push(vm->code, OP_AND);
+        else if(op == OR)  array_push(vm->code, OP_OR );
+        else if(op == EQ)  array_push(vm->code, OP_EQ );
+        else if(op == NEQ) array_push(vm->code, OP_NEQ);
+        else if(op == GT)  array_push(vm->code, OP_GT );
+        else if(op == LT)  array_push(vm->code, OP_LT );
+        else if(op == GEQ) array_push(vm->code, OP_GEQ);
+        else if(op == LEQ) array_push(vm->code, OP_LEQ);
 
-    else if(op == SET)  array_push(vm->code, OP_ADD);
-    else if(op == ADDS) array_push(vm->code, OP_ADD);
-    else if(op == SUBS) array_push(vm->code, OP_ADD);
-    else if(op == MULS) array_push(vm->code, OP_ADD);
-    else if(op == DIVS) array_push(vm->code, OP_ADD);
+        else if(op == SET)  array_push(vm->code, OP_ADD);
+        else if(op == ADDS) array_push(vm->code, OP_ADD);
+        else if(op == SUBS) array_push(vm->code, OP_ADD);
+        else if(op == MULS) array_push(vm->code, OP_ADD);
+        else if(op == DIVS) array_push(vm->code, OP_ADD);
+    }
 }
 
 void AST::IfStatement::emit(struct vm *vm) {
+    // condition
+    // jcond [else]
+    // [statement]
+    // jmp done
+    // [else]
+    // done:
     condition->emit(vm);
     array_push(vm->code, OP_JNCOND);
     size_t length = vm->code.length;
     vm_code_push64(vm, FILLER64);
     // then statement
     statement->emit(vm);
-    size_t n = vm->code.length;
-    fill_hole(vm, length, n);
-    if(alt) alt->emit(vm);
+    if(alt) {
+        array_push(vm->code, OP_JMP);
+        size_t length1 = vm->code.length;
+        vm_code_push64(vm, FILLER64);
+        size_t n = vm->code.length;
+        alt->emit(vm);
+        size_t n1 = vm->code.length;
+        fill_hole(vm, length, n);
+        fill_hole(vm, length1, n1);
+    } else {
+        size_t n = vm->code.length;
+        fill_hole(vm, length, n);
+    }
 }
 void AST::WhileStatement::emit(struct vm *vm) {
+    // 1: jmp condition
+    // [statement]
+    // [condition]
+    // jcond 1
+    array_push(vm->code, OP_JMP);
+    size_t length = vm->code.length;
+    vm_code_push64(vm, FILLER64);
+    size_t length1 = vm->code.length;
+    statement->emit(vm);
+    fill_hole(vm, length, vm->code.length);
+    condition->emit(vm);
+    array_push(vm->code, OP_JCOND);
+    vm_code_push64(vm, length1);
 }
 void AST::ForStatement::emit(struct vm *vm) {
     // start
     from->emit(vm);
     array_push(vm->code, OP_SET);
     vm_code_pushstr(vm, id.data());
+    array_push(vm->code, OP_POP);
     // jmp to condition check (1)
     array_push(vm->code, OP_JMP);
     size_t length = vm->code.length;
@@ -291,4 +330,6 @@ void AST::Block::emit(struct vm *vm) {
         s->emit(vm);
 }
 void AST::BlockStatement::emit(struct vm *vm) {
+    for(auto &s : statements)
+        s->emit(vm);
 }
