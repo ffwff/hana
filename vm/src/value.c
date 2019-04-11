@@ -16,9 +16,13 @@ void value_str(struct value *val, const char *data) {
     val->type = TYPE_STR;
     val->as.str = strdup(data);
 }
-void value_function(struct value *val, value_fn fn) {
+void value_native(struct value *val, value_fn fn) {
     val->type = TYPE_NATIVE_FN;
     val->as.fn = fn;
+}
+void value_function(struct value *val, uint64_t fn_ip) {
+    val->type = TYPE_FN;
+    val->as.fn_ip = fn_ip;
 }
 
 void value_free(struct value *val) {
@@ -35,14 +39,20 @@ void value_print(struct value *val) {
     else if(val->type == TYPE_STR)
         printf("\"%s\"", val->as.str);
     else if(val->type == TYPE_NATIVE_FN)
-        printf("[fn %lx]", (intptr_t)val->as.fn);
+        printf("[native fn %lx]", (intptr_t)val->as.fn);
+    else if(val->type == TYPE_FN)
+        printf("[fn %ld]", (uint64_t)val->as.fn_ip);
     else {
         printf("nil");
     }
 }
 
-void value_copy(struct value *left, struct value *right) {
-    memcpy(left, right, sizeof(struct value));
+void value_copy(struct value *dst, struct value *src) {
+    dst->type = src->type;
+    if(src->type == TYPE_STR)
+        dst->as.str = strdup(src->as.str);
+    else
+        dst->as = src->as;
 }
 
 // arith

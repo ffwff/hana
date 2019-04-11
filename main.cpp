@@ -40,11 +40,13 @@ int main(int argc, char **argv) {
     struct vm m; vm_init(&m);
     // variables:
     struct value val;
-    value_function(&val, hanayo::print);
+    value_native(&val, hanayo::print);
     map_set(&m.env, "print", &val);
     ast->emit(&m); // generate bytecodes
     array_push(m.code, OP_HALT);
-    vm_execute(&m);
+    while(vm_step(&m))
+        std::cin.get();
+    //vm_execute(&m);
 
     // cleanup
     vm_free(&m);

@@ -12,17 +12,19 @@ struct value {
         float floatp;
         char *str;
         value_fn fn;
+        uint64_t fn_ip;
     } as;
     enum {
         TYPE_NIL, TYPE_INT, TYPE_FLOAT, TYPE_STR,
-        TYPE_NATIVE_FN
+        TYPE_NATIVE_FN, TYPE_FN
     } type;
 };
 
 void value_int(struct value*, int);
 void value_float(struct value*, float);
 void value_str(struct value*, const char*);
-void value_function(struct value*, value_fn);
+void value_native(struct value*, value_fn);
+void value_function(struct value*, uint64_t fn_ip);
 
 void value_free(struct value*);
 void value_print(struct value*);

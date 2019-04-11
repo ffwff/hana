@@ -158,6 +158,27 @@ int vm_step(struct vm *vm) {
             assert(0);
         }
     }
+    else if(op == OP_DEF_FUNCTION) {
+        // [opcode][key][end address]
+        vm->ip++;
+        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(key)+1;
+        const uint64_t pos = vm->code.data[vm->ip+0] << 28 |
+                             vm->code.data[vm->ip+1] << 24 |
+                             vm->code.data[vm->ip+2] << 20 |
+                             vm->code.data[vm->ip+3] << 16 |
+                             vm->code.data[vm->ip+4] << 12 |
+                             vm->code.data[vm->ip+5] << 8  |
+                             vm->code.data[vm->ip+6] << 4  |
+                             vm->code.data[vm->ip+7];
+        printf("DEF_FUNCTION %s %ld\n", key, pos);
+        vm->ip += 8;
+        struct value val;
+        printf("%d\n", vm->ip);
+        value_function(&val, vm->ip);
+        map_set(&vm->env, key, &val);
+        vm->ip = pos;
+    }
 
     // flow control
     else if(op == OP_JMP) { // jmp [64-bit position]
@@ -197,21 +218,48 @@ int vm_step(struct vm *vm) {
     }
     else if(op == OP_CALL) {
         vm->ip++;
-        struct value *val = &array_top(vm->stack);
+        struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         int nargs = vm->code.data[vm->ip++];
         assert(vm->stack.length >= nargs);
         LOG("call %d\n", nargs);
-        if(val->type == TYPE_NATIVE_FN) {
-            val->as.fn(vm, nargs);
-        } else {
-            struct value nargs_v = {
-                .type = TYPE_INT,
-                .as.integer = nargs
-            };
+        if(val.type == TYPE_NATIVE_FN) {
+            val.as.fn(vm, nargs);
+        } else if(val.type == TYPE_FN) {
+            struct value args[nargs];
+            for(int i = 0; i < nargs; i++) {
+                struct value val = array_top(vm->stack);
+                array_pop(vm->stack);
+                args[i] = val;
+            }
+            // caller
+            struct value caller;
+            value_function(&caller, vm->ip);
+            array_push(vm->stack, caller);
+            // arguments
+            for(int i = 0; i < nargs; i++) {
+                array_push(vm->stack, args[i]);
+            }
+            struct value nargs_v;
+            value_int(&nargs_v, nargs);
             array_push(vm->stack, nargs_v);
-            assert(0);
+            vm->ip = val.as.fn_ip;
+        } else {
+            printf("is not a function\n");
+            return 0;
         }
+    }
+    else if(op == OP_RET) {
+        struct value retval = array_top(vm->stack);
+        array_pop(vm->stack);
+
+        struct value caller = array_top(vm->stack);
+        array_pop(vm->stack);
+        assert(caller.type == TYPE_FN);
+
+        printf("RET\n");
+        vm->ip = caller.as.fn_ip;
+        array_push(vm->stack, retval);
     }
 
     // end

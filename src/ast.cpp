@@ -315,6 +315,24 @@ void AST::ForStatement::emit(struct vm *vm) {
     fill_hole(vm, length, n);
 }
 void AST::FunctionStatement::emit(struct vm *vm) {
+    array_push(vm->code, OP_DEF_FUNCTION);
+    vm_code_pushstr(vm, id.data());
+    size_t length = vm->code.length;
+    vm_code_push64(vm, FILLER64);
+    //body
+    array_push(vm->code, OP_POP); // narg
+    for(auto &arg : arguments) {
+        array_push(vm->code, OP_SET);
+        vm_code_pushstr(vm, arg.data());
+        array_push(vm->code, OP_POP);
+    }
+    statement->emit(vm);
+    // default return
+    array_push(vm->code, OP_PUSH8);
+    array_push(vm->code, 0);
+    array_push(vm->code, OP_RET);
+    //fill in
+    fill_hole(vm, length, vm->code.length);
 }
 void AST::StructStatement::emit(struct vm *vm) {
 }
@@ -323,6 +341,8 @@ void AST::ExpressionStatement::emit(struct vm *vm) {
     array_push(vm->code, OP_POP);
 }
 void AST::ReturnStatement::emit(struct vm *vm) {
+    expression->emit(vm);
+    array_push(vm->code, OP_RET);
 }
 
 void AST::Block::emit(struct vm *vm) {
