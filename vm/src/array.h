@@ -1,4 +1,7 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <stdlib.h>
 
 #define array(type)      \
@@ -20,11 +23,16 @@
         free(array.data);   \
     } while (0)
 
+#ifdef __cplusplus
+#define VOID_CAST(data,x) (decltype(data))(x)
+#else
+#define VOID_CAST(data,x) x
+#endif
 #define array_push(array, element)                   \
     do {                                             \
         if(array.length == array.capacity) { \
             array.capacity *= 2; \
-            array.data = realloc(array.data, sizeof(*array.data)*array.capacity); \
+            array.data = VOID_CAST(array.data, realloc(array.data, sizeof(*array.data)*array.capacity)); \
         } \
         array.data[array.length] = element; \
         array.length++; \
@@ -36,3 +44,7 @@
     } while(0)
 
 #define array_top(array) array.data[array.length-1]
+
+#ifdef __cplusplus
+}
+#endif

@@ -1,26 +1,31 @@
-default: libhana_setup libhana.so
-libhana_setup:
-	$(eval CXXFLAGS := $(CXXFLAGS) -fPIC)
+default: main
 .PHONY: main.cpp
 
 # Program
-SRC = $(wildcard src/*.cpp)
-OBJS = ${subst src/,build/,$(SRC:.cpp=.o)}
-CXXFLAGS += -Wall -std=c++17
+PARSER_SRC = $(wildcard src/*.cpp)
+VM_SRC = $(wildcard vm/src/*.c)
+OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
+       ${subst vm/src/,build/vm/,$(VM_SRC:.c=.o)}
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
-LDDFLAGS =
 
 # Version
 ifdef RELEASE
 CXXFLAGS += -O3 -DRELEASE
 else
-CXXFLAGS += -g -Wfatal-errors -DDEBUG
+CXXFLAGS += -g -DDEBUG
+CCFLAGS += -g
 endif
 
+# Logging
 ifdef NOLOG
 CXXFLAGS += -DNOLOG
 endif
+
+# Default flags
+CXXFLAGS += -std=c++11 -I. -Wall
+CCFLAGS += -Wall -Ivm/src
+LDDFLAGS =
 
 main: build/main.o $(OBJS)
 	$(CXX) -o $@ $^
@@ -32,9 +37,12 @@ libhana.so: $(OBJS)
 
 build:
 	mkdir -p build
-
 build/%.o: src/%.cpp build
 	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD
+build/vm:
+	mkdir -p build/vm
+build/vm/%.o: vm/src/%.c build/vm
+	$(CC) -c -o $@ $< $(CCFLAGS) -MMD
 
 clean:
 	rm -rf libhana.so $(OBJS) $(DEPS)

@@ -72,6 +72,26 @@ int main() {
     vm_code_pushstr(&m, "test"); // => [100]
 #endif
 
+#ifdef SECTION_JMP
+    array_push(m.code, OP_JMP);
+    array_push(m.code, 4);
+
+    array_push(m.code, OP_PUSH8);
+    array_push(m.code, 13);
+
+    array_push(m.code, OP_PUSH8); // 4
+    array_push(m.code, 33);
+
+    array_push(m.code, OP_JCOND);
+    array_push(m.code, 10);
+
+    array_push(m.code, OP_PUSH8);
+    array_push(m.code, 33);
+
+    array_push(m.code, OP_PUSH8); // 10
+    array_push(m.code, 37);
+#endif
+
     array_push(m.code, OP_HALT);
     vm_execute(&m);
 

@@ -78,7 +78,7 @@ int vm_step(struct vm *vm) {
     }
 
     // arith
-#define arith_op(optype, fn) \
+#define binop(optype, fn) \
     else if (op == optype) { \
         printf("" #optype "\n"); \
         assert(vm->stack.length >= 2); \
@@ -94,11 +94,23 @@ int vm_step(struct vm *vm) {
         struct value *result = &array_top(vm->stack); \
         fn(result, &left, &right); \
     }
-    arith_op(OP_ADD, value_add)
-    arith_op(OP_SUB, value_sub)
-    arith_op(OP_MUL, value_mul)
-    arith_op(OP_DIV, value_div)
-    arith_op(OP_MOD, value_mod)
+    binop(OP_ADD, value_add)
+    binop(OP_SUB, value_sub)
+    binop(OP_MUL, value_mul)
+    binop(OP_DIV, value_div)
+    binop(OP_MOD, value_mod)
+
+    // logic
+    binop(OP_AND, value_and)
+    binop(OP_OR, value_or)
+
+    // comparison
+    binop(OP_LT,  value_lt)
+    binop(OP_LEQ, value_leq)
+    binop(OP_GT,  value_gt)
+    binop(OP_GEQ, value_geq)
+    binop(OP_EQ,  value_eq)
+    binop(OP_NEQ, value_neq)
 
     // variables
     else if(op == OP_SET) {
@@ -116,7 +128,42 @@ int vm_step(struct vm *vm) {
         vm->ip += strlen(key)+1;
         printf("GET %s\n", key);
         array_push(vm->stack, (struct value){});
-        value_copy(&array_top(vm->stack), map_get(&vm->env, key));
+        struct value *val = map_get(&vm->env, key);
+        if(val == NULL) {
+            printf("no key named %s!\n", key);
+            return 0;
+        } else
+            value_copy(&array_top(vm->stack), val);
+    }
+
+    // flow control
+    else if(op == OP_JMP) {
+        printf("JMP %d\n", vm->code.data[vm->ip+1]);
+        vm->ip = vm->code.data[vm->ip+1];
+    }
+    else if(op == OP_JCOND) {
+        if(value_is_true(&array_top(vm->stack))) {
+            array_pop(vm->stack);
+            vm->ip = vm->code.data[vm->ip+1];
+        } else vm->ip++;
+    }
+    else if(op == OP_CALL) {
+        vm->ip++;
+        struct value *val = &array_top(vm->stack);
+        array_pop(vm->stack);
+        int nargs = vm->code.data[vm->ip++];
+        assert(vm->stack.length >= nargs);
+        printf("call %d\n", nargs);
+        if(val->type == TYPE_NATIVE_FN) {
+            val->as.fn(vm, nargs);
+        } else {
+            struct value nargs_v = {
+                .type = TYPE_INT,
+                .as.integer = nargs
+            };
+            array_push(vm->stack, nargs_v);
+            assert(0);
+        }
     }
 
     // end
@@ -166,10 +213,8 @@ void vm_code_push64(struct vm *vm, uint64_t n) {
     array_push(vm->code, (n >> 0)  & 0xff);
 }
 
-void vm_code_pushstr(struct vm *vm, char *s) {
-    while(*s) {
-        array_push(vm->code, *s);
-        s++;
-    }
+void vm_code_pushstr(struct vm *vm, const char *s) {
+    for(int i = 0; s[i]; i++)
+        array_push(vm->code, s[i]);
     array_push(vm->code, 0);
 }

@@ -12,9 +12,13 @@ void value_float(struct value *val, float data) {
     val->type = TYPE_FLOAT;
     val->as.floatp = data;
 }
-void value_str(struct value *val, char *data) {
+void value_str(struct value *val, const char *data) {
     val->type = TYPE_STR;
     val->as.str = strdup(data);
+}
+void value_function(struct value *val, value_fn fn) {
+    val->type = TYPE_NATIVE_FN;
+    val->as.fn = fn;
 }
 
 void value_free(struct value *val) {
@@ -30,6 +34,8 @@ void value_print(struct value *val) {
         printf("%f", val->as.floatp);
     else if(val->type == TYPE_STR)
         printf("\"%s\"", val->as.str);
+    else if(val->type == TYPE_NATIVE_FN)
+        printf("[fn %lx]", (intptr_t)val->as.fn);
     else {
         printf("nil");
     }
@@ -92,4 +98,32 @@ void value_mod(struct value *result, struct value *left, struct value *right) {
     if(left->type == TYPE_INT) {
         value_int(result, left->as.integer % right->as.integer);
     }
+}
+
+// logic
+#define logic_op(name, op) \
+void value_ ## name (struct value *result, struct value *left, struct value *right) { \
+    value_int(result, value_is_true(left) op value_is_true(left)); \
+}
+logic_op(and, &&)
+logic_op(or, ||)
+
+// comparison
+arith_op(lt, <,)
+arith_op(leq, <=,)
+arith_op(gt, >=,)
+arith_op(geq, >=,)
+arith_op(eq, ==,)
+arith_op(neq, !=,)
+
+// boolean
+int value_is_true(const struct value *val) {
+    if(val->type == TYPE_INT)
+        return val->as.integer > 0;
+    else if(val->type == TYPE_FLOAT)
+        return val->as.floatp > 0;
+    else if(val->type == TYPE_STR)
+        return strlen(val->as.str) > 0;
+    else
+        return 0;
 }

@@ -1,4 +1,8 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "value.h"
 
 struct map_entry {
@@ -13,7 +17,11 @@ struct map {
 
 void map_init(struct map *);
 void map_free(struct map *);
-struct value *map_get(struct map *, char *);
-void map_set(struct map *, char *, struct value *);
-void map_del(struct map *, char *);
+struct value *map_get(struct map *, const char *);
+void map_set(struct map *, const char *, struct value *);
+void map_del(struct map *, const char *);
 void map_print(struct map *);
+
+#ifdef __cplusplus
+}
+#endif

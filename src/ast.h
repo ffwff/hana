@@ -2,6 +2,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include "vm/src/vm.h"
 
 namespace Hana {
 
@@ -26,6 +27,7 @@ struct AST {
     virtual ~AST() {};
     virtual const Type type() { return NONE; }
     virtual void print(int indent=0) {}
+    virtual void emit(struct vm *vm) {}
 };
 
 // Constant
@@ -34,18 +36,21 @@ struct StrLiteral : AST {
     std::string str;
     StrLiteral(std::string str) : str(str) {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 struct IntLiteral : AST {
     TYPE(CONSTANT)
     int i;
     IntLiteral(int i) : i(i) {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 struct FloatLiteral : AST {
     TYPE(CONSTANT)
     float f;
     FloatLiteral(float f) : f(f) {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct Identifier : AST {
@@ -53,6 +58,7 @@ struct Identifier : AST {
     std::string id;
     Identifier(std::string id) : id(id) {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 // Expressions
@@ -67,6 +73,7 @@ struct UnaryExpression : Expression {
     std::unique_ptr<AST> body;
     UnaryExpression(OpType op, AST *body) : op(op), body(body) {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct MemberExpression : Expression {
@@ -74,6 +81,7 @@ struct MemberExpression : Expression {
     std::unique_ptr<AST> left, right;
     MemberExpression(AST *left, AST *right) : left(left), right(right) {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct CallExpression : Expression {
@@ -82,6 +90,7 @@ struct CallExpression : Expression {
     std::vector<std::unique_ptr<AST>> arguments;
     CallExpression(AST *callee) : callee(callee) {}
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct BinaryExpression : Expression {
@@ -97,6 +106,7 @@ struct BinaryExpression : Expression {
     BinaryExpression() : op(NONE) {};
     BinaryExpression(AST *left, AST *right, OpType op) : left(left), right(right), op(op) {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 // Statements
@@ -109,6 +119,7 @@ struct IfStatement : Statement {
     IfStatement(AST *condition, AST *statement) : condition(condition), statement(statement)
     {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct WhileStatement : Statement {
@@ -118,6 +129,7 @@ struct WhileStatement : Statement {
     WhileStatement(AST *condition, AST *statement) : condition(condition), statement(statement)
     {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct ForStatement : Statement {
@@ -129,6 +141,7 @@ struct ForStatement : Statement {
     ForStatement(const std::string &id, AST *from, AST *to, AST *step, AST *statement) : id(id), from(from), to(to), step(step), statement(statement) {}
     ForStatement(const std::string &id, AST *from, AST *to, const int stepN, AST *statement) : id(id), from(from), to(to), stepN(stepN), statement(statement) {}
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct FunctionStatement : Statement {
@@ -138,6 +151,7 @@ struct FunctionStatement : Statement {
     std::vector<std::string> arguments;
     FunctionStatement(std::string &id) : id(id) {}
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct StructStatement : Statement {
@@ -146,6 +160,7 @@ struct StructStatement : Statement {
     std::string id;
     StructStatement(std::string &id) : id(id) {}
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct ExpressionStatement : Statement {
@@ -153,6 +168,7 @@ struct ExpressionStatement : Statement {
     std::unique_ptr<AST> expression;
     ExpressionStatement(AST *expression) : expression(expression) {}
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 struct ReturnStatement : Statement {
@@ -161,6 +177,7 @@ struct ReturnStatement : Statement {
     ReturnStatement() {}
     ReturnStatement(AST *expression) : expression(expression) {}
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 // Block
@@ -168,12 +185,14 @@ struct Block : AST {
     TYPE(BLOCK)
     std::vector<std::unique_ptr<AST>> statements;
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 struct BlockStatement : Statement {
     TYPE(BLOCK_STMT)
     std::vector<std::unique_ptr<AST>> statements;
     BlockStatement() {};
     void print(int indent=0) override;
+    void emit(struct vm *vm) override;
 };
 
 #undef TYPE

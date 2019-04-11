@@ -6,7 +6,7 @@
 using namespace Hana;
 
 /*
-program = block "." .
+program = block .
 
 block = { } statement .
 
@@ -25,7 +25,7 @@ statement = [ ident "=" expression NL
 logical = condition ("and" | "or") logical
 condition = expression ("=="|"!="|">"|"<"|">="|"<=") expression
 expression = [ "+"|"-"] term { ("+"|"-") term}
-term = factor {("*"|"/") factor}
+term = factor {("*"|"/"|"mod") factor}
 factor = ident | number | "(" expression ")"
  */
 
@@ -55,15 +55,21 @@ Parser::Token ScriptParser::next() {
         LOG("EOF");
         f.get();
         return Token();
-    } else if(c == '\'') {
+    } else if(c == '\'' || c == '"') {
+        const char start = c;
         f.get();
         std::string str;
         while((c = f.peek()) != EOF) {
-            if(c == '\'') {
+            if(c == start) {
                 f.get();
                 break;
             } else if(c == '\\') {
                 f.get();
+                char esc = f.get();
+                if(esc == 'n') str += '\n';
+                else if(esc == 'r') str += '\r';
+                else str += esc;
+                continue;
             }
             str += f.get();
         }
@@ -155,7 +161,7 @@ AST::AST *ScriptParser::parse_call() {
 
             if(op.strv == "(") {
                 fpop();
-                expr = new AST::CallExpression(factor);
+                expr = new AST::CallExpression(expr);
 
                 fsave();
                 op = next();
@@ -164,14 +170,14 @@ AST::AST *ScriptParser::parse_call() {
                     goto next;
                 } else {
                     fload();
-                    static_cast<AST::CallExpression*>(expr)->arguments.push_back(std::unique_ptr<AST::AST>(parse_expression()));
+                    static_cast<AST::CallExpression*>(expr)->arguments.emplace_back(parse_expression());
                 }
 
                 while(!f.eof()) {
                     op = next();
                     if(op.type == Token::Type::OPERATOR) {
                         if(op.strv == ",") {
-                            static_cast<AST::CallExpression*>(expr)->arguments.push_back(std::unique_ptr<AST::AST>(parse_expression()));
+                            static_cast<AST::CallExpression*>(expr)->arguments.emplace_back(parse_expression());
                         } else if(op.strv == ")") {
                             LOG("break", f.tellg());
                             goto next;
@@ -185,7 +191,7 @@ AST::AST *ScriptParser::parse_call() {
                 LOG("member");
                 fpop();
                 const auto id = nexts();
-                //expr = new AST::MemberExpression(expr, new AST::Constant(Value(id)));
+                expr = new AST::MemberExpression(expr, new AST::Identifier(id));
             } else {
                 LOG("LOAD");
                 fload();
@@ -205,59 +211,6 @@ AST::AST *ScriptParser::parse_call() {
         fload();
         return factor;
     }
-#if 0
-
-
-
-
-if(op.strv == "(") {
-    expr = new AST::CallExpression();
-}
-
-auto expr = new
-
-fpop();
-
-expr->arguments.push_back(std::unique_ptr<AST::AST>(parse_expression()));
-
-while(!f.eof()) {
-    token = next();
-    LOG(token.strv);
-    if(token.type == Token::Type::OPERATOR) {
-        if(token.strv == ",") {
-            expr->arguments.push_back(std::unique_ptr<AST::AST>(parse_expression()));
-} else if(token.strv == ")") {
-    break;
-} else
-    FATAL("Parser error", "Expected , or ) operator");
-} else
-    FATAL("Parser error", "Expected operator");
-}
-
-return expr;
-}/* else if(op.type == Token::Type::OPERATOR && op.strv == ".") {
-LOG("member expression");
-
-// member expression
-fpop();
-auto memberexpr = new AST::MemberExpression();
-memberexpr->id.push_back(token.strv);
-memberexpr->id.push_back(nexts());
-while(!f.eof()) {
-    fsave();
-    token = next();
-    if(token.type == Token::Type::OPERATOR && token.strv == ".") {
-        fpop();
-        memberexpr->id.push_back(nexts());
-} else {
-    fload();
-    break;
-}
-}
-return memberexpr;
-
-} */
-#endif
 }
 
 AST::AST *ScriptParser::parse_unary() {
@@ -312,7 +265,7 @@ AST::AST *ScriptParser::parse_assignment() {
             fpop();
             auto right = parse_expression();
             return new AST::BinaryExpression(left, right, opt);
-        }
+        } else delete left;
     }
 
     fload();

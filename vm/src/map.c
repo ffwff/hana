@@ -20,14 +20,14 @@ void map_free(struct map *map) {
     free(map->data);
 }
 
-struct value *map_get(struct map *map, char *key) {
+struct value *map_get(struct map *map, const char *key) {
     for(size_t i = 0; i < map->length; i++)
         if(strcmp(map->data[i]->key, key) == 0)
             return &map->data[i]->val;
     return NULL;
 }
 
-void map_set(struct map *map, char *key, struct value *val) {
+void map_set(struct map *map, const char *key, struct value *val) {
     for(size_t i = 0; i < map->length; i++)
         if(strcmp(map->data[i]->key, key) == 0) {
             value_free(&map->data[i]->val);
@@ -44,7 +44,7 @@ void map_set(struct map *map, char *key, struct value *val) {
     map->length++;
 }
 
-void map_del(struct map *map, char *key) {
+void map_del(struct map *map, const char *key) {
     for(size_t i = 0; i < map->length; i++)
         if(strcmp(map->data[i]->key, key) == 0) {
             // free entry

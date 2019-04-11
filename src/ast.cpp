@@ -1,6 +1,6 @@
 #include "ast.h"
 #include "error.h"
-#include <array>
+#include "vm/src/vm.h"
 
 using namespace Hana;
 
@@ -9,6 +9,7 @@ static void pindent(int levels) {
         std::cout << " ";
 }
 
+// DEBUG
 // Literals
 void AST::StrLiteral::print(int indent) {
     pindent(indent);
@@ -133,4 +134,93 @@ void AST::BlockStatement::print(int indent) {
     std::cout << "block\n";
     for(auto &s : statements)
         s->print(indent+1);
+}
+
+// EMIT
+
+// DEBUG
+// Literals
+void AST::StrLiteral::emit(struct vm *vm) {
+    array_push(vm->code, OP_PUSHSTR);
+    vm_code_pushstr(vm, str.data());
+}
+void AST::IntLiteral::emit(struct vm *vm) {
+    if(i <= 0xff) {
+        array_push(vm->code, OP_PUSH8);
+        array_push(vm->code, i);
+    } else if (i <= 0xffff) {
+        array_push(vm->code, OP_PUSH16);
+        vm_code_push16(vm, i);
+    } else if ((uint32_t)i <= 0xffffffff) {
+        array_push(vm->code, OP_PUSH32);
+        vm_code_push32(vm, i);
+    } else {
+        FATAL("Interpreter error", "64-bits not supported!");
+    }
+}
+void AST::FloatLiteral::emit(struct vm *vm) {
+}
+void AST::Identifier::emit(struct vm *vm) {
+    array_push(vm->code, OP_GET);
+    vm_code_pushstr(vm, id.data());
+}
+
+//
+void AST::UnaryExpression::emit(struct vm *vm) {
+}
+void AST::MemberExpression::emit(struct vm *vm) {
+}
+void AST::CallExpression::emit(struct vm *vm) {
+    for(auto arg = arguments.rbegin(); arg != arguments.rend(); ++arg)
+        (*arg)->emit(vm);
+    callee->emit(vm);
+    array_push(vm->code, OP_CALL);
+    array_push(vm->code, arguments.size());
+}
+void AST::BinaryExpression::emit(struct vm *vm) {
+    left->emit(vm);
+    right->emit(vm);
+    if(op == ADD)      array_push(vm->code, OP_ADD);
+    else if(op == SUB) array_push(vm->code, OP_SUB);
+    else if(op == MUL) array_push(vm->code, OP_MUL);
+    else if(op == DIV) array_push(vm->code, OP_DIV);
+    else if(op == MOD) array_push(vm->code, OP_MOD);
+    else if(op == AND) array_push(vm->code, OP_AND);
+    else if(op == OR)  array_push(vm->code, OP_OR );
+    else if(op == EQ)  array_push(vm->code, OP_EQ );
+    else if(op == NEQ) array_push(vm->code, OP_NEQ);
+    else if(op == GT)  array_push(vm->code, OP_GT );
+    else if(op == LT)  array_push(vm->code, OP_LT );
+    else if(op == GEQ) array_push(vm->code, OP_GEQ);
+    else if(op == LEQ) array_push(vm->code, OP_LEQ);
+
+    else if(op == SET)  array_push(vm->code, OP_ADD);
+    else if(op == ADDS) array_push(vm->code, OP_ADD);
+    else if(op == SUBS) array_push(vm->code, OP_ADD);
+    else if(op == MULS) array_push(vm->code, OP_ADD);
+    else if(op == DIVS) array_push(vm->code, OP_ADD);
+}
+
+void AST::IfStatement::emit(struct vm *vm) {
+}
+void AST::WhileStatement::emit(struct vm *vm) {
+}
+void AST::ForStatement::emit(struct vm *vm) {
+}
+void AST::FunctionStatement::emit(struct vm *vm) {
+}
+void AST::StructStatement::emit(struct vm *vm) {
+}
+void AST::ExpressionStatement::emit(struct vm *vm) {
+    expression->emit(vm);
+    array_push(vm->code, OP_POP);
+}
+void AST::ReturnStatement::emit(struct vm *vm) {
+}
+
+void AST::Block::emit(struct vm *vm) {
+    for(auto &s : statements)
+        s->emit(vm);
+}
+void AST::BlockStatement::emit(struct vm *vm) {
 }

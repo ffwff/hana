@@ -1,4 +1,8 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "array.h"
 #include "value.h"
@@ -12,8 +16,15 @@ enum vm_opcode {
     OP_POP,
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
+    // logic
+    OP_AND, OP_OR, OP_NOT,
+    // comparison
+    OP_LT, OP_LEQ, OP_GT, OP_GEQ,
+    OP_EQ, OP_NEQ,
     // variables
-    OP_SET, OP_GET
+    OP_SET, OP_GET,
+    // flow control
+    OP_JMP, OP_JCOND, OP_CALL
 };
 
 typedef array(uint8_t) a_uint8;
@@ -35,4 +46,8 @@ void vm_print_stack(const struct vm*);
 void vm_code_push16(struct vm *vm, uint16_t);
 void vm_code_push32(struct vm *vm, uint32_t);
 void vm_code_push64(struct vm *vm, uint64_t);
-void vm_code_pushstr(struct vm *vm, char *);
+void vm_code_pushstr(struct vm *vm, const char *);
+
+#ifdef __cplusplus
+}
+#endif
