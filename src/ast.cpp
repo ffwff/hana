@@ -167,6 +167,16 @@ void AST::Identifier::emit(struct vm *vm) {
 
 //
 #define FILLER64 0xbadc0ffee0ddf00d
+static void fill_hole(struct vm *vm, size_t length, size_t n) {
+    vm->code.data[length]   = (n >> 28) & 0xff;
+    vm->code.data[length+1] = (n >> 24) & 0xff;
+    vm->code.data[length+2] = (n >> 20) & 0xff;
+    vm->code.data[length+3] = (n >> 16) & 0xff;
+    vm->code.data[length+4] = (n >> 12) & 0xff;
+    vm->code.data[length+5] = (n >> 8) & 0xff;
+    vm->code.data[length+6] = (n >> 4) & 0xff;
+    vm->code.data[length+7] = (n >> 0) & 0xff;
+}
 
 void AST::UnaryExpression::emit(struct vm *vm) {
 }
@@ -211,19 +221,59 @@ void AST::IfStatement::emit(struct vm *vm) {
     // then statement
     statement->emit(vm);
     size_t n = vm->code.length;
-    vm->code.data[length]   = (n >> 28) & 0xff;
-    vm->code.data[length+1] = (n >> 24) & 0xff;
-    vm->code.data[length+2] = (n >> 20) & 0xff;
-    vm->code.data[length+3] = (n >> 16) & 0xff;
-    vm->code.data[length+4] = (n >> 12) & 0xff;
-    vm->code.data[length+5] = (n >> 8) & 0xff;
-    vm->code.data[length+6] = (n >> 4) & 0xff;
-    vm->code.data[length+7] = (n >> 0) & 0xff;
+    fill_hole(vm, length, n);
     if(alt) alt->emit(vm);
 }
 void AST::WhileStatement::emit(struct vm *vm) {
 }
 void AST::ForStatement::emit(struct vm *vm) {
+    // start
+    from->emit(vm);
+    array_push(vm->code, OP_SET);
+    vm_code_pushstr(vm, id.data());
+    // jmp to condition check (1)
+    array_push(vm->code, OP_JMP);
+    size_t length = vm->code.length;
+    vm_code_push64(vm, FILLER64);
+    size_t body_pos = vm->code.length;
+    // body
+    statement->emit(vm);
+    // fill jmp (1)
+    size_t n = vm->code.length;
+    fill_hole(vm, length, n);
+    // condition:
+    // [body]
+    // get [id]
+    // [to]
+    // neq
+    // jcond [1]
+    // step
+    // jmp [body]
+    // 1: done
+    array_push(vm->code, OP_GET);
+    vm_code_pushstr(vm, id.data());
+    to->emit(vm);
+    array_push(vm->code, OP_EQ);
+
+    array_push(vm->code, OP_JCOND);
+    length = vm->code.length;
+    vm_code_push64(vm, FILLER64);
+
+    if(step) {
+        // TODO
+        FATAL("Interpreter error", "Not implemented");
+    } else if(stepN == 1) {
+        array_push(vm->code, OP_INC);
+        vm_code_pushstr(vm, id.data());
+    } else if(stepN == -1) {
+        array_push(vm->code, OP_DEC);
+        vm_code_pushstr(vm, id.data());
+    }
+    array_push(vm->code, OP_JMP);
+    vm_code_push64(vm, body_pos);
+
+    n = vm->code.length;
+    fill_hole(vm, length, n);
 }
 void AST::FunctionStatement::emit(struct vm *vm) {
 }

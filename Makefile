@@ -20,6 +20,7 @@ endif
 # Logging
 ifdef NOLOG
 CXXFLAGS += -DNOLOG
+CCFLAGS += -DNOLOG
 endif
 
 # Default flags

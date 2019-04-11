@@ -3,6 +3,13 @@
 #include <string.h>
 #include "vm.h"
 
+#ifdef NOLOG
+#define LOG(...)
+#else
+#define LOG(fmt, ...) LOG(fmt, __VA_ARGS__)
+#endif
+#define FATAL(fmt, ...) LOG(fmt, __VA_ARGS__)
+
 // notes: architecture is big endian!
 
 void vm_init(struct vm *vm) {
@@ -23,7 +30,7 @@ void vm_free(struct vm *vm) {
 int vm_step(struct vm *vm) {
     enum vm_opcode op = vm->code.data[vm->ip];
     if(op == OP_HALT) {
-        printf("HALT\n");
+        LOG("HALT\n");
         vm_print_stack(vm);
         return 0;
     }
@@ -35,7 +42,7 @@ int vm_step(struct vm *vm) {
         vm->ip++; \
         const type data = _data; \
         vm->ip += sizeof(type); \
-        printf("PUSH %d\n", data); \
+        LOG("PUSH %d\n", data); \
 \
         array_push(vm->stack, (struct value){}); \
         value_int(&array_top(vm->stack), data); \
@@ -63,14 +70,14 @@ int vm_step(struct vm *vm) {
         vm->ip++;
         char *str = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(str)+1;
-        printf("PUSH %s\n", str);
+        LOG("PUSH %s\n", str);
         array_push(vm->stack, (struct value){});
         value_str(&array_top(vm->stack), str);
     }
 
     // pop
     else if (op == OP_POP) {
-        printf("POP\n");
+        LOG("POP\n");
         assert(vm->stack.length > 0);
         vm->ip++;
         value_free(&array_top(vm->stack));
@@ -80,7 +87,7 @@ int vm_step(struct vm *vm) {
     // arith
 #define binop(optype, fn) \
     else if (op == optype) { \
-        printf("" #optype "\n"); \
+        LOG("" #optype "\n"); \
         assert(vm->stack.length >= 2); \
         vm->ip++; \
 \
@@ -117,7 +124,7 @@ int vm_step(struct vm *vm) {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
-        printf("SET %s\n", key);
+        LOG("SET %s\n", key);
         map_set(&vm->env, key, &array_top(vm->stack));
         value_free(&array_top(vm->stack));
         array_pop(vm->stack);
@@ -126,14 +133,32 @@ int vm_step(struct vm *vm) {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
-        printf("GET %s\n", key);
+        LOG("GET %s\n", key);
         array_push(vm->stack, (struct value){});
         struct value *val = map_get(&vm->env, key);
         if(val == NULL) {
-            printf("no key named %s!\n", key);
+            FATAL("no key named %s!\n", key);
             return 0;
         } else
             value_copy(&array_top(vm->stack), val);
+    }
+    else if(op == OP_INC || op == OP_DEC) {
+        vm->ip++;
+        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(key)+1;
+        if(op == OP_INC) LOG("INC %s\n", key);
+        else if(op == OP_DEC) LOG("DEC %s\n", key);
+        struct value *val = map_get(&vm->env, key);
+        if(val->type == TYPE_INT) {
+            if(op == OP_INC) val->as.integer++;
+            else if(op == OP_DEC) val->as.integer--;
+        } else if(val->type == TYPE_FLOAT) {
+            if(op == OP_INC) val->as.floatp++;
+            else if(op == OP_DEC) val->as.floatp--;
+        } else {
+            FATAL("must be int or float!\n");
+            assert(0);
+        }
     }
 
     // flow control
@@ -147,7 +172,7 @@ int vm_step(struct vm *vm) {
                              vm->code.data[vm->ip+5] << 8  |
                              vm->code.data[vm->ip+6] << 4  |
                              vm->code.data[vm->ip+7];
-        printf("JMP %ld\n", pos);
+        FATAL("JMP %ld\n", pos);
         vm->ip = pos;
     }
     else if(op == OP_JCOND || op == OP_JNCOND) { // jcond [64-bit position]
@@ -163,11 +188,11 @@ int vm_step(struct vm *vm) {
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         if(op == OP_JCOND) {
-            printf("JCOND %ld\n", pos);
+            FATAL("JCOND %ld\n", pos);
             if(value_is_true(&val)) vm->ip = pos;
             else vm->ip += 8;
         } else {
-            printf("JNCOND %ld\n", pos);
+            FATAL("JNCOND %ld\n", pos);
             if(!value_is_true(&val)) vm->ip = pos;
             else vm->ip += 8;
         }
@@ -178,7 +203,7 @@ int vm_step(struct vm *vm) {
         array_pop(vm->stack);
         int nargs = vm->code.data[vm->ip++];
         assert(vm->stack.length >= nargs);
-        printf("call %d\n", nargs);
+        FATAL("call %d\n", nargs);
         if(val->type == TYPE_NATIVE_FN) {
             val->as.fn(vm, nargs);
         } else {
@@ -193,11 +218,14 @@ int vm_step(struct vm *vm) {
 
     // end
     else {
-        printf("undefined opcode: %d\n", op);
+        FATAL("undefined opcode: %d\n", op);
         assert(0);
     }
 
+#ifndef NOLOG
     vm_print_stack(vm);
+    printf("\n");
+#endif
     return 1;
 }
 
@@ -206,12 +234,12 @@ void vm_execute(struct vm *vm) {
 }
 
 void vm_print_stack(const struct vm *vm) {
-    printf("[");
+    LOG("[");
     for(size_t i = 0; i < vm->stack.length; i++) {
         value_print(&vm->stack.data[i]);
-        printf(" ");
+        LOG(" ");
     }
-    printf("]\n");
+    LOG("]\n");
 }
 
 // push bits

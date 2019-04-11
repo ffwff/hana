@@ -22,7 +22,7 @@ enum vm_opcode {
     OP_LT, OP_LEQ, OP_GT, OP_GEQ,
     OP_EQ, OP_NEQ,
     // variables
-    OP_SET, OP_GET,
+    OP_SET, OP_GET, OP_INC, OP_DEC,
     // flow control
     OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL
 };
