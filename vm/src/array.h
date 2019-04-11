@@ -3,6 +3,7 @@
 extern "C" {
 #endif
 #include <stdlib.h>
+#include <string.h>
 
 #define array(type)      \
     struct {             \
@@ -37,6 +38,16 @@ extern "C" {
         array.data[array.length] = element; \
         array.length++; \
     } while (0)
+
+#define array_append(array, src) \
+do { \
+    assert(sizeof(*array.data) == sizeof(*src.data)); \
+    if(array.length+src.length > array.capacity) { \
+        array.capacity = array.length+src.length; \
+        array.data = VOID_CAST(array.data, realloc(array.data, sizeof(*array.data)*array.capacity)); \
+    } \
+    memcpy(array.data[array.length], src.data, sizeof(*src.data)*src.length); \
+} while (0)
 
 #define array_pop(array) \
     do {                 \

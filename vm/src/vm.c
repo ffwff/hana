@@ -137,15 +137,40 @@ int vm_step(struct vm *vm) {
     }
 
     // flow control
-    else if(op == OP_JMP) {
-        printf("JMP %d\n", vm->code.data[vm->ip+1]);
-        vm->ip = vm->code.data[vm->ip+1];
+    else if(op == OP_JMP) { // jmp [64-bit position]
+        vm->ip++;
+        const uint64_t pos = vm->code.data[vm->ip+0] << 28 |
+                             vm->code.data[vm->ip+1] << 24 |
+                             vm->code.data[vm->ip+2] << 20 |
+                             vm->code.data[vm->ip+3] << 16 |
+                             vm->code.data[vm->ip+4] << 12 |
+                             vm->code.data[vm->ip+5] << 8  |
+                             vm->code.data[vm->ip+6] << 4  |
+                             vm->code.data[vm->ip+7];
+        printf("JMP %ld\n", pos);
+        vm->ip = pos;
     }
-    else if(op == OP_JCOND) {
-        if(value_is_true(&array_top(vm->stack))) {
-            array_pop(vm->stack);
-            vm->ip = vm->code.data[vm->ip+1];
-        } else vm->ip++;
+    else if(op == OP_JCOND || op == OP_JNCOND) { // jcond [64-bit position]
+        vm->ip++;
+        const uint64_t pos = vm->code.data[vm->ip+0] << 28 |
+                             vm->code.data[vm->ip+1] << 24 |
+                             vm->code.data[vm->ip+2] << 20 |
+                             vm->code.data[vm->ip+3] << 16 |
+                             vm->code.data[vm->ip+4] << 12 |
+                             vm->code.data[vm->ip+5] << 8  |
+                             vm->code.data[vm->ip+6] << 4  |
+                             vm->code.data[vm->ip+7];
+        struct value val = array_top(vm->stack);
+        array_pop(vm->stack);
+        if(op == OP_JCOND) {
+            printf("JCOND %ld\n", pos);
+            if(value_is_true(&val)) vm->ip = pos;
+            else vm->ip += 8;
+        } else {
+            printf("JNCOND %ld\n", pos);
+            if(!value_is_true(&val)) vm->ip = pos;
+            else vm->ip += 8;
+        }
     }
     else if(op == OP_CALL) {
         vm->ip++;

@@ -15,6 +15,7 @@ void print(struct vm *vm, int nargs) {
             written += printf("%d", val->as.integer);
         else if(val->type == value::TYPE_FLOAT)
             written += printf("%f", val->as.floatp);
+        value_free(val);
         array_pop(vm->stack);
     }
     struct value val;

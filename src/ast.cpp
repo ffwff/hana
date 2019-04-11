@@ -166,6 +166,8 @@ void AST::Identifier::emit(struct vm *vm) {
 }
 
 //
+#define FILLER64 0xbadc0ffee0ddf00d
+
 void AST::UnaryExpression::emit(struct vm *vm) {
 }
 void AST::MemberExpression::emit(struct vm *vm) {
@@ -202,6 +204,22 @@ void AST::BinaryExpression::emit(struct vm *vm) {
 }
 
 void AST::IfStatement::emit(struct vm *vm) {
+    condition->emit(vm);
+    array_push(vm->code, OP_JNCOND);
+    size_t length = vm->code.length;
+    vm_code_push64(vm, FILLER64);
+    // then statement
+    statement->emit(vm);
+    size_t n = vm->code.length;
+    vm->code.data[length]   = (n >> 28) & 0xff;
+    vm->code.data[length+1] = (n >> 24) & 0xff;
+    vm->code.data[length+2] = (n >> 20) & 0xff;
+    vm->code.data[length+3] = (n >> 16) & 0xff;
+    vm->code.data[length+4] = (n >> 12) & 0xff;
+    vm->code.data[length+5] = (n >> 8) & 0xff;
+    vm->code.data[length+6] = (n >> 4) & 0xff;
+    vm->code.data[length+7] = (n >> 0) & 0xff;
+    if(alt) alt->emit(vm);
 }
 void AST::WhileStatement::emit(struct vm *vm) {
 }

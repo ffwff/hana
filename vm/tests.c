@@ -72,7 +72,7 @@ int main() {
     vm_code_pushstr(&m, "test"); // => [100]
 #endif
 
-#ifdef SECTION_JMP
+#ifdef SECTION_JMP // TODO
     array_push(m.code, OP_JMP);
     array_push(m.code, 4);
 

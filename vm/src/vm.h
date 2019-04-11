@@ -24,7 +24,7 @@ enum vm_opcode {
     // variables
     OP_SET, OP_GET,
     // flow control
-    OP_JMP, OP_JCOND, OP_CALL
+    OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL
 };
 
 typedef array(uint8_t) a_uint8;
