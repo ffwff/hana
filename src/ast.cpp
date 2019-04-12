@@ -193,8 +193,8 @@ void AST::MemberExpression::emit(struct vm *vm) {
     vm_code_pushstr(vm, key);
 }
 void AST::CallExpression::emit(struct vm *vm) {
-    for(auto &arg : arguments)
-        arg->emit(vm);
+    for(auto arg = arguments.rbegin(); arg != arguments.rend(); arg++)
+        (*arg)->emit(vm);
     callee->emit(vm);
     array_push(vm->code, OP_CALL);
     if(callee->type() == MEMBER_EXPR)

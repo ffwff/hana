@@ -246,7 +246,7 @@ int vm_step(struct vm *vm) {
         }
     }
     else if(op == OP_CALL) {
-        // argument: [arg1][arg2]
+        // argument: [arg2][arg1]
         vm->ip++;
         struct value val = array_top(vm->stack);
         int nargs = vm->code.data[vm->ip++];
@@ -258,7 +258,6 @@ int vm_step(struct vm *vm) {
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
             size_t fn_ip = 0;
             if(val.type == TYPE_DICT) {
-                nargs; // for self
                 array_pop(vm->stack);
                 struct value *ctor = dict_get(val.as.dict, "constructor");
                 if(ctor == NULL) {
@@ -272,7 +271,7 @@ int vm_step(struct vm *vm) {
                 array_pop(vm->stack);
             }
             struct value args[nargs];
-            for(int i = 0; i < nargs; i++) {
+            for(int i = nargs-1; i >= 0; i--) {
                 struct value val = array_top(vm->stack);
                 array_pop(vm->stack);
                 args[i] = val;
@@ -285,7 +284,10 @@ int vm_step(struct vm *vm) {
             if(val.type == TYPE_DICT) {
                 for(int i = 0; i < nargs; i++)
                     array_push(vm->stack, args[i]);
-                array_push(vm->stack, val);
+                struct value new_val;
+                value_dict(&new_val);
+                dict_copy(new_val.as.dict, val.as.dict);
+                array_push(vm->stack, new_val);
             } else {
                 for(int i = 0; i < nargs; i++)
                     array_push(vm->stack, args[i]);
