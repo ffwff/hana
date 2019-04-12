@@ -5,26 +5,29 @@ extern "C" {
 #include <stdint.h>
 
 struct vm;
+struct dict;
 typedef void (*value_fn)(struct vm *vm, int nargs);
 struct value {
     union {
-        int integer;
-        float floatp;
+        int64_t integer;
+        double floatp;
         char *str;
         value_fn fn;
         uint64_t fn_ip;
+        struct dict *dict;
     } as;
     enum {
         TYPE_NIL, TYPE_INT, TYPE_FLOAT, TYPE_STR,
-        TYPE_NATIVE_FN, TYPE_FN
+        TYPE_NATIVE_FN, TYPE_FN, TYPE_DICT
     } type;
 };
 
-void value_int(struct value*, int);
-void value_float(struct value*, float);
+void value_int(struct value*, int64_t);
+void value_float(struct value*, double);
 void value_str(struct value*, const char*);
 void value_native(struct value*, value_fn);
 void value_function(struct value*, uint64_t fn_ip);
+void value_dict(struct value*);
 
 void value_free(struct value*);
 void value_print(struct value*);

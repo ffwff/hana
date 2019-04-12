@@ -12,14 +12,36 @@ void print(struct vm *vm, int nargs) {
         if(val->type == value::TYPE_STR)
             written += printf("%s", val->as.str);
         else if(val->type == value::TYPE_INT)
-            written += printf("%d", val->as.integer);
+            written += printf("%ld", val->as.integer);
         else if(val->type == value::TYPE_FLOAT)
             written += printf("%f", val->as.floatp);
+        else if(val->type == value::TYPE_NATIVE_FN || val->type == value::TYPE_FN)
+            written += printf("[function]");
+        else if(val->type == value::TYPE_DICT)
+            written += printf("[dictionary]");
+        else
+            written += printf("[nil]");
         value_free(val);
         array_pop(vm->stack);
     }
     struct value val;
     value_int(&val, written);
+    array_push(vm->stack, val);
+}
+
+// data types
+void string(struct vm *vm, int nargs) {
+
+}
+void int_(struct vm *vm, int nargs) {
+
+}
+void float_(struct vm *vm, int nargs) {
+
+}
+
+void record(struct vm *vm, int nargs) {
+    struct value val; value_dict(&val);
     array_push(vm->stack, val);
 }
 
@@ -41,13 +63,22 @@ int main(int argc, char **argv) {
     // virtual machine
     struct vm m; vm_init(&m);
     // variables:
+#define native_function(name) \
+    value_native(&val, hanayo::name);  env_set(m.env, #name, &val);
+#define native_function_key(name, key) \
+    value_native(&val, hanayo::name);  env_set(m.env, key, &val);
     struct value val;
-    value_native(&val, hanayo::print);
-    env_set(m.env, "print", &val);
-    ast->emit(&m); // generate bytecodes
+    native_function(print)
+    native_function(string)
+    native_function_key(int_, "int")
+    native_function_key(float_, "float")
+    native_function(record)
+    // emit bytecode
+    ast->emit(&m);
     array_push(m.code, OP_HALT);
-    //while(vm_step(&m));
-        //std::cin.get();
+
+    // execute!
+    //while(vm_step(&m)) std::cin.get();
     vm_execute(&m);
 
     // cleanup

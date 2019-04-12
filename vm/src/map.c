@@ -18,6 +18,9 @@ void map_free(struct map *map) {
         free(map->data[i]);
     }
     free(map->data);
+    map->data = 0;
+    map->length = 0;
+    map->capacity = 0;
 }
 
 struct value *map_get(struct map *map, const char *key) {

@@ -13,7 +13,7 @@ enum Type {
     NONE,
     CONSTANT, IDENTIFIER, MEMBER_EXPR, CALL_EXPR,
     BINARY_EXPR, UNARY_EXPR,
-    ASSIGNMENT_STMT, IF_STMT, WHILE_STMT, BLOCK_STMT,
+    IF_STMT, WHILE_STMT, BLOCK_STMT,
     FUNCTION_STMT, STRUCT_STMT, EXPR_STMT, RETURN_STMT,
     FOR_STMT,
     BLOCK,
@@ -40,8 +40,8 @@ struct StrLiteral : AST {
 };
 struct IntLiteral : AST {
     TYPE(CONSTANT)
-    int i;
-    IntLiteral(int i) : i(i) {};
+    int64_t i;
+    IntLiteral(int64_t i) : i(i) {};
     void print(int indent=0) override;
     void emit(struct vm *vm) override;
 };
@@ -79,7 +79,8 @@ struct UnaryExpression : Expression {
 struct MemberExpression : Expression {
     TYPE(MEMBER_EXPR)
     std::unique_ptr<AST> left, right;
-    MemberExpression(AST *left, AST *right) : left(left), right(right) {};
+    bool is_called;
+    MemberExpression(AST *left, AST *right) : left(left), right(right), is_called(false) {};
     void print(int indent=0) override;
     void emit(struct vm *vm) override;
 };
@@ -149,15 +150,16 @@ struct FunctionStatement : Statement {
     std::string id;
     std::unique_ptr<AST> statement;
     std::vector<std::string> arguments;
-    FunctionStatement(std::string &id) : id(id) {}
+    bool record_fn;
+    FunctionStatement(std::string &id) : id(id), record_fn(false) {}
     void print(int indent=0) override;
     void emit(struct vm *vm) override;
 };
 
 struct StructStatement : Statement {
     TYPE(STRUCT_STMT)
-    std::map<std::string,std::string> dict; // name : type
     std::string id;
+    std::vector<std::unique_ptr<AST>> statements;
     StructStatement(std::string &id) : id(id) {}
     void print(int indent=0) override;
     void emit(struct vm *vm) override;

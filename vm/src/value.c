@@ -3,12 +3,13 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "value.h"
+#include "dict.h"
 
-void value_int(struct value *val, int data) {
+void value_int(struct value *val, int64_t data) {
     val->type = TYPE_INT;
     val->as.integer = data;
 }
-void value_float(struct value *val, float data) {
+void value_float(struct value *val, double data) {
     val->type = TYPE_FLOAT;
     val->as.floatp = data;
 }
@@ -24,16 +25,28 @@ void value_function(struct value *val, uint64_t fn_ip) {
     val->type = TYPE_FN;
     val->as.fn_ip = fn_ip;
 }
+void value_dict(struct value *val) {
+    val->type = TYPE_DICT;
+    val->as.dict = malloc(sizeof(struct dict)); // this isn't freed?
+    dict_init(val->as.dict);
+}
 
 void value_free(struct value *val) {
     if(val->type == TYPE_STR)
         free(val->as.str);
+    else if(val->type == TYPE_DICT) {
+        //printf("FREE: %x %ld\n", val->as.dict->refs);
+        dict_free(val->as.dict);
+        if(val->as.dict->refs == 0) {
+            free(val->as.dict);
+        }
+    }
     val->type = TYPE_NIL;
 }
 
 void value_print(struct value *val) {
     if(val->type == TYPE_INT)
-        printf("%d", val->as.integer);
+        printf("%ld", val->as.integer);
     else if(val->type == TYPE_FLOAT)
         printf("%f", val->as.floatp);
     else if(val->type == TYPE_STR)
@@ -42,6 +55,8 @@ void value_print(struct value *val) {
         printf("[native fn %lx]", (intptr_t)val->as.fn);
     else if(val->type == TYPE_FN)
         printf("[fn %ld]", (uint64_t)val->as.fn_ip);
+    else if(val->type == TYPE_DICT)
+        printf("[dict %ld]", (intptr_t)val->as.dict);
     else {
         printf("nil");
     }
@@ -51,6 +66,11 @@ void value_copy(struct value *dst, struct value *src) {
     dst->type = src->type;
     if(src->type == TYPE_STR)
         dst->as.str = strdup(src->as.str);
+    else if(src->type == TYPE_DICT) {
+        //printf("DICT COPY %x %ld\n", dst, src->as.dict->refs);
+        dst->as.dict = src->as.dict;
+        src->as.dict->refs++;
+    }
     else
         dst->as = src->as;
 }

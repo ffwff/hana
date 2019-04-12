@@ -111,6 +111,8 @@ void AST::FunctionStatement::print(int indent) {
 void AST::StructStatement::print(int indent) {
     pindent(indent);
     std::cout << "struct\n";
+    for(auto &s : statements)
+        s->print(indent+1);
 }
 void AST::ExpressionStatement::print(int indent) {
     pindent(indent);
@@ -145,17 +147,19 @@ void AST::StrLiteral::emit(struct vm *vm) {
     vm_code_pushstr(vm, str.data());
 }
 void AST::IntLiteral::emit(struct vm *vm) {
-    if(i <= 0xff) {
+    uint64_t ui = (uint64_t)i;
+    if(ui <= 0xff) {
         array_push(vm->code, OP_PUSH8);
-        array_push(vm->code, i);
-    } else if (i <= 0xffff) {
+        array_push(vm->code, ui);
+    } else if (ui <= 0xffff) {
         array_push(vm->code, OP_PUSH16);
-        vm_code_push16(vm, i);
-    } else if ((uint32_t)i <= 0xffffffff) {
+        vm_code_push16(vm, ui);
+    } else if (ui <= 0xffffffff) {
         array_push(vm->code, OP_PUSH32);
-        vm_code_push32(vm, i);
-    } else {
-        FATAL("Interpreter error", "64-bits not supported!");
+        vm_code_push32(vm, ui);
+    } else { // 64-bit int
+        array_push(vm->code, OP_PUSH64);
+        vm_code_push64(vm, ui);
     }
 }
 void AST::FloatLiteral::emit(struct vm *vm) {
@@ -181,13 +185,22 @@ static void fill_hole(struct vm *vm, size_t length, size_t n) {
 void AST::UnaryExpression::emit(struct vm *vm) {
 }
 void AST::MemberExpression::emit(struct vm *vm) {
+    left->emit(vm);
+    assert(right->type() == IDENTIFIER); // TODO
+    const char *key = static_cast<Identifier*>(right.get())->id.data();
+    if(is_called) array_push(vm->code, OP_MEMBER_GET_NO_POP);
+    else array_push(vm->code, OP_MEMBER_GET);
+    vm_code_pushstr(vm, key);
 }
 void AST::CallExpression::emit(struct vm *vm) {
-    for(auto arg = arguments.rbegin(); arg != arguments.rend(); ++arg)
-        (*arg)->emit(vm);
+    for(auto &arg : arguments)
+        arg->emit(vm);
     callee->emit(vm);
     array_push(vm->code, OP_CALL);
-    array_push(vm->code, arguments.size());
+    if(callee->type() == MEMBER_EXPR)
+        array_push(vm->code, arguments.size()+1);
+    else
+        array_push(vm->code, arguments.size());
 }
 void AST::BinaryExpression::emit(struct vm *vm) {
     if(op == SET) {
@@ -196,6 +209,16 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             auto s = static_cast<Identifier*>(left.get())->id;
             array_push(vm->code, OP_SET);
             vm_code_pushstr(vm, s.data());
+        } else { // member expr
+            auto mem = static_cast<MemberExpression*>(left.get());
+            mem->left->emit(vm);
+            if(mem->right->type() == IDENTIFIER) {
+                const char *key = static_cast<Identifier*>(mem->right.get())->id.data();
+                array_push(vm->code, OP_MEMBER_SET);
+                vm_code_pushstr(vm, key);
+            } else { // TODO
+                assert(0);
+            }
         }
     } else {
         left->emit(vm);
@@ -315,7 +338,8 @@ void AST::ForStatement::emit(struct vm *vm) {
     fill_hole(vm, length, n);
 }
 void AST::FunctionStatement::emit(struct vm *vm) {
-    array_push(vm->code, OP_DEF_FUNCTION);
+    if(record_fn) array_push(vm->code, OP_DEF_FUNCTION_PUSH);
+    else array_push(vm->code, OP_DEF_FUNCTION);
     vm_code_pushstr(vm, id.data());
     size_t length = vm->code.length;
     vm_code_push64(vm, FILLER64);
@@ -336,6 +360,26 @@ void AST::FunctionStatement::emit(struct vm *vm) {
     fill_hole(vm, length, vm->code.length);
 }
 void AST::StructStatement::emit(struct vm *vm) {
+    array_push(vm->code, OP_PUSH_NIL);
+    for(auto &s : statements) {
+        if(s->type() == EXPR_STMT) {
+            auto expr = static_cast<BinaryExpression*>(
+                static_cast<ExpressionStatement*>(s.get())->expression.get());
+            assert(expr->left->type() == IDENTIFIER);
+            array_push(vm->code, OP_PUSHSTR);
+            vm_code_pushstr(vm, static_cast<Identifier*>(expr->left.get())->id.data());
+            expr->right->emit(vm);
+        } else if(s->type() == FUNCTION_STMT) {
+            auto fn = static_cast<FunctionStatement*>(s.get());
+            array_push(vm->code, OP_PUSHSTR);
+            vm_code_pushstr(vm, fn->id.data());
+            fn->emit(vm);
+        }
+    }
+    array_push(vm->code, OP_DICT_LOAD);
+    array_push(vm->code, OP_SET);
+    vm_code_pushstr(vm, id.data());
+    array_push(vm->code, OP_POP);
 }
 void AST::ExpressionStatement::emit(struct vm *vm) {
     expression->emit(vm);

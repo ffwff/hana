@@ -3,6 +3,7 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
 #include "value.h"
 
 struct map_entry {

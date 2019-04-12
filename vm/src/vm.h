@@ -12,7 +12,7 @@ enum vm_opcode {
     OP_HALT,
     // stack manip
     OP_PUSH8, OP_PUSH16, OP_PUSH32, OP_PUSH64,
-    OP_PUSHSTR,
+    OP_PUSH_NIL, OP_PUSHSTR,
     OP_POP,
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
@@ -23,10 +23,13 @@ enum vm_opcode {
     OP_EQ, OP_NEQ,
     // variables
     OP_SET, OP_SET_LOCAL, OP_GET, OP_INC, OP_DEC,
-    OP_DEF_FUNCTION,
+    OP_DEF_FUNCTION, OP_DEF_FUNCTION_PUSH,
     // flow control
     OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
-    OP_ENV_INHERIT, OP_ENV_POP
+    OP_ENV_INHERIT, OP_ENV_POP,
+    // dictionary
+    OP_DICT_NEW, OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
+    OP_MEMBER_SET, OP_DICT_LOAD
 };
 
 typedef array(uint8_t) a_uint8;

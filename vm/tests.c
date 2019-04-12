@@ -93,7 +93,7 @@ int main() {
     array_push(m.code, OP_PUSH8); // 10
     array_push(m.code, 37);
 #endif
-#define SECTION_SCOPED
+
 #ifdef SECTION_SCOPED
     array_push(m.code, OP_ENV_INHERIT);
     array_push(m.code, OP_PUSH8);
@@ -115,6 +115,27 @@ int main() {
 
     array_push(m.code, OP_ENV_POP);
 
+#endif
+
+#ifdef SECTION_DICT_RC_SIMPLE
+    // should free everything
+    array_push(m.code, OP_DICT_NEW);
+    array_push(m.code, OP_POP);
+#endif
+
+#define SECTION_DICT_RC_CMPLX
+#ifdef SECTION_DICT_RC_CMPLX
+    // should free everything
+    array_push(m.code, OP_DICT_NEW);
+    array_push(m.code, OP_SET);
+    vm_code_pushstr(&m, "a");
+    array_push(m.code, OP_POP);
+
+    array_push(m.code, OP_GET);
+    vm_code_pushstr(&m, "a");
+    array_push(m.code, OP_SET);
+    vm_code_pushstr(&m, "b");
+    array_push(m.code, OP_POP);
 #endif
 
     array_push(m.code, OP_HALT);

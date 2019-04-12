@@ -2,9 +2,12 @@
 #include <assert.h>
 #include <string.h>
 #include "vm.h"
+#include "dict.h"
 
 #ifdef NOLOG
 #define LOG(...)
+#undef assert
+#define assert(...)
 #else
 #define LOG(fmt, ...) do { printf(fmt __VA_OPT__(,) __VA_ARGS__); } while(0)
 #endif
@@ -16,7 +19,11 @@ void vm_init(struct vm *vm) {
     vm->env = malloc(sizeof(struct env));
     env_init(vm->env, NULL);
     vm->code = (a_uint8)array_init(uint8_t);
-    vm->stack = (a_value)array_init(struct value);
+    vm->stack = (a_value){
+        .data = calloc(8, sizeof(struct value)),
+        .length = 0,
+        .capacity = 8
+    };
     vm->ip = 0;
 }
 
@@ -78,6 +85,13 @@ int vm_step(struct vm *vm) {
         LOG("PUSH %s\n", str);
         array_push(vm->stack, (struct value){});
         value_str(&array_top(vm->stack), str);
+    }
+
+    // nil
+    else if(op == OP_PUSH_NIL) {
+        vm->ip++;
+        LOG("PUSH NIL\n");
+        array_push(vm->stack, (struct value){});
     }
 
     // pop
@@ -170,7 +184,7 @@ int vm_step(struct vm *vm) {
             assert(0);
         }
     }
-    else if(op == OP_DEF_FUNCTION) {
+    else if(op == OP_DEF_FUNCTION || op == OP_DEF_FUNCTION_PUSH) {
         // [opcode][key][end address]
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
@@ -188,9 +202,11 @@ int vm_step(struct vm *vm) {
         struct value val;
         LOG("%ld\n", vm->ip);
         value_function(&val, vm->ip);
-        env_set(vm->env, key, &val);
-        //map_set(&vm->env, key, &val);
         vm->ip = pos;
+        if(op == OP_DEF_FUNCTION_PUSH)
+            array_push(vm->stack, val);
+        else
+            env_set(vm->env, key, &val);
     }
 
     // flow control
@@ -230,15 +246,31 @@ int vm_step(struct vm *vm) {
         }
     }
     else if(op == OP_CALL) {
+        // argument: [arg1][arg2]
         vm->ip++;
         struct value val = array_top(vm->stack);
-        array_pop(vm->stack);
         int nargs = vm->code.data[vm->ip++];
         assert(vm->stack.length >= nargs);
         LOG("call %d\n", nargs);
         if(val.type == TYPE_NATIVE_FN) {
+            array_pop(vm->stack);
             val.as.fn(vm, nargs);
-        } else if(val.type == TYPE_FN) {
+        } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
+            size_t fn_ip = 0;
+            if(val.type == TYPE_DICT) {
+                nargs; // for self
+                array_pop(vm->stack);
+                struct value *ctor = dict_get(val.as.dict, "constructor");
+                if(ctor == NULL) {
+                    printf("expected dictionary to have constructor");
+                    return 0;
+                }
+                assert(ctor->type == TYPE_FN || ctor->type == TYPE_NATIVE_FN);
+                fn_ip = ctor->as.fn_ip;
+            } else {
+                fn_ip = val.as.fn_ip;
+                array_pop(vm->stack);
+            }
             struct value args[nargs];
             for(int i = 0; i < nargs; i++) {
                 struct value val = array_top(vm->stack);
@@ -250,13 +282,18 @@ int vm_step(struct vm *vm) {
             value_function(&caller, vm->ip);
             array_push(vm->stack, caller);
             // arguments
-            for(int i = 0; i < nargs; i++) {
-                array_push(vm->stack, args[i]);
+            if(val.type == TYPE_DICT) {
+                for(int i = 0; i < nargs; i++)
+                    array_push(vm->stack, args[i]);
+                array_push(vm->stack, val);
+            } else {
+                for(int i = 0; i < nargs; i++)
+                    array_push(vm->stack, args[i]);
             }
             struct value nargs_v;
             value_int(&nargs_v, nargs);
             array_push(vm->stack, nargs_v);
-            vm->ip = val.as.fn_ip;
+            vm->ip = fn_ip;
         } else {
             printf("is not a function\n");
             return 0;
@@ -297,6 +334,64 @@ int vm_step(struct vm *vm) {
         env_free(vm->env);
         free(vm->env);
         vm->env = parent;
+    }
+
+    // dictionaries
+    else if (op == OP_DICT_NEW) {
+        vm->ip++;
+        LOG("DICT_NEW\n");
+        array_push(vm->stack, (struct value){});
+        value_dict(&array_top(vm->stack));
+    }
+    else if (op == OP_MEMBER_GET || op == OP_MEMBER_GET_NO_POP) {
+        vm->ip++;
+        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(key)+1;
+        LOG("MEMBER_GET %s\n", key);
+        struct value val = array_top(vm->stack);
+        assert(val.type == TYPE_DICT);
+        if(op == OP_MEMBER_GET)
+            array_pop(vm->stack);
+
+        array_push(vm->stack, (struct value){});
+        struct value *result = dict_get(val.as.dict, key);
+        if(result != NULL)
+            value_copy(&array_top(vm->stack), result);
+        if(op == OP_MEMBER_GET)
+            value_free(&val);
+    }
+    else if (op == OP_MEMBER_SET) {
+        // stack: [value][dict]
+        vm->ip++;
+        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(key)+1;
+        LOG("MEMBER_SET %s\n", key);
+        struct value dval = array_top(vm->stack);
+        assert(dval.type == TYPE_DICT);
+        array_pop(vm->stack);
+
+        struct value val = array_top(vm->stack);
+        dict_set(dval.as.dict, key, &val);
+        value_free(&dval);
+    }
+    else if(op == OP_DICT_LOAD) {
+        // stack: [nil][key][value]
+        vm->ip++;
+        struct value dval;
+        value_dict(&dval);
+
+        struct value val = {0};
+        while((val = array_top(vm->stack)).type != TYPE_NIL) {
+            array_pop(vm->stack); // pop val
+            struct value key = array_top(vm->stack);
+            array_pop(vm->stack); // pop key
+            assert(key.type == TYPE_STR);
+            dict_set(dval.as.dict, key.as.str, &val);
+            value_free(&val);
+            value_free(&key);
+        }
+        array_pop(vm->stack); // pop nil
+        array_push(vm->stack, dval);
     }
 
     // end
