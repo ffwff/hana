@@ -6,7 +6,7 @@ extern "C" {
 #include <stdint.h>
 #include "array.h"
 #include "value.h"
-#include "map.h"
+#include "env.h"
 
 enum vm_opcode {
     OP_HALT,
@@ -22,10 +22,11 @@ enum vm_opcode {
     OP_LT, OP_LEQ, OP_GT, OP_GEQ,
     OP_EQ, OP_NEQ,
     // variables
-    OP_SET, OP_GET, OP_INC, OP_DEC,
+    OP_SET, OP_SET_LOCAL, OP_GET, OP_INC, OP_DEC,
     OP_DEF_FUNCTION,
     // flow control
-    OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET
+    OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
+    OP_ENV_INHERIT, OP_ENV_POP
 };
 
 typedef array(uint8_t) a_uint8;
@@ -33,7 +34,7 @@ typedef array(struct value) a_value;
 
 struct vm {
     uint64_t ip;
-    struct map env;
+    struct env *env;
     a_uint8 code;
     a_value stack;
 };

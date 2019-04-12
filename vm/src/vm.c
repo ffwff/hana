@@ -13,14 +13,17 @@
 // notes: architecture is big endian!
 
 void vm_init(struct vm *vm) {
-    map_init(&vm->env);
+    vm->env = malloc(sizeof(struct env));
+    env_init(vm->env, NULL);
     vm->code = (a_uint8)array_init(uint8_t);
     vm->stack = (a_value)array_init(struct value);
     vm->ip = 0;
 }
 
 void vm_free(struct vm *vm) {
-    map_free(&vm->env);
+    env_free(vm->env);
+    free(vm->env);
+
     array_free(vm->code);
     for(size_t i = 0; i < vm->stack.length; i++)
         value_free(&vm->stack.data[i]);
@@ -31,7 +34,9 @@ int vm_step(struct vm *vm) {
     enum vm_opcode op = vm->code.data[vm->ip];
     if(op == OP_HALT) {
         LOG("HALT\n");
+#ifndef NOLOG
         vm_print_stack(vm);
+#endif
         return 0;
     }
 
@@ -42,7 +47,7 @@ int vm_step(struct vm *vm) {
         vm->ip++; \
         const type data = _data; \
         vm->ip += sizeof(type); \
-        LOG("PUSH %d\n", data); \
+        LOG(sizeof(type) == 8 ? "PUSH %ld\n" : "PUSH %d\n", data); \
 \
         array_push(vm->stack, (struct value){}); \
         value_int(&array_top(vm->stack), data); \
@@ -125,7 +130,14 @@ int vm_step(struct vm *vm) {
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
         LOG("SET %s\n", key);
-        map_set(&vm->env, key, &array_top(vm->stack));
+        env_set(vm->env, key, &array_top(vm->stack));
+    }
+    else if(op == OP_SET_LOCAL) {
+        vm->ip++;
+        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(key)+1;
+        LOG("SET_LOCAL %s\n", key);
+        env_set_local(vm->env, key, &array_top(vm->stack));
     }
     else if(op == OP_GET) {
         vm->ip++;
@@ -133,7 +145,7 @@ int vm_step(struct vm *vm) {
         vm->ip += strlen(key)+1;
         LOG("GET %s\n", key);
         array_push(vm->stack, (struct value){});
-        struct value *val = map_get(&vm->env, key);
+        struct value *val = env_get(vm->env, key);
         if(val == NULL) {
             FATAL("no key named %s!\n", key);
             return 0;
@@ -146,7 +158,7 @@ int vm_step(struct vm *vm) {
         vm->ip += strlen(key)+1;
         if(op == OP_INC) LOG("INC %s\n", key);
         else if(op == OP_DEC) LOG("DEC %s\n", key);
-        struct value *val = map_get(&vm->env, key);
+        struct value *val = env_get(vm->env, key);
         if(val->type == TYPE_INT) {
             if(op == OP_INC) val->as.integer++;
             else if(op == OP_DEC) val->as.integer--;
@@ -171,12 +183,13 @@ int vm_step(struct vm *vm) {
                              vm->code.data[vm->ip+5] << 8  |
                              vm->code.data[vm->ip+6] << 4  |
                              vm->code.data[vm->ip+7];
-        printf("DEF_FUNCTION %s %ld\n", key, pos);
+        LOG("DEF_FUNCTION %s %ld\n", key, pos);
         vm->ip += 8;
         struct value val;
-        printf("%d\n", vm->ip);
+        LOG("%ld\n", vm->ip);
         value_function(&val, vm->ip);
-        map_set(&vm->env, key, &val);
+        env_set(vm->env, key, &val);
+        //map_set(&vm->env, key, &val);
         vm->ip = pos;
     }
 
@@ -257,9 +270,33 @@ int vm_step(struct vm *vm) {
         array_pop(vm->stack);
         assert(caller.type == TYPE_FN);
 
-        printf("RET\n");
+        LOG("RET\n");
         vm->ip = caller.as.fn_ip;
         array_push(vm->stack, retval);
+
+        assert(vm->env->parent != NULL);
+        struct env *parent = vm->env->parent;
+        env_free(vm->env);
+        free(vm->env);
+        vm->env = parent;
+    }
+
+    // scoped
+    else if (op == OP_ENV_INHERIT) {
+        vm->ip++;
+        LOG("ENV_INHERIT\n");
+        struct env *parent = vm->env;
+        vm->env = malloc(sizeof(struct env));
+        env_init(vm->env, parent);
+    }
+    else if (op == OP_ENV_POP) {
+        vm->ip++;
+        LOG("ENV_POP\n");
+        assert(vm->env->parent != NULL);
+        struct env *parent = vm->env->parent;
+        env_free(vm->env);
+        free(vm->env);
+        vm->env = parent;
     }
 
     // end

@@ -321,8 +321,9 @@ void AST::FunctionStatement::emit(struct vm *vm) {
     vm_code_push64(vm, FILLER64);
     //body
     array_push(vm->code, OP_POP); // narg
+    array_push(vm->code, OP_ENV_INHERIT);
     for(auto &arg : arguments) {
-        array_push(vm->code, OP_SET);
+        array_push(vm->code, OP_SET_LOCAL);
         vm_code_pushstr(vm, arg.data());
         array_push(vm->code, OP_POP);
     }
@@ -330,7 +331,7 @@ void AST::FunctionStatement::emit(struct vm *vm) {
     // default return
     array_push(vm->code, OP_PUSH8);
     array_push(vm->code, 0);
-    array_push(vm->code, OP_RET);
+    array_push(vm->code, OP_RET); // pops env for us
     //fill in
     fill_hole(vm, length, vm->code.length);
 }

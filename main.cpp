@@ -34,19 +34,21 @@ int main(int argc, char **argv) {
     Hana::ScriptParser p;
     p.loadf(argv[1]);
     auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+#ifndef RELEASE
     ast->print();
+#endif
 
     // virtual machine
     struct vm m; vm_init(&m);
     // variables:
     struct value val;
     value_native(&val, hanayo::print);
-    map_set(&m.env, "print", &val);
+    env_set(m.env, "print", &val);
     ast->emit(&m); // generate bytecodes
     array_push(m.code, OP_HALT);
-    while(vm_step(&m))
-        std::cin.get();
-    //vm_execute(&m);
+    //while(vm_step(&m));
+        //std::cin.get();
+    vm_execute(&m);
 
     // cleanup
     vm_free(&m);

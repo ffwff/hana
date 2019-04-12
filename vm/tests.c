@@ -68,6 +68,8 @@ int main() {
     array_push(m.code, OP_SET);
     vm_code_pushstr(&m, "test"); // => []
 
+    array_push(m.code, OP_POP);
+
     array_push(m.code, OP_GET);
     vm_code_pushstr(&m, "test"); // => [100]
 #endif
@@ -90,6 +92,29 @@ int main() {
 
     array_push(m.code, OP_PUSH8); // 10
     array_push(m.code, 37);
+#endif
+#define SECTION_SCOPED
+#ifdef SECTION_SCOPED
+    array_push(m.code, OP_ENV_INHERIT);
+    array_push(m.code, OP_PUSH8);
+    array_push(m.code, 42);
+    array_push(m.code, OP_SET);
+    vm_code_pushstr(&m, "a");
+    array_push(m.code, OP_POP);
+
+    array_push(m.code, OP_ENV_INHERIT);
+    array_push(m.code, OP_PUSH8);
+    array_push(m.code, 50);
+    array_push(m.code, OP_SET);
+    vm_code_pushstr(&m, "b");
+    array_push(m.code, OP_POP);
+    array_push(m.code, OP_GET);
+    vm_code_pushstr(&m, "a"); // => 42
+    array_push(m.code, OP_POP);
+    array_push(m.code, OP_ENV_POP);
+
+    array_push(m.code, OP_ENV_POP);
+
 #endif
 
     array_push(m.code, OP_HALT);

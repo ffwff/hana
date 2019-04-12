@@ -12,6 +12,7 @@ DEPS = $(OBJS:.o=.d)
 # Version
 ifdef RELEASE
 CXXFLAGS += -O3 -DRELEASE
+CCFLAGS += -O3 -DNOLOG
 else
 CXXFLAGS += -g -DDEBUG
 CCFLAGS += -g
