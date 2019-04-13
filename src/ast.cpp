@@ -204,12 +204,13 @@ void AST::CallExpression::emit(struct vm *vm) {
 }
 void AST::BinaryExpression::emit(struct vm *vm) {
     if(op == SET) {
-        right->emit(vm);
         if(left->type() == IDENTIFIER) {
+            right->emit(vm);
             auto s = static_cast<Identifier*>(left.get())->id;
             array_push(vm->code, OP_SET);
             vm_code_pushstr(vm, s.data());
-        } else { // member expr
+        } else if(left->type() == MEMBER_EXPR) { // member expr
+            right->emit(vm);
             auto mem = static_cast<MemberExpression*>(left.get());
             mem->left->emit(vm);
             if(mem->right->type() == IDENTIFIER) {
@@ -219,6 +220,28 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             } else { // TODO
                 assert(0);
             }
+        } else if(left->type() == CALL_EXPR) {
+            auto expr = static_cast<CallExpression*>(left.get());
+            array_push(vm->code, OP_DEF_FUNCTION);
+            assert(expr->callee->type() == IDENTIFIER);
+            vm_code_pushstr(vm, static_cast<Identifier*>(expr->callee.get())->id.data());
+            size_t length = vm->code.length;
+            vm_code_push64(vm, FILLER64);
+            //body
+            array_push(vm->code, OP_ASSERT_NARGS);
+            array_push(vm->code, (uint8_t)(expr->arguments.size()));
+            //array_push(vm->code, OP_POP); // narg
+            array_push(vm->code, OP_ENV_INHERIT);
+            for(auto &arg : expr->arguments) {
+                assert(arg->type() == IDENTIFIER);
+                array_push(vm->code, OP_SET_LOCAL);
+                vm_code_pushstr(vm, static_cast<Identifier*>(arg.get())->id.data());
+                array_push(vm->code, OP_POP);
+            }
+            right->emit(vm);
+            array_push(vm->code, OP_RET); // pops env for us
+            //fill in
+            fill_hole(vm, length, vm->code.length);
         }
     } else {
         left->emit(vm);
@@ -237,11 +260,13 @@ void AST::BinaryExpression::emit(struct vm *vm) {
         else if(op == GEQ) array_push(vm->code, OP_GEQ);
         else if(op == LEQ) array_push(vm->code, OP_LEQ);
 
+        /*
         else if(op == SET)  array_push(vm->code, OP_ADD);
         else if(op == ADDS) array_push(vm->code, OP_ADD);
         else if(op == SUBS) array_push(vm->code, OP_ADD);
         else if(op == MULS) array_push(vm->code, OP_ADD);
         else if(op == DIVS) array_push(vm->code, OP_ADD);
+        */
     }
 }
 
@@ -384,7 +409,9 @@ void AST::StructStatement::emit(struct vm *vm) {
 }
 void AST::ExpressionStatement::emit(struct vm *vm) {
     expression->emit(vm);
-    array_push(vm->code, OP_POP);
+    if(!(expression->type() == BINARY_EXPR &&
+         static_cast<BinaryExpression*>(expression.get())->left->type() == CALL_EXPR))
+        array_push(vm->code, OP_POP);
 }
 void AST::ReturnStatement::emit(struct vm *vm) {
     expression->emit(vm);

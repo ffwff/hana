@@ -270,9 +270,6 @@ AST::AST *ScriptParser::parse_assignment() {
         AST::BinaryExpression::OpType opt;
         if((opt = optype(op.strv)) != AST::BinaryExpression::OpType::NONE) {
             LOG("assignment");
-            if (left->type() != AST::Type::MEMBER_EXPR &&
-                left->type() != AST::Type::IDENTIFIER)
-                FATAL("Parser error", "Invalid left-hand side argument");
             fpop();
             auto right = parse_expression();
             return new AST::BinaryExpression(left, right, opt);
