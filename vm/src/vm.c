@@ -110,15 +110,15 @@ int vm_step(struct vm *vm) {
         assert(vm->stack.length >= 2); \
         vm->ip++; \
 \
-        struct value left, right; \
-        value_copy(&right, &array_top(vm->stack)); \
+        struct value right = array_top(vm->stack); \
         array_pop(vm->stack); \
-        value_copy(&left, &array_top(vm->stack)); \
+        struct value left = array_top(vm->stack); \
         array_pop(vm->stack); \
 \
         array_push(vm->stack, (struct value){}); \
         struct value *result = &array_top(vm->stack); \
         fn(result, &left, &right); \
+        value_free(&left); value_free(&right); \
     }
     binop(OP_ADD, value_add)
     binop(OP_SUB, value_sub)
@@ -318,6 +318,20 @@ int vm_step(struct vm *vm) {
         env_free(vm->env);
         free(vm->env);
         vm->env = parent;
+    }
+    else if(op == OP_ASSERT_NARGS) {
+        LOG("ASSERT NARGS\n");
+        assert(vm->stack.length > 0);
+        vm->ip++;
+        int nargs = vm->code.data[vm->ip++];
+        struct value nargsv = array_top(vm->stack);
+        assert(nargsv.type == TYPE_INT);
+        if(nargsv.as.integer == nargs)
+            array_pop(vm->stack);
+        else {
+            printf("function expects exactly %d arguments\n", nargs);
+            return 0;
+        }
     }
 
     // scoped

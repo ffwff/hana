@@ -38,9 +38,18 @@ Parser::Token ScriptParser::next() {
             } else if (c == '/') {
                 const auto pos = f.tellg();
                 f.get();
-                if(f.get() == '/') {
+                char c = f.get();
+                if(c == '/') {
                     while((c = f.peek()) != EOF && c != '\n')
                         f.get();
+                } else if(c == '*') {
+                    while((c = f.peek()) != EOF) {
+                        f.get();
+                        char c1 = f.get();
+                        if(c == '*' && c1 == '/')
+                            break;
+                        else f.unget();
+                    }
                 } else {
                     f.seekg(pos);
                     return; // this is an operator, so it should be handled below
