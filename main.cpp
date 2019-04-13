@@ -43,6 +43,7 @@ namespace string {
         assert(nargs == 1);
         struct value val = array_top(vm->stack);
         auto s = to_string(val);
+        value_free(&val);
         array_pop(vm->stack);
         value_str(&val, s.data());
         array_push(vm->stack, val);
@@ -106,11 +107,13 @@ namespace string {
 
         // from pos
         val = array_top(vm->stack);
+        assert(val.type == value::TYPE_INT);
         array_pop(vm->stack);
         int64_t from_pos = val.as.integer;
 
         // n chars
         val = array_top(vm->stack);
+        assert(val.type == value::TYPE_INT);
         array_pop(vm->stack);
         int64_t nchars = val.as.integer;
 
@@ -132,6 +135,7 @@ namespace string {
 
         // from pos
         val = array_top(vm->stack);
+        assert(val.type == value::TYPE_INT);
         array_pop(vm->stack);
         int64_t index = val.as.integer;
 
@@ -155,7 +159,9 @@ namespace string {
 
         // from pos
         val = array_top(vm->stack);
+        assert(val.type == value::TYPE_STR);
         std::string needle(val.as.str);
+        value_free(&val);
         array_pop(vm->stack);
 
         size_t index = src.find(needle);
@@ -229,16 +235,19 @@ int main(int argc, char **argv) {
     native_obj_function("at",          string::at);
     native_obj_function("index",       string::index);
     env_set(m.env, "string", &val);
+    value_free(&val);
     m.dstr = val.as.dict;
 
     value_dict(&val);
     native_obj_function("constructor", integer::constructor);
     env_set(m.env, "integer", &val);
+    value_free(&val);
     m.dint = val.as.dict;
 
     value_dict(&val);
     native_obj_function("constructor", float_::constructor);
     env_set(m.env, "float", &val);
+    value_free(&val);
     m.dfloat = val.as.dict;
 
     // emit bytecode

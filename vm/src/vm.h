@@ -26,6 +26,7 @@ enum vm_opcode {
     // variables
     OP_SET, OP_SET_LOCAL, OP_GET, OP_INC, OP_DEC,
     OP_DEF_FUNCTION, OP_DEF_FUNCTION_PUSH,
+    OP_ADDS, OP_SUBS, OP_MULS, OP_DIVS, OP_MODS,
     // flow control
     OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
     OP_ENV_INHERIT, OP_ENV_POP,

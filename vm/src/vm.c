@@ -275,6 +275,7 @@ int vm_step(struct vm *vm) {
                 }
                 assert(ctor->type == TYPE_FN || ctor->type == TYPE_NATIVE_FN);
                 if(ctor->type == TYPE_NATIVE_FN) {
+                    value_free(&val);
                     ctor->as.fn(vm, nargs);
                     return 1;
                 }
@@ -434,6 +435,21 @@ int vm_step(struct vm *vm) {
         }
         array_pop(vm->stack); // pop nil
         array_push(vm->stack, dval);
+    }
+
+    // variable modification
+    else if(op == OP_ADDS) {
+        vm->ip++;
+        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(key)+1;
+        LOG("ADDS %s\n", key);
+        struct value right = array_top(vm->stack);
+        struct value *val = env_get(vm->env, key);
+        struct value result;
+        value_add(&result, val, &right);
+        value_free(val);
+        value_copy(val, &result);
+        value_free(&result);
     }
 
     // end

@@ -341,16 +341,9 @@ void AST::ForStatement::emit(struct vm *vm) {
     array_push(vm->code, OP_SET);
     vm_code_pushstr(vm, id.data());
     array_push(vm->code, OP_POP);
-    // jmp to condition check (1)
-    array_push(vm->code, OP_JMP);
-    size_t length = vm->code.length;
-    vm_code_push32(vm, FILLER32);
-    size_t body_pos = vm->code.length;
     // body
+    size_t body_pos = vm->code.length;
     statement->emit(vm);
-    // fill jmp (1)
-    size_t n = vm->code.length;
-    fill_hole(vm, length, n);
     // condition:
     // [body]
     // get [id]
@@ -366,12 +359,14 @@ void AST::ForStatement::emit(struct vm *vm) {
     array_push(vm->code, OP_EQ);
 
     array_push(vm->code, OP_JCOND);
-    length = vm->code.length;
+    size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
 
     if(step) {
-        // TODO
-        FATAL("Interpreter error", "Not implemented");
+        step->emit(vm);
+        array_push(vm->code, OP_ADDS);
+        vm_code_pushstr(vm, id.data());
+        array_push(vm->code, OP_POP);
     } else if(stepN == 1) {
         array_push(vm->code, OP_INC);
         vm_code_pushstr(vm, id.data());
@@ -382,8 +377,7 @@ void AST::ForStatement::emit(struct vm *vm) {
     array_push(vm->code, OP_JMP);
     vm_code_push32(vm, body_pos);
 
-    n = vm->code.length;
-    fill_hole(vm, length, n);
+    fill_hole(vm, length, vm->code.length);
 }
 void AST::FunctionStatement::emit(struct vm *vm) {
     if(record_fn) array_push(vm->code, OP_DEF_FUNCTION_PUSH);
