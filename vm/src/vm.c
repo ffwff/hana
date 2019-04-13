@@ -25,6 +25,7 @@ void vm_init(struct vm *vm) {
         .capacity = 8
     };
     vm->ip = 0;
+    vm->dstr = vm->dint = vm->dfloat = 0;
 }
 
 void vm_free(struct vm *vm) {
@@ -101,6 +102,16 @@ int vm_step(struct vm *vm) {
         vm->ip++;
         value_free(&array_top(vm->stack));
         array_pop(vm->stack);
+    }
+
+    // unary
+    else if(op == OP_NOT) {
+        vm->ip++;
+        struct value val = array_top(vm->stack);
+        array_pop(vm->stack);
+        int truth = value_is_true(&val);
+        value_int(&val, !truth);
+        array_push(vm->stack, val);
     }
 
     // arith
@@ -265,6 +276,10 @@ int vm_step(struct vm *vm) {
                     return 0;
                 }
                 assert(ctor->type == TYPE_FN || ctor->type == TYPE_NATIVE_FN);
+                if(ctor->type == TYPE_NATIVE_FN) {
+                    ctor->as.fn(vm, nargs);
+                    return 1;
+                }
                 fn_ip = ctor->as.fn_ip;
             } else {
                 fn_ip = val.as.fn_ip;
@@ -366,17 +381,27 @@ int vm_step(struct vm *vm) {
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
         LOG("MEMBER_GET %s\n", key);
+
         struct value val = array_top(vm->stack);
-        assert(val.type == TYPE_DICT);
-        if(op == OP_MEMBER_GET)
-            array_pop(vm->stack);
+        struct dict *dict = NULL;
+        if(val.type == TYPE_STR) {
+            dict = vm->dstr;
+        } else if(val.type == TYPE_INT) {
+            dict = vm->dint;
+        } else if(val.type == TYPE_FLOAT) {
+            dict = vm->dfloat;
+        } else {
+            assert(val.type == TYPE_DICT);
+            dict = val.as.dict;
+            if(op == OP_MEMBER_GET) array_pop(vm->stack);
+        }
 
         array_push(vm->stack, (struct value){});
-        struct value *result = dict_get(val.as.dict, key);
+        struct value *result = dict_get(dict, key);
         if(result != NULL)
             value_copy(&array_top(vm->stack), result);
-        if(op == OP_MEMBER_GET)
-            value_free(&val);
+
+        if(op == OP_MEMBER_GET) value_free(&val);
     }
     else if (op == OP_MEMBER_SET) {
         // stack: [value][dict]

@@ -4,6 +4,7 @@
 void dict_init(struct dict *dict) {
     dict->refs = 1;
     map_init(&dict->data);
+    dict->prototypev = NULL;
 }
 void dict_free(struct dict *dict) {
     dict->refs--;
@@ -14,7 +15,7 @@ void dict_free(struct dict *dict) {
 struct value *dict_get(struct dict *dict, const char *key) {
     struct value *local = map_get(&dict->data, key);
     if(local != NULL) return local;
-    if(dict->prototypev->type == TYPE_DICT)
+    if(dict->prototypev != NULL && dict->prototypev->type == TYPE_DICT)
         return dict_get(dict->prototypev->as.dict, key);
     return NULL;
 }

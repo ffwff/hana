@@ -88,6 +88,7 @@ void value_ ## name (struct value *result, struct value *left, struct value *rig
         else if(right->type == TYPE_FLOAT) \
             value_int(result, left->as.floatp op right->as.floatp); \
     } custom \
+    else { value_int(result, 0); }\
 }
 arith_op(add, +,
     else if(left->type == TYPE_STR) {
@@ -121,7 +122,18 @@ arith_op(mul, *,
         }
     }
 )
-arith_op(div, /,)
+void value_div(struct value *result, struct value *left, struct value *right) {
+    if( (left->type == TYPE_FLOAT && right->type == TYPE_INT) ||
+        (left->type == TYPE_INT && right->type == TYPE_FLOAT) ) {
+        struct value *floatv = left->type == TYPE_FLOAT ? left : right;
+        struct value *intv = left->type == TYPE_INT ? left : right;
+        value_float(result, floatv->as.floatp / (double)intv->as.integer);
+    } else if(left->type == TYPE_INT && right->type == TYPE_INT) {
+        value_float(result, (double)left->as.integer / (double)right->as.integer);
+    } else if(left->type == TYPE_FLOAT && right->type == TYPE_FLOAT) {
+        value_float(result, left->as.floatp / right->as.floatp);
+    }
+}
 void value_mod(struct value *result, struct value *left, struct value *right) {
     assert(left->type == right->type);
     if(left->type == TYPE_INT) {
@@ -138,12 +150,42 @@ logic_op(and, &&)
 logic_op(or, ||)
 
 // comparison
-arith_op(lt, <,)
-arith_op(leq, <=,)
-arith_op(gt, >=,)
-arith_op(geq, >=,)
-arith_op(eq, ==,)
-arith_op(neq, !=,)
+#define strcmp_op(cond) \
+    else if(left->type == TYPE_STR && right->type == TYPE_STR) { \
+        value_int(result, strcmp(left->as.str, right->as.str) cond); \
+        value_free(left); \
+        value_free(right); \
+    }
+arith_op(eq, ==,
+    strcmp_op(== 0)
+    else if(left->type == TYPE_NATIVE_FN && right->type == TYPE_NATIVE_FN)
+        value_int(result, left->as.fn == right->as.fn);
+    else if(left->type == TYPE_FN && right->type == TYPE_FN)
+        value_int(result, left->as.fn_ip == right->as.fn_ip);
+    else if(left->type == TYPE_DICT && right->type == TYPE_DICT)
+        value_int(result, left->as.dict == right->as.dict);
+)
+arith_op(neq, !=,
+    strcmp_op(!= 0)
+    else if(left->type == TYPE_NATIVE_FN && right->type == TYPE_NATIVE_FN)
+        value_int(result, left->as.fn != right->as.fn);
+    else if(left->type == TYPE_FN && right->type == TYPE_FN)
+        value_int(result, left->as.fn_ip != right->as.fn_ip);
+    else if(left->type == TYPE_DICT && right->type == TYPE_DICT)
+        value_int(result, left->as.dict != right->as.dict);
+)
+arith_op(lt, <,
+    strcmp_op(< 0)
+)
+arith_op(leq, <=,
+    strcmp_op(<= 0)
+)
+arith_op(gt, >,
+    strcmp_op(> 0)
+)
+arith_op(geq, >=,
+    strcmp_op(>= 0)
+)
 
 // boolean
 int value_is_true(const struct value *val) {

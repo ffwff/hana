@@ -17,7 +17,9 @@ enum vm_opcode {
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
     // logic
-    OP_AND, OP_OR, OP_NOT,
+    OP_AND, OP_OR,
+    // unary
+    OP_NEGATE, OP_NOT,
     // comparison
     OP_LT, OP_LEQ, OP_GT, OP_GEQ,
     OP_EQ, OP_NEQ,
@@ -40,6 +42,7 @@ struct vm {
     struct env *env;
     a_uint8 code;
     a_value stack;
+    struct dict *dstr, *dint, *dfloat;
 };
 
 void vm_init(struct vm*);
