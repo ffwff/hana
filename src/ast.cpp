@@ -236,10 +236,6 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             vm_code_push32(vm, FILLER32);
             array_push(vm->code, (uint8_t)(expr->arguments.size()));
             //body
-            //array_push(vm->code, OP_ASSERT_NARGS);
-            //array_push(vm->code, (uint8_t)(expr->arguments.size()));
-            //array_push(vm->code, OP_POP); // narg
-            array_push(vm->code, OP_ENV_INHERIT);
             for(auto &arg : expr->arguments) {
                 assert(arg->type() == IDENTIFIER);
                 array_push(vm->code, OP_SET_LOCAL);
@@ -395,12 +391,8 @@ void AST::FunctionStatement::emit(struct vm *vm) {
     vm_code_pushstr(vm, id.data());
     size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
-    array_push(vm->code, (uint8_t)arguments.size());
+    array_push(vm->code, (uint8_t)arguments.size() + (record_fn?-1:0));
     //body
-    //array_push(vm->code, OP_ASSERT_NARGS);
-    //array_push(vm->code, (uint8_t)arguments.size());
-    //array_push(vm->code, OP_POP); // narg
-    array_push(vm->code, OP_ENV_INHERIT);
     for(auto &arg : arguments) {
         array_push(vm->code, OP_SET_LOCAL);
         vm_code_pushstr(vm, arg.data());

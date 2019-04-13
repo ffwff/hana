@@ -41,7 +41,6 @@ extern "C" {
 
 #define array_append(array, src) \
 do { \
-    assert(sizeof(*array.data) == sizeof(*src.data)); \
     if(array.length+src.length > array.capacity) { \
         array.capacity = array.length+src.length; \
         array.data = VOID_CAST(array.data, realloc(array.data, sizeof(*array.data)*array.capacity)); \

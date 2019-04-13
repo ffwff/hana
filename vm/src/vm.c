@@ -214,9 +214,9 @@ int vm_step(struct vm *vm) {
                              vm->code.data[vm->ip+1] << 8  |
                              vm->code.data[vm->ip+2] << 4  |
                              vm->code.data[vm->ip+3];
-        LOG("DEF_FUNCTION %s %ld\n", key, pos);
         vm->ip += 4;
-        int nargs = vm->code.data[vm->ip++];
+        uint32_t nargs = vm->code.data[vm->ip++];
+        LOG("DEF_FUNCTION %s %d %d\n", key, pos, nargs);
         struct value val;
         value_function(&val, vm->ip, nargs);
         vm->ip = pos;
@@ -279,13 +279,17 @@ int vm_step(struct vm *vm) {
                     return 1;
                 }
                 fn_ip = ctor->as.ifn.ip;
-                if(nargs != val.as.ifn.nargs)
-                    printf("constructor expects exactly %d arguments\n", val.as.ifn.nargs);
+                if(nargs != ctor->as.ifn.nargs) {
+                    printf("constructor expects exactly %d arguments\n", ctor->as.ifn.nargs);
+                    return 0;
+                }
             } else {
                 fn_ip = val.as.ifn.ip;
                 array_pop(vm->stack);
-                if(nargs != val.as.ifn.nargs)
+                if(nargs != val.as.ifn.nargs) {
                     printf("function expects exactly %d arguments\n", val.as.ifn.nargs);
+                    return 0;
+                }
             }
             struct value args[nargs];
             for(int i = nargs-1; i >= 0; i--) {
@@ -299,8 +303,13 @@ int vm_step(struct vm *vm) {
             array_push(vm->stack, caller);
             // arguments
             if(val.type == TYPE_DICT) {
-                for(int i = 0; i < nargs; i++)
-                    array_push(vm->stack, args[i]);
+                if(vm->stack.length+nargs > vm->stack.capacity) {
+                    vm->stack.capacity = vm->stack.length+nargs;
+                    vm->stack.data = (struct value*)realloc(vm->stack.data,
+                                                    sizeof(struct value)*vm->stack.capacity);
+                }
+                memcpy(vm->stack.data+vm->stack.length, args, sizeof(struct value)*nargs);
+
                 struct value new_val;
                 value_dict(&new_val);
                 dict_set(new_val.as.dict, "prototype", &val);
@@ -311,6 +320,11 @@ int vm_step(struct vm *vm) {
                 for(int i = 0; i < nargs; i++)
                     array_push(vm->stack, args[i]);
             }
+            // environment
+            struct env *parent = vm->env;
+            vm->env = malloc(sizeof(struct env));
+            env_init(vm->env, parent);
+            // jump
             vm->ip = fn_ip;
         } else {
             printf("is not a function\n");
