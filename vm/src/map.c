@@ -30,12 +30,12 @@ struct value *map_get(struct map *map, const char *key) {
     return NULL;
 }
 
-void map_set(struct map *map, const char *key, struct value *val) {
+struct value *map_set(struct map *map, const char *key, struct value *val) {
     for(size_t i = 0; i < map->length; i++)
         if(strcmp(map->data[i]->key, key) == 0) {
             value_free(&map->data[i]->val);
             value_copy(&map->data[i]->val, val);
-            return;
+            return &map->data[i]->val;
         }
     if(map->length == map->capacity) {
         map->capacity *= 2;
@@ -45,6 +45,7 @@ void map_set(struct map *map, const char *key, struct value *val) {
     map->data[map->length]->key = strdup(key);
     value_copy(&map->data[map->length]->val, val);
     map->length++;
+    return &map->data[map->length-1]->val;
 }
 
 void map_del(struct map *map, const char *key) {

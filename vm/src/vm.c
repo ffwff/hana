@@ -286,8 +286,10 @@ int vm_step(struct vm *vm) {
                     array_push(vm->stack, args[i]);
                 struct value new_val;
                 value_dict(&new_val);
-                dict_copy(new_val.as.dict, val.as.dict);
+                dict_set(new_val.as.dict, "prototype", &val);
+                value_free(&val); // reference carried by dict
                 array_push(vm->stack, new_val);
+                nargs++;
             } else {
                 for(int i = 0; i < nargs; i++)
                     array_push(vm->stack, args[i]);

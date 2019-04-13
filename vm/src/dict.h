@@ -6,6 +6,7 @@ extern "C" {
 #include "map.h"
 struct dict {
     struct map data;
+    struct value *prototypev;
     size_t refs;
 };
 

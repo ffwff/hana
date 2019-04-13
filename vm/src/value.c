@@ -14,7 +14,6 @@ void value_float(struct value *val, double data) {
     val->as.floatp = data;
 }
 void value_str(struct value *val, const char *data) {
-    //printf("ALLOC: %s\n", data);
     val->type = TYPE_STR;
     val->as.str = strdup(data);
 }
@@ -33,13 +32,9 @@ void value_dict(struct value *val) {
 }
 
 void value_free(struct value *val) {
-    /*printf("FREE ");
-    value_print(val);
-    printf("\n");*/
     if(val->type == TYPE_STR) {
         free(val->as.str);
     } else if(val->type == TYPE_DICT) {
-        //printf("FREE: %x %ld\n", val->as.dict->refs);
         dict_free(val->as.dict);
         if(val->as.dict->refs == 0) {
             free(val->as.dict);

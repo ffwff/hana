@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     Hana::ScriptParser p;
     p.loadf(argv[1]);
     auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
-#ifndef RELEASE
+#if defined(NOLOG) && !defined(RELEASE)
     ast->print();
 #endif
 

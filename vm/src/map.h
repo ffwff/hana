@@ -19,7 +19,7 @@ struct map {
 void map_init(struct map *);
 void map_free(struct map *);
 struct value *map_get(struct map *, const char *);
-void map_set(struct map *, const char *, struct value *);
+struct value *map_set(struct map *, const char *, struct value *);
 void map_del(struct map *, const char *);
 void map_print(struct map *);
 
