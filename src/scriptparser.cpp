@@ -109,7 +109,7 @@ Parser::Token ScriptParser::next() {
 #define is_onech_op(c) \
     (c == '=' || c == '!' || c == '<' || c == '>' || c == '(' || c == ')' || \
     c == '+' || c == '-' || c == '/' || c == '*' || c == '{' || c == '}' || \
-    c == '.' || c == ',')
+    c == '.' || c == ',' || c == '?' || c == ':')
     else if(is_onech_op(c)) {
         // "=="|"!="|">"|"<"|">="|"<="|"+"|"-"|"/"|"*"
         c = f.get();
@@ -229,6 +229,7 @@ AST::AST *ScriptParser::parse_unary() {
     auto token = next();
     AST::UnaryExpression::OpType ot = AST::UnaryExpression::OpType::NONE;
     if(token.type == Token::Type::OPERATOR) {
+        LOG("UNARY");
         if(token.strv == "+")
             ot = AST::UnaryExpression::OpType::POS;
         else if(token.strv == "-")
@@ -239,6 +240,7 @@ AST::AST *ScriptParser::parse_unary() {
             ot = AST::UnaryExpression::OpType::NOT;
         else goto non_unary;
     } else goto non_unary;
+    fpop();
     return new AST::UnaryExpression(ot, parse_call());
 
 non_unary:
@@ -248,7 +250,23 @@ non_unary:
 
 AST::AST *ScriptParser::parse_expression() {
     LOG("expr");
-    return parse_assignment();
+    return parse_conditional_expr();
+}
+
+AST::AST *ScriptParser::parse_conditional_expr() {
+    auto expr = parse_assignment();
+    fsave();
+    auto token = next();
+    if(token.strv == "?") {
+        fpop();
+        auto condition = expr;
+        auto expression = parse_assignment();
+        nextop(":");
+        auto alt = parse_assignment();
+        return new AST::ConditionalExpression(condition, expression, alt);
+    }
+    fload();
+    return expr;
 }
 
 AST::AST *ScriptParser::parse_assignment() {

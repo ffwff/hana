@@ -110,6 +110,13 @@ struct BinaryExpression : Expression {
     void emit(struct vm *vm) override;
 };
 
+struct ConditionalExpression : Expression {
+    std::unique_ptr<AST> condition, expression, alt;
+    ConditionalExpression(AST *condition, AST *expression, AST *alt) : condition(condition), expression(expression), alt(alt) {};
+    void print(int indent=0) override;
+    void emit(struct vm *vm) override;
+};
+
 // Statements
 struct Statement : AST {};
 

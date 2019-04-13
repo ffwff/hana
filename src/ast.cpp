@@ -73,6 +73,13 @@ void AST::BinaryExpression::print(int indent) {
     std::cout << "\n";
     right->print(indent+1);
 }
+void AST::ConditionalExpression::print(int indent) {
+    pindent(indent);
+    std::cout << "conditional\n";
+    condition->print(indent+1);
+    expression->print(indent+1);
+    alt->print(indent+1);
+}
 
 void AST::IfStatement::print(int indent) {
     pindent(indent);
@@ -183,6 +190,9 @@ static void fill_hole(struct vm *vm, size_t length, size_t n) {
 }
 
 void AST::UnaryExpression::emit(struct vm *vm) {
+    body->emit(vm);
+    if(op == NEG) array_push(vm->code, OP_NEGATE);
+    else if(op == NOT) array_push(vm->code, OP_NOT);
 }
 void AST::MemberExpression::emit(struct vm *vm) {
     left->emit(vm);
@@ -222,9 +232,10 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             }
         } else if(left->type() == CALL_EXPR) {
             auto expr = static_cast<CallExpression*>(left.get());
-            array_push(vm->code, OP_DEF_FUNCTION);
+            array_push(vm->code, OP_DEF_FUNCTION_PUSH);
             assert(expr->callee->type() == IDENTIFIER);
-            vm_code_pushstr(vm, static_cast<Identifier*>(expr->callee.get())->id.data());
+            const auto id = static_cast<Identifier*>(expr->callee.get())->id.data();
+            vm_code_pushstr(vm, id);
             size_t length = vm->code.length;
             vm_code_push64(vm, FILLER64);
             //body
@@ -242,6 +253,8 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             array_push(vm->code, OP_RET); // pops env for us
             //fill in
             fill_hole(vm, length, vm->code.length);
+            array_push(vm->code, OP_SET);
+            vm_code_pushstr(vm, id);
         }
     } else {
         left->emit(vm);
@@ -268,6 +281,23 @@ void AST::BinaryExpression::emit(struct vm *vm) {
         else if(op == DIVS) array_push(vm->code, OP_ADD);
         */
     }
+}
+void AST::ConditionalExpression::emit(struct vm *vm) {
+    condition->emit(vm);
+    array_push(vm->code, OP_JNCOND);
+    size_t length = vm->code.length;
+    vm_code_push64(vm, FILLER64);
+    // then statement
+    expression->emit(vm);
+    // alt
+    array_push(vm->code, OP_JMP);
+    size_t length1 = vm->code.length;
+    vm_code_push64(vm, FILLER64);
+    size_t n = vm->code.length;
+    alt->emit(vm);
+    size_t n1 = vm->code.length;
+    fill_hole(vm, length, n);
+    fill_hole(vm, length1, n1);
 }
 
 void AST::IfStatement::emit(struct vm *vm) {
@@ -409,9 +439,7 @@ void AST::StructStatement::emit(struct vm *vm) {
 }
 void AST::ExpressionStatement::emit(struct vm *vm) {
     expression->emit(vm);
-    if(!(expression->type() == BINARY_EXPR &&
-         static_cast<BinaryExpression*>(expression.get())->left->type() == CALL_EXPR))
-        array_push(vm->code, OP_POP);
+    array_push(vm->code, OP_POP);
 }
 void AST::ReturnStatement::emit(struct vm *vm) {
     expression->emit(vm);

@@ -21,6 +21,7 @@ private:
     AST::AST *parse_expression();
     AST::AST *parse_assignment();
     AST::AST *parse_binexpr();
+    AST::AST *parse_conditional_expr();
     AST::AST *parse_block();
     std::vector<std::string> parse_function_arguments();
     AST::AST *parse_statement();

@@ -110,8 +110,18 @@ int vm_step(struct vm *vm) {
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         int truth = value_is_true(&val);
+        value_free(&val);
         value_int(&val, !truth);
         array_push(vm->stack, val);
+    }
+    else if(op == OP_NEGATE) {
+        vm->ip++;
+        struct value *val = &array_top(vm->stack);
+        if(val->type == TYPE_INT) {
+            val->as.integer = -val->as.integer;
+        } else if(val->type == TYPE_FLOAT) {
+            val->as.floatp = -val->as.floatp;
+        }
     }
 
     // arith
