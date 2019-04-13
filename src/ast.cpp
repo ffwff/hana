@@ -177,16 +177,12 @@ void AST::Identifier::emit(struct vm *vm) {
 }
 
 //
-#define FILLER64 0xbadc0ffee0ddf00d
+#define FILLER32 0xdeadbeef
 static void fill_hole(struct vm *vm, size_t length, size_t n) {
-    vm->code.data[length]   = (n >> 28) & 0xff;
-    vm->code.data[length+1] = (n >> 24) & 0xff;
-    vm->code.data[length+2] = (n >> 20) & 0xff;
-    vm->code.data[length+3] = (n >> 16) & 0xff;
-    vm->code.data[length+4] = (n >> 12) & 0xff;
-    vm->code.data[length+5] = (n >> 8) & 0xff;
-    vm->code.data[length+6] = (n >> 4) & 0xff;
-    vm->code.data[length+7] = (n >> 0) & 0xff;
+    vm->code.data[length+0] = (n >> 12) & 0xff;
+    vm->code.data[length+1] = (n >> 8) & 0xff;
+    vm->code.data[length+2] = (n >> 4) & 0xff;
+    vm->code.data[length+3] = (n >> 0) & 0xff;
 }
 
 void AST::UnaryExpression::emit(struct vm *vm) {
@@ -237,10 +233,11 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             const auto id = static_cast<Identifier*>(expr->callee.get())->id.data();
             vm_code_pushstr(vm, id);
             size_t length = vm->code.length;
-            vm_code_push64(vm, FILLER64);
-            //body
-            array_push(vm->code, OP_ASSERT_NARGS);
+            vm_code_push32(vm, FILLER32);
             array_push(vm->code, (uint8_t)(expr->arguments.size()));
+            //body
+            //array_push(vm->code, OP_ASSERT_NARGS);
+            //array_push(vm->code, (uint8_t)(expr->arguments.size()));
             //array_push(vm->code, OP_POP); // narg
             array_push(vm->code, OP_ENV_INHERIT);
             for(auto &arg : expr->arguments) {
@@ -286,13 +283,13 @@ void AST::ConditionalExpression::emit(struct vm *vm) {
     condition->emit(vm);
     array_push(vm->code, OP_JNCOND);
     size_t length = vm->code.length;
-    vm_code_push64(vm, FILLER64);
+    vm_code_push32(vm, FILLER32);
     // then statement
     expression->emit(vm);
     // alt
     array_push(vm->code, OP_JMP);
     size_t length1 = vm->code.length;
-    vm_code_push64(vm, FILLER64);
+    vm_code_push32(vm, FILLER32);
     size_t n = vm->code.length;
     alt->emit(vm);
     size_t n1 = vm->code.length;
@@ -310,13 +307,13 @@ void AST::IfStatement::emit(struct vm *vm) {
     condition->emit(vm);
     array_push(vm->code, OP_JNCOND);
     size_t length = vm->code.length;
-    vm_code_push64(vm, FILLER64);
+    vm_code_push32(vm, FILLER32);
     // then statement
     statement->emit(vm);
     if(alt) {
         array_push(vm->code, OP_JMP);
         size_t length1 = vm->code.length;
-        vm_code_push64(vm, FILLER64);
+        vm_code_push32(vm, FILLER32);
         size_t n = vm->code.length;
         alt->emit(vm);
         size_t n1 = vm->code.length;
@@ -334,13 +331,13 @@ void AST::WhileStatement::emit(struct vm *vm) {
     // jcond 1
     array_push(vm->code, OP_JMP);
     size_t length = vm->code.length;
-    vm_code_push64(vm, FILLER64);
+    vm_code_push32(vm, FILLER32);
     size_t length1 = vm->code.length;
     statement->emit(vm);
     fill_hole(vm, length, vm->code.length);
     condition->emit(vm);
     array_push(vm->code, OP_JCOND);
-    vm_code_push64(vm, length1);
+    vm_code_push32(vm, length1);
 }
 void AST::ForStatement::emit(struct vm *vm) {
     // start
@@ -351,7 +348,7 @@ void AST::ForStatement::emit(struct vm *vm) {
     // jmp to condition check (1)
     array_push(vm->code, OP_JMP);
     size_t length = vm->code.length;
-    vm_code_push64(vm, FILLER64);
+    vm_code_push32(vm, FILLER32);
     size_t body_pos = vm->code.length;
     // body
     statement->emit(vm);
@@ -374,7 +371,7 @@ void AST::ForStatement::emit(struct vm *vm) {
 
     array_push(vm->code, OP_JCOND);
     length = vm->code.length;
-    vm_code_push64(vm, FILLER64);
+    vm_code_push32(vm, FILLER32);
 
     if(step) {
         // TODO
@@ -387,7 +384,7 @@ void AST::ForStatement::emit(struct vm *vm) {
         vm_code_pushstr(vm, id.data());
     }
     array_push(vm->code, OP_JMP);
-    vm_code_push64(vm, body_pos);
+    vm_code_push32(vm, body_pos);
 
     n = vm->code.length;
     fill_hole(vm, length, n);
@@ -397,10 +394,11 @@ void AST::FunctionStatement::emit(struct vm *vm) {
     else array_push(vm->code, OP_DEF_FUNCTION);
     vm_code_pushstr(vm, id.data());
     size_t length = vm->code.length;
-    vm_code_push64(vm, FILLER64);
-    //body
-    array_push(vm->code, OP_ASSERT_NARGS);
+    vm_code_push32(vm, FILLER32);
     array_push(vm->code, (uint8_t)arguments.size());
+    //body
+    //array_push(vm->code, OP_ASSERT_NARGS);
+    //array_push(vm->code, (uint8_t)arguments.size());
     //array_push(vm->code, OP_POP); // narg
     array_push(vm->code, OP_ENV_INHERIT);
     for(auto &arg : arguments) {

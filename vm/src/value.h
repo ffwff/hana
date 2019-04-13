@@ -13,7 +13,10 @@ struct value {
         double floatp;
         char *str;
         value_fn fn;
-        uint64_t fn_ip;
+        struct {
+            uint32_t ip;
+            int nargs;
+        } ifn;
         struct dict *dict;
     } as;
     enum {
@@ -26,7 +29,7 @@ void value_int(struct value*, int64_t);
 void value_float(struct value*, double);
 void value_str(struct value*, const char*);
 void value_native(struct value*, value_fn);
-void value_function(struct value*, uint64_t fn_ip);
+void value_function(struct value*, uint32_t ip, int nargs);
 void value_dict(struct value*);
 
 void value_free(struct value*);

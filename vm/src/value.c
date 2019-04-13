@@ -21,9 +21,10 @@ void value_native(struct value *val, value_fn fn) {
     val->type = TYPE_NATIVE_FN;
     val->as.fn = fn;
 }
-void value_function(struct value *val, uint64_t fn_ip) {
+void value_function(struct value *val, uint32_t ip, int nargs) {
     val->type = TYPE_FN;
-    val->as.fn_ip = fn_ip;
+    val->as.ifn.ip = ip;
+    val->as.ifn.nargs = nargs;
 }
 void value_dict(struct value *val) {
     val->type = TYPE_DICT;
@@ -53,7 +54,7 @@ void value_print(struct value *val) {
     else if(val->type == TYPE_NATIVE_FN)
         printf("[native fn %lx]", (intptr_t)val->as.fn);
     else if(val->type == TYPE_FN)
-        printf("[fn %ld]", (uint64_t)val->as.fn_ip);
+        printf("[fn %d]", (uint32_t)val->as.ifn.ip);
     else if(val->type == TYPE_DICT)
         printf("[dict %ld]", (intptr_t)val->as.dict);
     else {
@@ -161,7 +162,7 @@ arith_op(eq, ==,
     else if(left->type == TYPE_NATIVE_FN && right->type == TYPE_NATIVE_FN)
         value_int(result, left->as.fn == right->as.fn);
     else if(left->type == TYPE_FN && right->type == TYPE_FN)
-        value_int(result, left->as.fn_ip == right->as.fn_ip);
+        value_int(result, left->as.ifn.ip == right->as.ifn.ip);
     else if(left->type == TYPE_DICT && right->type == TYPE_DICT)
         value_int(result, left->as.dict == right->as.dict);
 )
@@ -170,7 +171,7 @@ arith_op(neq, !=,
     else if(left->type == TYPE_NATIVE_FN && right->type == TYPE_NATIVE_FN)
         value_int(result, left->as.fn != right->as.fn);
     else if(left->type == TYPE_FN && right->type == TYPE_FN)
-        value_int(result, left->as.fn_ip != right->as.fn_ip);
+        value_int(result, left->as.ifn.ip != right->as.ifn.ip);
     else if(left->type == TYPE_DICT && right->type == TYPE_DICT)
         value_int(result, left->as.dict != right->as.dict);
 )

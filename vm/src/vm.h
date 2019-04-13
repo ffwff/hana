@@ -38,7 +38,7 @@ typedef array(uint8_t) a_uint8;
 typedef array(struct value) a_value;
 
 struct vm {
-    uint64_t ip;
+    uint32_t ip;
     struct env *env;
     a_uint8 code;
     a_value stack;

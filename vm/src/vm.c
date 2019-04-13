@@ -210,19 +210,15 @@ int vm_step(struct vm *vm) {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
-        const uint64_t pos = vm->code.data[vm->ip+0] << 28 |
-                             vm->code.data[vm->ip+1] << 24 |
-                             vm->code.data[vm->ip+2] << 20 |
-                             vm->code.data[vm->ip+3] << 16 |
-                             vm->code.data[vm->ip+4] << 12 |
-                             vm->code.data[vm->ip+5] << 8  |
-                             vm->code.data[vm->ip+6] << 4  |
-                             vm->code.data[vm->ip+7];
+        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
+                             vm->code.data[vm->ip+1] << 8  |
+                             vm->code.data[vm->ip+2] << 4  |
+                             vm->code.data[vm->ip+3];
         LOG("DEF_FUNCTION %s %ld\n", key, pos);
-        vm->ip += 8;
+        vm->ip += 4;
+        int nargs = vm->code.data[vm->ip++];
         struct value val;
-        LOG("%ld\n", vm->ip);
-        value_function(&val, vm->ip);
+        value_function(&val, vm->ip, nargs);
         vm->ip = pos;
         if(op == OP_DEF_FUNCTION_PUSH)
             array_push(vm->stack, val);
@@ -233,37 +229,29 @@ int vm_step(struct vm *vm) {
     // flow control
     else if(op == OP_JMP) { // jmp [64-bit position]
         vm->ip++;
-        const uint64_t pos = vm->code.data[vm->ip+0] << 28 |
-                             vm->code.data[vm->ip+1] << 24 |
-                             vm->code.data[vm->ip+2] << 20 |
-                             vm->code.data[vm->ip+3] << 16 |
-                             vm->code.data[vm->ip+4] << 12 |
-                             vm->code.data[vm->ip+5] << 8  |
-                             vm->code.data[vm->ip+6] << 4  |
-                             vm->code.data[vm->ip+7];
+        const uint64_t pos = vm->code.data[vm->ip+0] << 12 |
+                             vm->code.data[vm->ip+1] << 8  |
+                             vm->code.data[vm->ip+2] << 4  |
+                             vm->code.data[vm->ip+3];
         LOG("JMP %ld\n", pos);
         vm->ip = pos;
     }
     else if(op == OP_JCOND || op == OP_JNCOND) { // jcond [64-bit position]
         vm->ip++;
-        const uint64_t pos = vm->code.data[vm->ip+0] << 28 |
-                             vm->code.data[vm->ip+1] << 24 |
-                             vm->code.data[vm->ip+2] << 20 |
-                             vm->code.data[vm->ip+3] << 16 |
-                             vm->code.data[vm->ip+4] << 12 |
-                             vm->code.data[vm->ip+5] << 8  |
-                             vm->code.data[vm->ip+6] << 4  |
-                             vm->code.data[vm->ip+7];
+        const uint64_t pos = vm->code.data[vm->ip+0] << 12 |
+                             vm->code.data[vm->ip+1] << 8  |
+                             vm->code.data[vm->ip+2] << 4  |
+                             vm->code.data[vm->ip+3];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         if(op == OP_JCOND) {
             LOG("JCOND %ld\n", pos);
             if(value_is_true(&val)) vm->ip = pos;
-            else vm->ip += 8;
+            else vm->ip += 4;
         } else {
             LOG("JNCOND %ld\n", pos);
             if(!value_is_true(&val)) vm->ip = pos;
-            else vm->ip += 8;
+            else vm->ip += 4;
         }
     }
     else if(op == OP_CALL) {
@@ -290,10 +278,14 @@ int vm_step(struct vm *vm) {
                     ctor->as.fn(vm, nargs);
                     return 1;
                 }
-                fn_ip = ctor->as.fn_ip;
+                fn_ip = ctor->as.ifn.ip;
+                if(nargs != val.as.ifn.nargs)
+                    printf("constructor expects exactly %d arguments\n", val.as.ifn.nargs);
             } else {
-                fn_ip = val.as.fn_ip;
+                fn_ip = val.as.ifn.ip;
                 array_pop(vm->stack);
+                if(nargs != val.as.ifn.nargs)
+                    printf("function expects exactly %d arguments\n", val.as.ifn.nargs);
             }
             struct value args[nargs];
             for(int i = nargs-1; i >= 0; i--) {
@@ -303,7 +295,7 @@ int vm_step(struct vm *vm) {
             }
             // caller
             struct value caller;
-            value_function(&caller, vm->ip);
+            value_function(&caller, vm->ip, 0);
             array_push(vm->stack, caller);
             // arguments
             if(val.type == TYPE_DICT) {
@@ -319,9 +311,6 @@ int vm_step(struct vm *vm) {
                 for(int i = 0; i < nargs; i++)
                     array_push(vm->stack, args[i]);
             }
-            struct value nargs_v;
-            value_int(&nargs_v, nargs);
-            array_push(vm->stack, nargs_v);
             vm->ip = fn_ip;
         } else {
             printf("is not a function\n");
@@ -337,7 +326,7 @@ int vm_step(struct vm *vm) {
         assert(caller.type == TYPE_FN);
 
         LOG("RET\n");
-        vm->ip = caller.as.fn_ip;
+        vm->ip = caller.as.ifn.ip;
         array_push(vm->stack, retval);
 
         assert(vm->env->parent != NULL);
@@ -345,20 +334,6 @@ int vm_step(struct vm *vm) {
         env_free(vm->env);
         free(vm->env);
         vm->env = parent;
-    }
-    else if(op == OP_ASSERT_NARGS) {
-        LOG("ASSERT NARGS\n");
-        assert(vm->stack.length > 0);
-        vm->ip++;
-        int nargs = vm->code.data[vm->ip++];
-        struct value nargsv = array_top(vm->stack);
-        assert(nargsv.type == TYPE_INT);
-        if(nargsv.as.integer == nargs)
-            array_pop(vm->stack);
-        else {
-            printf("function expects exactly %d arguments\n", nargs);
-            return 0;
-        }
     }
 
     // scoped
