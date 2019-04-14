@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "vm.h"
 #include "map.h"
+#include "hmap.h"
 
 int main() {
     struct vm m;
@@ -59,6 +60,35 @@ int main() {
     map_print(&map);
 
     map_free(&map);
+#endif
+
+#define SECTION_HMAP
+#ifdef SECTION_HMAP
+    // map
+    struct hmap hmap;
+    hmap_init(&hmap);
+    struct value v = {
+        .type = TYPE_INT,
+        .as.integer = 0
+    };
+    v.as.integer = 13;
+    hmap_set(&hmap, "A", &v);
+    v.as.integer = 33;
+    hmap_set(&hmap, "B", &v);
+    v.as.integer = 37;
+    hmap_set(&hmap, "C", &v);
+    hmap_print(&hmap);
+    printf("\n");
+
+    v.as.integer = 1337;
+    hmap_set(&hmap, "C", &v);
+    hmap_print(&hmap);
+    printf("\n");
+
+    hmap_del(&hmap, "B");
+    hmap_print(&hmap);
+
+    hmap_free(&hmap);
 #endif
 
 #ifdef SECTION_VARIABLE
@@ -123,7 +153,6 @@ int main() {
     array_push(m.code, OP_POP);
 #endif
 
-#define SECTION_DICT_RC_CMPLX
 #ifdef SECTION_DICT_RC_CMPLX
     // should free everything
     array_push(m.code, OP_DICT_NEW);

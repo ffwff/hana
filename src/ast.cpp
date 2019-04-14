@@ -1,6 +1,7 @@
 #include "ast.h"
 #include "error.h"
 #include "vm/src/vm.h"
+#include "vm/src/xxhash.h"
 
 using namespace Hana;
 
@@ -174,6 +175,7 @@ void AST::FloatLiteral::emit(struct vm *vm) {
 void AST::Identifier::emit(struct vm *vm) {
     array_push(vm->code, OP_GET);
     vm_code_pushstr(vm, id.data());
+    vm_code_push32(vm, XXH32(id.data(), id.size(), 0));
 }
 
 //
@@ -355,6 +357,7 @@ void AST::ForStatement::emit(struct vm *vm) {
     // 1: done
     array_push(vm->code, OP_GET);
     vm_code_pushstr(vm, id.data());
+    vm_code_push32(vm, XXH32(id.data(), id.size(), 0));
     to->emit(vm);
     array_push(vm->code, OP_EQ);
 

@@ -39,7 +39,7 @@ void vm_free(struct vm *vm) {
 }
 
 int vm_step(struct vm *vm) {
-    enum vm_opcode op = vm->code.data[vm->ip];
+    const enum vm_opcode op = vm->code.data[vm->ip];
     if(op == OP_HALT) {
         LOG("HALT\n");
 #ifndef NOLOG
@@ -178,9 +178,15 @@ int vm_step(struct vm *vm) {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
+        const uint32_t hash =
+                            vm->code.data[vm->ip+0] << 12 |
+                            vm->code.data[vm->ip+1] << 8  |
+                            vm->code.data[vm->ip+2] << 4  |
+                            vm->code.data[vm->ip+3];
+        vm->ip+=sizeof(hash);
         LOG("GET %s\n", key);
         array_push(vm->stack, (struct value){});
-        struct value *val = env_get(vm->env, key);
+        struct value *val = env_get_hash(vm->env, key, hash);
         if(val == NULL) {
             FATAL("no key named %s!\n", key);
             return 0;

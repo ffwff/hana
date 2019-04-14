@@ -1,7 +1,7 @@
 # Program
 SRC = $(wildcard src/*.c)
 OBJS = ${subst src/,build/,$(SRC:.c=.o)}
-CCFLAGS += -g -Wall -Isrc
+CCFLAGS += -g -Wall -Isrc -IxxHash
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
 LDDFLAGS =

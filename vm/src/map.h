@@ -12,7 +12,7 @@ struct map_entry {
 };
 
 struct map {
-    struct map_entry **data;
+    struct map_entry *data;
     size_t length, capacity;
 };
 

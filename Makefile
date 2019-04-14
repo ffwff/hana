@@ -17,6 +17,11 @@ else
 CXXFLAGS += -g -DDEBUG
 CCFLAGS += -g
 endif
+ifdef PROFILE
+CXXFLAGS += -O3 -DRELEASE -DNOLOG -g -pg
+CCFLAGS += -O3 -DNOLOG -g -pg
+LDDFLAGS += -O3 -g -pg
+endif
 
 # Logging
 ifdef NOLOG
@@ -26,11 +31,10 @@ endif
 
 # Default flags
 CXXFLAGS += -std=c++11 -I. -Wall
-CCFLAGS += -Wall -Ivm/src
-LDDFLAGS =
+CCFLAGS += -Wall -Ivm/src -Ivm/xxHash
 
 main: build/main.o $(OBJS)
-	$(CXX) -o $@ $^
+	$(CXX) $(LDDFLAGS) -o $@ $^
 build/main.o: main.cpp build
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
