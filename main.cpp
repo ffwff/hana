@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <cmath>
 #include "src/scriptparser.h"
 #include "vm/src/vm.h"
 #include "vm/src/dict.h"
@@ -176,11 +177,34 @@ namespace string {
 
 namespace integer {
     fn(constructor) {
+        struct value *val = &array_top(vm->stack);
+        if(val->type == value::TYPE_INT)
+            return;
+        else if(val->type == value::TYPE_FLOAT)
+            value_int(val, (int64_t)val->as.floatp);
+        else if(val->type == value::TYPE_STR)
+            value_int(val, std::stoi(val->as.str));
+        else
+            value_int(val, 0);
     }
 }
 
 namespace float_ {
     fn(constructor) {
+        struct value *val = &array_top(vm->stack);
+        if(val->type == value::TYPE_FLOAT)
+            return;
+        else if(val->type == value::TYPE_INT)
+            value_float(val, (double)val->as.integer);
+        else if(val->type == value::TYPE_STR)
+            value_float(val, std::stof(val->as.str));
+        else
+            value_float(val, 0);
+    }
+    fn(round) {
+        assert(nargs == 1);
+        struct value *val = &array_top(vm->stack);
+        value_int(val, (int64_t)::round(val->as.floatp));
     }
 }
 
@@ -224,7 +248,7 @@ int main(int argc, char **argv) {
     native_function(print)
     // # objects
 #define native_obj_function(key, name) \
-    do{ struct value v; value_native(&v, hanayo::name); map_set(&val.as.dict->data, key, &v); } while(0)
+    do{ struct value v; value_native(&v, hanayo::name); hmap_set(&val.as.dict->data, key, &v); } while(0)
 
     value_dict(&val);
     native_obj_function("constructor", string::constructor);
@@ -246,6 +270,7 @@ int main(int argc, char **argv) {
 
     value_dict(&val);
     native_obj_function("constructor", float_::constructor);
+    native_obj_function("round",       float_::round);
     env_set(m.env, "float", &val);
     value_free(&val);
     m.dfloat = val.as.dict;

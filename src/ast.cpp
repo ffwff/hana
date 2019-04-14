@@ -171,6 +171,8 @@ void AST::IntLiteral::emit(struct vm *vm) {
     }
 }
 void AST::FloatLiteral::emit(struct vm *vm) {
+    array_push(vm->code, OP_PUSHF64);
+    vm_code_pushf64(vm, f);
 }
 void AST::Identifier::emit(struct vm *vm) {
     array_push(vm->code, OP_GET);

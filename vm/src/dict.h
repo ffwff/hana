@@ -3,9 +3,9 @@
 extern "C" {
 #endif
 
-#include "map.h"
+#include "hmap.h"
 struct dict {
-    struct map data;
+    struct hmap data;
     struct value *prototypev;
     size_t refs;
 };

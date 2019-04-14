@@ -28,8 +28,13 @@ void value_function(struct value *val, uint32_t ip, int nargs) {
 }
 void value_dict(struct value *val) {
     val->type = TYPE_DICT;
-    val->as.dict = malloc(sizeof(struct dict)); // this isn't freed?
+    val->as.dict = malloc(sizeof(struct dict));
     dict_init(val->as.dict);
+}
+void value_array(struct value *val) {
+    val->type = TYPE_ARRAY;
+    val->as.array = malloc(sizeof(struct array));
+    array_obj_init(val->as.array);
 }
 
 void value_free(struct value *val) {
@@ -37,9 +42,12 @@ void value_free(struct value *val) {
         free(val->as.str);
     } else if(val->type == TYPE_DICT) {
         dict_free(val->as.dict);
-        if(val->as.dict->refs == 0) {
+        if(val->as.dict->refs == 0)
             free(val->as.dict);
-        }
+    } else if(val->type == TYPE_ARRAY) {
+        array_obj_free(val->as.array);
+        if(val->as.array->refs == 0)
+            free(val->as.array);
     }
     val->type = TYPE_NIL;
 }
@@ -57,6 +65,8 @@ void value_print(struct value *val) {
         printf("[fn %d]", (uint32_t)val->as.ifn.ip);
     else if(val->type == TYPE_DICT)
         printf("[dict %ld]", (intptr_t)val->as.dict);
+    else if(val->type == TYPE_ARRAY)
+        printf("[array %ld]", (intptr_t)val->as.array);
     else {
         printf("nil");
     }

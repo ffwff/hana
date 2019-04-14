@@ -62,7 +62,6 @@ int main() {
     map_free(&map);
 #endif
 
-#define SECTION_HMAP
 #ifdef SECTION_HMAP
     // map
     struct hmap hmap;
@@ -165,6 +164,12 @@ int main() {
     array_push(m.code, OP_SET);
     vm_code_pushstr(&m, "b");
     array_push(m.code, OP_POP);
+#endif
+
+#define SECTION_FLOAT
+#ifdef SECTION_FLOAT
+    array_push(m.code, OP_PUSHF32);
+    vm_code_pushf32(&m, 0.1);
 #endif
 
     array_push(m.code, OP_HALT);

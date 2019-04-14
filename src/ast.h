@@ -47,8 +47,8 @@ struct IntLiteral : AST {
 };
 struct FloatLiteral : AST {
     TYPE(CONSTANT)
-    float f;
-    FloatLiteral(float f) : f(f) {};
+    double f;
+    FloatLiteral(double f) : f(f) {};
     void print(int indent=0) override;
     void emit(struct vm *vm) override;
 };

@@ -12,7 +12,7 @@ enum vm_opcode {
     OP_HALT,
     // stack manip
     OP_PUSH8, OP_PUSH16, OP_PUSH32, OP_PUSH64,
-    OP_PUSH_NIL, OP_PUSHSTR,
+    OP_PUSH_NIL, OP_PUSHSTR, OP_PUSHF32, OP_PUSHF64,
     OP_POP,
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
@@ -56,6 +56,8 @@ void vm_code_push16(struct vm *vm, uint16_t);
 void vm_code_push32(struct vm *vm, uint32_t);
 void vm_code_push64(struct vm *vm, uint64_t);
 void vm_code_pushstr(struct vm *vm, const char *);
+void vm_code_pushf32(struct vm *vm, float f);
+void vm_code_pushf64(struct vm *vm, double f);
 
 #ifdef __cplusplus
 }

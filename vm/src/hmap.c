@@ -45,7 +45,7 @@ struct value *hmap_get(struct hmap *hmap, const char *key) {
 }
 struct value *hmap_get_hash(struct hmap *hmap, const char *key, const uint32_t hash) {
     // NOTE: compilers can optimize modulos between 2 32-bit numbers (at least in x86)
-    const a_hmap_entry entry = hmap->data.data[hash % (uint32_t)hmap->data.length];
+    const a_hmap_entry entry = hmap->data.data[(uint64_t)hash & (hmap->data.length-1)];
     for(size_t i = 0; i < entry.length; i++)
         if(strcmp(entry.data[i].key, key) == 0)
             return &entry.data[i].val;
