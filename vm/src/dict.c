@@ -21,9 +21,13 @@ struct value *dict_get(struct dict *dict, const char *key) {
 }
 
 void dict_set(struct dict *dict, const char *key, struct value *val) {
-    struct value *dval = hmap_set(&dict->data, key, val);
-    if(strcmp(key, "prototype") == 0)
+    int has_grown = 0;
+    struct value *dval = _hmap_set(&dict->data, key, val, 0, &has_grown);
+    if(strcmp(key, "prototype") == 0) {
         dict->prototypev = dval;
+    } else if(has_grown) {
+        dict->prototypev = hmap_get(&dict->data, "prototype");
+    }
 }
 
 void dict_copy(struct dict *dst, struct dict *src) {

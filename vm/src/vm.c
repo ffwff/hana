@@ -337,11 +337,13 @@ int vm_step(struct vm *vm) {
                     printf("expected dictionary to have constructor");
                     return 0;
                 }
-                assert(ctor->type == TYPE_FN || ctor->type == TYPE_NATIVE_FN);
                 if(ctor->type == TYPE_NATIVE_FN) {
                     value_free(&val);
                     ctor->as.fn(vm, nargs);
                     return 1;
+                } else if(ctor->type != TYPE_FN) {
+                    printf("constructor must be a function!\n");
+                    return 0;
                 }
                 fn_ip = ctor->as.ifn.ip;
                 if(nargs+1 != ctor->as.ifn.nargs) {
@@ -374,6 +376,7 @@ int vm_step(struct vm *vm) {
                                                     sizeof(struct value)*vm->stack.capacity);
                 }
                 memcpy(vm->stack.data+vm->stack.length, args, sizeof(struct value)*nargs);
+                vm->stack.length += nargs;
 
                 struct value new_val;
                 value_dict(&new_val);
@@ -461,7 +464,10 @@ int vm_step(struct vm *vm) {
         } else if(val.type == TYPE_FLOAT) {
             dict = vm->dfloat;
         } else {
-            assert(val.type == TYPE_DICT);
+            if(val.type != TYPE_DICT) {
+                printf("expected dictionary\n");
+                return 0;
+            }
             dict = val.as.dict;
             if(op == OP_MEMBER_GET) array_pop(vm->stack);
         }
@@ -522,14 +528,22 @@ int vm_step(struct vm *vm) {
         array_pop(vm->stack);
 
         if(dval.type == TYPE_ARRAY) {
-            assert(index.type == TYPE_INT);
+            if(index.type != TYPE_INT) {
+                printf("index type must be integer!\n");
+                return 0;
+            }
             const int64_t i = index.as.integer;
-            assert(i >= 0 && i < dval.as.array->data.length);
-            printf("%d\n", dval.as.array->data.length);
+            if(!(i >= 0 && i < dval.as.array->data.length)) {
+                printf("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
+                return 0;
+            }
             array_push(vm->stack, (struct value){});
             value_copy(&array_top(vm->stack), &dval.as.array->data.data[i]);
         } else if(dval.type == TYPE_DICT) {
-            assert(index.type == TYPE_STR);
+            if(index.type != TYPE_STR) {
+                printf("index type must be string!\n");
+                return 0;
+            }
             array_push(vm->stack, (struct value){});
             struct value *val = dict_get(dval.as.dict, index.as.str);
             if(val) value_copy(&array_top(vm->stack), val);
