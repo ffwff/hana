@@ -12,7 +12,7 @@
 // hashing functions
 static size_t hmap_index(struct hmap *hmap, const char *key) {
     const uint32_t hash = XXH32(key, strlen(key), 0);
-    return hash % hmap->data.length;
+    return hash & (hmap->data.length-1);
 }
 
 // hashmap

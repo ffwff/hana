@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "value.h"
 #include "dict.h"
+#include "array_obj.h"
 
 void value_int(struct value *val, int64_t data) {
     val->type = TYPE_INT;
@@ -33,8 +34,13 @@ void value_dict(struct value *val) {
 }
 void value_array(struct value *val) {
     val->type = TYPE_ARRAY;
-    val->as.array = malloc(sizeof(struct array));
+    val->as.array = malloc(sizeof(struct array_obj));
     array_obj_init(val->as.array);
+}
+void value_array_n(struct value *val, size_t n) {
+    val->type = TYPE_ARRAY;
+    val->as.array = malloc(sizeof(struct array_obj));
+    array_obj_init_n(val->as.array, n);
 }
 
 void value_free(struct value *val) {
@@ -77,9 +83,12 @@ void value_copy(struct value *dst, struct value *src) {
     if(src->type == TYPE_STR)
         dst->as.str = strdup(src->as.str);
     else if(src->type == TYPE_DICT) {
-        //printf("DICT COPY %x %ld\n", dst, src->as.dict->refs);
         dst->as.dict = src->as.dict;
         src->as.dict->refs++;
+    }
+    else if(src->type == TYPE_ARRAY) {
+        dst->as.array = src->as.array;
+        src->as.array->refs++;
     }
     else
         dst->as = src->as;

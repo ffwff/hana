@@ -28,6 +28,8 @@ void AST::Identifier::print(int indent) {
     pindent(indent);
     std::cout << id << '\n';
 }
+void AST::Array::print(int indent) {
+}
 
 //
 void AST::UnaryExpression::print(int indent) {
@@ -155,7 +157,7 @@ void AST::StrLiteral::emit(struct vm *vm) {
     vm_code_pushstr(vm, str.data());
 }
 void AST::IntLiteral::emit(struct vm *vm) {
-    uint64_t ui = (uint64_t)i;
+    const uint64_t ui = (uint64_t)i;
     if(ui <= 0xff) {
         array_push(vm->code, OP_PUSH8);
         array_push(vm->code, ui);
@@ -179,6 +181,25 @@ void AST::Identifier::emit(struct vm *vm) {
     vm_code_pushstr(vm, id.data());
     vm_code_push32(vm, XXH32(id.data(), id.size(), 0));
 }
+void AST::Array::emit(struct vm *vm) {
+    for(auto &v : values)
+        v->emit(vm);
+    const uint64_t ui = (uint64_t)values.size();
+    if(ui <= 0xff) {
+        array_push(vm->code, OP_PUSH8);
+        array_push(vm->code, ui);
+    } else if (ui <= 0xffff) {
+        array_push(vm->code, OP_PUSH16);
+        vm_code_push16(vm, ui);
+    } else if (ui <= 0xffffffff) {
+        array_push(vm->code, OP_PUSH32);
+        vm_code_push32(vm, ui);
+    } else { // 64-bit int
+        array_push(vm->code, OP_PUSH64);
+        vm_code_push64(vm, ui);
+    }
+    array_push(vm->code, OP_ARRAY_LOAD);
+}
 
 //
 #define FILLER32 0xdeadbeef
@@ -196,11 +217,15 @@ void AST::UnaryExpression::emit(struct vm *vm) {
 }
 void AST::MemberExpression::emit(struct vm *vm) {
     left->emit(vm);
-    assert(right->type() == IDENTIFIER); // TODO
-    const char *key = static_cast<Identifier*>(right.get())->id.data();
-    if(is_called) array_push(vm->code, OP_MEMBER_GET_NO_POP);
-    else array_push(vm->code, OP_MEMBER_GET);
-    vm_code_pushstr(vm, key);
+    if(right->type() == IDENTIFIER) {
+        const char *key = static_cast<Identifier*>(right.get())->id.data();
+        if(is_called) array_push(vm->code, OP_MEMBER_GET_NO_POP);
+        else array_push(vm->code, OP_MEMBER_GET);
+        vm_code_pushstr(vm, key);
+    } else {
+        right->emit(vm);
+        array_push(vm->code, OP_INDEX_GET);
+    }
 }
 void AST::CallExpression::emit(struct vm *vm) {
     for(auto arg = arguments.rbegin(); arg != arguments.rend(); arg++)
@@ -390,7 +415,7 @@ void AST::FunctionStatement::emit(struct vm *vm) {
     vm_code_pushstr(vm, id.data());
     size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
-    array_push(vm->code, (uint8_t)arguments.size() + (record_fn?-1:0));
+    array_push(vm->code, (uint8_t)arguments.size());
     //body
     for(auto &arg : arguments) {
         array_push(vm->code, OP_SET_LOCAL);
@@ -411,14 +436,14 @@ void AST::StructStatement::emit(struct vm *vm) {
             auto expr = static_cast<BinaryExpression*>(
                 static_cast<ExpressionStatement*>(s.get())->expression.get());
             assert(expr->left->type() == IDENTIFIER);
+            expr->right->emit(vm);
             array_push(vm->code, OP_PUSHSTR);
             vm_code_pushstr(vm, static_cast<Identifier*>(expr->left.get())->id.data());
-            expr->right->emit(vm);
         } else if(s->type() == FUNCTION_STMT) {
             auto fn = static_cast<FunctionStatement*>(s.get());
+            fn->emit(vm);
             array_push(vm->code, OP_PUSHSTR);
             vm_code_pushstr(vm, fn->id.data());
-            fn->emit(vm);
         }
     }
     array_push(vm->code, OP_DICT_LOAD);

@@ -3,6 +3,7 @@
 #include <string.h>
 #include "vm.h"
 #include "dict.h"
+#include "array_obj.h"
 
 #ifdef NOLOG
 #define LOG(...)
@@ -343,15 +344,15 @@ int vm_step(struct vm *vm) {
                     return 1;
                 }
                 fn_ip = ctor->as.ifn.ip;
-                if(nargs != ctor->as.ifn.nargs) {
-                    printf("constructor expects exactly %d arguments\n", ctor->as.ifn.nargs);
+                if(nargs+1 != ctor->as.ifn.nargs) {
+                    printf("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs);
                     return 0;
                 }
             } else {
                 fn_ip = val.as.ifn.ip;
                 array_pop(vm->stack);
                 if(nargs != val.as.ifn.nargs) {
-                    printf("function expects exactly %d arguments\n", val.as.ifn.nargs);
+                    printf("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs);
                     return 0;
                 }
             }
@@ -489,23 +490,79 @@ int vm_step(struct vm *vm) {
         break;
     }
     case OP_DICT_LOAD: {
-        // stack: [nil][key][value]
+        // stack: [nil][value][key]
         vm->ip++;
         struct value dval;
         value_dict(&dval);
 
-        struct value val = {0};
-        while((val = array_top(vm->stack)).type != TYPE_NIL) {
-            array_pop(vm->stack); // pop val
-            struct value key = array_top(vm->stack);
-            array_pop(vm->stack); // pop key
+        struct value key = {0};
+        while((key = array_top(vm->stack)).type != TYPE_NIL) {
             assert(key.type == TYPE_STR);
+            array_pop(vm->stack); // pop val
+            struct value val = array_top(vm->stack);
+            array_pop(vm->stack);
             dict_set(dval.as.dict, key.as.str, &val);
+            // pop key
             value_free(&val);
             value_free(&key);
         }
         array_pop(vm->stack); // pop nil
         array_push(vm->stack, dval);
+        break;
+    }
+    // array
+    case OP_INDEX_GET: {
+        vm->ip++;
+        struct value index;
+        value_copy(&index, &array_top(vm->stack));
+        value_free(&array_top(vm->stack));
+        array_pop(vm->stack);
+
+        struct value dval = array_top(vm->stack);
+        array_pop(vm->stack);
+
+        if(dval.type == TYPE_ARRAY) {
+            assert(index.type == TYPE_INT);
+            const int64_t i = index.as.integer;
+            assert(i >= 0 && i < dval.as.array->data.length);
+            printf("%d\n", dval.as.array->data.length);
+            array_push(vm->stack, (struct value){});
+            value_copy(&array_top(vm->stack), &dval.as.array->data.data[i]);
+        } else if(dval.type == TYPE_DICT) {
+            assert(index.type == TYPE_STR);
+            array_push(vm->stack, (struct value){});
+            struct value *val = dict_get(dval.as.dict, index.as.str);
+            if(val) value_copy(&array_top(vm->stack), val);
+        } else {
+            printf("expected dictionary or array\n");
+            return 0;
+        }
+        value_free(&dval);
+        break;
+    }
+    case OP_ARRAY_LOAD: {
+        vm->ip++;
+
+        struct value val = array_top(vm->stack);
+        int length = val.as.integer;
+        array_pop(vm->stack);
+        assert(val.type == TYPE_INT);
+        LOG("ARRAY_LOAD %d\n", length);
+
+        struct value aval;
+        if(length == 0) {
+            value_array(&aval);
+        } else {
+            value_array_n(&aval, length);
+            aval.as.array->data.length = length;
+            while(length--) {
+                struct value val = array_top(vm->stack);
+                value_copy(&aval.as.array->data.data[length], &val);
+                array_pop(vm->stack);
+                value_free(&val);
+            }
+        }
+        array_push(vm->stack, aval);
         break;
     }
 

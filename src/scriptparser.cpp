@@ -108,7 +108,7 @@ Parser::Token ScriptParser::next() {
     }
 #define is_onech_op(c) \
     (c == '=' || c == '!' || c == '<' || c == '>' || c == '(' || c == ')' || \
-    c == '+' || c == '-' || c == '/' || c == '*' || c == '{' || c == '}' || \
+    c == '+' || c == '-' || c == '/' || c == '*' || c == '[' || c == ']' || \
     c == '.' || c == ',' || c == '?' || c == ':')
     else if(is_onech_op(c)) {
         // "=="|"!="|">"|"<"|">="|"<="|"+"|"-"|"/"|"*"
@@ -138,12 +138,31 @@ Parser::Token ScriptParser::next() {
 }
 
 AST::AST *ScriptParser::parse_factor() {
-    auto token = next();
-    if(token.type == Token::Type::OPERATOR && token.strv == "(") {
-        LOG("(");
-        auto expr = parse_expression();
-        nextop(")");
-        return expr;
+    const auto token = next();
+    if(token.type == Token::Type::OPERATOR) {
+        if(token.strv == "(") {
+            LOG("(");
+            auto expr = parse_expression();
+            nextop(")");
+            return expr;
+        } else if(token.strv == "[") {
+            auto expr = new AST::Array();
+            fsave();
+            auto op = next();
+            if(op.strv == "]")
+                return expr;
+            fload();
+            expr->values.emplace_back(parse_expression());
+            do {
+                op = next();
+                if(op.strv == ",") {
+                    expr->values.emplace_back(parse_expression());
+                } else if(op.strv == "]") {
+                    break;
+                }
+            } while(!f.eof());
+            return expr;
+        }
     } else if(token.type == Token::Type::STRING) {
         return new AST::Identifier(token.strv);
     } else if(token.type == Token::Type::STRLITERAL) {
@@ -163,7 +182,7 @@ AST::AST *ScriptParser::parse_call() {
     fsave();
     auto op = next();
     if(op.type == Token::Type::OPERATOR &&
-        (op.strv == "(" || op.strv == ".")) {
+        (op.strv == "(" || op.strv == "." || op.strv == "[")) {
         AST::AST *expr = factor;
         LOG(op.strv);
         do {
@@ -201,8 +220,12 @@ AST::AST *ScriptParser::parse_call() {
                 // TODO
                 LOG("member");
                 fpop();
-                const auto id = nexts();
+                auto id = nexts();
                 expr = new AST::MemberExpression(expr, new AST::Identifier(id));
+            } else if(op.strv == "[") {
+                fpop();
+                expr = new AST::MemberExpression(expr, parse_expression());
+                nextop("]");
             } else {
                 LOG("LOAD");
                 fload();
@@ -226,7 +249,7 @@ AST::AST *ScriptParser::parse_call() {
 
 AST::AST *ScriptParser::parse_unary() {
     fsave();
-    auto token = next();
+    const auto token = next();
     AST::UnaryExpression::OpType ot = AST::UnaryExpression::OpType::NONE;
     if(token.type == Token::Type::OPERATOR) {
         LOG("UNARY");
@@ -256,7 +279,7 @@ AST::AST *ScriptParser::parse_expression() {
 AST::AST *ScriptParser::parse_conditional_expr() {
     auto expr = parse_assignment();
     fsave();
-    auto token = next();
+    const auto token = next();
     if(token.strv == "?") {
         fpop();
         auto condition = expr;
@@ -271,7 +294,7 @@ AST::AST *ScriptParser::parse_conditional_expr() {
 
 AST::AST *ScriptParser::parse_assignment() {
     fsave();
-    auto token = next();
+    const auto token = next();
     const auto optype = [](const std::string &op) {
         if(op == "=") return AST::BinaryExpression::OpType::SET;
         else if(op == "+=") return AST::BinaryExpression::OpType::ADDS;
@@ -284,7 +307,7 @@ AST::AST *ScriptParser::parse_assignment() {
         floadn();
         LOG("assign!!");
         auto left = parse_call();
-        auto op = next();
+        const auto op = next();
         AST::BinaryExpression::OpType opt;
         if((opt = optype(op.strv)) != AST::BinaryExpression::OpType::NONE) {
             LOG("assignment");
@@ -407,11 +430,7 @@ std::vector<std::string> ScriptParser::parse_function_arguments() {
 
 AST::AST *ScriptParser::parse_statement() {
     fsave();
-//     LOG("statement");
-    Token token = next();
-//     LOG("STR=[",token.strv,"]");
-//     LOG(token.type);
-
+    const auto token = next();
     if(token.type == Token::Type::NONE) {
         ended = true;
         return nullptr;
@@ -425,7 +444,7 @@ AST::AST *ScriptParser::parse_statement() {
         } else if(token.strv == "return") {
             fpop();
             fsave();
-            auto token = next();
+            const auto token = next();
             if(token.type == Token::Type::NEWLINE) {
                 fpop();
                 return new AST::ReturnStatement();

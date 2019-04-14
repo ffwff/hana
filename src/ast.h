@@ -11,7 +11,7 @@ namespace AST {
 enum Type {
 
     NONE,
-    CONSTANT, IDENTIFIER, MEMBER_EXPR, CALL_EXPR,
+    CONSTANT, IDENTIFIER, ARRAY, MEMBER_EXPR, CALL_EXPR,
     BINARY_EXPR, UNARY_EXPR,
     IF_STMT, WHILE_STMT, BLOCK_STMT,
     FUNCTION_STMT, STRUCT_STMT, EXPR_STMT, RETURN_STMT,
@@ -57,6 +57,12 @@ struct Identifier : AST {
     TYPE(IDENTIFIER)
     std::string id;
     Identifier(std::string id) : id(id) {};
+    void print(int indent=0) override;
+    void emit(struct vm *vm) override;
+};
+struct Array : AST {
+    TYPE(ARRAY)
+    std::vector<std::unique_ptr<AST>> values;
     void print(int indent=0) override;
     void emit(struct vm *vm) override;
 };

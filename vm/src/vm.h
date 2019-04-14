@@ -32,7 +32,8 @@ enum vm_opcode {
     OP_ENV_INHERIT, OP_ENV_POP,
     // dictionary
     OP_DICT_NEW, OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
-    OP_MEMBER_SET, OP_DICT_LOAD
+    OP_MEMBER_SET, OP_DICT_LOAD, OP_INDEX_GET,
+    OP_ARRAY_LOAD
 };
 
 typedef array(uint8_t) a_uint8;
