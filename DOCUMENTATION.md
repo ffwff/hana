@@ -247,7 +247,7 @@ setting its prototype key (`A.prototype`) to the parent record (`B`).
 Once set, keys from record B can be used or called from record A. Record A's keys will of course
 override record B's keys if they are set. **There's no distinction between records and instances of records.**
 
-You can define a record through a function like this:
+You can define a record through a statement like this:
 
 ```
 record Person
@@ -257,8 +257,17 @@ record Person
         self.age = age
     end
     function talk(self) begin
-        print("*", species, " noises*\n")
+        print("*", self.species, " noises*\n")
     end
+end
+```
+
+Or through an expression:
+
+```
+Person = record
+    species = "Human"
+    // ...
 end
 ```
 
@@ -279,6 +288,7 @@ Arrays in Hana are dynamic arrays. You can declare arrays like this:
 [] // => empty array
 [1,2] // => array with elements 1, 2
 array(1, 2) // => same
+[1,2,3] // => [1, 2, 3, 1, 2, 3, 1, 2, 3]
 ```
 
 Methods:
