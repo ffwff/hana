@@ -12,6 +12,12 @@ For release builds, just do:
 make RELEASE=1 NOLOG=1
 ```
 
+It is recommended that you build the interpreter with libreadline for a better REPL:
+
+```
+make RELEASE=1 NOLOG=1 READLINE=1
+```
+
 For debug:
 
 ```
