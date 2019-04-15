@@ -2,6 +2,38 @@
 
 **hana**, a small object oriented programming language.
 
+## Building
+
+(building is tested with gcc-7 on Linux, mileage may vary on other architectures)
+
+For release builds, just do:
+
+```
+make RELEASE=1 NOLOG=1
+```
+
+For debug:
+
+```
+make DEBUG=1
+```
+
+## Running
+
+Once built, you can write hana code into a source file, then invoke the interpreter like this:
+
+```
+./main program.hana
+```
+
+Alternatively you could try things out in the REPL:
+
+```
+./main
+```
+
+In the REPL, to type a newline, simply put `\` at the end of the line then press enter.
+
 ## Documentation
 
 *see [DOCUMENTATION.md](/DOCUMENTATION.md)*
