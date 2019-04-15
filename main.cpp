@@ -51,6 +51,14 @@ fn(print) {
     array_push(vm->stack, val);
 }
 
+fn(input) {
+    std::string s;
+    std::cin >> s;
+    struct value val;
+    value_str(&val, s.data());
+    array_push(vm->stack, val);
+}
+
 // data types
 namespace string {
 
@@ -527,6 +535,7 @@ int main(int argc, char **argv) {
 #define native_function_key(name, key) \
     value_native(&val, hanayo::name);  env_set(m.env, key, &val);
     native_function(print)
+    native_function(input)
     // # objects
 #define native_obj_function(key, name) \
     do{ struct value v; value_native(&v, hanayo::name); hmap_set(&val.as.dict->data, key, &v); } while(0)
