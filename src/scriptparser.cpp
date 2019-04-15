@@ -165,8 +165,10 @@ AST::AST *ScriptParser::parse_factor() {
         }
     } else if(token.type == Token::Type::STRING) {
         if(token.strv == "record") {
-            return parse_record(true);
+            auto s = parse_record(true);
+            if(s) return s;
         }
+        LOG("NEW: ", token.strv);
         return new AST::Identifier(token.strv);
     } else if(token.type == Token::Type::STRLITERAL) {
         return new AST::StrLiteral(token.strv);
@@ -437,7 +439,7 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
     std::string id;
     if(!is_expr) {
         fsave();
-        auto token = next();
+        const auto token = next();
         if(token.type != Token::Type::STRING) {
             return nullptr;
         }
@@ -446,7 +448,13 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
     }
     auto stmt = new AST::StructStatement(id);
     stmt->is_expr = is_expr;
-    nextnl();
+    fsave();
+    const auto token = next();
+    if(token.type != Token::NEWLINE) {
+        fload();
+        delete stmt;
+        return nullptr;
+    } else fpop();
     while(!f.eof()) {
         fsave();
         auto token = next();
@@ -527,9 +535,10 @@ AST::AST *ScriptParser::parse_statement() {
                 FATAL("Parser error", "expected statement");
             return stmt;
         } else if(token.strv == "record") {
-            fpop();
+            //fpop();
             auto record = parse_record();
             if(record == nullptr) {
+                fload();
                 goto expression_stmt;
             } else
                 return record;

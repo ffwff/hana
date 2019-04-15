@@ -16,9 +16,9 @@ static std::string to_string(struct value &val) {
     else if(val.type == value::TYPE_FLOAT)
         return std::to_string(val.as.floatp);
     else if(val.type == value::TYPE_NATIVE_FN || val.type == value::TYPE_FN)
-        return "[function]";
+        return "(function)";
     else if(val.type == value::TYPE_DICT)
-        return "[dictionary]";
+        return "(dictionary)";
     else if(val.type == value::TYPE_ARRAY) {
         std::string s = "[";
         if(val.as.array->data.length)
@@ -28,7 +28,7 @@ static std::string to_string(struct value &val) {
         s += "]";
         return s;
     }
-    return "[nil]";
+    return "(nil)";
 }
 
 #define fn(name) void name(struct vm *vm, int nargs)
@@ -182,6 +182,30 @@ namespace string {
             value_int(&val, (int64_t)index);
         }
         array_push(vm->stack, val);
+    }
+    fn(insert) {
+        assert(nargs == 3);
+
+        struct value val = {0};
+
+        // string
+        val = array_top(vm->stack);
+        std::string s(val.as.str);
+        value_free(&val);
+        array_pop(vm->stack);
+
+        // from pos
+        val = array_top(vm->stack);
+        assert(val.type == value::TYPE_INT);
+        array_pop(vm->stack);
+        int64_t from_pos = val.as.integer;
+
+        val = array_top(vm->stack);
+        assert(val.type == value::TYPE_STR);
+        s.insert(from_pos, val.as.str);
+        value_free(&val);
+
+        value_str(&array_top(vm->stack), s.data());
     }
 }
 
@@ -353,9 +377,7 @@ namespace array {
 
         // string
         val = array_top(vm->stack);
-        struct value aval;
-        value_copy(&aval, &val);
-        value_free(&val);
+        struct value aval = val;
         array_pop(vm->stack);
 
         // from pos
@@ -370,13 +392,54 @@ namespace array {
             struct value result;
             value_eq(&result, &needle, &aval.as.array->data.data[i]);
             if(result.as.integer == 1) {
+                value_free(&needle);
                 value_free(&aval);
                 value_int(&array_top(vm->stack), (int64_t)i);
                 return;
             }
         }
+        value_free(&needle);
         value_free(&aval);
         value_int(&array_top(vm->stack), 0);
+    }
+    fn(insert) {
+        assert(nargs == 3);
+
+        struct value val = {0};
+
+        // string
+        struct value aval;
+        value_copy(&aval, &array_top(vm->stack));
+        value_free(&array_top(vm->stack));
+        array_pop(vm->stack);
+
+        // from pos
+        val = array_top(vm->stack);
+        assert(val.type == value::TYPE_INT);
+        array_pop(vm->stack);
+        int64_t from_pos = val.as.integer;
+
+        // new val
+        val = array_top(vm->stack);
+
+        if(from_pos < 0) {
+            value_free(&aval);
+            array_push(vm->stack, {0});
+            return;
+        } else if(from_pos >= (int64_t)aval.as.array->data.length) {
+            for(int64_t i = aval.as.array->data.length; i < from_pos+1; i++)
+                array_push(aval.as.array->data, {0});
+        } else {
+            array_push(aval.as.array->data, {0}); // reserve space
+        }
+        size_t n = (aval.as.array->data.length-from_pos)*sizeof(struct value);
+        memmove(&aval.as.array->data.data[from_pos+1],
+                &aval.as.array->data.data[from_pos],
+                n
+        );
+        value_copy(&aval.as.array->data.data[from_pos], &val);
+        value_free(&aval);
+
     }
     fn(push) {
         assert(nargs == 2);
@@ -392,7 +455,15 @@ namespace array {
         value_free(&aval);
     }
     fn(pop) {
-
+        assert(nargs == 1);
+        struct value *aval = &array_top(vm->stack);
+        if(aval->as.array->data.length == 0) {
+            value_free(&array_top(vm->stack));
+            return;
+        }
+        value_free(&aval->as.array->data.data[aval->as.array->data.length-1]);
+        aval->as.array->data.length--;
+        value_free(&array_top(vm->stack));
     }
     fn(sort) {
 
@@ -445,6 +516,7 @@ int main(int argc, char **argv) {
     native_obj_function("copy",        string::copy);
     native_obj_function("at",          string::at);
     native_obj_function("index",       string::index);
+    native_obj_function("insert",      string::insert);
     env_set(m.env, "string", &val);
     value_free(&val);
     m.dstr = val.as.dict;
@@ -469,6 +541,7 @@ int main(int argc, char **argv) {
     native_obj_function("copy",        array::copy);
     native_obj_function("at",          array::at);
     native_obj_function("index",       array::index);
+    native_obj_function("insert",      array::insert);
     native_obj_function("push",        array::push);
     native_obj_function("pop",         array::pop);
     env_set(m.env, "array", &val);

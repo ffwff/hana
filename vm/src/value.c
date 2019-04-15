@@ -133,17 +133,22 @@ arith_op(mul, *,
         struct value *strv = left->type == TYPE_STR ? left : right;
         struct value *intv = left->type == TYPE_INT ? left : right;
         if(intv->as.integer == 0) {
-            value_free(left);
-            value_free(right);
             value_str(result, "");
         } else {
             char s[strlen(strv->as.str)*intv->as.integer+1];
             s[0] = 0; s[sizeof(s)] = 0;
             for(int i = 0; i < intv->as.integer; i++)
                 strcat(s, strv->as.str);
-            value_free(left);
-            value_free(right);
             value_str(result, s);
+        }
+    } else if(left->type == TYPE_ARRAY && right->type == TYPE_INT) {
+        size_t length = left->as.array->data.length*(size_t)right->as.integer;
+        value_array_n(result, length);
+        for(size_t i = 0; i < right->as.integer; i++) {
+            for(size_t j = 0; j < left->as.array->data.length; j++) {
+                size_t index = left->as.array->data.length*i+j;
+                value_copy(&result->as.array->data.data[index], &left->as.array->data.data[j]);
+            }
         }
     }
 )
@@ -178,8 +183,6 @@ logic_op(or, ||)
 #define strcmp_op(cond) \
     else if(left->type == TYPE_STR && right->type == TYPE_STR) { \
         value_int(result, strcmp(left->as.str, right->as.str) cond); \
-        value_free(left); \
-        value_free(right); \
     }
 arith_op(eq, ==,
     strcmp_op(== 0)
