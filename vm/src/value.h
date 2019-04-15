@@ -33,6 +33,7 @@ void value_str(struct value*, const char*);
 void value_native(struct value*, value_fn);
 void value_function(struct value*, uint32_t ip, int nargs);
 void value_dict(struct value*);
+void value_dict_copy(struct value*, struct dict*);
 void value_array(struct value*);
 void value_array_n(struct value*, size_t n);
 

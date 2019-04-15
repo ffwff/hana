@@ -30,8 +30,8 @@ void env_set(struct env *env, const char *key, struct value *val) {
     } else if (env->parent != NULL) {
         struct value *outer = env_get(env->parent, key);
         if(outer != NULL) { // set outer scope's var
-            value_free(local);
-            value_copy(local, val);
+            value_free(outer);
+            value_copy(outer, val);
             return;
         }
     }

@@ -462,14 +462,26 @@ int vm_step(struct vm *vm) {
 
         struct value val = array_top(vm->stack);
         struct dict *dict = NULL;
-        if(val.type == TYPE_STR) {
-            dict = vm->dstr;
-        } else if(val.type == TYPE_INT) {
-            dict = vm->dint;
-        } else if(val.type == TYPE_FLOAT) {
-            dict = vm->dfloat;
-        } else if(val.type == TYPE_ARRAY) {
-            dict = vm->darray;
+        if(val.type != TYPE_DICT) {
+            if(val.type == TYPE_STR) {
+                dict = vm->dstr;
+            } else if(val.type == TYPE_INT) {
+                dict = vm->dint;
+            } else if(val.type == TYPE_FLOAT) {
+                dict = vm->dfloat;
+            } else if(val.type == TYPE_ARRAY) {
+                dict = vm->darray;
+            } else if(val.type == TYPE_NIL) {
+                return 1;
+            } else {
+                printf("expected dictionary\n");
+                return 0;
+            }
+            if(strcmp(key, "prototype") == 0) {
+                value_free(&array_top(vm->stack));
+                value_dict_copy(&array_top(vm->stack), dict);
+                return 1;
+            }
         } else {
             if(val.type != TYPE_DICT) {
                 printf("expected dictionary\n");

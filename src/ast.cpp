@@ -268,7 +268,6 @@ void AST::BinaryExpression::emit(struct vm *vm) {
                     : static_cast<StrLiteral*>(mem->right.get())->str.data();
                 array_push(vm->code, OP_MEMBER_SET);
                 vm_code_pushstr(vm, key);
-                vm_code_push32(vm, XXH32(key, strlen(key), 0));
             } else { // TODO
                 mem->right->emit(vm);
                 array_push(vm->code, OP_INDEX_SET);

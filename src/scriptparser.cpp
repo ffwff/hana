@@ -462,6 +462,8 @@ AST::AST *ScriptParser::parse_statement() {
             auto fstmt = parse_statement();
             if(fstmt != nullptr)
                 stmt->statement = std::unique_ptr<AST::AST>(fstmt);
+            else
+                FATAL("Parser error", "expected statement");
             return stmt;
         } else if(token.strv == "record") {
             LOG("struct");
@@ -492,6 +494,8 @@ AST::AST *ScriptParser::parse_statement() {
                         auto body = parse_statement();
                         if(body != nullptr)
                             fstmt->statement = std::unique_ptr<AST::AST>(body);
+                        else
+                            FATAL("Parser error", "expected statement");
                         stmt->statements.emplace_back(fstmt);
                         if(body->type() != AST::Type::BLOCK_STMT)
                             nextnl();
