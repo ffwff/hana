@@ -225,6 +225,7 @@ AST::AST *ScriptParser::parse_call() {
             } else if(op.strv == "[") {
                 fpop();
                 expr = new AST::MemberExpression(expr, parse_expression());
+                static_cast<AST::MemberExpression*>(expr)->is_expr = true;
                 nextop("]");
             } else {
                 LOG("LOAD");
@@ -543,20 +544,19 @@ AST::AST *ScriptParser::parse_statement() {
             nextop("=");
             auto from = parse_expression();
             auto dir = nexts();
+            if(dir != "to" && dir != "downto")
+                FATAL("Parser error", "Expected to/downto");
             auto to = parse_expression();
 
             fsave();
             auto token = next();
+            const int stepN = dir == "to" ? 1 : -1;
             if(token.type == Token::Type::STRING && token.strv == "step") {
                 fpop();
-                return new AST::ForStatement(id, from, to, parse_expression(), parse_statement());
+                return new AST::ForStatement(id, from, to, parse_expression(), stepN, parse_statement());
             } else {
                 fload();
-                if(dir == "to")
-                    return new AST::ForStatement(id, from, to, 1, parse_statement());
-                else if(dir == "downto")
-                    return new AST::ForStatement(id, from, to, -1, parse_statement());
-                else FATAL("Parser error", "Expected to/downto");
+                return new AST::ForStatement(id, from, to, stepN, parse_statement());
             }
 
         } else if(token.strv == "begin") {

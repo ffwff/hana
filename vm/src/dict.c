@@ -20,6 +20,14 @@ struct value *dict_get(struct dict *dict, const char *key) {
     return NULL;
 }
 
+struct value *dict_get_hash(struct dict *dict, const char *key, const uint32_t hash) {
+    struct value *local = hmap_get_hash(&dict->data, key, hash);
+    if(local != NULL) return local;
+    if(dict->prototypev != NULL && dict->prototypev->type == TYPE_DICT)
+        return dict_get_hash(dict->prototypev->as.dict, key, hash);
+    return NULL;
+}
+
 void dict_set(struct dict *dict, const char *key, struct value *val) {
     int has_grown = 0;
     struct value *dval = _hmap_set(&dict->data, key, val, 0, &has_grown);

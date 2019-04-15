@@ -11,8 +11,8 @@ namespace AST {
 enum Type {
 
     NONE,
-    CONSTANT, IDENTIFIER, ARRAY, MEMBER_EXPR, CALL_EXPR,
-    BINARY_EXPR, UNARY_EXPR,
+    CONSTANT, STR_LITERAL, IDENTIFIER, ARRAY,
+    MEMBER_EXPR, CALL_EXPR, BINARY_EXPR, UNARY_EXPR, COND_EXPR,
     IF_STMT, WHILE_STMT, BLOCK_STMT,
     FUNCTION_STMT, STRUCT_STMT, EXPR_STMT, RETURN_STMT,
     FOR_STMT,
@@ -32,7 +32,7 @@ struct AST {
 
 // Constant
 struct StrLiteral : AST {
-    TYPE(CONSTANT)
+    TYPE(STR_LITERAL)
     std::string str;
     StrLiteral(std::string str) : str(str) {};
     void print(int indent=0) override;
@@ -85,8 +85,8 @@ struct UnaryExpression : Expression {
 struct MemberExpression : Expression {
     TYPE(MEMBER_EXPR)
     std::unique_ptr<AST> left, right;
-    bool is_called;
-    MemberExpression(AST *left, AST *right) : left(left), right(right), is_called(false) {};
+    bool is_called, is_expr;
+    MemberExpression(AST *left, AST *right) : left(left), right(right), is_called(false), is_expr(false) {};
     void print(int indent=0) override;
     void emit(struct vm *vm) override;
 };
@@ -117,6 +117,7 @@ struct BinaryExpression : Expression {
 };
 
 struct ConditionalExpression : Expression {
+    TYPE(COND_EXPR)
     std::unique_ptr<AST> condition, expression, alt;
     ConditionalExpression(AST *condition, AST *expression, AST *alt) : condition(condition), expression(expression), alt(alt) {};
     void print(int indent=0) override;
@@ -152,7 +153,7 @@ struct ForStatement : Statement {
     std::unique_ptr<AST> from, to, step;
     int stepN;
     std::unique_ptr<AST> statement;
-    ForStatement(const std::string &id, AST *from, AST *to, AST *step, AST *statement) : id(id), from(from), to(to), step(step), statement(statement) {}
+    ForStatement(const std::string &id, AST *from, AST *to, AST *step, const int stepN, AST *statement) : id(id), from(from), to(to), step(step), stepN(stepN), statement(statement) {}
     ForStatement(const std::string &id, AST *from, AST *to, const int stepN, AST *statement) : id(id), from(from), to(to), stepN(stepN), statement(statement) {}
     void print(int indent=0) override;
     void emit(struct vm *vm) override;

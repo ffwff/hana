@@ -161,10 +161,10 @@ void AST::IntLiteral::emit(struct vm *vm) {
     if(ui <= 0xff) {
         array_push(vm->code, OP_PUSH8);
         array_push(vm->code, ui);
-    } else if (ui <= 0xffff) {
+    } else if (ui <= 0xfff) {
         array_push(vm->code, OP_PUSH16);
         vm_code_push16(vm, ui);
-    } else if (ui <= 0xffffffff) {
+    } else if (ui <= 0xfffff) {
         array_push(vm->code, OP_PUSH32);
         vm_code_push32(vm, ui);
     } else { // 64-bit int
@@ -188,10 +188,10 @@ void AST::Array::emit(struct vm *vm) {
     if(ui <= 0xff) {
         array_push(vm->code, OP_PUSH8);
         array_push(vm->code, ui);
-    } else if (ui <= 0xffff) {
+    } else if (ui <= 0xfff) {
         array_push(vm->code, OP_PUSH16);
         vm_code_push16(vm, ui);
-    } else if (ui <= 0xffffffff) {
+    } else if (ui <= 0xfffff) {
         array_push(vm->code, OP_PUSH32);
         vm_code_push32(vm, ui);
     } else { // 64-bit int
@@ -217,11 +217,14 @@ void AST::UnaryExpression::emit(struct vm *vm) {
 }
 void AST::MemberExpression::emit(struct vm *vm) {
     left->emit(vm);
-    if(right->type() == IDENTIFIER) {
-        const char *key = static_cast<Identifier*>(right.get())->id.data();
+    if((right->type() == IDENTIFIER || right->type() == STR_LITERAL) && !is_expr) {
+        const char *key = right->type() == IDENTIFIER
+                        ? static_cast<Identifier*>(right.get())->id.data()
+                        : static_cast<StrLiteral*>(right.get())->str.data();
         if(is_called) array_push(vm->code, OP_MEMBER_GET_NO_POP);
         else array_push(vm->code, OP_MEMBER_GET);
         vm_code_pushstr(vm, key);
+        vm_code_push32(vm, XXH32(key, strlen(key), 0));
     } else {
         right->emit(vm);
         array_push(vm->code, OP_INDEX_GET);
@@ -238,20 +241,34 @@ void AST::CallExpression::emit(struct vm *vm) {
         array_push(vm->code, arguments.size());
 }
 void AST::BinaryExpression::emit(struct vm *vm) {
-    if(op == SET) {
+    if(op == SET || op == ADDS || op == SUBS || op == MULS || op == DIVS) {
+        if(op == ADDS || op == SUBS || op == MULS || op == DIVS) {
+            left->emit(vm);
+        }
+    #define EMIT_OP \
+        if(op == ADDS) array_push(vm->code, OP_ADD); \
+        else if(op == SUBS) array_push(vm->code, OP_SUB); \
+        else if(op == MULS) array_push(vm->code, OP_MUL); \
+        else if(op == DIVS) array_push(vm->code, OP_DIV);
+
         if(left->type() == IDENTIFIER) {
             right->emit(vm);
+            EMIT_OP
             auto s = static_cast<Identifier*>(left.get())->id;
             array_push(vm->code, OP_SET);
             vm_code_pushstr(vm, s.data());
         } else if(left->type() == MEMBER_EXPR) { // member expr
             right->emit(vm);
+            EMIT_OP
             auto mem = static_cast<MemberExpression*>(left.get());
             mem->left->emit(vm);
-            if(mem->right->type() == IDENTIFIER) {
-                const char *key = static_cast<Identifier*>(mem->right.get())->id.data();
+            if((mem->right->type() == IDENTIFIER || mem->right->type() == STR_LITERAL) && !mem->is_expr) {
+                const char *key = mem->right->type() == IDENTIFIER
+                    ? static_cast<Identifier*>(mem->right.get())->id.data()
+                    : static_cast<StrLiteral*>(mem->right.get())->str.data();
                 array_push(vm->code, OP_MEMBER_SET);
                 vm_code_pushstr(vm, key);
+                vm_code_push32(vm, XXH32(key, strlen(key), 0));
             } else { // TODO
                 mem->right->emit(vm);
                 array_push(vm->code, OP_INDEX_SET);
@@ -266,20 +283,57 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             vm_code_push32(vm, FILLER32);
             array_push(vm->code, (uint8_t)(expr->arguments.size()));
             //body
+            size_t body_start = vm->code.length;
             for(auto &arg : expr->arguments) {
                 assert(arg->type() == IDENTIFIER);
                 array_push(vm->code, OP_SET_LOCAL);
                 vm_code_pushstr(vm, static_cast<Identifier*>(arg.get())->id.data());
                 array_push(vm->code, OP_POP);
             }
-            right->emit(vm);
+            // primitive tail call optimizations
+            if(right->type() == COND_EXPR) {
+                auto c = static_cast<ConditionalExpression*>(right.get());
+                if( c->expression->type() == CALL_EXPR || c->alt->type() == CALL_EXPR ) {
+                    c->condition->emit(vm);
+                    array_push(vm->code, OP_JNCOND);
+                    size_t length = vm->code.length;
+                    vm_code_push32(vm, FILLER32);
+                    // then statement
+                #define OPTIMIZE_BRANCH(branch) \
+                    if( c->branch->type() == CALL_EXPR && \
+                        static_cast<CallExpression*>(c->branch.get())->callee->type() == IDENTIFIER && \
+                        static_cast<Identifier*>(static_cast<CallExpression*>(c->branch.get())->callee.get())->id == id) { \
+                        auto call = static_cast<CallExpression*>(c->branch.get()); \
+                        for(auto arg = call->arguments.rbegin(); arg != call->arguments.rend(); arg++) \
+                        { (*arg)->emit(vm); } \
+                        array_push(vm->code, OP_JMP); \
+                        vm_code_push32(vm, body_start); \
+                    } else { \
+                        c->branch->emit(vm);\
+                    }
+                    OPTIMIZE_BRANCH(expression)
+                    // alt
+                    array_push(vm->code, OP_JMP);
+                    size_t length1 = vm->code.length;
+                    vm_code_push32(vm, FILLER32);
+                    size_t n = vm->code.length;
+                    OPTIMIZE_BRANCH(alt)
+                    size_t n1 = vm->code.length;
+                    fill_hole(vm, length, n);
+                    fill_hole(vm, length1, n1);
+                } else // no optimization possible
+                    right->emit(vm);
+            } else {
+                right->emit(vm);
+            }
             array_push(vm->code, OP_RET); // pops env for us
             //fill in
             fill_hole(vm, length, vm->code.length);
             array_push(vm->code, OP_SET);
             vm_code_pushstr(vm, id);
         }
-    } else {
+    }
+    else {
         left->emit(vm);
         right->emit(vm);
         if(op == ADD)      array_push(vm->code, OP_ADD);
@@ -295,14 +349,6 @@ void AST::BinaryExpression::emit(struct vm *vm) {
         else if(op == LT)  array_push(vm->code, OP_LT );
         else if(op == GEQ) array_push(vm->code, OP_GEQ);
         else if(op == LEQ) array_push(vm->code, OP_LEQ);
-
-        /*
-        else if(op == SET)  array_push(vm->code, OP_ADD);
-        else if(op == ADDS) array_push(vm->code, OP_ADD);
-        else if(op == SUBS) array_push(vm->code, OP_ADD);
-        else if(op == MULS) array_push(vm->code, OP_ADD);
-        else if(op == DIVS) array_push(vm->code, OP_ADD);
-        */
     }
 }
 void AST::ConditionalExpression::emit(struct vm *vm) {
@@ -387,7 +433,8 @@ void AST::ForStatement::emit(struct vm *vm) {
     vm_code_pushstr(vm, id.data());
     vm_code_push32(vm, XXH32(id.data(), id.size(), 0));
     to->emit(vm);
-    array_push(vm->code, OP_EQ);
+    if(stepN == 1) array_push(vm->code, OP_GEQ);
+    else array_push(vm->code, OP_LEQ);
 
     array_push(vm->code, OP_JCOND);
     size_t length = vm->code.length;

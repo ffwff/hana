@@ -378,6 +378,22 @@ namespace array {
         value_free(&aval);
         value_int(&array_top(vm->stack), 0);
     }
+    fn(push) {
+        assert(nargs == 2);
+
+        struct value aval;
+        value_copy(&aval, &array_top(vm->stack));
+        value_free(&array_top(vm->stack));
+        array_pop(vm->stack);
+
+        array_push(aval.as.array->data, array_top(vm->stack));
+        value_free(&array_top(vm->stack));
+        value_copy(&array_top(vm->stack), &aval);
+        value_free(&aval);
+    }
+    fn(pop) {
+
+    }
     fn(sort) {
 
     }
@@ -453,6 +469,8 @@ int main(int argc, char **argv) {
     native_obj_function("copy",        array::copy);
     native_obj_function("at",          array::at);
     native_obj_function("index",       array::index);
+    native_obj_function("push",        array::push);
+    native_obj_function("pop",         array::pop);
     env_set(m.env, "array", &val);
     value_free(&val);
     m.darray = val.as.dict;
