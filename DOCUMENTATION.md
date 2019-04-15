@@ -179,7 +179,6 @@ begin
 end
 ```
 
-
 # Types
 
 Basic types include:
@@ -323,4 +322,13 @@ Methods:
 a = [4,6,7,3,1]
 a.sort() // => [1, 3, 4, 6, 7] (sorts array without changing the array)
 a.sort!() // => [1, 3, 4, 6, 7] (sorts array in place)
+```
+
+# Standard library
+
+## IO
+
+```
+print(v) // => prints value "v" onto stdout
+v = input() // => gets a string from stdin
 ```
