@@ -32,8 +32,8 @@ enum vm_opcode {
     OP_ENV_INHERIT, OP_ENV_POP,
     // dictionary
     OP_DICT_NEW, OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
-    OP_MEMBER_SET, OP_DICT_LOAD, OP_INDEX_GET,
-    OP_ARRAY_LOAD
+    OP_MEMBER_SET, OP_DICT_LOAD, OP_ARRAY_LOAD,
+    OP_INDEX_GET, OP_INDEX_SET,
 };
 
 typedef array(uint8_t) a_uint8;
@@ -44,7 +44,7 @@ struct vm {
     struct env *env;
     a_uint8 code;
     a_value stack;
-    struct dict *dstr, *dint, *dfloat;
+    struct dict *dstr, *dint, *dfloat, *darray;
 };
 
 void vm_init(struct vm*);

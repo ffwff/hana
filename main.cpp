@@ -4,6 +4,7 @@
 #include "src/scriptparser.h"
 #include "vm/src/vm.h"
 #include "vm/src/dict.h"
+#include "vm/src/array_obj.h"
 
 namespace hanayo {
 
@@ -18,6 +19,15 @@ static std::string to_string(struct value &val) {
         return "[function]";
     else if(val.type == value::TYPE_DICT)
         return "[dictionary]";
+    else if(val.type == value::TYPE_ARRAY) {
+        std::string s = "[";
+        if(val.as.array->data.length)
+            s += to_string(val.as.array->data.data[0]);
+        for(size_t i = 1; i < val.as.array->data.length; i++)
+            s += ", " + to_string(val.as.array->data.data[i]);
+        s += "]";
+        return s;
+    }
     return "[nil]";
 }
 
@@ -215,6 +225,167 @@ namespace record {
     }
 }
 
+namespace array {
+    fn(constructor) {
+        struct value aval;
+        if(nargs == 0) value_array(&aval);
+        else {
+            value_array_n(&aval, nargs);
+            aval.as.array->data.length = nargs;
+            for(size_t i = 0; i < (size_t)nargs; i++) {
+                struct value val = array_top(vm->stack);
+                value_copy(&aval.as.array->data.data[i], &val);
+                array_pop(vm->stack);
+                value_free(&val);
+            }
+        }
+        array_push(vm->stack, aval);
+    }
+
+    fn(length) {
+        assert(nargs == 1);
+        struct value *val = &array_top(vm->stack);
+        int64_t length = val->as.array->data.length;
+        value_free(val);
+        value_int(val, length);
+    }
+    fn(delete_) {
+        assert(nargs == 3);
+
+        struct value val = {0};
+
+        // array
+        val = array_top(vm->stack);
+        struct value aval;
+        value_copy(&aval, &val);
+        value_free(&val);
+        array_pop(vm->stack);
+
+        // from pos
+        val = array_top(vm->stack);
+        array_pop(vm->stack);
+        size_t from_pos = (size_t)val.as.integer;
+
+        // n chars
+        val = array_top(vm->stack);
+        array_pop(vm->stack);
+        size_t nchars = (size_t)val.as.integer;
+
+        assert(from_pos >= 0 && from_pos+nchars < aval.as.array->data.length);
+        for(size_t i = from_pos; i < (from_pos+nchars); i++) {
+            value_free(&aval.as.array->data.data[i]);
+        }
+        size_t remaining = (aval.as.array->data.length-nchars)*sizeof(struct value);
+        memmove(&aval.as.array->data.data[from_pos],
+                &aval.as.array->data.data[from_pos+nchars], remaining);
+        aval.as.array->data.length -= nchars;
+        array_push(vm->stack, aval);
+    }
+    fn(copy) {
+        assert(nargs == 3);
+
+        struct value val = {0};
+
+        // string
+        val = array_top(vm->stack);
+        struct value aval;
+        value_copy(&aval, &val);
+        value_free(&val);
+        array_pop(vm->stack);
+
+        // from pos
+        val = array_top(vm->stack);
+        assert(val.type == value::TYPE_INT);
+        array_pop(vm->stack);
+        int64_t from_pos = val.as.integer;
+
+        // n chars
+        val = array_top(vm->stack);
+        assert(val.type == value::TYPE_INT);
+        array_pop(vm->stack);
+        int64_t nchars = val.as.integer;
+
+        if(nchars == 0) {
+            value_free(&aval);
+            value_array(&aval);
+            array_push(vm->stack, val);
+        } else {
+            struct value newval;
+            value_array_n(&newval, nchars);
+            for(size_t i = (size_t)from_pos, j = 0; i < (size_t)(from_pos+nchars); i++, j++) {
+                value_copy(&newval.as.array->data.data[j], &aval.as.array->data.data[i]);
+            }
+            newval.as.array->data.length = nchars;
+            value_free(&aval);
+            array_push(vm->stack, newval);
+        }
+    }
+    fn(at) {
+        assert(nargs == 2);
+        struct value val = {0};
+
+        // string
+        val = array_top(vm->stack);
+        struct value aval;
+        value_copy(&aval, &val);
+        value_free(&val);
+        array_pop(vm->stack);
+
+        // from pos
+        val = array_top(vm->stack);
+        assert(val.type == value::TYPE_INT);
+        array_pop(vm->stack);
+        int64_t index = val.as.integer;
+
+        if(index < (int64_t)(aval.as.array->data.length) && index >= 0) {
+            struct value val;
+            value_copy(&val, &aval.as.array->data.data[index]);
+            value_free(&aval);
+            array_push(vm->stack, val);
+        } else {
+            value_free(&aval);
+            array_push(vm->stack, {0});
+        }
+    }
+    fn(index) {
+        assert(nargs == 2);
+        struct value val = {0};
+
+        // string
+        val = array_top(vm->stack);
+        struct value aval;
+        value_copy(&aval, &val);
+        value_free(&val);
+        array_pop(vm->stack);
+
+        // from pos
+        val = array_top(vm->stack);
+        struct value needle;
+        value_copy(&needle, &val);
+        value_free(&val);
+        array_pop(vm->stack);
+
+        array_push(vm->stack, {0});
+        for(size_t i = 0; i < aval.as.array->data.length; i++) {
+            struct value result;
+            value_eq(&result, &needle, &aval.as.array->data.data[i]);
+            if(result.as.integer == 1) {
+                value_free(&aval);
+                value_int(&array_top(vm->stack), (int64_t)i);
+                return;
+            }
+        }
+        value_free(&aval);
+        value_int(&array_top(vm->stack), 0);
+    }
+    fn(sort) {
+
+    }
+    fn(sort_) {
+
+    }
+}
+
 #undef fn
 
 }
@@ -274,6 +445,17 @@ int main(int argc, char **argv) {
     env_set(m.env, "float", &val);
     value_free(&val);
     m.dfloat = val.as.dict;
+
+    value_dict(&val);
+    native_obj_function("constructor", array::constructor);
+    native_obj_function("length",      array::length);
+    native_obj_function("delete",      array::delete_);
+    native_obj_function("copy",        array::copy);
+    native_obj_function("at",          array::at);
+    native_obj_function("index",       array::index);
+    env_set(m.env, "array", &val);
+    value_free(&val);
+    m.darray = val.as.dict;
 
     // emit bytecode
     ast->emit(&m);

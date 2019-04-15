@@ -253,7 +253,8 @@ void AST::BinaryExpression::emit(struct vm *vm) {
                 array_push(vm->code, OP_MEMBER_SET);
                 vm_code_pushstr(vm, key);
             } else { // TODO
-                assert(0);
+                mem->right->emit(vm);
+                array_push(vm->code, OP_INDEX_SET);
             }
         } else if(left->type() == CALL_EXPR) {
             auto expr = static_cast<CallExpression*>(left.get());

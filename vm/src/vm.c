@@ -26,7 +26,7 @@ void vm_init(struct vm *vm) {
         .capacity = 8
     };
     vm->ip = 0;
-    vm->dstr = vm->dint = vm->dfloat = 0;
+    vm->dstr = vm->dint = vm->dfloat = vm->darray = 0;
 }
 
 void vm_free(struct vm *vm) {
@@ -368,6 +368,10 @@ int vm_step(struct vm *vm) {
             struct value caller;
             value_function(&caller, vm->ip, 0);
             array_push(vm->stack, caller);
+            // environment
+            struct env *parent = vm->env;
+            vm->env = malloc(sizeof(struct env));
+            env_init(vm->env, parent);
             // arguments
             if(val.type == TYPE_DICT) {
                 if(vm->stack.length+nargs > vm->stack.capacity) {
@@ -383,15 +387,10 @@ int vm_step(struct vm *vm) {
                 dict_set(new_val.as.dict, "prototype", &val);
                 value_free(&val); // reference carried by dict
                 array_push(vm->stack, new_val);
-                nargs++;
             } else {
                 for(int i = 0; i < nargs; i++)
                     array_push(vm->stack, args[i]);
             }
-            // environment
-            struct env *parent = vm->env;
-            vm->env = malloc(sizeof(struct env));
-            env_init(vm->env, parent);
             // jump
             vm->ip = fn_ip;
         } else {
@@ -463,6 +462,8 @@ int vm_step(struct vm *vm) {
             dict = vm->dint;
         } else if(val.type == TYPE_FLOAT) {
             dict = vm->dfloat;
+        } else if(val.type == TYPE_ARRAY) {
+            dict = vm->darray;
         } else {
             if(val.type != TYPE_DICT) {
                 printf("expected dictionary\n");
@@ -547,6 +548,46 @@ int vm_step(struct vm *vm) {
             array_push(vm->stack, (struct value){});
             struct value *val = dict_get(dval.as.dict, index.as.str);
             if(val) value_copy(&array_top(vm->stack), val);
+        } else {
+            printf("expected dictionary or array\n");
+            return 0;
+        }
+        value_free(&dval);
+        break;
+    }
+    case OP_INDEX_SET: {
+        vm->ip++;
+        LOG("INDEX_SET\n");
+
+        struct value index;
+        value_copy(&index, &array_top(vm->stack));
+        value_free(&array_top(vm->stack));
+        array_pop(vm->stack);
+
+        struct value dval = array_top(vm->stack);
+        array_pop(vm->stack);
+
+        struct value *val = &array_top(vm->stack);
+
+        if(dval.type == TYPE_ARRAY) {
+            if(index.type != TYPE_INT) {
+                printf("index type must be integer!\n");
+                return 0;
+            }
+            const int64_t i = index.as.integer;
+            if(!(i >= 0 && i < dval.as.array->data.length)) {
+                printf("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
+                return 0;
+            }
+            value_free(&dval.as.array->data.data[i]);
+            value_copy(&dval.as.array->data.data[i], val);
+        } else if(dval.type == TYPE_DICT) {
+            if(index.type != TYPE_STR) {
+                printf("index type must be string!\n");
+                return 0;
+            }
+            dict_set(dval.as.dict, index.as.str, val);
+            //value_free(&val);
         } else {
             printf("expected dictionary or array\n");
             return 0;
