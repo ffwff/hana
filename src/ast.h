@@ -174,7 +174,8 @@ struct StructStatement : Statement {
     TYPE(STRUCT_STMT)
     std::string id;
     std::vector<std::unique_ptr<AST>> statements;
-    StructStatement(std::string &id) : id(id) {}
+    bool is_expr;
+    StructStatement(std::string &id) : id(id), is_expr(false) {}
     void print(int indent=0) override;
     void emit(struct vm *vm) override;
 };

@@ -23,6 +23,7 @@ private:
     AST::AST *parse_binexpr();
     AST::AST *parse_conditional_expr();
     AST::AST *parse_block();
+    AST::AST *parse_record(bool is_expr=false);
     std::vector<std::string> parse_function_arguments();
     AST::AST *parse_statement();
     void parse_procedure();

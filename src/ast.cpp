@@ -496,7 +496,7 @@ void AST::StructStatement::emit(struct vm *vm) {
     array_push(vm->code, OP_DICT_LOAD);
     array_push(vm->code, OP_SET);
     vm_code_pushstr(vm, id.data());
-    array_push(vm->code, OP_POP);
+    if(!is_expr) array_push(vm->code, OP_POP);
 }
 void AST::ExpressionStatement::emit(struct vm *vm) {
     expression->emit(vm);

@@ -164,6 +164,9 @@ AST::AST *ScriptParser::parse_factor() {
             return expr;
         }
     } else if(token.type == Token::Type::STRING) {
+        if(token.strv == "record") {
+            return parse_record(true);
+        }
         return new AST::Identifier(token.strv);
     } else if(token.type == Token::Type::STRLITERAL) {
         return new AST::StrLiteral(token.strv);
@@ -429,6 +432,64 @@ std::vector<std::string> ScriptParser::parse_function_arguments() {
         FATAL("Parser error", "Expected function arguments");
 }
 
+AST::AST *ScriptParser::parse_record(bool is_expr) {
+    LOG("struct");
+    std::string id;
+    if(!is_expr) {
+        fsave();
+        auto token = next();
+        if(token.type != Token::Type::STRING) {
+            return nullptr;
+        }
+        fpop();
+        id = token.strv;
+    }
+    auto stmt = new AST::StructStatement(id);
+    stmt->is_expr = is_expr;
+    nextnl();
+    while(!f.eof()) {
+        fsave();
+        auto token = next();
+        LOG(token.strv);
+        if(token.type == Token::Type::STRING) {
+            if(token.strv == "end") {
+                fpop();
+                break;
+            } else if(token.strv == "function") {
+                fpop();
+                auto id = nexts();
+                LOG("id: ", id);
+                auto fstmt = new AST::FunctionStatement(id);
+                fstmt->record_fn = true;
+                fstmt->arguments = parse_function_arguments();
+                auto body = parse_statement();
+                if(body != nullptr)
+                    fstmt->statement = std::unique_ptr<AST::AST>(body);
+                else
+                    FATAL("Parser error", "expected statement");
+                stmt->statements.emplace_back(fstmt);
+                if(body->type() != AST::Type::BLOCK_STMT)
+                    nextnl();
+            } else {
+                fload();
+                auto left = parse_call();
+                if (left->type() != AST::Type::MEMBER_EXPR &&
+                    left->type() != AST::Type::IDENTIFIER)
+                    FATAL("Parser error", "expected member expression or identifier");
+                nextop("=");
+                auto right = parse_expression();
+                stmt->statements.emplace_back(new AST::ExpressionStatement(
+                    new AST::BinaryExpression(left, right, AST::BinaryExpression::OpType::SET)
+                ));
+                nextnl();
+            }
+            continue;
+        }
+        FATAL("Parser error", "expected end or struct statement");
+    }
+    return stmt;
+}
+
 AST::AST *ScriptParser::parse_statement() {
     fsave();
     const auto token = next();
@@ -466,57 +527,12 @@ AST::AST *ScriptParser::parse_statement() {
                 FATAL("Parser error", "expected statement");
             return stmt;
         } else if(token.strv == "record") {
-            LOG("struct");
-            auto token = next();
-            if(token.type != Token::Type::STRING) {
-                goto expression_stmt;
-            }
             fpop();
-            auto id = token.strv;
-            auto stmt = new AST::StructStatement(id);
-            nextnl();
-            while(!f.eof()) {
-                fsave();
-                auto token = next();
-                LOG(token.strv);
-                if(token.type == Token::Type::STRING) {
-                    if(token.strv == "end") {
-                        fpop();
-                        nextnl();
-                        break;
-                    } else if(token.strv == "function") {
-                        fpop();
-                        auto id = nexts();
-                        LOG("id: ", id);
-                        auto fstmt = new AST::FunctionStatement(id);
-                        fstmt->record_fn = true;
-                        fstmt->arguments = parse_function_arguments();
-                        auto body = parse_statement();
-                        if(body != nullptr)
-                            fstmt->statement = std::unique_ptr<AST::AST>(body);
-                        else
-                            FATAL("Parser error", "expected statement");
-                        stmt->statements.emplace_back(fstmt);
-                        if(body->type() != AST::Type::BLOCK_STMT)
-                            nextnl();
-                    } else {
-                        fload();
-                        auto left = parse_call();
-                        if (left->type() != AST::Type::MEMBER_EXPR &&
-                            left->type() != AST::Type::IDENTIFIER)
-                            FATAL("Parser error", "expected member expression or identifier");
-                        nextop("=");
-                        auto right = parse_expression();
-                        stmt->statements.emplace_back(new AST::ExpressionStatement(
-                            new AST::BinaryExpression(left, right, AST::BinaryExpression::OpType::SET)
-                        ));
-                        nextnl();
-                    }
-                    continue;
-                }
-                FATAL("Parser error", "expected end or struct statement");
-            }
-            return stmt;
+            auto record = parse_record();
+            if(record == nullptr) {
+                goto expression_stmt;
+            } else
+                return record;
         } else if(token.strv == "if") {
             fpop();
             LOG("conditional stmt");
