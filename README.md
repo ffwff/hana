@@ -2,6 +2,14 @@
 
 **hana**, a small object oriented programming language.
 
+## Cloning
+
+You'll have to clone it recursively:
+
+```
+git clone -r https://github.com/ffwff/hana
+```
+
 ## Building
 
 (building is tested with gcc-7 on Linux, mileage may vary on other architectures)
