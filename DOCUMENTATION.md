@@ -92,11 +92,9 @@ fib(n) = fibrec(n+1, 1, 0)
 print(fib(50), "\n")
 ```
 
-# Statements
+# Expressions
 
-All statements are separated by newlines.
-
-## Expressions
+## n-ary expressions
 
 Binary operators include (comma separated):
 
@@ -110,6 +108,28 @@ Unary operators include:
 ```
 not, -
 ```
+
+## call expressions
+
+```
+a() // calls function a with no arguments
+a(1,2) // calls function a with 2 arguments
+```
+
+## member expressions
+
+Access a key of a record like this:
+
+```
+a.b // => access "b" key of record "a"
+a["b"] // => access "b" key of record "a"
+v = [3,5]
+v[0] //  => access 0th index (3) of array "v"
+```
+
+# Statements
+
+All statements are separated by newlines.
 
 ## Function
 
