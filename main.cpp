@@ -5,6 +5,10 @@
 #include "vm/src/vm.h"
 #include "vm/src/dict.h"
 #include "vm/src/array_obj.h"
+#ifdef LREADLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
 
 namespace hanayo {
 
@@ -18,7 +22,7 @@ static std::string to_string(struct value &val) {
     else if(val.type == value::TYPE_NATIVE_FN || val.type == value::TYPE_FN)
         return "(function)";
     else if(val.type == value::TYPE_DICT)
-        return "(dictionary)";
+        return "(record)";
     else if(val.type == value::TYPE_ARRAY) {
         std::string s = "[";
         if(val.as.array->data.length)
@@ -466,10 +470,41 @@ namespace array {
         value_free(&array_top(vm->stack));
     }
     fn(sort) {
-
+        assert(nargs == 1);
+        //array_pop(vm->stack);
+        struct value *aval = &array_top(vm->stack);
+        struct value val;
+        value_array_n(&val, aval->as.array->data.length);
+        for(size_t i = 0; i < aval->as.array->data.length; i++)
+            value_copy(&val.as.array->data.data[i], &aval->as.array->data.data[i]);
+        val.as.array->data.length = aval->as.array->data.length;
+        qsort(val.as.array->data.data, val.as.array->data.length, sizeof(struct value), [](const void *a, const void *b) -> int {
+            const struct value *va = (const struct value *)a,
+              *vb = (const struct value *)b;
+              struct value ret = {0};
+              value_lt(&ret, va, vb);
+              if(ret.as.integer == 1) return -1;
+              value_eq(&ret, va, vb);
+              if(ret.as.integer == 1) return 0;
+              return 1;
+        });
+        value_free(aval);
+        array_pop(vm->stack);
+        array_push(vm->stack, val);
     }
     fn(sort_) {
-
+        assert(nargs == 1);
+        struct value *val = &array_top(vm->stack);
+        qsort(val->as.array->data.data, val->as.array->data.length, sizeof(struct value), [](const void *a, const void *b) -> int {
+            const struct value *va = (const struct value *)a,
+                               *vb = (const struct value *)b;
+            struct value ret = {0};
+            value_lt(&ret, va, vb);
+            if(ret.as.integer == 1) return -1;
+            value_eq(&ret, va, vb);
+            if(ret.as.integer == 1) return 0;
+            return 1;
+        });
     }
 }
 
@@ -478,18 +513,6 @@ namespace array {
 }
 
 int main(int argc, char **argv) {
-    if(argc != 2) {
-        std::cout << "expects at least 2!";
-        return 1;
-    }
-    // parser
-    Hana::ScriptParser p;
-    p.loadf(argv[1]);
-    auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
-#if !defined(NOLOG) && defined(DEBUG)
-    ast->print();
-#endif
-
     // virtual machine
     struct vm m; vm_init(&m);
     // variables:
@@ -544,19 +567,78 @@ int main(int argc, char **argv) {
     native_obj_function("insert",      array::insert);
     native_obj_function("push",        array::push);
     native_obj_function("pop",         array::pop);
+    native_obj_function("sort",        array::sort);
+    native_obj_function("sort!",       array::sort_);
     env_set(m.env, "array", &val);
     value_free(&val);
     m.darray = val.as.dict;
 
-    // emit bytecode
-    ast->emit(&m);
-    array_push(m.code, OP_HALT);
+    if(argc == 2) {
+        Hana::ScriptParser p;
+        p.loadf(argv[1]);
+        auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        #if defined(DEBUG)
+        ast->print();
+        #endif
+        ast->emit(&m);
+        array_push(m.code, OP_HALT);
+        vm_execute(&m);
+        goto cleanup;
+    } else {
+        #ifdef LREADLINE
+        rl_bind_key('\t', rl_insert);
+        #endif
+        while(1) {
+            #ifdef LREADLINE
+            int nread = 0;
+            std::string s;
+            while(1) {
+                char *buf = readline(nread == 0 ? ">> " : "");
+                if(buf == nullptr) {
+                    goto cleanup;
+                } else if(buf[strlen(buf)-1] == '\\') {
+                    add_history(buf);
+                    buf[strlen(buf)-1] = 0;
+                    s += buf;
+                    s += '\n';
+                    nread++;
+                    free(buf);
+                } else {
+                    add_history(buf);
+                    s += buf;
+                    s += '\n';
+                    free(buf);
+                    break;
+                }
+            }
+            #else
+            std::cout << ">> ";
+            std::string s, line;
+            while(1) {
+                std::getline(std::cin, line);
+                if(std::cin.eof()) goto cleanup;
+                if(line[line.size()-1] == '\\') {
+                    line.resize(line.size()-1);
+                    s += line+'\n';
+                } else {
+                    s += line+'\n';
+                    break;
+                }
+            }
+            #endif
+            if(s.empty()) continue;
+            Hana::ScriptParser p;
+            p.loads(s);
+            auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+            ast->emit(&m);
+            array_push(m.code, OP_HALT);
+            vm_execute(&m);
+            m.ip += 1;
+            std::cout << std::flush;
+        }
+    }
 
-    // execute!
-    //while(vm_step(&m)) std::cin.get();
-    vm_execute(&m);
-
-    // cleanup
+cleanup:
     vm_free(&m);
     return 0;
 }

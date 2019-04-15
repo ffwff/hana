@@ -6,7 +6,6 @@ namespace Hana {
 class ScriptParser : public Parser {
 
 private:
-    bool ended = false;
     Token next() override;
     void nextop(const std::string &s) {
         Token t = next();

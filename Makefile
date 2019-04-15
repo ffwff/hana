@@ -28,6 +28,10 @@ ifdef NOLOG
 CXXFLAGS += -DNOLOG
 CCFLAGS += -DNOLOG
 endif
+ifdef READLINE
+CXXFLAGS += -DLREADLINE
+LDDFLAGS += -lreadline
+endif
 
 # Default flags
 CXXFLAGS += -std=c++11 -I. -Wall

@@ -101,7 +101,7 @@ void value_copy(struct value *dst, struct value *src) {
 
 // arith
 #define arith_op(name, op, custom) \
-void value_ ## name (struct value *result, struct value *left, struct value *right) { \
+void value_ ## name (struct value *result, const struct value *left, const struct value *right) { \
     if(left->type == TYPE_INT) { \
         if(right->type == TYPE_FLOAT) \
             value_float(result, (float)left->as.integer op right->as.floatp); \
@@ -122,16 +122,14 @@ arith_op(add, +,
         strcat(s, right->as.str);
         s[sizeof(s)] = 0;
         value_str(result, s);
-        value_free(left);
-        value_free(right);
     }
 )
 arith_op(sub, -,)
 arith_op(mul, *,
     else if( (left->type == TYPE_STR && right->type == TYPE_INT) ||
              (left->type == TYPE_INT && right->type == TYPE_STR) ) {
-        struct value *strv = left->type == TYPE_STR ? left : right;
-        struct value *intv = left->type == TYPE_INT ? left : right;
+        const struct value *strv = left->type == TYPE_STR ? left : right;
+        const struct value *intv = left->type == TYPE_INT ? left : right;
         if(intv->as.integer == 0) {
             value_str(result, "");
         } else {
@@ -152,11 +150,11 @@ arith_op(mul, *,
         }
     }
 )
-void value_div(struct value *result, struct value *left, struct value *right) {
+void value_div(struct value *result, const struct value *left, const struct value *right) {
     if( (left->type == TYPE_FLOAT && right->type == TYPE_INT) ||
         (left->type == TYPE_INT && right->type == TYPE_FLOAT) ) {
-        struct value *floatv = left->type == TYPE_FLOAT ? left : right;
-        struct value *intv = left->type == TYPE_INT ? left : right;
+        const struct value *floatv = left->type == TYPE_FLOAT ? left : right;
+        const struct value *intv = left->type == TYPE_INT ? left : right;
         value_float(result, floatv->as.floatp / (double)intv->as.integer);
     } else if(left->type == TYPE_INT && right->type == TYPE_INT) {
         value_float(result, (double)left->as.integer / (double)right->as.integer);
@@ -164,7 +162,7 @@ void value_div(struct value *result, struct value *left, struct value *right) {
         value_float(result, left->as.floatp / right->as.floatp);
     }
 }
-void value_mod(struct value *result, struct value *left, struct value *right) {
+void value_mod(struct value *result, const struct value *left, const struct value *right) {
     assert(left->type == right->type);
     if(left->type == TYPE_INT) {
         value_int(result, left->as.integer % right->as.integer);
@@ -173,7 +171,7 @@ void value_mod(struct value *result, struct value *left, struct value *right) {
 
 // logic
 #define logic_op(name, op) \
-void value_ ## name (struct value *result, struct value *left, struct value *right) { \
+void value_ ## name (struct value *result, const struct value *left, const struct value *right) { \
     value_int(result, value_is_true(left) op value_is_true(right)); \
 }
 logic_op(and, &&)

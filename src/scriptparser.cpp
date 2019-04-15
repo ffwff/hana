@@ -107,7 +107,7 @@ Parser::Token ScriptParser::next() {
         return Token(std::stoi(token));
     }
 #define is_onech_op(c) \
-    (c == '=' || c == '!' || c == '<' || c == '>' || c == '(' || c == ')' || \
+    (c == '=' || c == '<' || c == '>' || c == '(' || c == ')' || \
     c == '+' || c == '-' || c == '/' || c == '*' || c == '[' || c == ']' || \
     c == '.' || c == ',' || c == '?' || c == ':')
     else if(is_onech_op(c)) {
@@ -131,7 +131,8 @@ Parser::Token ScriptParser::next() {
         }
 
     } else {
-        while((c = f.peek()) != EOF && !isspace(c) && !is_onech_op(c))
+        token += f.get();
+        while((c = f.peek()) != EOF && !isspace(c) && (!is_onech_op(c) || c == '?'))
             token += f.get();
         return Token(token);
     }

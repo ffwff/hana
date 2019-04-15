@@ -19,6 +19,7 @@ private:
 protected:
 
     std::stringstream f;
+    bool ended = false;
     int lines = 0;
 
     // File position
@@ -103,8 +104,10 @@ public:
         this->f << f.rdbuf();
 
     };
-    void loads(const char *s) {
-        f = std::stringstream(s);
+    void loads(std::string &s) {
+        f.str(s);
+        f.clear();
+        ended = false;
     };
     void parse();
 };
