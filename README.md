@@ -1,4 +1,4 @@
-# hana
+# 🌸 hana
 
 **hana**, a small object oriented programming language.
 
