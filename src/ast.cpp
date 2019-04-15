@@ -413,7 +413,7 @@ void AST::WhileStatement::emit(struct vm *vm) {
 void AST::ForStatement::emit(struct vm *vm) {
     // start
     from->emit(vm);
-    array_push(vm->code, OP_SET);
+    array_push(vm->code, OP_SET_LOCAL);
     vm_code_pushstr(vm, id.data());
     array_push(vm->code, OP_POP);
     // body
