@@ -70,7 +70,7 @@ age = 20
 print(name, " is ", age, " years old.\n")
 ```
 
-## Fibonacci numbers
+### Fibonacci numbers
 
 ```
 // Regular recursive
