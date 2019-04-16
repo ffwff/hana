@@ -326,9 +326,15 @@ a.sort!() // => [1, 3, 4, 6, 7] (sorts array in place)
 
 # Standard library
 
+Hana's standard library is called `hanayo`! The library is imported by default upon running.
+
 ## IO
 
 ```
 print(v) // => prints value "v" onto stdout
 v = input() // => gets a string from stdin
 ```
+
+## Types
+
+(see [#Types](#types))

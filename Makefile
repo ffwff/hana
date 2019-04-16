@@ -4,7 +4,9 @@ default: main
 # Program
 PARSER_SRC = $(wildcard src/*.cpp)
 VM_SRC = $(wildcard vm/src/*.c)
+HANAYO_SRC = $(wildcard hanayo/*.cpp)
 OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
+       ${subst hanayo/,build/hanayo/,$(HANAYO_SRC:.cpp=.o)} \
        ${subst vm/src/,build/vm/,$(VM_SRC:.c=.o)}
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
@@ -53,6 +55,10 @@ build/vm:
 	mkdir -p build/vm
 build/vm/%.o: vm/src/%.c build/vm
 	$(CC) -c -o $@ $< $(CCFLAGS) -MMD
+build/hanayo:
+	mkdir -p build/hanayo
+build/hanayo/%.o: hanayo/%.cpp build/hanayo
+	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD
 
 clean:
 	rm -rf libhana.so $(OBJS) $(DEPS)
