@@ -221,7 +221,8 @@ fib(30) // => 1346269
 ```
 
 Each function creates a scope (a separate variable environment). Variables that don't
-exist in the global scope will be declared locally.
+exist in the upper scope will be declared locally, while existing variables will
+set accordingly.
 
 ## Strings
 
