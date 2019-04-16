@@ -167,7 +167,10 @@ for [var]=[from] [to/downto] [dest] step [step] [statement]
 ```
 
 The statement sets `[var]` to `[from]`, and loops to (or down to) `[dest]` (inclusive)
-stepping `[step]` (or `1`/`-1`) each iteration. With each iteration, it executes `[statement]`.
+stepping `[step]` each iteration. With each iteration, it executes `[statement]`.
+
+`step [step]` is optional, if the `to` keyword is used, `[step]` will be 1, otherwise if
+`downto` is used, then `[step]` will be -1.
 
 ## Blocks
 
