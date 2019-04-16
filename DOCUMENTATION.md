@@ -124,7 +124,7 @@ Access a key of a record like this:
 a.b // => access "b" key of record "a"
 a["b"] // => access "b" key of record "a"
 v = [3,5]
-v[0] //  => access 0th index (3) of array "v"
+v[0] //  => access 0th index (value 3) of array "v"
 ```
 
 # Statements
@@ -235,6 +235,12 @@ Strings are natively ASCII character arrays. There's no support for Unicode yet!
 name = "Alice"
 greeting = "Hello " + name // => "Hello Alice"
 kaos_says = "ab"*3 + "a" // => "abababa"
+multiline = "
+
+    hey its me
+    a multiline string
+
+"
 ```
 
 Methods:
@@ -311,7 +317,7 @@ Arrays in Hana are dynamic arrays. You can declare arrays like this:
 [] // => empty array
 [1,2] // => array with elements 1, 2
 array(1, 2) // => same
-[1,2,3] // => [1, 2, 3, 1, 2, 3, 1, 2, 3]
+[1,2,3]*3 // => [1, 2, 3, 1, 2, 3, 1, 2, 3] (repeats all elements in [1,2,3] 3 times)
 ```
 
 Methods:
