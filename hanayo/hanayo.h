@@ -46,6 +46,9 @@ namespace array {
     fn(pop);
     fn(sort);
     fn(sort_); // sort!
+    fn(map);
+    fn(filter);
+    fn(reduce);
 }
 
 std::string _to_string(struct value &val);

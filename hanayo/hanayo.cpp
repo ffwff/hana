@@ -82,6 +82,9 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("pop",         array::pop);
     native_obj_function("sort",        array::sort);
     native_obj_function("sort!",       array::sort_);
+    native_obj_function("map",         array::map);
+    native_obj_function("filter",      array::filter);
+    native_obj_function("reduce",      array::reduce);
     env_set(m->env, "array", &val);
     value_free(&val);
     m->darray = val.as.dict;

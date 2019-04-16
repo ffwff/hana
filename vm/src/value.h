@@ -16,7 +16,7 @@ struct value {
         value_fn fn;
         struct {
             uint32_t ip;
-            int nargs;
+            uint32_t nargs;
         } ifn;
         struct dict *dict;
         struct array_obj *array;

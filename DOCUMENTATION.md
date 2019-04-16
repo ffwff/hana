@@ -309,6 +309,10 @@ bob.species // => "Human"
 bob.talk() // => *Human noises*
 ```
 
+Each time you call a record, the record's `constructor` function gets called instead,
+and will pass the record in addition to your arguments. I recommend using `self` to denote
+the argument containing the record.
+
 ## Arrays
 
 Arrays in Hana are dynamic arrays. You can declare arrays like this:
@@ -332,6 +336,11 @@ Methods:
 a = [4,6,7,3,1]
 a.sort() // => [1, 3, 4, 6, 7] (sorts array without changing the array)
 a.sort!() // => [1, 3, 4, 6, 7] (sorts array in place)
+a.map(f(x) = x*2) // => [8, 12, 14, 6, 2] (maps each element with result of function)
+a.filter(f(x) = x > 5) // => [6,7] (filters based on the truthiness of the function)
+a.reduce(f(prev, curr) = prev+curr, 0) // => 21
+// reduce executes a function on each member of the array's element
+// then returns a single output
 ```
 
 # Standard library

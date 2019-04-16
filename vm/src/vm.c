@@ -400,15 +400,13 @@ int vm_step(struct vm *vm) {
         break;
     }
     case OP_RET: {
+        LOG("RET\n");
+
         struct value retval = array_top(vm->stack);
         array_pop(vm->stack);
 
         struct value caller = array_top(vm->stack);
         array_pop(vm->stack);
-        assert(caller.type == TYPE_FN);
-
-        LOG("RET\n");
-        vm->ip = caller.as.ifn.ip;
         array_push(vm->stack, retval);
 
         assert(vm->env->parent != NULL);
@@ -416,6 +414,15 @@ int vm_step(struct vm *vm) {
         env_free(vm->env);
         free(vm->env);
         vm->env = parent;
+
+        if(caller.type == TYPE_NATIVE_FN) {
+            return 0;
+        } else if(caller.type == TYPE_FN) {
+            vm->ip = caller.as.ifn.ip;
+        } else {
+            printf("wrong return value, expected function\n");
+            return 0;
+        }
         break;
     }
 
@@ -670,6 +677,32 @@ int vm_step(struct vm *vm) {
 
 void vm_execute(struct vm *vm) {
     while(vm_step(vm));
+}
+
+struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
+    assert(fn->type == TYPE_FN);
+    assert((uint32_t)args.length == fn->as.ifn.nargs);
+    const uint32_t last = vm->ip;
+    // setup stack/ip
+    struct value val = {
+        .type = TYPE_NATIVE_FN,
+        .as.fn = 0
+    };
+    array_push(vm->stack, val);
+    for(int64_t i = args.length-1; i >= 0; i--) {
+        array_push(vm->stack, (struct value){0});
+        value_copy(&array_top(vm->stack), &args.data[i]);
+    }
+    vm->ip = fn->as.ifn.ip;
+    // environment
+    struct env *parent = vm->env;
+    vm->env = malloc(sizeof(struct env));
+    env_init(vm->env, parent);
+    // call it
+    while(vm_step(vm));
+    // restore env
+    vm->ip = last;
+    return &array_top(vm->stack);
 }
 
 void vm_print_stack(const struct vm *vm) {
