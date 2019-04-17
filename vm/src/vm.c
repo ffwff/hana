@@ -565,6 +565,19 @@ int vm_step(struct vm *vm) {
             }
             array_push(vm->stack, (struct value){});
             value_copy(&array_top(vm->stack), &dval.as.array->data.data[i]);
+        } else if(dval.type == TYPE_STR) {
+            if(index.type != TYPE_INT) {
+                printf("index type must be integer!\n");
+                return 0;
+            }
+            const int64_t i = index.as.integer, len = strlen(dval.as.str);
+            if(!(i >= 0 && i < len)) {
+                printf("accessing index (%ld) that lies out of range [0,%ld) \n", i, len);
+                return 0;
+            }
+            char c[2] = { dval.as.str[i], 0 };
+            array_push(vm->stack, (struct value){});
+            value_str(&array_top(vm->stack), c);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
                 printf("index type must be string!\n");
@@ -574,7 +587,7 @@ int vm_step(struct vm *vm) {
             struct value *val = dict_get(dval.as.dict, index.as.str);
             if(val) value_copy(&array_top(vm->stack), val);
         } else {
-            printf("expected dictionary or array\n");
+            printf("expected dictionary, array or string\n");
             return 0;
         }
         value_free(&dval);
@@ -796,4 +809,10 @@ void vm_code_pushf64(struct vm *vm, double d) {
     array_push(vm->code, u.u[5]);
     array_push(vm->code, u.u[6]);
     array_push(vm->code, u.u[7]);
+}
+
+void vm_code_reserve(struct vm *vm, size_t s) {
+    free(vm->code.data);
+    vm->code.data = malloc(s);
+    vm->code.length = 0;
 }

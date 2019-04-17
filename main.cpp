@@ -1,6 +1,8 @@
+#define _GNU_SOURCE
 #include <iostream>
 #include <memory>
 #include <cmath>
+#include <getopt.h>
 #include "src/scriptparser.h"
 #include "hanayo/hanayo.h"
 #ifdef LREADLINE
@@ -8,23 +10,117 @@
 #include <readline/history.h>
 #endif
 
+static void help(char *program) {
+printf(
+"usage: %s [-c cmd | file | -]\n\
+options: \n\
+ -c cmd : execute program passed in as string\n\
+ -d/--dump-vmcode: dumps vm bytecode to stdout\n\
+                   (only works in interpreter mode)\n\
+ -b/--bytecode: runs file as bytecode\n\
+ -a/--print-ast: prints ast and exit\n\
+\n\
+",
+    program
+);
+}
+
+static void version() {
+printf("\
+original interpreter for the hana programming language (alpha).\n\
+\n\
+This program is free software: you can redistribute it\n\
+and/or modify it under the terms of the GNU General Public License\n\
+as published by the Free Software Foundation, either version 3 of\n\
+the License, or (at your option) any later version.\n\
+\n\
+");
+}
+
 int main(int argc, char **argv) {
+
+    int last_optiond = 1;
+    int command_optiond = -1;
+    bool opt_dump_vmcode = false,
+         opt_print_ast = false,
+         opt_bytecode = false;
+    while(1) {
+        int c = 0;
+        static struct option options[] = {
+            { "help",        no_argument,       NULL, 0   },
+            { "version",     no_argument,       NULL, 0   },
+            { "dump-vmcode", no_argument,       NULL, 0   },
+            { "print-ast",   no_argument,       NULL, 0   },
+            { "command",     required_argument, NULL, 'c' },
+            { "bytecode",    no_argument,       NULL, 'b' },
+            { 0,             0, NULL, 0 },
+        };
+        int option_index = 0;
+        c = getopt_long(argc, argv, "hvdac:0:b", options, &option_index);
+        if(c == -1) break;
+        switch(c) {
+        case 'h':
+            help(argv[0]);
+            return 0;
+        case 'v':
+            version();
+            return 0;
+        case 'd':
+            opt_dump_vmcode = true;
+            break;
+        case 'a':
+            opt_print_ast = true;
+            break;
+        case 'c':
+            command_optiond = optind;
+            break;
+        case 'b':
+            opt_bytecode = true;
+        case '0':
+            break;
+        default:
+            help(argv[0]);
+            return 1;
+        }
+        last_optiond = optind;
+    }
+
+    // dump
+    if(opt_dump_vmcode) {
+        if((argc-last_optiond) != 1) {
+            printf("dump vmcode option only works with files\n");
+            return 1;
+        }
+        struct vm m; vm_init(&m);
+        Hana::ScriptParser p;
+        p.loadf(argv[last_optiond]);
+        auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        ast->emit(&m);
+        array_push(m.code, OP_HALT);
+        fwrite(m.code.data, 1, m.code.length, stdout);
+        vm_free(&m);
+        return 0;
+    }
+
+
     // virtual machine
     struct vm m; vm_init(&m);
     hanayo::_init(&m);
 
-    if(argc == 2) {
+    // command
+    if(command_optiond != -1) {
         Hana::ScriptParser p;
-        p.loadf(argv[1]);
+        std::string s(argv[command_optiond-1]);
+        p.loads(s);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
-        #if defined(DEBUG)
-        ast->print();
-        #endif
+        if(opt_print_ast) ast->print();
         ast->emit(&m);
         array_push(m.code, OP_HALT);
         vm_execute(&m);
         goto cleanup;
-    } else {
+    }
+    // repl
+    else if((argc-last_optiond) == 0) {
         #ifdef LREADLINE
         rl_bind_key('\t', rl_insert);
         #endif
@@ -70,12 +166,33 @@ int main(int argc, char **argv) {
             Hana::ScriptParser p;
             p.loads(s);
             auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+            if(opt_print_ast) ast->print();
             ast->emit(&m);
             array_push(m.code, OP_HALT);
             vm_execute(&m);
             m.ip += 1;
             std::cout << std::flush;
         }
+    }
+    // file
+    else if(opt_bytecode) {
+        std::ifstream file(argv[last_optiond], std::ios::binary | std::ios::ate);
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        vm_code_reserve(&m, size);
+        file.read((char*)m.code.data, size);
+        vm_execute(&m);
+        goto cleanup;
+    } else {
+        Hana::ScriptParser p;
+        p.loadf(argv[last_optiond]);
+        auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        if(opt_print_ast) ast->print();
+        ast->emit(&m);
+        array_push(m.code, OP_HALT);
+        vm_execute(&m);
+        goto cleanup;
     }
 
 cleanup:
