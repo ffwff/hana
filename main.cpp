@@ -170,8 +170,7 @@ int main(int argc, char **argv) {
             ast->emit(&m);
             array_push(m.code, OP_HALT);
             vm_execute(&m);
-            m.ip += 1;
-            std::cout << std::flush;
+            m.ip = m.code.length;
         }
     }
     // file
