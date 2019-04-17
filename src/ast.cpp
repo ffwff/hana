@@ -177,7 +177,12 @@ void AST::FloatLiteral::emit(struct vm *vm) {
     vm_code_pushf64(vm, f);
 }
 void AST::Identifier::emit(struct vm *vm) {
-    array_push(vm->code, OP_GET);
+    if(id.size() > 1 && id[0] == '^') {
+        id.erase(0, 1);
+        array_push(vm->code, OP_GET_GLOBAL);
+    } else {
+        array_push(vm->code, OP_GET);
+    }
     vm_code_pushstr(vm, id.data());
     vm_code_push32(vm, XXH32(id.data(), id.size(), 0));
 }
@@ -255,8 +260,14 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             right->emit(vm);
             EMIT_OP
             auto s = static_cast<Identifier*>(left.get())->id;
-            array_push(vm->code, OP_SET);
-            vm_code_pushstr(vm, s.data());
+            if(s.size() > 1 && s[0] == '^') {
+                s.erase(0, 1);
+                array_push(vm->code, OP_SET_GLOBAL);
+                vm_code_pushstr(vm, s.data());
+            } else {
+                array_push(vm->code, OP_SET);
+                vm_code_pushstr(vm, s.data());
+            }
         } else if(left->type() == MEMBER_EXPR) { // member expr
             right->emit(vm);
             EMIT_OP
@@ -285,7 +296,7 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             size_t body_start = vm->code.length;
             for(auto &arg : expr->arguments) {
                 assert(arg->type() == IDENTIFIER);
-                array_push(vm->code, OP_SET_LOCAL);
+                array_push(vm->code, OP_SET);
                 vm_code_pushstr(vm, static_cast<Identifier*>(arg.get())->id.data());
                 array_push(vm->code, OP_POP);
             }
@@ -413,7 +424,7 @@ void AST::WhileStatement::emit(struct vm *vm) {
 void AST::ForStatement::emit(struct vm *vm) {
     // start
     from->emit(vm);
-    array_push(vm->code, OP_SET_LOCAL);
+    array_push(vm->code, OP_SET);
     vm_code_pushstr(vm, id.data());
     array_push(vm->code, OP_POP);
     // body
@@ -465,7 +476,7 @@ void AST::FunctionStatement::emit(struct vm *vm) {
     array_push(vm->code, (uint8_t)arguments.size());
     //body
     for(auto &arg : arguments) {
-        array_push(vm->code, OP_SET_LOCAL);
+        array_push(vm->code, OP_SET);
         vm_code_pushstr(vm, arg.data());
         array_push(vm->code, OP_POP);
     }

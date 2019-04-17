@@ -19,6 +19,7 @@
 void vm_init(struct vm *vm) {
     vm->env = malloc(sizeof(struct env));
     env_init(vm->env, NULL);
+    vm->globalenv = vm->env;
     vm->code = (a_uint8)array_init(uint8_t);
     vm->stack = (a_value){
         .data = calloc(8, sizeof(struct value)),
@@ -216,15 +217,16 @@ int vm_step(struct vm *vm) {
         env_set(vm->env, key, &array_top(vm->stack));
         break;
     }
-    case OP_SET_LOCAL: {
+    case OP_SET_GLOBAL: {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
-        LOG("SET_LOCAL %s\n", key);
-        env_set_local(vm->env, key, &array_top(vm->stack));
+        LOG("SET GLOBAL %s\n", key);
+        env_set(vm->globalenv, key, &array_top(vm->stack));
         break;
     }
-    case OP_GET: {
+    case OP_GET:
+    case OP_GET_GLOBAL: {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
@@ -236,7 +238,7 @@ int vm_step(struct vm *vm) {
         vm->ip+=sizeof(hash);
         LOG("GET %s\n", key);
         array_push(vm->stack, (struct value){});
-        struct value *val = env_get_hash(vm->env, key, hash);
+        struct value *val = env_get_hash(op == OP_GET ? vm->env : vm->globalenv, key, hash);
         if(val == NULL) {
             FATAL("no key named %s!\n", key);
             return 0;

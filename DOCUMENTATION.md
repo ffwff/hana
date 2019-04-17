@@ -92,7 +92,39 @@ fib(n) = fibrec(n+1, 1, 0)
 print(fib(50), "\n")
 ```
 
+# Comments
+
+Comments can either be single line:
+
+```
+// a single line comment
+```
+
+or multiple lines:
+
+```
+/*
+ multline comment
+*/
+```
+
 # Expressions
+
+## Identifiers
+
+All tokens that don't contain quotes, operators (except for `?`) and don't start with a digit
+is an identifier.
+
+Identifiers starting with `^` denotes an identifier in the global scope:
+
+```
+a = 1
+f() = ^a = 20
+f() // sets the global variable a to 20
+a // => 20
+```
+
+Note that the `^` identifier will just refer to the local `^` identifier.
 
 ## n-ary expressions
 
@@ -107,6 +139,14 @@ Unary operators include:
 
 ```
 not, -
+```
+
+## conditions
+
+Hana uses the ternary operator to denote condition expressions:
+
+```
+condition ? then : otherwise
 ```
 
 ## call expressions

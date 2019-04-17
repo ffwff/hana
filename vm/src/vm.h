@@ -24,7 +24,8 @@ enum vm_opcode {
     OP_LT, OP_LEQ, OP_GT, OP_GEQ,
     OP_EQ, OP_NEQ,
     // variables
-    OP_SET, OP_SET_LOCAL, OP_GET, OP_INC, OP_DEC,
+    OP_SET, OP_SET_GLOBAL, OP_GET, OP_GET_GLOBAL,
+    OP_INC, OP_DEC,
     OP_DEF_FUNCTION, OP_DEF_FUNCTION_PUSH,
     OP_ADDS,
     // flow control
@@ -41,7 +42,7 @@ typedef array(struct value) a_value;
 
 struct vm {
     uint32_t ip;
-    struct env *env;
+    struct env *env, *globalenv;
     a_uint8 code;
     a_value stack;
     struct dict *dstr, *dint, *dfloat, *darray;
