@@ -49,6 +49,7 @@ namespace array {
     fn(map);
     fn(filter);
     fn(reduce);
+    fn(join);
 }
 
 std::string _to_string(struct value &val);

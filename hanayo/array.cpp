@@ -434,3 +434,33 @@ fn_(reduce) {
     value_free(&aval);
     array_push(vm->stack, acc);
 }
+
+fn_(join) {
+    assert(nargs == 2);
+
+    // array
+    struct value aval = array_top(vm->stack);
+    array_pop(vm->stack);
+
+    // joiner
+    struct value sval = array_top(vm->stack);
+    assert(sval.type == value::TYPE_STR);
+    array_pop(vm->stack);
+    const std::string joiner = sval.as.str;
+    value_free(&sval);
+
+    std::string s;
+    if(aval.as.array->data.length) {
+        assert(aval.as.array->data.data[0].type == value::TYPE_STR);
+        s += aval.as.array->data.data[0].as.str;
+    }
+    for(size_t i = 1; i < aval.as.array->data.length; i++) {
+        assert(aval.as.array->data.data[i].type == value::TYPE_STR);
+        s += joiner;
+        s += aval.as.array->data.data[i].as.str;
+    }
+
+    value_free(&aval);
+    value_str(&sval, s.data());
+    array_push(vm->stack, sval);
+}
