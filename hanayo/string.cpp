@@ -1,5 +1,6 @@
 #include <string>
 #include <cassert>
+#include "vm/src/array_obj.h"
 #include "hanayo.h"
 
 #define fn(name) void hanayo::string::name(struct vm *vm, int nargs)
@@ -161,4 +162,39 @@ fn(insert) {
     value_free(&val);
 
     value_str(&array_top(vm->stack), s.data());
+}
+
+fn(split) {
+    assert(nargs == 2);
+
+    struct value val = {0};
+
+    // string
+    val = array_top(vm->stack);
+    std::string s(val.as.str);
+    value_free(&val);
+    array_pop(vm->stack);
+
+    // delim
+    val = array_top(vm->stack);
+    const std::string delim(val.as.str);
+    value_free(&val);
+    array_pop(vm->stack);
+
+    value_array(&val);
+    size_t pos = 0;
+    while ((pos = s.find(delim)) != std::string::npos) {
+        const std::string token = s.substr(0, pos);
+        struct value vtoken;
+        value_str(&vtoken, token.data());
+        array_push(val.as.array->data, vtoken);
+        s.erase(0, pos + delim.length());
+    }
+    if(!s.empty()) {
+        struct value vtoken;
+        value_str(&vtoken, s.data());
+        array_push(val.as.array->data, vtoken);
+    }
+
+    array_push(vm->stack, val);
 }

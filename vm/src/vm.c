@@ -680,8 +680,35 @@ void vm_execute(struct vm *vm) {
 }
 
 struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
-    assert(fn->type == TYPE_FN);
-    assert((uint32_t)args.length == fn->as.ifn.nargs);
+    assert(fn->type == TYPE_FN || fn->type == TYPE_DICT);
+
+    uint32_t nargs = 0, ip = 0;
+    if(fn->type == TYPE_DICT) {
+        struct value *ctor = dict_get(fn->as.dict, "constructor");
+        if(ctor == NULL) {
+            printf("expected dictionary to have constructor");
+            return NULL;
+        }
+        if(ctor->type == TYPE_NATIVE_FN) {
+            for(int64_t i = args.length-1; i >= 0; i--) {
+                array_push(vm->stack, (struct value){0});
+                value_copy(&array_top(vm->stack), &args.data[i]);
+            }
+            ctor->as.fn(vm, args.length);
+            return &array_top(vm->stack);
+        } else if(ctor->type != TYPE_FN) {
+            printf("constructor must be a function!\n");
+            return NULL;
+        } else {
+            nargs = ctor->as.ifn.nargs;
+            ip = ctor->as.ifn.ip;
+        }
+    } else if(fn->type == TYPE_FN) {
+        nargs = fn->as.ifn.nargs;
+        ip = fn->as.ifn.ip;
+    }
+
+    assert((uint32_t)args.length == nargs);
     const uint32_t last = vm->ip;
     // setup stack/ip
     struct value val = {
@@ -693,7 +720,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
         array_push(vm->stack, (struct value){0});
         value_copy(&array_top(vm->stack), &args.data[i]);
     }
-    vm->ip = fn->as.ifn.ip;
+    vm->ip = ip;
     // environment
     struct env *parent = vm->env;
     vm->env = malloc(sizeof(struct env));

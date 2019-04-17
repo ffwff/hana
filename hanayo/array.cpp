@@ -260,7 +260,7 @@ fn_(map) {
 
     // cb (should be function)
     struct value fn = array_top(vm->stack);
-    assert(fn.type == value::TYPE_FN || fn.type == value::TYPE_NATIVE_FN);
+    assert(fn.type == value::TYPE_FN || fn.type == value::TYPE_DICT || fn.type == value::TYPE_NATIVE_FN);
     array_pop(vm->stack);
 
     if(aval.as.array->data.length == 0) {
@@ -272,7 +272,7 @@ fn_(map) {
     struct value new_val;
     value_array_n(&new_val, aval.as.array->data.length);
 
-    if(fn.type == value::TYPE_FN) {
+    if(fn.type == value::TYPE_FN || fn.type == value::TYPE_DICT) {
         for(size_t i = 0; i < aval.as.array->data.length; i++) {
             // setup arguments
             a_arguments args = {
@@ -304,6 +304,7 @@ fn_(map) {
     }
 
     value_free(&aval);
+    value_free(&fn);
     array_push(vm->stack, new_val);
 
 }

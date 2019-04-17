@@ -15,6 +15,7 @@ void dict_free(struct dict *dict) {
 struct value *dict_get(struct dict *dict, const char *key) {
     struct value *local = hmap_get(&dict->data, key);
     if(local != NULL) return local;
+    if(strcmp(key, "constructor") == 0) return NULL; // don't get parent's constructor
     if(dict->prototypev != NULL && dict->prototypev->type == TYPE_DICT)
         return dict_get(dict->prototypev->as.dict, key);
     return NULL;

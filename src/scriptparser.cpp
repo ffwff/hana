@@ -45,7 +45,7 @@ Parser::Token ScriptParser::next() {
                 } else if(c == '*') {
                     while((c = f.peek()) != EOF) {
                         f.get();
-                        char c1 = f.get();
+                        const char c1 = f.get();
                         if(c == '*' && c1 == '/')
                             break;
                         else f.unget();
@@ -74,7 +74,7 @@ Parser::Token ScriptParser::next() {
                 break;
             } else if(c == '\\') {
                 f.get();
-                char esc = f.get();
+                const char esc = f.get();
                 if(esc == 'n') str += '\n';
                 else if(esc == 'r') str += '\r';
                 else str += esc;
@@ -597,7 +597,7 @@ AST::AST *ScriptParser::parse_statement() {
             auto blk = new AST::BlockStatement();
             while(!f.eof()) {
                 fsave();
-                auto token = next();
+                const auto token = next();
                 //LOG(token.strv);
                 if(token.type == Token::Type::STRING && token.strv == "end") {
 //                     LOG("END BLOCK");

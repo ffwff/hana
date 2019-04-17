@@ -19,6 +19,7 @@ namespace string {
     fn(at);
     fn(index);
     fn(insert);
+    fn(split);
 }
 
 namespace integer {

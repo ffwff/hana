@@ -53,6 +53,7 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("at",          string::at);
     native_obj_function("index",       string::index);
     native_obj_function("insert",      string::insert);
+    native_obj_function("split",       string::split);
     env_set(m->env, "string", &val);
     value_free(&val);
     m->dstr = val.as.dict;
