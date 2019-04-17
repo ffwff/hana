@@ -182,18 +182,27 @@ fn(split) {
     array_pop(vm->stack);
 
     value_array(&val);
-    size_t pos = 0;
-    while ((pos = s.find(delim)) != std::string::npos) {
-        const std::string token = s.substr(0, pos);
-        struct value vtoken;
-        value_str(&vtoken, token.data());
-        array_push(val.as.array->data, vtoken);
-        s.erase(0, pos + delim.length());
-    }
-    if(!s.empty()) {
-        struct value vtoken;
-        value_str(&vtoken, s.data());
-        array_push(val.as.array->data, vtoken);
+    if(delim.empty()) { // turns string to array if called with ""
+        for(size_t i = 0; i < s.size(); i++) {
+            char ch[2] = { s[i], 0 };
+            struct value vtoken;
+            value_str(&vtoken, ch);
+            array_push(val.as.array->data, vtoken);
+        }
+    } else {
+        size_t pos = 0;
+        while ((pos = s.find(delim)) != std::string::npos) {
+            const std::string token = s.substr(0, pos);
+            struct value vtoken;
+            value_str(&vtoken, token.data());
+            array_push(val.as.array->data, vtoken);
+            s.erase(0, pos + delim.length());
+        }
+        if(!s.empty()) {
+            struct value vtoken;
+            value_str(&vtoken, s.data());
+            array_push(val.as.array->data, vtoken);
+        }
     }
 
     array_push(vm->stack, val);
