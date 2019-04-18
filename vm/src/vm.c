@@ -530,7 +530,7 @@ int vm_step(struct vm *vm) {
         vm->ip++;
         char *key = (char *)(vm->code.data+vm->ip); // must be null terminated
         vm->ip += strlen(key)+1;
-        LOG("HEYEYE %s\n", key);
+        LOG("MEMBER_SET %s\n", key);
         struct value dval = array_top(vm->stack);
         assert(dval.type == TYPE_DICT);
         array_pop(vm->stack);
