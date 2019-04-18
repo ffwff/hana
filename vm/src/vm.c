@@ -612,6 +612,7 @@ int vm_step(struct vm *vm) {
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
+                value_free(&index);
                 printf("index type must be integer!\n");
                 return 0;
             }
@@ -628,7 +629,7 @@ int vm_step(struct vm *vm) {
                 return 0;
             }
             dict_set(dval.as.dict, string_data(index.as.str), val);
-            //value_free(&val);
+            value_free(&index);
         } else {
             printf("expected dictionary or array\n");
             return 0;
@@ -724,7 +725,10 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
         ip = fn->as.ifn.ip;
     }
 
-    assert((uint32_t)args.length == nargs);
+    if((uint32_t)args.length != nargs) {
+        printf("function requires %d arguments, got %ld\n", nargs, args.length);
+        return NULL;
+    }
     const uint32_t last = vm->ip;
     // setup stack/ip
     struct value val = {
