@@ -39,8 +39,15 @@ endif
 CXXFLAGS += -std=c++11 -I. -Wall
 CCFLAGS += -Wall -Ivm/src -Ivm/xxHash
 
-main: build/main.o $(OBJS)
-	$(CXX) $(LDDFLAGS) -o $@ $^
+# bytecode
+ADDITIONAL=
+ifeq (,$(wildcard ./build/init.bin))
+CXXFLAGS += -Iincbin -DINCLUDE_BYTECODE
+ADDITIONAL += build/init.bin
+endif
+
+main: build/main.o $(OBJS) $(ADDITIONAL)
+	$(CXX) $(LDDFLAGS) -o $@ build/main.o $(OBJS)
 build/main.o: main.cpp build
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
@@ -59,6 +66,8 @@ build/hanayo:
 	mkdir -p build/hanayo
 build/hanayo/%.o: hanayo/%.cpp build/hanayo
 	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD
+build/init.bin: init.hana
+	./main -d $^ 2>/dev/null >$@
 
 clean:
 	rm -rf libhana.so $(OBJS) $(DEPS)

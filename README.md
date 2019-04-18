@@ -26,6 +26,14 @@ It is recommended that you build the interpreter with libreadline for a better R
 make RELEASE=1 NOLOG=1 READLINE=1
 ```
 
+To bootstrap the init bytecode, compile it using a debug/release build, then remake the interpreter:
+
+```
+make RELEASE=1 NOLOG=1
+make build/init.bin
+make RELEASE=1 NOLOG=1
+```
+
 For debug:
 
 ```

@@ -18,10 +18,10 @@ static void _FATAL(First && first, Rest && ...rest)
 template<typename First, typename ...Rest>
 static void _LOG(First && first, Rest && ...rest)
 {
-    std::cout << "[LOG] " << std::forward<First>(first) << ": ";
+    std::cerr << "[LOG] " << std::forward<First>(first) << ": ";
     using expander = int[];
-    (void)expander{0, (void(std::cout << std::forward<Rest>(rest)), 0)...};
-    std::cout << "\n";
+    (void)expander{0, (void(std::cerr << std::forward<Rest>(rest)), 0)...};
+    std::cerr << "\n";
 }
 #ifdef DEBUG
 #define __STRINGIFY(x) #x

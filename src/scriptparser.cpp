@@ -85,7 +85,7 @@ Parser::Token ScriptParser::next() {
 #define is_onech_op(c) \
     (c == '=' || c == '<' || c == '>' || c == '(' || c == ')' || \
     c == '+' || c == '-' || c == '/' || c == '*' || c == '[' || c == ']' || \
-    c == '.' || c == ',' || c == '?' || c == ':')
+    c == '.' || c == ',' || c == '?' || c == '!' || c == ':')
     else if(is_onech_op(c)) {
         // "=="|"!="|">"|"<"|">="|"<="|"+"|"-"|"/"|"*"
         c = f.get();
@@ -471,7 +471,7 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
 
 AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
     fsave();
-    const auto token = next();
+    auto token = next();
     AST::FunctionStatement *stmt = nullptr;
     if(type == EXPR) {
         if(token.type == Token::Type::OPERATOR && token.strv == "(") {
@@ -487,7 +487,38 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
         }
     }
     stmt->arguments = parse_function_arguments();
-    auto fstmt = parse_statement();
+    AST::AST *fstmt = nullptr;
+    if(type == EXPR) {
+        fsave();
+        token = next();
+        if(token.strv == "begin") {
+            LOG("begin?\n");
+            // this is here because blocks in function expressions behave like
+            // expressions than statements: we don't require that it ends with a newline
+            fpop();
+            nextnl();
+            auto blk = new AST::BlockStatement();
+            while(!f.eof()) {
+                fsave();
+                const auto token = next();
+                if(token.type == Token::Type::STRING && token.strv == "end") {
+                    fpop();
+                    break;
+                } else {
+                    fload();
+                    auto stmt = parse_statement();
+                    if(stmt != nullptr)
+                        blk->statements.emplace_back(stmt);
+                }
+            }
+            fstmt = blk;
+        } else {
+            fload();
+            fstmt = parse_statement();
+        }
+    } else {
+        fstmt = parse_statement();
+    }
     if(fstmt != nullptr)
         stmt->statement = std::unique_ptr<AST::AST>(fstmt);
     else
@@ -580,16 +611,12 @@ AST::AST *ScriptParser::parse_statement() {
 
         } else if(token.strv == "begin") {
             fpop();
-            // block statement
-//             LOG("Block statement");
             nextnl();
             auto blk = new AST::BlockStatement();
             while(!f.eof()) {
                 fsave();
                 const auto token = next();
-                //LOG(token.strv);
                 if(token.type == Token::Type::STRING && token.strv == "end") {
-//                     LOG("END BLOCK");
                     fpop();
                     nextnl();
                     break;

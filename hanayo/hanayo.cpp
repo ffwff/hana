@@ -32,8 +32,6 @@ void hanayo::_init(struct vm *m) {
     struct value val;
     // # constants
     val = {0}; env_set(m->env, "nil", &val);
-    value_int(&val, 0); env_set(m->env, "false", &val);
-    value_int(&val, 1); env_set(m->env, "true", &val);
     // # functions
     #define native_function(name) \
     value_native(&val, hanayo::name);  env_set(m->env, #name, &val);

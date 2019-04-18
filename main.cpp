@@ -8,6 +8,11 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
+#ifdef INCLUDE_BYTECODE
+#include "incbin.h"
+INCBIN(InitBytecode, "build/init.bin");
+#endif
+
 
 static void help(char *program) {
 printf(
@@ -101,7 +106,6 @@ int main(int argc, char **argv) {
         p.loadf(argv[last_optiond]);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
         ast->emit(&m);
-        array_push(m.code, OP_HALT);
         fwrite(m.code.data, 1, m.code.length, stdout);
         vm_free(&m);
         return 0;
@@ -110,6 +114,13 @@ int main(int argc, char **argv) {
 
     // virtual machine
     struct vm m; vm_init(&m);
+#ifdef INCLUDE_BYTECODE
+    free(m.code.data);
+    m.code.data = (uint8_t*)malloc(gInitBytecodeSize);
+    memcpy(m.code.data, gInitBytecodeData, gInitBytecodeSize);
+    m.code.length = gInitBytecodeSize;
+    m.code.capacity = gInitBytecodeSize;
+#endif
     hanayo::_init(&m);
 
     // command
