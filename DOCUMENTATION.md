@@ -257,6 +257,14 @@ or use a short hand form:
 fib(n) = n <= 1 ? n : fib(n-1)+fib(n-2)
 ```
 
+or use the expression form:
+
+```
+price = function(X) begin
+    return X*0.5
+end
+```
+
 You can then call it like this:
 
 ```
