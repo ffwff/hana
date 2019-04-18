@@ -1,0 +1,28 @@
+record Navi
+    function constructor(self) begin
+        return self
+    end
+    function print(self) begin
+        print("A Navi running Copland OS...\n")
+    end
+end
+record Person
+    function constructor(self, name, age) begin
+        self.name = name
+        self.age = age
+        self.item = Navi()
+        return self
+    end
+    function befriend(self, other) begin
+        print(self.name, " is friends with ", other.name, "\n")
+    end
+end
+lain = Person("Iwakura Lain", 14)
+alice = Person("Mizuki Alice", 14)
+lain.befriend(alice)
+lain.item.print()
+function greet(self) begin
+    print("My name is ", self.name, "\n")
+end
+Person.greet = greet
+lain.greet()

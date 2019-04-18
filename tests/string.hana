@@ -1,0 +1,6 @@
+s = "Honest Abe Lincoln"
+print(s.delete(7, 4), "\n") // => Honest Lincoln
+print(s.copy(7, 3), "\n") // => Abe
+print(s.at(3), "\n") // => "n"
+print(s.index("Lincoln"), "\n") // => 11
+print(s.insert(0, "Not "), "\n") // => Not Honest Abe Lincoln
