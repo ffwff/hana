@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <string.h>
 #include "vm.h"
+#include "string_.h"
 #include "dict.h"
 #include "array_obj.h"
 
@@ -535,7 +536,7 @@ int vm_step(struct vm *vm) {
             array_pop(vm->stack); // pop val
             struct value val = array_top(vm->stack);
             array_pop(vm->stack);
-            dict_set(dval.as.dict, key.as.str, &val);
+            dict_set(dval.as.dict, string_data(key.as.str), &val);
             // pop key
             value_free(&val);
             value_free(&key);
@@ -572,12 +573,12 @@ int vm_step(struct vm *vm) {
                 printf("index type must be integer!\n");
                 return 0;
             }
-            const int64_t i = index.as.integer, len = strlen(dval.as.str);
+            const int64_t i = index.as.integer, len = string_len(dval.as.str);
             if(!(i >= 0 && i < len)) {
                 printf("accessing index (%ld) that lies out of range [0,%ld) \n", i, len);
                 return 0;
             }
-            char c[2] = { dval.as.str[i], 0 };
+            char c[2] = { string_at(dval.as.str, i), 0 };
             array_push(vm->stack, (struct value){});
             value_str(&array_top(vm->stack), c);
         } else if(dval.type == TYPE_DICT) {
@@ -586,7 +587,7 @@ int vm_step(struct vm *vm) {
                 return 0;
             }
             array_push(vm->stack, (struct value){});
-            struct value *val = dict_get(dval.as.dict, index.as.str);
+            struct value *val = dict_get(dval.as.dict, string_data(index.as.str));
             if(val) value_copy(&array_top(vm->stack), val);
         } else {
             printf("expected dictionary, array or string\n");
@@ -626,7 +627,7 @@ int vm_step(struct vm *vm) {
                 printf("index type must be string!\n");
                 return 0;
             }
-            dict_set(dval.as.dict, index.as.str, val);
+            dict_set(dval.as.dict, string_data(index.as.str), val);
             //value_free(&val);
         } else {
             printf("expected dictionary or array\n");

@@ -18,6 +18,7 @@ int main() {
     array_push(m.code, OP_ADD); // => 65548
 #endif
 
+#define SECTION_STRINGP
 #ifdef SECTION_STRINGP
     // append
     array_push(m.code, OP_PUSHSTR);
@@ -166,7 +167,6 @@ int main() {
     array_push(m.code, OP_POP);
 #endif
 
-#define SECTION_FLOAT
 #ifdef SECTION_FLOAT
     array_push(m.code, OP_PUSHF32);
     vm_code_pushf32(&m, 0.1);

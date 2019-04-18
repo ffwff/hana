@@ -233,11 +233,11 @@ Basic types include:
  * `array`: array
  * `function`: function
 
-`string`, `integer`, `float`, `function` values are primitives, they are passed by copies
+`integer`, `float`, `function` values are primitives, they are passed by copies
 into (arguments) and out of (return) functions.
 
-`record` and `array` values are passed by reference. Those values are only deleted whenever
-the last variable containing the value is deleted or set to another value.
+`string`, `record` and `array` values are passed by reference. Those values are only deleted
+whenever the last variable containing the value is deleted or set to another value.
 
 ## Functions
 

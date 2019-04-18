@@ -1,5 +1,6 @@
 #include <string>
 #include <cassert>
+#include "vm/src/string_.h"
 #include "vm/src/array_obj.h"
 #include "hanayo.h"
 
@@ -19,7 +20,7 @@ fn(constructor) {
 fn(bytesize) {
     assert(nargs == 1);
     struct value *val = &array_top(vm->stack);
-    int64_t length = strlen(val->as.str);
+    int64_t length = string_len(val->as.str);
     value_free(val);
     array_pop(vm->stack);
     struct value intv;
@@ -29,7 +30,7 @@ fn(bytesize) {
 fn(length) { // TODO unicode char length
     assert(nargs == 1);
     struct value *val = &array_top(vm->stack);
-    int64_t length = strlen(val->as.str);
+    int64_t length = string_len(val->as.str);
     value_free(val);
     array_pop(vm->stack);
     struct value intv;
@@ -43,7 +44,7 @@ fn(delete_) {
 
     // string
     val = array_top(vm->stack);
-    std::string s(val.as.str);
+    std::string s(string_data(val.as.str));
     value_free(&val);
     array_pop(vm->stack);
 
@@ -68,7 +69,7 @@ fn(copy) {
 
     // string
     val = array_top(vm->stack);
-    std::string s(val.as.str);
+    std::string s(string_data(val.as.str));
     value_free(&val);
     array_pop(vm->stack);
 
@@ -96,7 +97,7 @@ fn(at) {
 
     // string
     val = array_top(vm->stack);
-    std::string s(val.as.str);
+    std::string s(string_data(val.as.str));
     value_free(&val);
     array_pop(vm->stack);
 
@@ -120,18 +121,18 @@ fn(index) {
 
     // string
     val = array_top(vm->stack);
-    std::string src(val.as.str);
+    std::string s(string_data(val.as.str));
     value_free(&val);
     array_pop(vm->stack);
 
     // from pos
     val = array_top(vm->stack);
     assert(val.type == value::TYPE_STR);
-    std::string needle(val.as.str);
+    std::string needle(string_data(val.as.str));
     value_free(&val);
     array_pop(vm->stack);
 
-    size_t index = src.find(needle);
+    size_t index = s.find(needle);
     if(index == std::string::npos) {
         value_int(&val, -1);
     } else {
@@ -146,7 +147,7 @@ fn(insert) {
 
     // string
     val = array_top(vm->stack);
-    std::string s(val.as.str);
+    std::string s(string_data(val.as.str));
     value_free(&val);
     array_pop(vm->stack);
 
@@ -158,7 +159,7 @@ fn(insert) {
 
     val = array_top(vm->stack);
     assert(val.type == value::TYPE_STR);
-    s.insert(from_pos, val.as.str);
+    s.insert(from_pos, string_data(val.as.str));
     value_free(&val);
 
     value_str(&array_top(vm->stack), s.data());
@@ -171,13 +172,13 @@ fn(split) {
 
     // string
     val = array_top(vm->stack);
-    std::string s(val.as.str);
+    std::string s(string_data(val.as.str));
     value_free(&val);
     array_pop(vm->stack);
 
     // delim
     val = array_top(vm->stack);
-    const std::string delim(val.as.str);
+    const std::string delim(string_data(val.as.str));
     value_free(&val);
     array_pop(vm->stack);
 

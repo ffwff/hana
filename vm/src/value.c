@@ -1,7 +1,7 @@
-#include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include "string_.h"
 #include "value.h"
 #include "dict.h"
 #include "array_obj.h"
@@ -16,7 +16,8 @@ void value_float(struct value *val, double data) {
 }
 void value_str(struct value *val, const char *data) {
     val->type = TYPE_STR;
-    val->as.str = strdup(data);
+    val->as.str = malloc(sizeof(struct string));
+    string_init(val->as.str, data);
 }
 void value_native(struct value *val, value_fn fn) {
     val->type = TYPE_NATIVE_FN;
@@ -50,7 +51,9 @@ void value_array_n(struct value *val, size_t n) {
 
 void value_free(struct value *val) {
     if(val->type == TYPE_STR) {
-        free(val->as.str);
+        string_free(val->as.str);
+        if(val->as.str->refs == 0)
+            free(val->as.str);
     } else if(val->type == TYPE_DICT) {
         dict_free(val->as.dict);
         if(val->as.dict->refs == 0)
@@ -69,7 +72,7 @@ void value_print(struct value *val) {
     else if(val->type == TYPE_FLOAT)
         printf("%f", val->as.floatp);
     else if(val->type == TYPE_STR)
-        printf("\"%s\"", val->as.str);
+        printf("\"%s\"", string_data(val->as.str));
     else if(val->type == TYPE_NATIVE_FN)
         printf("[native fn %lx]", (intptr_t)val->as.fn);
     else if(val->type == TYPE_FN)
@@ -85,9 +88,10 @@ void value_print(struct value *val) {
 
 void value_copy(struct value *dst, struct value *src) {
     dst->type = src->type;
-    if(src->type == TYPE_STR)
-        dst->as.str = strdup(src->as.str);
-    else if(src->type == TYPE_DICT) {
+    if(src->type == TYPE_STR) {
+        dst->as.str = src->as.str;
+        src->as.str->refs++;
+    } else if(src->type == TYPE_DICT) {
         dst->as.dict = src->as.dict;
         src->as.dict->refs++;
     }
@@ -116,10 +120,10 @@ void value_ ## name (struct value *result, const struct value *left, const struc
     else { value_int(result, 0); }\
 }
 arith_op(add, +,
-    else if(left->type == TYPE_STR) {
-        char s[strlen(left->as.str)+strlen(right->as.str)+1];
-        strcpy(s, left->as.str);
-        strcat(s, right->as.str);
+    else if(left->type == TYPE_STR && right->type == TYPE_STR) {
+        char s[string_len(left->as.str)+string_len(right->as.str)+1];
+        strcpy(s, string_data(left->as.str));
+        strcat(s, string_data(right->as.str));
         s[sizeof(s)] = 0;
         value_str(result, s);
     }
@@ -133,10 +137,10 @@ arith_op(mul, *,
         if(intv->as.integer == 0) {
             value_str(result, "");
         } else {
-            char s[strlen(strv->as.str)*intv->as.integer+1];
+            char s[string_len(strv->as.str)*intv->as.integer+1];
             s[0] = 0; s[sizeof(s)] = 0;
             for(int i = 0; i < intv->as.integer; i++)
-                strcat(s, strv->as.str);
+                strcat(s, string_data(strv->as.str));
             value_str(result, s);
         }
     } else if(left->type == TYPE_ARRAY && right->type == TYPE_INT) {
@@ -180,7 +184,7 @@ logic_op(or, ||)
 // comparison
 #define strcmp_op(cond) \
     else if(left->type == TYPE_STR && right->type == TYPE_STR) { \
-        value_int(result, strcmp(left->as.str, right->as.str) cond); \
+        value_int(result, string_cmp(left->as.str, right->as.str) cond); \
     }
 arith_op(eq, ==,
     strcmp_op(== 0)
@@ -220,7 +224,7 @@ int value_is_true(const struct value *val) {
     else if(val->type == TYPE_FLOAT)
         return val->as.floatp > 0;
     else if(val->type == TYPE_STR)
-        return strlen(val->as.str) > 0;
+        return string_len(val->as.str) > 0;
     else
         return 0;
 }

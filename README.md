@@ -7,7 +7,7 @@
 You'll have to clone it recursively:
 
 ```
-git clone -r https://github.com/ffwff/hana
+git clone --recursive https://github.com/ffwff/hana
 ```
 
 ## Building

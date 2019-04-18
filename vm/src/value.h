@@ -7,12 +7,13 @@ extern "C" {
 struct vm;
 struct dict;
 struct array_obj;
+struct string;
 typedef void (*value_fn)(struct vm *vm, int nargs);
 struct value {
     union {
         int64_t integer;
         double floatp;
-        char *str;
+        struct string *str;
         value_fn fn;
         struct {
             uint32_t ip;

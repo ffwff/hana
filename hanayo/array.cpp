@@ -1,5 +1,6 @@
 #include <cassert>
 #include "hanayo.h"
+#include "vm/src/string_.h"
 #include "vm/src/array_obj.h"
 
 #define fn_(name) void hanayo::array::name(struct vm *vm, int nargs)
@@ -285,6 +286,7 @@ fn_(map) {
             struct value *ret = vm_call(vm, &fn, args);
             value_copy(&new_val.as.array->data.data[i], ret);
             // cleanup
+            value_free(&args.data[0]);
             array_free(args);
             value_free(ret);
             array_pop(vm->stack);
@@ -346,6 +348,7 @@ fn_(filter) {
                 array_push(new_val.as.array->data, val);
             }
             // cleanup
+            value_free(&args.data[0]);
             array_free(args);
             value_free(ret);
             array_pop(vm->stack);
@@ -447,18 +450,18 @@ fn_(join) {
     struct value sval = array_top(vm->stack);
     assert(sval.type == value::TYPE_STR);
     array_pop(vm->stack);
-    const std::string joiner = sval.as.str;
+    const std::string joiner(string_data(sval.as.str));
     value_free(&sval);
 
     std::string s;
     if(aval.as.array->data.length) {
         assert(aval.as.array->data.data[0].type == value::TYPE_STR);
-        s += aval.as.array->data.data[0].as.str;
+        s += string_data(aval.as.array->data.data[0].as.str);
     }
     for(size_t i = 1; i < aval.as.array->data.length; i++) {
         assert(aval.as.array->data.data[i].type == value::TYPE_STR);
         s += joiner;
-        s += aval.as.array->data.data[i].as.str;
+        s += string_data(aval.as.array->data.data[i].as.str);
     }
 
     value_free(&aval);

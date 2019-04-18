@@ -1,11 +1,12 @@
 #include <string>
 #include "hanayo.h"
+#include "vm/src/string_.h"
 #include "vm/src/dict.h"
 #include "vm/src/array_obj.h"
 
 std::string hanayo::_to_string(struct value &val) {
     if(val.type == value::TYPE_STR)
-        return val.as.str;
+        return string_data(val.as.str);
     else if(val.type == value::TYPE_INT)
         return std::to_string(val.as.integer);
     else if(val.type == value::TYPE_FLOAT)
