@@ -2,6 +2,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include "compiler.h"
 #include "vm/src/vm.h"
 
 namespace Hana {
@@ -27,7 +28,7 @@ struct AST {
     virtual ~AST() {};
     virtual const Type type() { return NONE; }
     virtual void print(int indent=0) {}
-    virtual void emit(struct vm *vm) {}
+    virtual void emit(struct vm *vm, Hana::Compiler *compiler) {}
 };
 
 // Constant
@@ -36,21 +37,21 @@ struct StrLiteral : AST {
     std::string str;
     StrLiteral(std::string str) : str(str) {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 struct IntLiteral : AST {
     TYPE(CONSTANT)
     int64_t i;
     IntLiteral(int64_t i) : i(i) {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 struct FloatLiteral : AST {
     TYPE(CONSTANT)
     double f;
     FloatLiteral(double f) : f(f) {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct Identifier : AST {
@@ -58,13 +59,13 @@ struct Identifier : AST {
     std::string id;
     Identifier(std::string id) : id(id) {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 struct Array : AST {
     TYPE(ARRAY)
     std::vector<std::unique_ptr<AST>> values;
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 // Expressions
@@ -79,7 +80,7 @@ struct UnaryExpression : Expression {
     std::unique_ptr<AST> body;
     UnaryExpression(OpType op, AST *body) : op(op), body(body) {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct MemberExpression : Expression {
@@ -88,7 +89,7 @@ struct MemberExpression : Expression {
     bool is_called, is_expr;
     MemberExpression(AST *left, AST *right) : left(left), right(right), is_called(false), is_expr(false) {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct CallExpression : Expression {
@@ -97,7 +98,7 @@ struct CallExpression : Expression {
     std::vector<std::unique_ptr<AST>> arguments;
     CallExpression(AST *callee) : callee(callee) {}
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct BinaryExpression : Expression {
@@ -113,7 +114,7 @@ struct BinaryExpression : Expression {
     BinaryExpression() : op(NONE) {};
     BinaryExpression(AST *left, AST *right, OpType op) : left(left), right(right), op(op) {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct ConditionalExpression : Expression {
@@ -121,7 +122,7 @@ struct ConditionalExpression : Expression {
     std::unique_ptr<AST> condition, expression, alt;
     ConditionalExpression(AST *condition, AST *expression, AST *alt) : condition(condition), expression(expression), alt(alt) {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 // Statements
@@ -134,7 +135,7 @@ struct IfStatement : Statement {
     IfStatement(AST *condition, AST *statement) : condition(condition), statement(statement)
     {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct WhileStatement : Statement {
@@ -144,7 +145,7 @@ struct WhileStatement : Statement {
     WhileStatement(AST *condition, AST *statement) : condition(condition), statement(statement)
     {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct ForStatement : Statement {
@@ -156,7 +157,7 @@ struct ForStatement : Statement {
     ForStatement(const std::string &id, AST *from, AST *to, AST *step, const int stepN, AST *statement) : id(id), from(from), to(to), step(step), stepN(stepN), statement(statement) {}
     ForStatement(const std::string &id, AST *from, AST *to, const int stepN, AST *statement) : id(id), from(from), to(to), stepN(stepN), statement(statement) {}
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct FunctionStatement : Statement {
@@ -167,7 +168,7 @@ struct FunctionStatement : Statement {
     bool record_fn;
     FunctionStatement(const std::string &id) : id(id), record_fn(false) {}
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct StructStatement : Statement {
@@ -177,7 +178,7 @@ struct StructStatement : Statement {
     bool is_expr;
     StructStatement(std::string &id) : id(id), is_expr(false) {}
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct ExpressionStatement : Statement {
@@ -185,7 +186,7 @@ struct ExpressionStatement : Statement {
     std::unique_ptr<AST> expression;
     ExpressionStatement(AST *expression) : expression(expression) {}
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct ReturnStatement : Statement {
@@ -194,7 +195,7 @@ struct ReturnStatement : Statement {
     ReturnStatement() {}
     ReturnStatement(AST *expression) : expression(expression) {}
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 // Block
@@ -202,14 +203,14 @@ struct Block : AST {
     TYPE(BLOCK)
     std::vector<std::unique_ptr<AST>> statements;
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 struct BlockStatement : Statement {
     TYPE(BLOCK_STMT)
     std::vector<std::unique_ptr<AST>> statements;
     BlockStatement() {};
     void print(int indent=0) override;
-    void emit(struct vm *vm) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 #undef TYPE

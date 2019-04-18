@@ -1,0 +1,9 @@
+function a() begin
+    x = 1
+    function b() begin
+        y = 2
+    end
+    print(x)
+end
+
+a()

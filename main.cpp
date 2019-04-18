@@ -95,6 +95,8 @@ int main(int argc, char **argv) {
         last_optiond = optind;
     }
 
+    Hana::Compiler compiler;
+
     // dump
     if(opt_dump_vmcode) {
         if((argc-last_optiond) != 1) {
@@ -105,7 +107,7 @@ int main(int argc, char **argv) {
         Hana::ScriptParser p;
         p.loadf(argv[last_optiond]);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
-        ast->emit(&m);
+        ast->emit(&m, &compiler);
         fwrite(m.code.data, 1, m.code.length, stdout);
         vm_free(&m);
         return 0;
@@ -130,7 +132,7 @@ int main(int argc, char **argv) {
         p.loads(s);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
         if(opt_print_ast) ast->print();
-        ast->emit(&m);
+        ast->emit(&m, &compiler);
         array_push(m.code, OP_HALT);
         vm_execute(&m);
         goto cleanup;
@@ -183,7 +185,7 @@ int main(int argc, char **argv) {
             p.loads(s);
             auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
             if(opt_print_ast) ast->print();
-            ast->emit(&m);
+            ast->emit(&m, &compiler);
             array_push(m.code, OP_HALT);
             vm_execute(&m);
             m.ip = m.code.length;
@@ -204,7 +206,7 @@ int main(int argc, char **argv) {
         p.loadf(argv[last_optiond]);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
         if(opt_print_ast) ast->print();
-        ast->emit(&m);
+        ast->emit(&m, &compiler);
         if(opt_no_run) goto cleanup;
         array_push(m.code, OP_HALT);
         vm_execute(&m);

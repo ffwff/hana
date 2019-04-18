@@ -41,10 +41,10 @@ CCFLAGS += -Wall -Ivm/src -Ivm/xxHash
 
 # bytecode
 ADDITIONAL=
-ifeq (,$(wildcard ./build/init.bin))
-CXXFLAGS += -Iincbin -DINCLUDE_BYTECODE
-ADDITIONAL += build/init.bin
-endif
+#ifeq (./build/init.bin,$(wildcard ./build/init.bin))
+#CXXFLAGS += -Iincbin -DINCLUDE_BYTECODE
+#ADDITIONAL += build/init.bin
+#endif
 
 main: build/main.o $(OBJS) $(ADDITIONAL)
 	$(CXX) $(LDDFLAGS) -o $@ build/main.o $(OBJS)

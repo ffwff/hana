@@ -139,24 +139,63 @@ void AST::Block::print(int indent) {
     pindent(indent);
     std::cout << "block\n";
     for(auto &s : statements)
-        s->print(indent);
+        s->print(indent+1);
 }
 void AST::BlockStatement::print(int indent) {
     pindent(indent);
-    std::cout << "block\n";
+    std::cout << "block stmt\n";
     for(auto &s : statements)
         s->print(indent+1);
 }
 
 // EMIT
+static void emit_set_var(struct vm *vm, Hana::Compiler *compiler, std::string s) {
+    if(s.size() > 1 && s[0] == '^') { // global var
+        s.erase(0, 1);
+        array_push(vm->code, OP_SET_GLOBAL);
+        vm_code_pushstr(vm, s.data());
+    } else if(compiler->nscope == 0) {
+        array_push(vm->code, OP_SET_GLOBAL);
+        vm_code_pushstr(vm, s.data());
+    } else {
+        array_push(vm->code, OP_SET_LOCAL);
+        compiler->set_local(s);
+        auto local = compiler->get_local(s);
+        LOG(local);
+        vm_code_push32(vm, local->slot);
+    }
+}
+static void emit_get_var(struct vm *vm, Hana::Compiler *compiler, std::string s) {
+    // TODO clean this up
+    if(s.size() > 1 && s[0] == '^') { // global var
+        s.erase(0, 1);
+        array_push(vm->code, OP_GET_GLOBAL);
+        vm_code_pushstr(vm, s.data());
+        vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
+    } else if(compiler->nscope == 0) {
+        array_push(vm->code, OP_GET_GLOBAL);
+        vm_code_pushstr(vm, s.data());
+        vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
+    } else {
+        auto local = compiler->get_local(s);
+        if(local == nullptr) {
+            array_push(vm->code, OP_GET_GLOBAL);
+            vm_code_pushstr(vm, s.data());
+            vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
+        } else {
+            array_push(vm->code, OP_GET_LOCAL);
+            vm_code_push32(vm, local->slot);
+        }
+    }
+}
 
 // DEBUG
 // Literals
-void AST::StrLiteral::emit(struct vm *vm) {
+void AST::StrLiteral::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_PUSHSTR);
     vm_code_pushstr(vm, str.data());
 }
-void AST::IntLiteral::emit(struct vm *vm) {
+void AST::IntLiteral::emit(struct vm *vm, Hana::Compiler *compiler) {
     const uint64_t ui = (uint64_t)i;
     if(ui <= 0xff) {
         array_push(vm->code, OP_PUSH8);
@@ -172,23 +211,16 @@ void AST::IntLiteral::emit(struct vm *vm) {
         vm_code_push64(vm, ui);
     }
 }
-void AST::FloatLiteral::emit(struct vm *vm) {
+void AST::FloatLiteral::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_PUSHF64);
     vm_code_pushf64(vm, f);
 }
-void AST::Identifier::emit(struct vm *vm) {
-    if(id.size() > 1 && id[0] == '^') {
-        id.erase(0, 1);
-        array_push(vm->code, OP_GET_GLOBAL);
-    } else {
-        array_push(vm->code, OP_GET);
-    }
-    vm_code_pushstr(vm, id.data());
-    vm_code_push32(vm, XXH32(id.data(), id.size(), 0));
+void AST::Identifier::emit(struct vm *vm, Hana::Compiler *compiler) {
+    emit_get_var(vm, compiler, id);
 }
-void AST::Array::emit(struct vm *vm) {
+void AST::Array::emit(struct vm *vm, Hana::Compiler *compiler) {
     for(auto &v : values)
-        v->emit(vm);
+        v->emit(vm, compiler);
     const uint64_t ui = (uint64_t)values.size();
     if(ui <= 0xff) {
         array_push(vm->code, OP_PUSH8);
@@ -215,13 +247,15 @@ static void fill_hole(struct vm *vm, size_t length, size_t n) {
     vm->code.data[length+3] = (n >> 0) & 0xff;
 }
 
-void AST::UnaryExpression::emit(struct vm *vm) {
-    body->emit(vm);
+//
+
+void AST::UnaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
+    body->emit(vm, compiler);
     if(op == NEG) array_push(vm->code, OP_NEGATE);
     else if(op == NOT) array_push(vm->code, OP_NOT);
 }
-void AST::MemberExpression::emit(struct vm *vm) {
-    left->emit(vm);
+void AST::MemberExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
+    left->emit(vm, compiler);
     if((right->type() == IDENTIFIER || right->type() == STR_LITERAL) && !is_expr) {
         const char *key = right->type() == IDENTIFIER
                         ? static_cast<Identifier*>(right.get())->id.data()
@@ -231,24 +265,24 @@ void AST::MemberExpression::emit(struct vm *vm) {
         vm_code_pushstr(vm, key);
         vm_code_push32(vm, XXH32(key, strlen(key), 0));
     } else {
-        right->emit(vm);
+        right->emit(vm, compiler);
         array_push(vm->code, OP_INDEX_GET);
     }
 }
-void AST::CallExpression::emit(struct vm *vm) {
+void AST::CallExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
     for(auto arg = arguments.rbegin(); arg != arguments.rend(); arg++)
-        (*arg)->emit(vm);
-    callee->emit(vm);
+        (*arg)->emit(vm, compiler);
+    callee->emit(vm, compiler);
     array_push(vm->code, OP_CALL);
     if(callee->type() == MEMBER_EXPR)
         array_push(vm->code, arguments.size()+1);
     else
         array_push(vm->code, arguments.size());
 }
-void AST::BinaryExpression::emit(struct vm *vm) {
-    if(op == SET || op == ADDS || op == SUBS || op == MULS || op == DIVS) {
+void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
+    if(op == SET || op == ADDS || op == SUBS || op == MULS || op == DIVS) { // assignment
         if(op == ADDS || op == SUBS || op == MULS || op == DIVS) {
-            left->emit(vm);
+            left->emit(vm, compiler);
         }
     #define EMIT_OP \
         if(op == ADDS) array_push(vm->code, OP_ADD); \
@@ -257,22 +291,15 @@ void AST::BinaryExpression::emit(struct vm *vm) {
         else if(op == DIVS) array_push(vm->code, OP_DIV);
 
         if(left->type() == IDENTIFIER) {
-            right->emit(vm);
+            right->emit(vm, compiler);
             EMIT_OP
             auto s = static_cast<Identifier*>(left.get())->id;
-            if(s.size() > 1 && s[0] == '^') {
-                s.erase(0, 1);
-                array_push(vm->code, OP_SET_GLOBAL);
-                vm_code_pushstr(vm, s.data());
-            } else {
-                array_push(vm->code, OP_SET);
-                vm_code_pushstr(vm, s.data());
-            }
+            emit_set_var(vm, compiler, s);
         } else if(left->type() == MEMBER_EXPR) { // member expr
-            right->emit(vm);
+            right->emit(vm, compiler);
             EMIT_OP
             auto mem = static_cast<MemberExpression*>(left.get());
-            mem->left->emit(vm);
+            mem->left->emit(vm, compiler);
             if((mem->right->type() == IDENTIFIER || mem->right->type() == STR_LITERAL) && !mem->is_expr) {
                 const char *key = mem->right->type() == IDENTIFIER
                     ? static_cast<Identifier*>(mem->right.get())->id.data()
@@ -280,7 +307,7 @@ void AST::BinaryExpression::emit(struct vm *vm) {
                 array_push(vm->code, OP_MEMBER_SET);
                 vm_code_pushstr(vm, key);
             } else { // TODO
-                mem->right->emit(vm);
+                mem->right->emit(vm, compiler);
                 array_push(vm->code, OP_INDEX_SET);
             }
         } else if(left->type() == CALL_EXPR) {
@@ -294,17 +321,21 @@ void AST::BinaryExpression::emit(struct vm *vm) {
             array_push(vm->code, (uint8_t)(expr->arguments.size()));
             //body
             size_t body_start = vm->code.length;
+            compiler->scope();
+            array_push(vm->code, OP_ENV_NEW);
+            size_t env_length = vm->code.length;
+            vm_code_push32(vm, FILLER32);
             for(auto &arg : expr->arguments) {
                 assert(arg->type() == IDENTIFIER);
-                array_push(vm->code, OP_SET);
-                vm_code_pushstr(vm, static_cast<Identifier*>(arg.get())->id.data());
+                auto s = static_cast<Identifier*>(arg.get())->id;
+                emit_set_var(vm, compiler, s);
                 array_push(vm->code, OP_POP);
             }
             // primitive tail call optimizations
             if(right->type() == COND_EXPR) {
                 auto c = static_cast<ConditionalExpression*>(right.get());
                 if( c->expression->type() == CALL_EXPR || c->alt->type() == CALL_EXPR ) {
-                    c->condition->emit(vm);
+                    c->condition->emit(vm, compiler);
                     array_push(vm->code, OP_JNCOND);
                     size_t length = vm->code.length;
                     vm_code_push32(vm, FILLER32);
@@ -315,11 +346,11 @@ void AST::BinaryExpression::emit(struct vm *vm) {
                         static_cast<Identifier*>(static_cast<CallExpression*>(c->branch.get())->callee.get())->id == id) { \
                         auto call = static_cast<CallExpression*>(c->branch.get()); \
                         for(auto arg = call->arguments.rbegin(); arg != call->arguments.rend(); arg++) \
-                        { (*arg)->emit(vm); } \
+                        { (*arg)->emit(vm, compiler); } \
                         array_push(vm->code, OP_JMP); \
                         vm_code_push32(vm, body_start); \
                     } else { \
-                        c->branch->emit(vm);\
+                        c->branch->emit(vm, compiler);\
                     }
                     OPTIMIZE_BRANCH(expression)
                     // alt
@@ -332,20 +363,21 @@ void AST::BinaryExpression::emit(struct vm *vm) {
                     fill_hole(vm, length, n);
                     fill_hole(vm, length1, n1);
                 } else // no optimization possible
-                    right->emit(vm);
+                    right->emit(vm, compiler);
             } else {
-                right->emit(vm);
+                right->emit(vm, compiler);
             }
+            fill_hole(vm, env_length, compiler->slotsize);
+            compiler->unscope();
             array_push(vm->code, OP_RET); // pops env for us
             //fill in
             fill_hole(vm, length, vm->code.length);
-            array_push(vm->code, OP_SET);
-            vm_code_pushstr(vm, id);
+            emit_set_var(vm, compiler, id);
         }
     }
     else {
-        left->emit(vm);
-        right->emit(vm);
+        left->emit(vm, compiler);
+        right->emit(vm, compiler);
         if(op == ADD)      array_push(vm->code, OP_ADD);
         else if(op == SUB) array_push(vm->code, OP_SUB);
         else if(op == MUL) array_push(vm->code, OP_MUL);
@@ -361,43 +393,43 @@ void AST::BinaryExpression::emit(struct vm *vm) {
         else if(op == LEQ) array_push(vm->code, OP_LEQ);
     }
 }
-void AST::ConditionalExpression::emit(struct vm *vm) {
-    condition->emit(vm);
+void AST::ConditionalExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
+    condition->emit(vm, compiler);
     array_push(vm->code, OP_JNCOND);
     size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
     // then statement
-    expression->emit(vm);
+    expression->emit(vm, compiler);
     // alt
     array_push(vm->code, OP_JMP);
     size_t length1 = vm->code.length;
     vm_code_push32(vm, FILLER32);
     size_t n = vm->code.length;
-    alt->emit(vm);
+    alt->emit(vm, compiler);
     size_t n1 = vm->code.length;
     fill_hole(vm, length, n);
     fill_hole(vm, length1, n1);
 }
 
-void AST::IfStatement::emit(struct vm *vm) {
+void AST::IfStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     // condition
     // jcond [else]
     // [statement]
     // jmp done
     // [else]
     // done:
-    condition->emit(vm);
+    condition->emit(vm, compiler);
     array_push(vm->code, OP_JNCOND);
     size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
     // then statement
-    statement->emit(vm);
+    statement->emit(vm, compiler);
     if(alt) {
         array_push(vm->code, OP_JMP);
         size_t length1 = vm->code.length;
         vm_code_push32(vm, FILLER32);
         size_t n = vm->code.length;
-        alt->emit(vm);
+        alt->emit(vm, compiler);
         size_t n1 = vm->code.length;
         fill_hole(vm, length, n);
         fill_hole(vm, length1, n1);
@@ -406,7 +438,7 @@ void AST::IfStatement::emit(struct vm *vm) {
         fill_hole(vm, length, n);
     }
 }
-void AST::WhileStatement::emit(struct vm *vm) {
+void AST::WhileStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     // 1: jmp condition
     // [statement]
     // [condition]
@@ -415,21 +447,20 @@ void AST::WhileStatement::emit(struct vm *vm) {
     size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
     size_t length1 = vm->code.length;
-    statement->emit(vm);
+    statement->emit(vm, compiler);
     fill_hole(vm, length, vm->code.length);
-    condition->emit(vm);
+    condition->emit(vm, compiler);
     array_push(vm->code, OP_JCOND);
     vm_code_push32(vm, length1);
 }
-void AST::ForStatement::emit(struct vm *vm) {
+void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     // start
-    from->emit(vm);
-    array_push(vm->code, OP_SET);
-    vm_code_pushstr(vm, id.data());
+    from->emit(vm, compiler);
+    emit_set_var(vm, compiler, id);
     array_push(vm->code, OP_POP);
     // body
     size_t body_pos = vm->code.length;
-    statement->emit(vm);
+    statement->emit(vm, compiler);
     // condition:
     // [body]
     // get [id]
@@ -439,10 +470,8 @@ void AST::ForStatement::emit(struct vm *vm) {
     // step
     // jmp [body]
     // 1: done
-    array_push(vm->code, OP_GET);
-    vm_code_pushstr(vm, id.data());
-    vm_code_push32(vm, XXH32(id.data(), id.size(), 0));
-    to->emit(vm);
+    emit_get_var(vm, compiler, id);
+    to->emit(vm, compiler);
     if(stepN == 1) array_push(vm->code, OP_GEQ);
     else array_push(vm->code, OP_LEQ);
 
@@ -451,78 +480,88 @@ void AST::ForStatement::emit(struct vm *vm) {
     vm_code_push32(vm, FILLER32);
 
     if(step) {
-        step->emit(vm);
+        step->emit(vm, compiler);
         array_push(vm->code, OP_ADDS);
         vm_code_pushstr(vm, id.data());
         array_push(vm->code, OP_POP);
-    } else if(stepN == 1) {
-        array_push(vm->code, OP_INC);
-        vm_code_pushstr(vm, id.data());
-    } else if(stepN == -1) {
-        array_push(vm->code, OP_DEC);
-        vm_code_pushstr(vm, id.data());
+    } else {
+        emit_get_var(vm, compiler, id);
+        array_push(vm->code, OP_PUSH8);
+        array_push(vm->code, 1);
+        if(stepN == -1) array_push(vm->code, OP_SUB);
+        else array_push(vm->code, OP_ADD);
+        emit_set_var(vm, compiler, id);
+        array_push(vm->code, OP_POP);
     }
     array_push(vm->code, OP_JMP);
     vm_code_push32(vm, body_pos);
 
     fill_hole(vm, length, vm->code.length);
 }
-void AST::FunctionStatement::emit(struct vm *vm) {
-    if(record_fn) array_push(vm->code, OP_DEF_FUNCTION_PUSH);
-    else array_push(vm->code, OP_DEF_FUNCTION);
+void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    array_push(vm->code, OP_DEF_FUNCTION_PUSH);
     vm_code_pushstr(vm, id.data());
     size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
     array_push(vm->code, (uint8_t)arguments.size());
-    //body
+    // scope
+    compiler->scope();
+    array_push(vm->code, OP_ENV_NEW);
+    size_t env_length = vm->code.length;
+    vm_code_push32(vm, FILLER32);
+    // body
     for(auto &arg : arguments) {
-        array_push(vm->code, OP_SET);
-        vm_code_pushstr(vm, arg.data());
+        emit_set_var(vm, compiler, arg);
         array_push(vm->code, OP_POP);
     }
-    statement->emit(vm);
+    statement->emit(vm, compiler);
+    fill_hole(vm, env_length, compiler->slotsize);
+    compiler->unscope();
     // default return
     array_push(vm->code, OP_PUSH_NIL);
     array_push(vm->code, OP_RET); // pops env for us
     //fill in
     fill_hole(vm, length, vm->code.length);
+    if(!record_fn) {
+        emit_set_var(vm, compiler, id);
+        array_push(vm->code, OP_POP);
+    }
 }
-void AST::StructStatement::emit(struct vm *vm) {
+void AST::StructStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_PUSH_NIL);
     for(auto &s : statements) {
         if(s->type() == EXPR_STMT) {
             auto expr = static_cast<BinaryExpression*>(
                 static_cast<ExpressionStatement*>(s.get())->expression.get());
             assert(expr->left->type() == IDENTIFIER);
-            expr->right->emit(vm);
+            expr->right->emit(vm, compiler);
             array_push(vm->code, OP_PUSHSTR);
             vm_code_pushstr(vm, static_cast<Identifier*>(expr->left.get())->id.data());
         } else if(s->type() == FUNCTION_STMT) {
             auto fn = static_cast<FunctionStatement*>(s.get());
-            fn->emit(vm);
+            fn->emit(vm, compiler);
             array_push(vm->code, OP_PUSHSTR);
             vm_code_pushstr(vm, fn->id.data());
         }
     }
     array_push(vm->code, OP_DICT_LOAD);
-    array_push(vm->code, OP_SET);
-    vm_code_pushstr(vm, id.data());
+    emit_set_var(vm, compiler, id);
     if(!is_expr) array_push(vm->code, OP_POP);
 }
-void AST::ExpressionStatement::emit(struct vm *vm) {
-    expression->emit(vm);
+void AST::ExpressionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    expression->emit(vm, compiler);
     array_push(vm->code, OP_POP);
 }
-void AST::ReturnStatement::emit(struct vm *vm) {
-    expression->emit(vm);
+void AST::ReturnStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    expression->emit(vm, compiler);
     array_push(vm->code, OP_RET);
 }
 
-void AST::Block::emit(struct vm *vm) {
+void AST::Block::emit(struct vm *vm, Hana::Compiler *compiler) {
     for(auto &s : statements)
-        s->emit(vm);
+        s->emit(vm, compiler);
 }
-void AST::BlockStatement::emit(struct vm *vm) {
+void AST::BlockStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     for(auto &s : statements)
-        s->emit(vm);
+        s->emit(vm, compiler);
 }

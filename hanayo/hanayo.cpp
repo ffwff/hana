@@ -31,12 +31,12 @@ void hanayo::_init(struct vm *m) {
     // variables:
     struct value val;
     // # constants
-    val = {0}; env_set(m->env, "nil", &val);
+    val = {0}; hmap_set(&m->globalenv, "nil", &val);
     // # functions
     #define native_function(name) \
-    value_native(&val, hanayo::name);  env_set(m->env, #name, &val);
+    value_native(&val, hanayo::name);  hmap_set(&m->globalenv, #name, &val);
     #define native_function_key(name, key) \
-    value_native(&val, hanayo::name);  env_set(m->env, key, &val);
+    value_native(&val, hanayo::name);  hmap_set(&m->globalenv, key, &val);
     native_function(print)
     native_function(input)
     // # objects
@@ -53,20 +53,20 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("index",       string::index);
     native_obj_function("insert",      string::insert);
     native_obj_function("split",       string::split);
-    env_set(m->env, "string", &val);
+    hmap_set(&m->globalenv, "string", &val);
     value_free(&val);
     m->dstr = val.as.dict;
 
     value_dict(&val);
     native_obj_function("constructor", integer::constructor);
-    env_set(m->env, "integer", &val);
+    hmap_set(&m->globalenv, "integer", &val);
     value_free(&val);
     m->dint = val.as.dict;
 
     value_dict(&val);
     native_obj_function("constructor", float_::constructor);
     native_obj_function("round",       float_::round);
-    env_set(m->env, "float", &val);
+    hmap_set(&m->globalenv, "float", &val);
     value_free(&val);
     m->dfloat = val.as.dict;
 
@@ -86,12 +86,12 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("filter",      array::filter);
     native_obj_function("reduce",      array::reduce);
     native_obj_function("join",        array::join);
-    env_set(m->env, "array", &val);
+    hmap_set(&m->globalenv, "array", &val);
     value_free(&val);
     m->darray = val.as.dict;
 
     value_dict(&val);
     native_obj_function("constructor", record::constructor);
-    env_set(m->env, "record", &val);
+    hmap_set(&m->globalenv, "record", &val);
     value_free(&val);
 }

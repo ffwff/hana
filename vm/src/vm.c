@@ -18,9 +18,8 @@
 // notes: architecture is big endian!
 
 void vm_init(struct vm *vm) {
-    vm->env = malloc(sizeof(struct env));
-    env_init(vm->env, NULL);
-    vm->globalenv = vm->env;
+    hmap_init(&vm->globalenv);
+    vm->localenv = NULL;
     vm->code = (a_uint8)array_init(uint8_t);
     vm->stack = (a_value){
         .data = calloc(8, sizeof(struct value)),
@@ -32,9 +31,18 @@ void vm_init(struct vm *vm) {
 }
 
 void vm_free(struct vm *vm) {
-    env_free(vm->env);
-    free(vm->env);
-
+    hmap_free(&vm->globalenv);
+    // TODO free localenv
+    if(vm->localenv != NULL) {
+        while(vm->localenv != NULL) {
+            struct env *localenv = vm->localenv->parent;
+            for(size_t i = 0; i < vm->localenv->nslots; i++)
+                value_free(&vm->localenv->slots[i]);
+            free(vm->localenv->slots);
+            free(vm->localenv);
+            vm->localenv = localenv;
+        }
+    }
     array_free(vm->code);
     for(size_t i = 0; i < vm->stack.length; i++)
         value_free(&vm->stack.data[i]);
@@ -209,13 +217,40 @@ int vm_step(struct vm *vm) {
     binop(OP_EQ,  value_eq)
     binop(OP_NEQ, value_neq)
 
-    // variables
-    case OP_SET: {
+    // scope
+    case OP_ENV_NEW: {
         vm->ip++;
-        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
-        vm->ip += strlen(key)+1;
-        LOG("SET %s\n", key);
-        env_set(vm->env, key, &array_top(vm->stack));
+        const uint32_t n =
+            vm->code.data[vm->ip+0] << 12 |
+            vm->code.data[vm->ip+1] << 8  |
+            vm->code.data[vm->ip+2] << 4  |
+            vm->code.data[vm->ip+3];
+        vm->ip += sizeof(n);
+        LOG("RESERVE %d\n", n);
+        struct env *oldenv = vm->localenv;
+        vm->localenv = malloc(sizeof(struct env));
+        vm->localenv->slots = malloc(sizeof(struct value)*n);
+        vm->localenv->nslots = n;
+        vm->localenv->parent = oldenv;
+        break;
+    }
+    case OP_ENV_POP: {
+        vm->ip++;
+        vm->localenv = vm->localenv->parent;
+        break;
+    }
+
+    // variables
+    case OP_SET_LOCAL: {
+        vm->ip++;
+        const uint32_t key =
+                            vm->code.data[vm->ip+0] << 12 |
+                            vm->code.data[vm->ip+1] << 8  |
+                            vm->code.data[vm->ip+2] << 4  |
+                            vm->code.data[vm->ip+3];
+        vm->ip += sizeof(key);
+        LOG("SET LOCAL %d\n", key);
+        value_copy(&vm->localenv->slots[key], &array_top(vm->stack));
         break;
     }
     case OP_SET_GLOBAL: {
@@ -223,10 +258,22 @@ int vm_step(struct vm *vm) {
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
         LOG("SET GLOBAL %s\n", key);
-        env_set(vm->globalenv, key, &array_top(vm->stack));
+        hmap_set(&vm->globalenv, key, &array_top(vm->stack));
         break;
     }
-    case OP_GET:
+    case OP_GET_LOCAL: {
+        vm->ip++;
+        const uint32_t key =
+                            vm->code.data[vm->ip+0] << 12 |
+                            vm->code.data[vm->ip+1] << 8  |
+                            vm->code.data[vm->ip+2] << 4  |
+                            vm->code.data[vm->ip+3];
+        vm->ip += sizeof(key);
+        LOG("GET LOCAL %d\n", key);
+        array_push(vm->stack, (struct value){});
+        value_copy(&array_top(vm->stack), &vm->localenv->slots[key]);
+        break;
+    }
     case OP_GET_GLOBAL: {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
@@ -239,32 +286,12 @@ int vm_step(struct vm *vm) {
         vm->ip+=sizeof(hash);
         LOG("GET %s\n", key);
         array_push(vm->stack, (struct value){});
-        struct value *val = env_get_hash(op == OP_GET ? vm->env : vm->globalenv, key, hash);
+        struct value *val = hmap_get(&vm->globalenv, key);
         if(val == NULL) {
             FATAL("no key named %s!\n", key);
             return 0;
         } else
             value_copy(&array_top(vm->stack), val);
-        break;
-    }
-    case OP_INC:
-    case OP_DEC: {
-        vm->ip++;
-        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
-        vm->ip += strlen(key)+1;
-        if(op == OP_INC) LOG("INC %s\n", key);
-        else LOG("DEC %s\n", key);
-        struct value *val = env_get(vm->env, key);
-        if(val->type == TYPE_INT) {
-            if(op == OP_INC) val->as.integer++;
-            else val->as.integer--;
-        } else if(val->type == TYPE_FLOAT) {
-            if(op == OP_INC) val->as.floatp++;
-            else val->as.floatp--;
-        } else {
-            FATAL("must be int or float!\n");
-            assert(0);
-        }
         break;
     }
     case OP_DEF_FUNCTION:
@@ -286,7 +313,7 @@ int vm_step(struct vm *vm) {
         if(op == OP_DEF_FUNCTION_PUSH)
             array_push(vm->stack, val);
         else
-            env_set(vm->env, key, &val);
+            hmap_set(&vm->globalenv, key, &val);
         break;
     }
 
@@ -372,9 +399,11 @@ int vm_step(struct vm *vm) {
             value_function(&caller, vm->ip, 0);
             array_push(vm->stack, caller);
             // environment
+#if 0
             struct env *parent = vm->env;
             vm->env = malloc(sizeof(struct env));
             env_init(vm->env, parent);
+#endif
             // arguments
             if(val.type == TYPE_DICT) {
                 if(vm->stack.length+nargs > vm->stack.capacity) {
@@ -411,13 +440,20 @@ int vm_step(struct vm *vm) {
         struct value caller = array_top(vm->stack);
         array_pop(vm->stack);
         array_push(vm->stack, retval);
-
+#if 0
         assert(vm->env->parent != NULL);
         struct env *parent = vm->env->parent;
         env_free(vm->env);
         free(vm->env);
         vm->env = parent;
-
+#endif
+        // TODO free
+        struct env *parent = vm->localenv->parent;
+        for(size_t i = 0; i < vm->localenv->nslots; i++)
+            value_free(&vm->localenv->slots[i]);
+        free(vm->localenv->slots);
+        free(vm->localenv);
+        vm->localenv = parent;
         if(caller.type == TYPE_NATIVE_FN) {
             return 0;
         } else if(caller.type == TYPE_FN) {
@@ -426,26 +462,6 @@ int vm_step(struct vm *vm) {
             printf("wrong return value, expected function\n");
             return 0;
         }
-        break;
-    }
-
-    // scoped
-    case OP_ENV_INHERIT: {
-        vm->ip++;
-        LOG("ENV_INHERIT\n");
-        struct env *parent = vm->env;
-        vm->env = malloc(sizeof(struct env));
-        env_init(vm->env, parent);
-        break;
-    }
-    case OP_ENV_POP: {
-        vm->ip++;
-        LOG("ENV_POP\n");
-        assert(vm->env->parent != NULL);
-        struct env *parent = vm->env->parent;
-        env_free(vm->env);
-        free(vm->env);
-        vm->env = parent;
         break;
     }
 
@@ -512,14 +528,15 @@ int vm_step(struct vm *vm) {
     case OP_MEMBER_SET: {
         // stack: [value][dict]
         vm->ip++;
-        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        char *key = (char *)(vm->code.data+vm->ip); // must be null terminated
         vm->ip += strlen(key)+1;
-        LOG("MEMBER_SET %s\n", key);
+        LOG("HEYEYE %s\n", key);
         struct value dval = array_top(vm->stack);
         assert(dval.type == TYPE_DICT);
         array_pop(vm->stack);
 
         struct value val = array_top(vm->stack);
+        LOG("SECOND %s\n", key);
         dict_set(dval.as.dict, key, &val);
         value_free(&dval);
         break;
@@ -662,7 +679,7 @@ int vm_step(struct vm *vm) {
         array_push(vm->stack, aval);
         break;
     }
-
+#if 0
     // variable modification
     case OP_ADDS: {
         vm->ip++;
@@ -678,6 +695,7 @@ int vm_step(struct vm *vm) {
         value_free(&result);
         break;
     }
+#endif
 
     // end
     default: {
@@ -741,10 +759,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
         value_copy(&array_top(vm->stack), &args.data[i]);
     }
     vm->ip = ip;
-    // environment
-    struct env *parent = vm->env;
-    vm->env = malloc(sizeof(struct env));
-    env_init(vm->env, parent);
+    // environment (already set up by body)
     // call it
     while(vm_step(vm));
     // restore env
