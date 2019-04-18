@@ -165,7 +165,7 @@ struct FunctionStatement : Statement {
     std::unique_ptr<AST> statement;
     std::vector<std::string> arguments;
     bool record_fn;
-    FunctionStatement(std::string &id) : id(id), record_fn(false) {}
+    FunctionStatement(const std::string &id) : id(id), record_fn(false) {}
     void print(int indent=0) override;
     void emit(struct vm *vm) override;
 };

@@ -3,9 +3,10 @@
 #include <sstream>
 #include <cassert>
 #include <stack>
+#include <exception>
 #include "error.h"
 
-namespace {
+namespace Hana {
 
 class Parser {
 private:
@@ -72,7 +73,7 @@ protected:
     std::string nexts() {
         const Token t = next();
         if(t.type != Token::STRING)
-            FATAL("Lexer error", "Expected string value");
+            throw LexerError("Expected string value");
         return t.strv;
     }
     void nexteq(const std::string &s) {
@@ -84,13 +85,13 @@ protected:
     int nexti() {
         const Token t = next();
         if(t.type != Token::INTEGER)
-            FATAL("Lexer error", "Expected string value");
+            throw LexerError("Expected string value");
         return t.intv;
     }
     int nextf() {
         const Token t = next();
         if(t.type != Token::FLOAT)
-            FATAL("Lexer error", "Expected string value");
+            throw LexerError("Expected string value");
         return t.floatv;
     }
     void nextnl() {
@@ -110,6 +111,37 @@ public:
         ended = false;
     };
     void parse();
+
+// Errors
+class LexerError : public std::exception {
+private:
+    std::string s;
+public:
+    template<typename First, typename ...Rest>
+    LexerError(First && first, Rest && ...rest) {
+        std::stringstream ss;
+        ss << std::forward<First>(first);
+        using expander = int[];
+        (void)expander{0, (void(ss << std::forward<Rest>(rest)), 0)...};
+        this->s = ss.str();
+    };
+    const char* what() const throw() { return s.data(); };
+};
+class ParserError : public std::exception {
+private:
+    std::string s;
+public:
+    template<typename First, typename ...Rest>
+    ParserError(First && first, Rest && ...rest) {
+        std::stringstream ss;
+        ss << std::forward<First>(first);
+        using expander = int[];
+        (void)expander{0, (void(ss << std::forward<Rest>(rest)), 0)...};
+        this->s = ss.str();
+    };
+    const char* what() const throw() { return s.data(); };
+};
+
 };
 
 

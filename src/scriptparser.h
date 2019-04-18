@@ -10,7 +10,7 @@ private:
     void nextop(const std::string &s) {
         Token t = next();
         if(t.type != Token::OPERATOR)
-            FATAL("Lexer error", "Expected operator value ", s, " (line: ", lines, ")", " got ", t.type);
+            throw LexerError("Expected operator value ", s, " (line: ", lines, ")", " got ", t.type);
         assert(t.strv == s);
     };
 
@@ -22,6 +22,8 @@ private:
     AST::AST *parse_binexpr();
     AST::AST *parse_conditional_expr();
     AST::AST *parse_block();
+    enum fn_parse_type { EXPR, RECORD, STATEMENT };
+    AST::AST *parse_function(const fn_parse_type type);
     AST::AST *parse_record(bool is_expr=false);
     std::vector<std::string> parse_function_arguments();
     AST::AST *parse_statement();

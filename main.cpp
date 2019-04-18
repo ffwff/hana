@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <iostream>
 #include <memory>
 #include <cmath>
@@ -18,7 +17,8 @@ options: \n\
  -d/--dump-vmcode: dumps vm bytecode to stdout\n\
                    (only works in interpreter mode)\n\
  -b/--bytecode: runs file as bytecode\n\
- -a/--print-ast: prints ast and exit\n\
+ -a/--print-ast: prints ast\n\
+ -n/--no-run: just parse the file, don't run\n\
 \n\
 ",
     program
@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
     int command_optiond = -1;
     bool opt_dump_vmcode = false,
          opt_print_ast = false,
+         opt_no_run = false,
          opt_bytecode = false;
     while(1) {
         int c = 0;
@@ -51,12 +52,13 @@ int main(int argc, char **argv) {
             { "version",     no_argument,       NULL, 0   },
             { "dump-vmcode", no_argument,       NULL, 0   },
             { "print-ast",   no_argument,       NULL, 0   },
+            { "no-run",      no_argument,       NULL, 0   },
             { "command",     required_argument, NULL, 'c' },
             { "bytecode",    no_argument,       NULL, 'b' },
             { 0,             0, NULL, 0 },
         };
         int option_index = 0;
-        c = getopt_long(argc, argv, "hvdac:0:b", options, &option_index);
+        c = getopt_long(argc, argv, "hvdanc:0:b", options, &option_index);
         if(c == -1) break;
         switch(c) {
         case 'h':
@@ -70,6 +72,9 @@ int main(int argc, char **argv) {
             break;
         case 'a':
             opt_print_ast = true;
+            break;
+        case 'n':
+            opt_no_run = true;
             break;
         case 'c':
             command_optiond = optind;
@@ -189,6 +194,7 @@ int main(int argc, char **argv) {
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
         if(opt_print_ast) ast->print();
         ast->emit(&m);
+        if(opt_no_run) goto cleanup;
         array_push(m.code, OP_HALT);
         vm_execute(&m);
         goto cleanup;
