@@ -303,6 +303,12 @@ Methods:
 "abc".insert(1, "bc") // => "abcbc" (inserts "bc" to "abc" in index 1)
 ```
 
+Several additional methods are available if compiled with `init.hana`:
+
+```
+"".empty?() // => true (is string empty?)
+```
+
 ## Numbers
 
 Numbers are either 64-bit ints or 64-bit double precision floats.
@@ -310,8 +316,18 @@ Numbers are either 64-bit ints or 64-bit double precision floats.
 Methods:
 
 ```
-1.1.round() // => 1
-            // (float only, rounds number to int)
+1.1.round() // => 1 (float only, rounds number to int)
+```
+
+Several additional methods are available if compiled with `init.hana`:
+
+```
+(1).even? // => false (is it even?)
+(1).odd? // => true (is it odd?)
+(-1).positive? // => false (is it positive?)
+(-1).negative? // => true (is it negative?)
+(-1).abs // => 1 (gets the absolute of a number)
+(1).round // => 1 (returns itself if it's an integer)
 ```
 
 ## Records
@@ -391,9 +407,31 @@ a.reduce(f(prev, curr) = prev+curr, 0) // => 21
 // then returns a single output
 ```
 
+Several additional methods are available if compiled with `init.hana`:
+
+```
+[].empty?() // => true (is array empty?)
+```
+
 # Standard library
 
 Hana's standard library is called `hanayo`! The library is imported by default upon running.
+
+## Special constants
+
+```
+nil // => (nil)
+```
+
+If hana is compiled with the bootstrap bytecode (generated from `init.hana`), several helper constants
+will be available:
+
+```
+true // => 1
+false // => 0
+inf // => infinity
+nan // => not a number
+```
 
 ## IO
 
