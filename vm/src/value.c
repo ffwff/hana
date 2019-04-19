@@ -16,7 +16,7 @@ void value_float(struct value *val, double data) {
 }
 void value_str(struct value *val, const char *data) {
     val->type = TYPE_STR;
-    val->as.str = malloc(sizeof(struct string));
+    val->as.str = malloc(string_size(data));
     string_init(val->as.str, data);
 }
 void value_native(struct value *val, value_fn fn) {

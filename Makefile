@@ -41,8 +41,8 @@ CCFLAGS += -Wall -Ivm/src -Ivm/xxHash
 
 # bytecode
 ADDITIONAL=
-ifeq (./build/init.bin,$(wildcard ./build/init.bin))
 ifdef INCLUDE_BYTECODE
+ifeq (./main,$(wildcard ./main))
 CXXFLAGS += -Iincbin -DINCLUDE_BYTECODE
 ADDITIONAL += build/init.bin
 endif
@@ -68,8 +68,8 @@ build/hanayo:
 	mkdir -p build/hanayo
 build/hanayo/%.o: hanayo/%.cpp build/hanayo
 	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD
-build/init.bin: init.hana
-	./main -d $^ 2>/dev/null >$@
+build/init.bin: init.hana ./main
+	./main -d init.hana 2>/dev/null >$@
 
 clean:
 	rm -rf libhana.so $(OBJS) $(DEPS)
