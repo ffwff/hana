@@ -1,8 +1,13 @@
-fib(n) = n <= 1 ? 1 : fib(n-1) + fib(n-2)
-print(fib(30),"\n")
+//fib(n) = n <= 1 ? 1 : fib(n-1) + fib(n-2)
+//print(fib(30),"\n")
 
 /*
 fibrec(n, prev, curr) = n <= 0 ? curr : fibrec(n-1, prev+curr, prev)
 fib(n) = fibrec(n+1, 1, 0)
 print(fib(50),"\n")
 */
+
+function fib(n) begin
+    if n <= 1 return 1
+    else return fib(n-1) + fib(n-2)
+end

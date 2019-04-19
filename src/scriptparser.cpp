@@ -550,7 +550,9 @@ AST::AST *ScriptParser::parse_statement() {
                 return new AST::ReturnStatement();
             } else {
                 fload();
-                return new AST::ReturnStatement(parse_expression());
+                auto expr = new AST::ReturnStatement(parse_expression());
+                nextnl();
+                return expr;
             }
         } else if(token.strv == "function") {
             fpop();
