@@ -25,11 +25,9 @@ enum vm_opcode {
     OP_LT, OP_LEQ, OP_GT, OP_GEQ,
     OP_EQ, OP_NEQ,
     // variables
-    OP_ENV_NEW, OP_ENV_POP,
+    OP_ENV_NEW,
     OP_SET_LOCAL, OP_SET_GLOBAL, OP_GET_LOCAL, OP_GET_GLOBAL,
-    OP_INC, OP_DEC,
     OP_DEF_FUNCTION, OP_DEF_FUNCTION_PUSH,
-    OP_ADDS,
     // flow control
     OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
     // dictionary
@@ -52,7 +50,7 @@ struct vm {
 
 void vm_init(struct vm*);
 void vm_free(struct vm*);
-int vm_step(struct vm*);
+//int vm_step(struct vm*);
 void vm_execute(struct vm*);
 typedef array(struct value) a_arguments;
 struct value *vm_call(struct vm*, struct value *, a_arguments);

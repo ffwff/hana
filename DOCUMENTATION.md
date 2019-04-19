@@ -222,6 +222,32 @@ begin
 end
 ```
 
+# Scoping rules
+
+A scope is a container which stores local variables. Every time a function is called,
+a new scope is setup. Scopes can be nested, meaning functions (A) inside of functions (B) can
+get its parent's variables (B), but not the other way around. Scopes can't currently set
+its parent's variables, doing so will **create a new local variable with the same name**.
+
+Example:
+
+```
+function a() begin
+    x = 1
+    function b() begin
+        y = 2
+        print(y," ", x,"\n") // => 2 1
+        x = 3
+        print(x,"\n") // => 3
+    end
+    print(x,"\n") // => 1
+    b()
+    print(x,"\n") // => 1
+end
+
+a()
+```
+
 # Types
 
 Basic types include:
