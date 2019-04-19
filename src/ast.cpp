@@ -258,6 +258,15 @@ void AST::UnaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
     else if(op == NOT) array_push(vm->code, OP_NOT);
 }
 void AST::MemberExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
+    if(is_namespace) {
+        const auto &k = static_cast<Identifier*>(right.get())->id;
+        left->emit(vm, compiler);
+        array_push(vm->code, OP_MEMBER_GET);
+        vm_code_pushstr(vm, k.data());
+        vm_code_push32(vm, XXH32(k.data(), k.size(), 0));
+        return;
+    }
+
     left->emit(vm, compiler);
     if((right->type() == IDENTIFIER || right->type() == STR_LITERAL) && !is_expr) {
         const char *key = right->type() == IDENTIFIER
@@ -277,7 +286,8 @@ void AST::CallExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
         (*arg)->emit(vm, compiler);
     callee->emit(vm, compiler);
     array_push(vm->code, OP_CALL);
-    if(callee->type() == MEMBER_EXPR)
+    if( callee->type() == MEMBER_EXPR &&
+        !static_cast<MemberExpression*>(callee.get())->is_namespace )
         array_push(vm->code, arguments.size()+1);
     else
         array_push(vm->code, arguments.size());
@@ -546,11 +556,20 @@ void AST::StructStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
             fn->emit(vm, compiler);
             array_push(vm->code, OP_PUSHSTR);
             vm_code_pushstr(vm, fn->id.data());
+        } else if(s->type() == STRUCT_STMT) {
+            auto ss = static_cast<StructStatement*>(s.get());
+            ss->emit(vm, compiler);
+            array_push(vm->code, OP_PUSHSTR);
+            vm_code_pushstr(vm, ss->id.data());
         }
     }
     array_push(vm->code, OP_DICT_LOAD);
     emit_set_var(vm, compiler, id);
     if(!is_expr) array_push(vm->code, OP_POP);
+    /*if(is_namespace) {
+        LOG("namespace", id);
+        compiler->namespaces.emplace(id);
+    }*/
 }
 void AST::ExpressionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     expression->emit(vm, compiler);

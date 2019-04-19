@@ -97,6 +97,7 @@ Parser::Token ScriptParser::next() {
         else twoch("<=")
         else twoch("+=")
         else twoch("-=")
+        else twoch("::")
         else {
             f.seekg(prev);
             token = c;
@@ -161,7 +162,7 @@ AST::AST *ScriptParser::parse_call() {
     fsave();
     auto op = next();
     if(op.type == Token::Type::OPERATOR &&
-        (op.strv == "(" || op.strv == "." || op.strv == "[")) {
+        (op.strv == "(" || op.strv == "." || op.strv == "::" || op.strv == "[")) {
         AST::AST *expr = factor;
         do {
 
@@ -195,10 +196,14 @@ AST::AST *ScriptParser::parse_call() {
                         throw ParserError("Expected operator");
                 }
             } else if(op.strv == ".") {
-                // TODO
                 fpop();
                 auto id = nexts();
                 expr = new AST::MemberExpression(expr, new AST::Identifier(id));
+            } else if(op.strv == "::") {
+                fpop();
+                auto id = nexts();
+                expr = new AST::MemberExpression(expr, new AST::Identifier(id));
+                static_cast<AST::MemberExpression*>(expr)->is_namespace = true;
             } else if(op.strv == "[") {
                 fpop();
                 expr = new AST::MemberExpression(expr, parse_expression());
@@ -427,6 +432,12 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
                 stmt->statements.emplace_back(fstmt);
                 if(static_cast<AST::FunctionStatement*>(fstmt)->statement->type() != AST::Type::BLOCK_STMT)
                     nextnl();
+            } else if(token.strv == "record") {
+                fpop();
+                auto ss = parse_record(false);
+                static_cast<AST::StructStatement*>(ss)->is_expr = true;
+                stmt->statements.emplace_back(ss);
+                nextnl();
             } else {
                 fload();
                 auto left = parse_call();
@@ -623,8 +634,11 @@ AST::AST *ScriptParser::parse_block() {
     auto block = new AST::Block();
     while(!ended) {
         auto stmt = parse_statement();
-        if(stmt != nullptr)
+        if(stmt != nullptr) {
+            if(stmt->type() == AST::RETURN_STMT)
+                throw ParserError("Return statements are only possible in functions");
             block->statements.emplace_back(stmt);
+        }
     }
     return block;
 }

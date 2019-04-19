@@ -86,8 +86,8 @@ struct UnaryExpression : Expression {
 struct MemberExpression : Expression {
     TYPE(MEMBER_EXPR)
     std::unique_ptr<AST> left, right;
-    bool is_called, is_expr;
-    MemberExpression(AST *left, AST *right) : left(left), right(right), is_called(false), is_expr(false) {};
+    bool is_called, is_expr, is_namespace;
+    MemberExpression(AST *left, AST *right) : left(left), right(right), is_called(false), is_expr(false), is_namespace(false) {};
     void print(int indent=0) override;
     void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };

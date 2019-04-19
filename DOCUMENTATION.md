@@ -92,7 +92,9 @@ fib(n) = fibrec(n+1, 1, 0)
 print(fib(50), "\n")
 ```
 
-# Comments
+# Syntax
+
+## Comments
 
 Comments can either be single line:
 
@@ -108,9 +110,66 @@ or multiple lines:
 */
 ```
 
-# Expressions
+## Expressions
 
-## Identifiers
+### n-ary expressions
+
+Binary operators include (comma separated):
+
+```
++, -, *, /, mod, ==, !=, >, <, >=, <=,
+and, or, =
+```
+
+Unary operators include:
+
+```
+not, -
+```
+
+### conditions
+
+Hana uses the ternary operator to denote condition expressions:
+
+```
+condition ? then : otherwise
+```
+
+### call expressions
+
+```
+a() // calls function a with no arguments
+a(1,2) // calls function a with 2 arguments
+```
+
+### member expressions
+
+Access a key of a record like this:
+
+```
+a.b // => access "b" key of record "a"
+a["b"] // => access "b" key of record "a"
+v = [3,5]
+v[0] //  => access 0th index (value 3) of array "v"
+s = "abcd"
+s[3] // => "d" access 3rd element of string s
+```
+
+Calling a member expression will pass the left hand side as an argument to the
+called method, to call a value's method without passing itself, use the `::` operator:
+
+```
+record Test
+    function constructor(self) begin
+        print(self)
+    end
+end
+Test::constructor("Hello") // => Hello
+```
+
+## Values
+
+### Identifiers
 
 All tokens that don't contain quotes, operators (except for `?`) and don't start with a digit
 is an identifier.
@@ -126,60 +185,11 @@ a // => 20
 
 Note that the `^` identifier will just refer to the local `^` identifier.
 
-## n-ary expressions
-
-Binary operators include (comma separated):
-
-```
-+, -, *, /, mod, ==, !=, >, <, >=, <=,
-and, or, =
-```
-
-Unary operators include:
-
-```
-not, -
-```
-
-## conditions
-
-Hana uses the ternary operator to denote condition expressions:
-
-```
-condition ? then : otherwise
-```
-
-## call expressions
-
-```
-a() // calls function a with no arguments
-a(1,2) // calls function a with 2 arguments
-```
-
-## member expressions
-
-Access a key of a record like this:
-
-```
-a.b // => access "b" key of record "a"
-a["b"] // => access "b" key of record "a"
-v = [3,5]
-v[0] //  => access 0th index (value 3) of array "v"
-```
-
-# Statements
+## Statements
 
 All statements are separated by newlines.
 
-## Function
-
-(see [Types#Functions](#functions))
-
-## Record
-
-(see [Types#Records](#records))
-
-## If
+### If
 
 Syntax (`else` line is optional):
 
@@ -188,7 +198,7 @@ if [expression] [statement]
 else [statement]
 ```
 
-## While
+### While
 
 Syntax:
 
@@ -198,7 +208,7 @@ while [expression] [statement]
 
 While `[expression]` is true, do `[statement]`
 
-## For
+### For
 
 Syntax:
 
@@ -212,7 +222,7 @@ stepping `[step]` each iteration. With each iteration, it executes `[statement]`
 `step [step]` is optional, if the `to` keyword is used, `[step]` will be 1, otherwise if
 `downto` is used, then `[step]` will be -1.
 
-## Blocks
+### Blocks
 
 Syntax:
 
@@ -222,7 +232,11 @@ begin
 end
 ```
 
-# Scoping rules
+### Function
+
+(see [Types#Functions](#functions))
+
+#### Scoping rules
 
 A scope is a container which stores local variables. Every time a function is called,
 a new scope is setup. Scopes can be nested, meaning functions (A) inside of functions (B) can
@@ -247,6 +261,25 @@ end
 
 a()
 ```
+
+#### Return statements
+
+The return statement exits the called function, and returns its result. If no result is given
+or no return statement is specified in the function, the function will yield `nil`.
+
+Syntax:
+
+```
+return [expr]
+```
+
+Return statements are only possible in function bodies.
+
+### Record
+
+(see [Types#Records](#records))
+
+Record bodies only accept function, assignment and record statements.
 
 # Types
 

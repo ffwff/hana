@@ -50,7 +50,7 @@ void vm_free(struct vm *vm) {
 void vm_execute(struct vm *vm) {
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
-#if 1
+#ifdef NOLOG
 #define dispatch() do { \
         goto *dispatch_table[vm->code.data[vm->ip]]; \
     } while(0)
@@ -432,7 +432,7 @@ void vm_execute(struct vm *vm) {
                 }
                 fn_ip = ctor->as.ifn.ip;
                 if(nargs+1 != ctor->as.ifn.nargs) {
-                    printf("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs);
+                    printf("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1);
                     return;
                 }
             } else {
@@ -526,7 +526,7 @@ void vm_execute(struct vm *vm) {
                             vm->code.data[vm->ip+2] << 4  |
                             vm->code.data[vm->ip+3];
         vm->ip+=sizeof(hash);
-        LOG("MEMBER_GET %s\n", key);
+        LOG(op == OP_MEMBER_GET ? "MEMBER_GET %s\n" : "MEMBER_GET_NO_POP %s\n", key);
 
         struct value val = array_top(vm->stack);
         struct dict *dict = NULL;
@@ -564,7 +564,9 @@ void vm_execute(struct vm *vm) {
         if(result != NULL)
             value_copy(&array_top(vm->stack), result);
 
-        if(op == OP_MEMBER_GET) value_free(&val);
+        if(op == OP_MEMBER_GET) {
+            value_free(&val);
+        }
         dispatch();
     }
     doop(OP_MEMBER_SET): {
