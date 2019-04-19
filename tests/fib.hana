@@ -3,4 +3,4 @@ print(fib(30),"\n")
 
 fibrec(n, prev, curr) = n <= 0 ? curr : fibrec(n-1, prev+curr, prev)
 fib(n) = fibrec(n+1, 1, 0)
-print(fib(50),"\n")
+print(fib(30),"\n")

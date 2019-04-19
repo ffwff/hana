@@ -35,9 +35,7 @@ Parser::Token ScriptParser::next() {
     };
     skip_un();
     std::string token;
-    LOG("c=",c);
     if(c == EOF) {
-        LOG("EOF");
         f.get();
         return Token();
     } else if(c == '\'' || c == '"') {
@@ -58,7 +56,6 @@ Parser::Token ScriptParser::next() {
             }
             str += f.get();
         }
-        LOG("LIT", str);
         return Token(str, Token::Type::STRLITERAL);
     } else if(c == '\n') {
         f.get();
@@ -118,7 +115,6 @@ AST::AST *ScriptParser::parse_factor() {
     const auto token = next();
     if(token.type == Token::Type::OPERATOR) {
         if(token.strv == "(") {
-            LOG("(");
             auto expr = parse_expression();
             nextop(")");
             return expr;
@@ -148,7 +144,6 @@ AST::AST *ScriptParser::parse_factor() {
             auto s = parse_function(EXPR);
             if(s) return s;
         }
-        LOG("NEW: ", token.strv);
         return new AST::Identifier(token.strv);
     } else if(token.type == Token::Type::STRLITERAL) {
         return new AST::StrLiteral(token.strv);
@@ -157,7 +152,6 @@ AST::AST *ScriptParser::parse_factor() {
     } else if(token.type == Token::Type::FLOAT) {
         return new AST::FloatLiteral(token.floatv);
     }
-    LOG(token.type);
     throw ParserError("Expected factor token: ", lines); // TODO
 }
 
@@ -169,7 +163,6 @@ AST::AST *ScriptParser::parse_call() {
     if(op.type == Token::Type::OPERATOR &&
         (op.strv == "(" || op.strv == "." || op.strv == "[")) {
         AST::AST *expr = factor;
-        LOG(op.strv);
         do {
 
             if(op.strv == "(") {
@@ -203,7 +196,6 @@ AST::AST *ScriptParser::parse_call() {
                 }
             } else if(op.strv == ".") {
                 // TODO
-                LOG("member");
                 fpop();
                 auto id = nexts();
                 expr = new AST::MemberExpression(expr, new AST::Identifier(id));
@@ -213,13 +205,11 @@ AST::AST *ScriptParser::parse_call() {
                 static_cast<AST::MemberExpression*>(expr)->is_expr = true;
                 nextop("]");
             } else {
-                LOG("LOAD");
                 fload();
                 return expr;
             }
 
         next:
-            LOG("save");
             fsave();
             op = next();
 
@@ -238,7 +228,6 @@ AST::AST *ScriptParser::parse_unary() {
     const auto token = next();
     AST::UnaryExpression::OpType ot = AST::UnaryExpression::OpType::NONE;
     if(token.type == Token::Type::OPERATOR) {
-        LOG("UNARY");
         if(token.strv == "+")
             ot = AST::UnaryExpression::OpType::POS;
         else if(token.strv == "-")
@@ -258,7 +247,6 @@ non_unary:
 }
 
 AST::AST *ScriptParser::parse_expression() {
-    LOG("expr");
     return parse_conditional_expr();
 }
 
@@ -291,12 +279,10 @@ AST::AST *ScriptParser::parse_assignment() {
     };
     if(token.type == Token::Type::STRING) {
         floadn();
-        LOG("assign!!");
         auto left = parse_call();
         const auto op = next();
         AST::BinaryExpression::OpType opt;
         if((opt = optype(op.strv)) != AST::BinaryExpression::OpType::NONE) {
-            LOG("assignment");
             fpop();
             auto right = parse_expression();
             return new AST::BinaryExpression(left, right, opt);
@@ -310,14 +296,11 @@ AST::AST *ScriptParser::parse_assignment() {
 AST::AST *ScriptParser::parse_binexpr() {
 #define build_binary_expression(name, down, optype) \
     [&]() -> AST::AST* { \
-        LOG("binexpr: ", name); \
         AST::AST *left = down(); \
         fsave(); \
         Token token = next(); \
-        AST::BinaryExpression::OpType ot;  \
-        LOG("type ", token.type);\
+        AST::BinaryExpression::OpType ot; \
         if ((ot = optype(token.strv)) != AST::BinaryExpression::OpType::NONE) { \
-            LOG("operator", token.strv); \
             fpop(); \
             AST::BinaryExpression *binexpr = new AST::BinaryExpression(); \
             binexpr->left = std::unique_ptr<AST::AST>(left); \
@@ -326,7 +309,6 @@ AST::AST *ScriptParser::parse_binexpr() {
             while(!f.eof()) { \
                 fsave(); \
                 token = next(); \
-                LOG("operator", token.strv); \
                 if ((ot = optype(token.strv)) != AST::BinaryExpression::OpType::NONE) { \
                     fpop(); \
                     auto right = down(); \
@@ -346,7 +328,6 @@ AST::AST *ScriptParser::parse_binexpr() {
     const auto optype_fn = [](const std::initializer_list<std::pair<std::string, AST::BinaryExpression::OpType>> list) {
         return [list](const std::string &str) -> AST::BinaryExpression::OpType {
             for(auto &pair : list) {
-                LOG(str, pair.first);
                 if(str == pair.first)
                     return pair.second;
             }
@@ -395,7 +376,6 @@ std::vector<std::string> ScriptParser::parse_function_arguments() {
     if(token.type == Token::Type::OPERATOR && token.strv == ")") {
         return arguments;
     } else if(token.type == Token::Type::STRING) {
-        LOG(token.strv);
         arguments.push_back(token.strv);
         while(!f.eof()) {
             token = next();
@@ -415,7 +395,6 @@ std::vector<std::string> ScriptParser::parse_function_arguments() {
 }
 
 AST::AST *ScriptParser::parse_record(bool is_expr) {
-    LOG("struct");
     std::string id;
     if(!is_expr) {
         fsave();
@@ -438,7 +417,6 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
     while(!f.eof()) {
         fsave();
         auto token = next();
-        LOG(token.strv);
         if(token.type == Token::Type::STRING) {
             if(token.strv == "end") {
                 fpop();
@@ -470,7 +448,6 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
 }
 
 AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
-    LOG("parse fn\n");
     fsave();
     auto token = next();
     AST::FunctionStatement *stmt = nullptr;
@@ -565,7 +542,6 @@ AST::AST *ScriptParser::parse_statement() {
                 return record;
         } else if(token.strv == "if") {
             fpop();
-            LOG("conditional stmt");
             auto expr = parse_expression();
             auto stmt = parse_statement();
             if(stmt == nullptr)
@@ -573,18 +549,15 @@ AST::AST *ScriptParser::parse_statement() {
             auto ifstmt = new AST::IfStatement(expr, stmt);
             fsave();
             auto token = next();
-            LOG(token.type, token.strv);
             if(token.type == Token::Type::NEWLINE) {
                 token = next();
             }
             if(token.type == Token::Type::STRING && token.strv == "else") {
-                LOG("else");
                 fpop();
                 ifstmt->alt = std::unique_ptr<AST::AST>(parse_statement());
             } else {
                 fload();
             }
-            LOG("End if");
             return ifstmt;
         } else if(token.strv == "while") {
             fpop();
@@ -640,9 +613,7 @@ AST::AST *ScriptParser::parse_statement() {
     expression_stmt:
         // expression statement
         fload();
-        LOG("expression stmt");
         auto expr = parse_expression();
-        LOG("end expr");
         nextnl();
         return new AST::ExpressionStatement(expr);
     }

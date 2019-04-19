@@ -2,7 +2,7 @@
 #include "env.h"
 
 void env_init(struct env *env, size_t nslots) {
-    env->slots = malloc(sizeof(struct value)*nslots);
+    env->slots = calloc(nslots, sizeof(struct value));
     env->nslots = nslots;
     env->parent = NULL;
 }
