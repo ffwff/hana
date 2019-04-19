@@ -159,10 +159,13 @@ static void emit_set_var(struct vm *vm, Hana::Compiler *compiler, std::string s)
         vm_code_pushstr(vm, s.data());
     } else {
         array_push(vm->code, OP_SET_LOCAL);
-        compiler->set_local(s);
         auto local = compiler->get_local(s);
-        LOG(local);
-        vm_code_push32(vm, local->slot);
+        if(local) vm_code_push32(vm, local->slot);
+        else {
+            compiler->set_local(s);
+            local = compiler->get_local(s);
+            vm_code_push32(vm, local->slot);
+        }
     }
 }
 static void emit_get_var(struct vm *vm, Hana::Compiler *compiler, std::string s) {
@@ -480,10 +483,13 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     vm_code_push32(vm, FILLER32);
 
     if(step) {
+        assert(0);
+#if 0
         step->emit(vm, compiler);
         array_push(vm->code, OP_ADDS);
         vm_code_pushstr(vm, id.data());
         array_push(vm->code, OP_POP);
+#endif
     } else {
         emit_get_var(vm, compiler, id);
         array_push(vm->code, OP_PUSH8);

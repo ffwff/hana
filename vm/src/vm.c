@@ -36,9 +36,7 @@ void vm_free(struct vm *vm) {
     if(vm->localenv != NULL) {
         while(vm->localenv != NULL) {
             struct env *localenv = vm->localenv->parent;
-            for(size_t i = 0; i < vm->localenv->nslots; i++)
-                value_free(&vm->localenv->slots[i]);
-            free(vm->localenv->slots);
+            env_free(vm->localenv);
             free(vm->localenv);
             vm->localenv = localenv;
         }
@@ -229,12 +227,14 @@ int vm_step(struct vm *vm) {
         LOG("RESERVE %d\n", n);
         struct env *oldenv = vm->localenv;
         vm->localenv = malloc(sizeof(struct env));
-        vm->localenv->slots = malloc(sizeof(struct value)*n);
-        vm->localenv->nslots = n;
-        vm->localenv->parent = oldenv;
+        if(oldenv == NULL)
+            env_init(vm->localenv, n);
+        else
+            env_inherit(vm->localenv, oldenv, n);
         break;
     }
     case OP_ENV_POP: {
+        assert(0);
         vm->ip++;
         vm->localenv = vm->localenv->parent;
         break;
@@ -447,11 +447,8 @@ int vm_step(struct vm *vm) {
         free(vm->env);
         vm->env = parent;
 #endif
-        // TODO free
         struct env *parent = vm->localenv->parent;
-        for(size_t i = 0; i < vm->localenv->nslots; i++)
-            value_free(&vm->localenv->slots[i]);
-        free(vm->localenv->slots);
+        env_free(vm->localenv);
         free(vm->localenv);
         vm->localenv = parent;
         if(caller.type == TYPE_NATIVE_FN) {

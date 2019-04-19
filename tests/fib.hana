@@ -1,8 +1,4 @@
-//fib(n) = n < 2 ? n : fib(n-1) + fib(n-2)
-function fib(n) begin
-if n <= 1 return 1
-return fib(n-1) + fib(n-2)
-end
+fib(n) = n <= 1 ? 1 : fib(n-1) + fib(n-2)
 print(fib(30),"\n")
 
 /*

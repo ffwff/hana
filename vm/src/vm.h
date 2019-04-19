@@ -7,6 +7,7 @@ extern "C" {
 #include "array.h"
 #include "value.h"
 #include "hmap.h"
+#include "env.h"
 
 enum vm_opcode {
     OP_HALT,
@@ -39,12 +40,6 @@ enum vm_opcode {
 
 typedef array(uint8_t) a_uint8;
 typedef array(struct value) a_value;
-
-struct env {
-    struct value *slots;
-    size_t nslots;
-    struct env *parent;
-};
 
 struct vm {
     uint32_t ip;

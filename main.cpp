@@ -210,6 +210,7 @@ int main(int argc, char **argv) {
         if(opt_no_run) goto cleanup;
         array_push(m.code, OP_HALT);
         vm_execute(&m);
+        //while(vm_step(&m)) std::cin.get();
         goto cleanup;
     }
 
