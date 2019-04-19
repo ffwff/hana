@@ -131,6 +131,7 @@ int main(int argc, char **argv) {
         std::string s(argv[command_optiond-1]);
         p.loads(s);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        if(ast == nullptr) return 1;
         if(opt_print_ast) ast->print();
         ast->emit(&m, &compiler);
         array_push(m.code, OP_HALT);
@@ -184,6 +185,7 @@ int main(int argc, char **argv) {
             Hana::ScriptParser p;
             p.loads(s);
             auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+            if(ast == nullptr) continue;
             if(opt_print_ast) ast->print();
             ast->emit(&m, &compiler);
             array_push(m.code, OP_HALT);
@@ -205,6 +207,7 @@ int main(int argc, char **argv) {
         Hana::ScriptParser p;
         p.loadf(argv[last_optiond]);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        if(ast == nullptr) return 1;
         if(opt_print_ast) ast->print();
         ast->emit(&m, &compiler);
         if(opt_no_run) goto cleanup;

@@ -14,7 +14,6 @@ fn(constructor) {
     array_pop(vm->stack);
     value_str(&val, s.data());
     array_push(vm->stack, val);
-    vm_print_stack(vm);
 }
 
 fn(bytesize) {

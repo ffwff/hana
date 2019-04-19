@@ -483,13 +483,11 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     vm_code_push32(vm, FILLER32);
 
     if(step) {
-        assert(0);
-#if 0
+        emit_get_var(vm, compiler, id);
         step->emit(vm, compiler);
-        array_push(vm->code, OP_ADDS);
-        vm_code_pushstr(vm, id.data());
+        array_push(vm->code, OP_ADD);
+        emit_set_var(vm, compiler, id);
         array_push(vm->code, OP_POP);
-#endif
     } else {
         emit_get_var(vm, compiler, id);
         array_push(vm->code, OP_PUSH8);

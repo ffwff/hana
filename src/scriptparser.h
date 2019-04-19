@@ -10,7 +10,7 @@ private:
     void nextop(const std::string &s) {
         Token t = next();
         if(t.type != Token::OPERATOR)
-            throw LexerError("Expected operator value ", s, " (line: ", lines, ")", " got ", t.type);
+            throw LexerError("Expected operator value ", s, " got ", t.type);
         assert(t.strv == s);
     };
 

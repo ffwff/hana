@@ -470,6 +470,7 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
 }
 
 AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
+    LOG("parse fn\n");
     fsave();
     auto token = next();
     AST::FunctionStatement *stmt = nullptr;
@@ -492,7 +493,6 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
         fsave();
         token = next();
         if(token.strv == "begin") {
-            LOG("begin?\n");
             // this is here because blocks in function expressions behave like
             // expressions than statements: we don't require that it ends with a newline
             fpop();
@@ -550,9 +550,7 @@ AST::AST *ScriptParser::parse_statement() {
                 return new AST::ReturnStatement();
             } else {
                 fload();
-                auto expr = new AST::ReturnStatement(parse_expression());
-                nextnl();
-                return expr;
+                return new AST::ReturnStatement(parse_expression());
             }
         } else if(token.strv == "function") {
             fpop();
@@ -570,10 +568,15 @@ AST::AST *ScriptParser::parse_statement() {
             LOG("conditional stmt");
             auto expr = parse_expression();
             auto stmt = parse_statement();
+            if(stmt == nullptr)
+                throw ParserError("Expected conditional statement");
             auto ifstmt = new AST::IfStatement(expr, stmt);
             fsave();
             auto token = next();
             LOG(token.type, token.strv);
+            if(token.type == Token::Type::NEWLINE) {
+                token = next();
+            }
             if(token.type == Token::Type::STRING && token.strv == "else") {
                 LOG("else");
                 fpop();
@@ -656,5 +659,12 @@ AST::AST *ScriptParser::parse_block() {
 }
 
 AST::AST *ScriptParser::parse() {
-    return parse_block();
+    try {
+        return parse_block();
+    } catch(ParserError &e) {
+        std::cerr << "Parser error: " << e.what() << " at line " << lines << "\n";
+    } catch(LexerError &e) {
+        std::cerr << "Lexer error: " << e.what() << " at line " << lines << "\n";
+    }
+    return nullptr;
 }
