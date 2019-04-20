@@ -33,9 +33,9 @@ void hanayo::_init(struct vm *m) {
     // # constants
     val = {0}; hmap_set(&m->globalenv, "nil", &val);
     // # functions
-    #define native_function(name) \
+#define native_function(name) \
     value_native(&val, hanayo::name);  hmap_set(&m->globalenv, #name, &val);
-    #define native_function_key(name, key) \
+#define native_function_key(name, key) \
     value_native(&val, hanayo::name);  hmap_set(&m->globalenv, key, &val);
 
     // ## io
@@ -46,7 +46,7 @@ void hanayo::_init(struct vm *m) {
     native_function(fwrite)
 
     // # objects
-    #define native_obj_function(key, name) \
+#define native_obj_function(key, name) \
     do{ struct value v; value_native(&v, hanayo::name); hmap_set(&val.as.dict->data, key, &v); } while(0)
 
     // ## strings

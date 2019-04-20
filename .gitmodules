@@ -1,6 +1,6 @@
-[submodule "vm/xxHash"]
-	path = vm/xxHash
-	url = https://github.com/Cyan4973/xxHash.git
-[submodule "incbin"]
-	path = incbin
-	url = https://github.com/graphitemaster/incbin.git
+[submodule "extern/incbin"]
+	path = extern/incbin
+	url = https://github.com/graphitemaster/incbin
+[submodule "extern/xxHash"]
+	path = extern/xxHash
+	url = https://github.com/Cyan4973/xxHash
