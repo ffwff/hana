@@ -284,6 +284,7 @@ void vm_execute(struct vm *vm) {
                             vm->code.data[vm->ip+3];
         vm->ip += sizeof(key);
         LOG("SET LOCAL %d\n", key);
+        value_free(&vm->localenv->slots[key]);
         value_copy(&vm->localenv->slots[key], &array_top(vm->stack));
         dispatch();
     }
@@ -318,7 +319,7 @@ void vm_execute(struct vm *vm) {
                             vm->code.data[vm->ip+2] << 4  |
                             vm->code.data[vm->ip+3];
         vm->ip+=sizeof(hash);
-        LOG("GET %s\n", key);
+        LOG("GET GLOBAL %s\n", key);
         array_push(vm->stack, (struct value){});
         struct value *val = hmap_get(&vm->globalenv, key);
         if(val == NULL) {
@@ -583,6 +584,7 @@ void vm_execute(struct vm *vm) {
         LOG("SECOND %s\n", key);
         dict_set(dval.as.dict, key, &val);
         value_free(&dval);
+        value_free(&val);
         dispatch();
     }
     doop(OP_DICT_LOAD): {

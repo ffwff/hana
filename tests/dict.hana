@@ -1,8 +1,12 @@
 record A
-    help = 1
     function constructor(self) begin
         return self
     end
 end
-x = A()
-print(x.help)
+
+record B
+    function constructor(self) begin
+        a = A()
+    end
+end
+B()
