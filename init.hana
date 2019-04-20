@@ -37,6 +37,5 @@ function import(x) begin
     x = realpath(x)
     if modules[x] return
     f = fopen(x, "r")
-    eval(fread(f))
-    modules[x] = true
+    if eval(fread(f)) modules[x] = true
 end
