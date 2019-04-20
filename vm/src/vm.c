@@ -584,7 +584,7 @@ void vm_execute(struct vm *vm) {
         LOG("SECOND %s\n", key);
         dict_set(dval.as.dict, key, &val);
         value_free(&dval);
-        value_free(&val);
+        // NOTE: val should not be free'd.
         dispatch();
     }
     doop(OP_DICT_LOAD): {
