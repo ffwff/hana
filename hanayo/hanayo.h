@@ -13,6 +13,9 @@ fn(input);
 fn(fopen);
 fn(fread);
 fn(fwrite);
+fn(realpath);
+
+// language functions
 fn(eval);
 
 namespace string {

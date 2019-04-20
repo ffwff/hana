@@ -61,22 +61,28 @@ char *hanayo::_to_string(struct value &val) {
 fn(eval) {
     auto sval = _arg(vm, value::TYPE_STR);
     auto script = sval.as.str;
+    struct value retval = {0};
 
     // generate ast & emit
     auto ast = hanayo_parse(string_data(script));
-    auto target_ip = vm->code.length;
-    hanayo_ast_emit(ast, vm);
-    hanayo_free_ast(ast);
+    if(ast == nullptr) {
+        value_int(&retval, 0);
+    } else {
+        auto target_ip = vm->code.length;
+        hanayo_ast_emit(ast, vm);
+        hanayo_free_ast(ast);
 
-    // save state, execute then return
-    auto ip = vm->ip;
-    vm->ip = target_ip;
-    vm_execute(vm);
-    vm->ip = ip;
+        // save state, execute then return
+        auto ip = vm->ip;
+        vm->ip = target_ip;
+        vm_execute(vm);
+        vm->ip = ip;
+        value_int(&retval, 1);
+    }
 
     // cleanup
     value_free(&sval);
-    array_push(vm->stack, {0});
+    array_push(vm->stack, retval);
 }
 
 void hanayo::_init(struct vm *m) {
@@ -96,6 +102,7 @@ void hanayo::_init(struct vm *m) {
     native_function(fopen)
     native_function(fread)
     native_function(fwrite)
+    native_function(realpath)
     native_function(eval)
 
     // # objects

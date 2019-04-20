@@ -576,7 +576,10 @@ void AST::ExpressionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_POP);
 }
 void AST::ReturnStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
-    expression->emit(vm, compiler);
+    if(expression == nullptr)
+        array_push(vm->code, OP_PUSH_NIL);
+    else
+        expression->emit(vm, compiler);
     array_push(vm->code, OP_RET);
 }
 

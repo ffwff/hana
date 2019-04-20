@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include "hanayo.h"
 #include "vm/src/string_.h"
 
@@ -48,18 +49,38 @@ fn(fopen) {
 
 fn(fread) {
     // file : FILE*, chars: int -> str
-    assert(nargs == 2);
-    auto val = _arg(vm, value::TYPE_NATIVE_OBJ);
-    auto chars = _arg(vm, value::TYPE_INT);
+    //assert(nargs == 2);
+    if(nargs == 1) {
+        auto val = _arg(vm, value::TYPE_NATIVE_OBJ);
 
-    char *buf = (char*)malloc(chars.as.integer+1);
-    size_t n = fread(buf, 1, chars.as.integer, (FILE*)val.as.native->data);
-    buf[n] = 0;
-    struct value s;
-    value_str(&s, buf);
-    free(buf);
-    value_free(&val);
-    array_push(vm->stack, s);
+        auto f = (FILE*)val.as.native->data;
+        fseek(f, 0, SEEK_END);
+        auto size = ftell(f);
+        fseek(f, 0, SEEK_SET);
+
+        char *buf = (char*)malloc(size+1);
+        size_t n = fread(buf, 1, size, f);
+        buf[n] = 0;
+        struct value s;
+        value_str(&s, buf);
+        free(buf);
+        value_free(&val);
+        array_push(vm->stack, s);
+    } else if(nargs == 2) {
+        auto val = _arg(vm, value::TYPE_NATIVE_OBJ);
+        auto chars = _arg(vm, value::TYPE_INT);
+
+        char *buf = (char*)malloc(chars.as.integer+1);
+        size_t n = fread(buf, 1, chars.as.integer, (FILE*)val.as.native->data);
+        buf[n] = 0;
+        struct value s;
+        value_str(&s, buf);
+        free(buf);
+        value_free(&val);
+        array_push(vm->stack, s);
+    } else {
+        assert(0);
+    }
 }
 
 fn(fwrite) {
@@ -74,5 +95,20 @@ fn(fwrite) {
     value_free(&val);
     value_free(&buf);
     array_push(vm->stack, s);
+
+}
+
+fn(realpath) {
+    assert(nargs == 1);
+    auto path = _arg(vm, value::TYPE_STR);
+    char actualpath [PATH_MAX+1];
+    char *ptr = ::realpath(string_data(path.as.str), actualpath);
+    value_free(&path);
+    if(ptr == nullptr) {
+        array_push(vm->stack, {0});
+        return;
+    }
+    value_str(&path, ptr);
+    array_push(vm->stack, path);
 
 }
