@@ -13,6 +13,7 @@ fn(input);
 fn(fopen);
 fn(fread);
 fn(fwrite);
+fn(eval);
 
 namespace string {
     fn(constructor);

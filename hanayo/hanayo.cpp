@@ -4,7 +4,11 @@
 #include "vm/src/string_.h"
 #include "vm/src/dict.h"
 #include "vm/src/array_obj.h"
+#include "src/binding.h"
 
+#define fn(name) void hanayo::name(struct vm *vm, int nargs)
+
+// helpers
 char *hanayo::_to_string(struct value &val) {
     if(val.type == value::TYPE_STR)
         return strdup(string_data(val.as.str));
@@ -53,6 +57,28 @@ char *hanayo::_to_string(struct value &val) {
     return strdup("(nil)");
 }
 
+// fns
+fn(eval) {
+    auto sval = _arg(vm, value::TYPE_STR);
+    auto script = sval.as.str;
+
+    // generate ast & emit
+    auto ast = hanayo_parse(string_data(script));
+    auto target_ip = vm->code.length;
+    hanayo_ast_emit(ast, vm);
+    hanayo_free_ast(ast);
+
+    // save state, execute then return
+    auto ip = vm->ip;
+    vm->ip = target_ip;
+    vm_execute(vm);
+    vm->ip = ip;
+
+    // cleanup
+    value_free(&sval);
+    array_push(vm->stack, {0});
+}
+
 void hanayo::_init(struct vm *m) {
     // variables:
     struct value val;
@@ -70,6 +96,7 @@ void hanayo::_init(struct vm *m) {
     native_function(fopen)
     native_function(fread)
     native_function(fwrite)
+    native_function(eval)
 
     // # objects
 #define native_obj_function(key, name) \
