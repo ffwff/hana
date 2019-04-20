@@ -1,8 +1,8 @@
 #pragma once
 
 #define fn(name) void name(struct vm *vm, int nargs)
-#include <string>
-#include <cassert>
+#include <string.h>
+#include <assert.h>
 #include "vm/src/vm.h"
 
 namespace hanayo {

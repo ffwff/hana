@@ -1,4 +1,5 @@
-#include <string>
+#include <string.h>
+#include <stdio.h>
 #include "hanayo.h"
 #include "vm/src/string_.h"
 #include "vm/src/dict.h"

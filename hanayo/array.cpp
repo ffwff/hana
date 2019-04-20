@@ -1,4 +1,4 @@
-#include <cassert>
+#include <assert.h>
 #include "hanayo.h"
 #include "vm/src/string_.h"
 #include "vm/src/array_obj.h"

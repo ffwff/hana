@@ -67,7 +67,7 @@ build/vm/%.o: vm/src/%.c build/vm
 build/hanayo:
 	mkdir -p build/hanayo
 build/hanayo/%.o: hanayo/%.cpp build/hanayo
-	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD
+	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD -fno-rtti -fno-exceptions -nostdinc++
 build/init.bin: init.hana ./main
 	./main -d init.hana 2>/dev/null >$@
 

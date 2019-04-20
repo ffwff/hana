@@ -1,5 +1,5 @@
-#include <cassert>
-#include <cstring>
+#include <assert.h>
+#include <string.h>
 #include "vm/src/string_.h"
 #include "vm/src/array_obj.h"
 #include "hanayo.h"

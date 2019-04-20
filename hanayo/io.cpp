@@ -1,4 +1,4 @@
-#include <iostream>
+#include <stdio.h>
 #include "hanayo.h"
 #include "vm/src/string_.h"
 
@@ -20,10 +20,10 @@ fn(print) {
 }
 
 fn(input) {
-    std::string s;
-    std::cin >> s;
+    char *line;
+    getline(&line, nullptr, stdin);
     struct value val;
-    value_str(&val, s.data());
+    value_str(&val, line); free(line);
     array_push(vm->stack, val);
 }
 
