@@ -48,13 +48,11 @@ fn(delete_) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t from_pos = val.as.integer;
 
     // n chars
-    val = array_top(vm->stack);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t nchars = val.as.integer;
 
     s.erase(from_pos, nchars);
@@ -73,15 +71,11 @@ fn(copy) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_INT);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t from_pos = val.as.integer;
 
     // n chars
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_INT);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t nchars = val.as.integer;
 
     char str[nchars+1];
@@ -101,9 +95,7 @@ fn(at) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_INT);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t index = val.as.integer;
 
     if(index < (int64_t)(s.size()) && index >= 0) {
@@ -125,11 +117,9 @@ fn(index) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_STR);
+    val = _arg(vm, value::TYPE_STR);
     std::string needle(string_data(val.as.str));
     value_free(&val);
-    array_pop(vm->stack);
 
     size_t index = s.find(needle);
     if(index == std::string::npos) {
@@ -151,9 +141,7 @@ fn(insert) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_INT);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t from_pos = val.as.integer;
 
     val = array_top(vm->stack);
@@ -176,10 +164,9 @@ fn(split) {
     array_pop(vm->stack);
 
     // delim
-    val = array_top(vm->stack);
+    val = _arg(vm, value::TYPE_STR);
     const std::string delim(string_data(val.as.str));
     value_free(&val);
-    array_pop(vm->stack);
 
     value_array(&val);
     if(delim.empty()) { // turns string to array if called with ""

@@ -41,13 +41,11 @@ fn_(delete_) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     size_t from_pos = (size_t)val.as.integer;
 
     // n chars
-    val = array_top(vm->stack);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     size_t nchars = (size_t)val.as.integer;
 
     assert(from_pos >= 0 && from_pos+nchars < aval.as.array->data.length);
@@ -73,15 +71,11 @@ fn_(copy) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_INT);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t from_pos = val.as.integer;
 
     // n chars
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_INT);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t nchars = val.as.integer;
 
     if(nchars == 0) {
@@ -111,9 +105,7 @@ fn_(at) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_INT);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t index = val.as.integer;
 
     if(index < (int64_t)(aval.as.array->data.length) && index >= 0) {
@@ -169,9 +161,7 @@ fn_(insert) {
     array_pop(vm->stack);
 
     // from pos
-    val = array_top(vm->stack);
-    assert(val.type == value::TYPE_INT);
-    array_pop(vm->stack);
+    val = _arg(vm, value::TYPE_INT);
     int64_t from_pos = val.as.integer;
 
     // new val

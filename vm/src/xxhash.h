@@ -1,1 +1,1 @@
-../xxHash/xxhash.h
+../../extern/xxHash/xxhash.h

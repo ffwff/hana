@@ -37,12 +37,19 @@ void hanayo::_init(struct vm *m) {
     value_native(&val, hanayo::name);  hmap_set(&m->globalenv, #name, &val);
     #define native_function_key(name, key) \
     value_native(&val, hanayo::name);  hmap_set(&m->globalenv, key, &val);
+
+    // ## io
     native_function(print)
     native_function(input)
+    native_function(fopen)
+    native_function(fread)
+    native_function(fwrite)
+
     // # objects
     #define native_obj_function(key, name) \
     do{ struct value v; value_native(&v, hanayo::name); hmap_set(&val.as.dict->data, key, &v); } while(0)
 
+    // ## strings
     value_dict(&val);
     native_obj_function("constructor", string::constructor);
     native_obj_function("bytesize",    string::bytesize);
@@ -57,12 +64,14 @@ void hanayo::_init(struct vm *m) {
     value_free(&val);
     m->dstr = val.as.dict;
 
+    // ## integers
     value_dict(&val);
     native_obj_function("constructor", integer::constructor);
     hmap_set(&m->globalenv, "integer", &val);
     value_free(&val);
     m->dint = val.as.dict;
 
+    // ## floats
     value_dict(&val);
     native_obj_function("constructor", float_::constructor);
     native_obj_function("round",       float_::round);
@@ -70,6 +79,7 @@ void hanayo::_init(struct vm *m) {
     value_free(&val);
     m->dfloat = val.as.dict;
 
+    // ## arrays
     value_dict(&val);
     native_obj_function("constructor", array::constructor);
     native_obj_function("length",      array::length);
@@ -89,9 +99,11 @@ void hanayo::_init(struct vm *m) {
     hmap_set(&m->globalenv, "array", &val);
     value_free(&val);
     m->darray = val.as.dict;
+}
 
-    value_dict(&val);
-    native_obj_function("constructor", record::constructor);
-    hmap_set(&m->globalenv, "record", &val);
-    value_free(&val);
+struct value hanayo::_arg(struct vm *vm, value::value_type type) {
+    struct value val = array_top(vm->stack);
+    assert(val.type == type);
+    array_pop(vm->stack);
+    return val;
 }

@@ -37,15 +37,13 @@ endif
 
 # Default flags
 CXXFLAGS += -std=c++11 -I. -Wall
-CCFLAGS += -Wall -Ivm/src -Ivm/xxHash
+CCFLAGS += -Wall -Ivm/src -Iextern/xxHash
 
 # bytecode
 ADDITIONAL=
 ifdef INCLUDE_BYTECODE
-ifeq (./main,$(wildcard ./main))
-CXXFLAGS += -Iincbin -DINCLUDE_BYTECODE
+CXXFLAGS += -Iextern/incbin -DINCLUDE_BYTECODE
 ADDITIONAL += build/init.bin
-endif
 endif
 
 main: build/main.o $(OBJS) $(ADDITIONAL)

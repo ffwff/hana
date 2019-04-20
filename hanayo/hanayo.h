@@ -2,12 +2,17 @@
 
 #define fn(name) void name(struct vm *vm, int nargs)
 #include <string>
+#include <cassert>
 #include "vm/src/vm.h"
 
 namespace hanayo {
 
+// io
 fn(print);
 fn(input);
+fn(fopen);
+fn(fread);
+fn(fwrite);
 
 namespace string {
     fn(constructor);
@@ -28,10 +33,6 @@ namespace integer {
 namespace float_ {
     fn(constructor);
     fn(round);
-}
-
-namespace record {
-    fn(constructor);
 }
 
 namespace array {
@@ -55,6 +56,8 @@ namespace array {
 
 std::string _to_string(struct value &val);
 void _init(struct vm *m);
+
+struct value _arg(struct vm *vm, value::value_type type);
 
 }
 

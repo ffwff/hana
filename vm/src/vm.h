@@ -50,7 +50,6 @@ struct vm {
 
 void vm_init(struct vm*);
 void vm_free(struct vm*);
-//int vm_step(struct vm*);
 void vm_execute(struct vm*);
 typedef array(struct value) a_arguments;
 struct value *vm_call(struct vm*, struct value *, a_arguments);

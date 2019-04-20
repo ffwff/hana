@@ -3,11 +3,13 @@
 extern "C" {
 #endif
 #include <stdint.h>
+#include "native_obj.h"
 
 struct vm;
 struct dict;
 struct array_obj;
 struct string_header;
+
 typedef void (*value_fn)(struct vm *vm, int nargs);
 struct value {
     union {
@@ -21,10 +23,12 @@ struct value {
         } ifn;
         struct dict *dict;
         struct array_obj *array;
+        struct native_obj *native;
     } as;
-    enum {
+    enum value_type {
         TYPE_NIL, TYPE_INT, TYPE_FLOAT, TYPE_STR,
-        TYPE_NATIVE_FN, TYPE_FN, TYPE_DICT, TYPE_ARRAY
+        TYPE_NATIVE_FN, TYPE_FN, TYPE_DICT, TYPE_ARRAY,
+        TYPE_NATIVE_OBJ
     } type;
 };
 
@@ -37,6 +41,7 @@ void value_dict(struct value*);
 void value_dict_copy(struct value*, struct dict*);
 void value_array(struct value*);
 void value_array_n(struct value*, size_t n);
+void value_native_obj(struct value*, void *data, native_obj_free_fn free);
 
 void value_free(struct value*);
 void value_print(struct value*);

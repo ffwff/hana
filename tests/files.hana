@@ -1,0 +1,5 @@
+x = fopen("/tmp/a", "w")
+//fread(x, 10)
+fwrite(x, "Hello World")
+x = fopen("/tmp/a", "r")
+print(fread(x, 12))

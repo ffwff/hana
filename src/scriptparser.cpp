@@ -106,7 +106,7 @@ Parser::Token ScriptParser::next() {
 
     } else {
         token += f.get();
-        while((c = f.peek()) != EOF && !isspace(c) && (!is_onech_op(c) || c == '?'))
+        while((c = f.peek()) != EOF && !isspace(c) && (!is_onech_op(c) || c == '?' || c == '!'))
             token += f.get();
         return Token(token);
     }

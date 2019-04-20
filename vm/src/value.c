@@ -48,6 +48,11 @@ void value_array_n(struct value *val, size_t n) {
     val->as.array = malloc(sizeof(struct array_obj));
     array_obj_init_n(val->as.array, n);
 }
+void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
+    val->type = TYPE_NATIVE_OBJ;
+    val->as.native = malloc(sizeof(struct native_obj));
+    native_obj_init(val->as.native, data, free);
+}
 
 void value_free(struct value *val) {
     if(val->type == TYPE_STR) {
@@ -62,6 +67,10 @@ void value_free(struct value *val) {
         array_obj_free(val->as.array);
         if(val->as.array->refs == 0)
             free(val->as.array);
+    } else if(val->type == TYPE_NATIVE_OBJ) {
+        native_obj_free(val->as.native);
+        if(val->as.native->refs == 0)
+            free(val->as.native);
     }
     val->type = TYPE_NIL;
 }
@@ -81,6 +90,8 @@ void value_print(struct value *val) {
         printf("[dict %ld]", (intptr_t)val->as.dict);
     else if(val->type == TYPE_ARRAY)
         printf("[array %ld]", (intptr_t)val->as.array);
+    else if(val->type == TYPE_NATIVE_OBJ)
+        printf("[native obj %ld]", (intptr_t)val->as.native);
     else {
         printf("nil");
     }
@@ -89,18 +100,18 @@ void value_print(struct value *val) {
 void value_copy(struct value *dst, struct value *src) {
     dst->type = src->type;
     if(src->type == TYPE_STR) {
-        dst->as.str = src->as.str;
         src->as.str->refs++;
-    } else if(src->type == TYPE_DICT) {
-        dst->as.dict = src->as.dict;
+    }
+    else if(src->type == TYPE_DICT) {
         src->as.dict->refs++;
     }
     else if(src->type == TYPE_ARRAY) {
-        dst->as.array = src->as.array;
         src->as.array->refs++;
     }
-    else
-        dst->as = src->as;
+    else if(src->type == TYPE_NATIVE_OBJ) {
+        src->as.native->refs++;
+    }
+    dst->as = src->as;
 }
 
 // arith
