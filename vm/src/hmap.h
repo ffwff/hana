@@ -23,8 +23,8 @@ void hmap_init(struct hmap *);
 void hmap_free(struct hmap *);
 struct value *hmap_get(struct hmap *, const char *);
 struct value *hmap_get_hash(struct hmap *, const char *, const uint32_t);
-struct value *_hmap_set(struct hmap *, const char *, struct value *, int, int*);
-#define hmap_set(hmap, key, val) _hmap_set(hmap, key, val, 0, 0)
+struct value *_hmap_set(struct hmap *, const char *, struct value *, int);
+#define hmap_set(hmap, key, val) _hmap_set(hmap, key, val, 0)
 void hmap_del(struct hmap *, const char *);
 void hmap_print(struct hmap *);
 

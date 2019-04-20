@@ -4,27 +4,52 @@
 #include "vm/src/dict.h"
 #include "vm/src/array_obj.h"
 
-std::string hanayo::_to_string(struct value &val) {
+char *hanayo::_to_string(struct value &val) {
     if(val.type == value::TYPE_STR)
-        return string_data(val.as.str);
-    else if(val.type == value::TYPE_INT)
-        return std::to_string(val.as.integer);
-    else if(val.type == value::TYPE_FLOAT)
-        return std::to_string(val.as.floatp);
-    else if(val.type == value::TYPE_NATIVE_FN || val.type == value::TYPE_FN)
-        return "(function)";
-    else if(val.type == value::TYPE_DICT)
-        return "(record)";
-    else if(val.type == value::TYPE_ARRAY) {
-        std::string s = "[";
-        if(val.as.array->data.length)
-            s += _to_string(val.as.array->data.data[0]);
-        for(size_t i = 1; i < val.as.array->data.length; i++)
-            s += ", " + _to_string(val.as.array->data.data[i]);
-        s += "]";
+        return strdup(string_data(val.as.str));
+    else if(val.type == value::TYPE_INT) {
+        char dummy[1];
+        const size_t siz = snprintf(dummy, 1, "%ld", val.as.integer);
+        char *s = (char*)malloc(siz+1);
+        sprintf(s, "%ld", val.as.integer);
+        return s;
+    } else if(val.type == value::TYPE_FLOAT) {
+        char dummy[1];
+        const size_t siz = snprintf(dummy, 1, "%f", val.as.floatp);
+        char *s = (char*)malloc(siz+1);
+        sprintf(s, "%f", val.as.floatp);
         return s;
     }
-    return "(nil)";
+    else if(val.type == value::TYPE_NATIVE_FN || val.type == value::TYPE_FN)
+        return strdup("(function)");
+    else if(val.type == value::TYPE_DICT)
+        return strdup("(record)");
+    else if(val.type == value::TYPE_ARRAY) {
+        const auto joiner = ", ";
+        const auto joiner_len = strlen(joiner);
+
+        size_t len = 1;
+        char *s = (char*)malloc(len+1);
+        s[0] = '['; s[1] = 0;
+        const auto END = 1;
+        if(val.as.array->data.length) {
+            auto ss = _to_string(val.as.array->data.data[0]);
+            len += strlen(ss); s = (char*)realloc(s, len+END+1);
+            strcat(s, ss);
+            free(ss);
+        }
+        for(size_t i = 1; i < val.as.array->data.length; i++) {
+            auto ss = _to_string(val.as.array->data.data[i]);
+            len += joiner_len + strlen(ss); s = (char*)realloc(s, len+END+1);
+            strcat(s, joiner);
+            strcat(s, ss);
+            free(ss);
+        }
+        s[len] = ']';
+        s[len+1] = 0;
+        return s;
+    }
+    return strdup("(nil)");
 }
 
 void hanayo::_init(struct vm *m) {

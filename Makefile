@@ -11,6 +11,8 @@ OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
 
+CXXFLAGS += -Wno-format-truncation
+
 # Version
 ifdef RELEASE
 CXXFLAGS += -O3 -DRELEASE

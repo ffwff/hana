@@ -54,7 +54,7 @@ namespace array {
     fn(join);
 }
 
-std::string _to_string(struct value &val);
+char *_to_string(struct value &val);
 void _init(struct vm *m);
 
 struct value _arg(struct vm *vm, value::value_type type);

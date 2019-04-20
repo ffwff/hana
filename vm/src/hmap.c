@@ -51,8 +51,7 @@ struct value *hmap_get_hash(struct hmap *hmap, const char *key, const uint32_t h
     return NULL;
 }
 
-struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, int noalloc, int *has_grown) {
-    if(has_grown != NULL) *has_grown = 0;
+struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, int noalloc) {
     if(!noalloc) {
         // expand if load factor > lf threshold
         const float load = ((float)hmap->occupied)/((float)hmap->data.length);
@@ -66,13 +65,12 @@ struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, i
             for(size_t i = 0; i < hmap->data.length; i++)
                 for(size_t j = 0; j < hmap->data.data[i].length; j++)
                     _hmap_set(&tmp, hmap->data.data[i].data[j].key,
-                            &hmap->data.data[i].data[j].val, 1, 0);
+                            &hmap->data.data[i].data[j].val, 1);
             for(size_t i = 0; i < hmap->data.length; i++)
                 array_free(hmap->data.data[i]);
             array_free(hmap->data);
             hmap->occupied = tmp.occupied;
             hmap->data = tmp.data;
-            if(has_grown != NULL) *has_grown = 1;
         }
     }
     // set

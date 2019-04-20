@@ -1,10 +1,8 @@
-a = record()
-a.a = record()
-a.a.b = 'Hello World'
-y = a.a
-x = a
-print(x, "\n") // (record)
-a = 0
-print(x, "\n") // (record)
-print(y, "\n") // (record)
-print(y.b, "\n") // "Hello World"
+record A
+    help = 1
+    function constructor(self) begin
+        return self
+    end
+end
+x = A()
+print(x.help)

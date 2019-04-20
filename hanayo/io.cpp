@@ -9,7 +9,8 @@ fn(print) {
     while(nargs--) {
         struct value val = array_top(vm->stack);
         const auto s = hanayo::_to_string(val);
-        written += fputs(s.data(), stdout);
+        written += fputs(s, stdout);
+        free(s);
         value_free(&val);
         array_pop(vm->stack);
     }

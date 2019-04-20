@@ -30,4 +30,3 @@ end
 
 a = Node(Node(Node("D", "C"), "B"), "A")
 a.reverse()
-a.print(0)

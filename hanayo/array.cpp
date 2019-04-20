@@ -52,7 +52,7 @@ fn_(delete_) {
     for(size_t i = from_pos; i < (from_pos+nchars); i++) {
         value_free(&aval.as.array->data.data[i]);
     }
-    size_t remaining = (aval.as.array->data.length-nchars)*sizeof(struct value);
+    size_t remaining = (aval.as.array->data.length-from_pos-nchars)*sizeof(struct value);
     memmove(&aval.as.array->data.data[from_pos],
             &aval.as.array->data.data[from_pos+nchars], remaining);
     aval.as.array->data.length -= nchars;
@@ -437,24 +437,30 @@ fn_(join) {
     array_pop(vm->stack);
 
     // joiner
-    struct value sval = array_top(vm->stack);
-    assert(sval.type == value::TYPE_STR);
-    array_pop(vm->stack);
-    const std::string joiner(string_data(sval.as.str));
-    value_free(&sval);
+    struct value sval = _arg(vm, value::TYPE_STR);
+    auto joiner = string_data(sval.as.str);
+    auto joiner_len = string_len(sval.as.str);
 
-    std::string s;
+    size_t len = 0;
+    char *s = (char*)malloc(len+1);
+    s[0] = 0;
     if(aval.as.array->data.length) {
         assert(aval.as.array->data.data[0].type == value::TYPE_STR);
-        s += string_data(aval.as.array->data.data[0].as.str);
+        auto ss = aval.as.array->data.data[0].as.str;
+        len += string_len(ss); s = (char*)realloc(s, len+1);
+        strcat(s, string_data(ss));
     }
     for(size_t i = 1; i < aval.as.array->data.length; i++) {
         assert(aval.as.array->data.data[i].type == value::TYPE_STR);
-        s += joiner;
-        s += string_data(aval.as.array->data.data[i].as.str);
+        auto ss = aval.as.array->data.data[i].as.str;
+        len += joiner_len + string_len(ss); s = (char*)realloc(s, len+1);
+        strcat(s, joiner);
+        strcat(s, string_data(ss));
     }
+    s[len] = 0;
 
+    value_free(&sval);
     value_free(&aval);
-    value_str(&sval, s.data());
+    value_str(&sval, s); free(s);
     array_push(vm->stack, sval);
 }
