@@ -20,8 +20,9 @@ fn(print) {
 }
 
 fn(input) {
-    char *line;
-    getline(&line, nullptr, stdin);
+    char *line = nullptr;
+    size_t n = 0;
+    getline(&line, &n, stdin);
     struct value val;
     value_str(&val, line); free(line);
     array_push(vm->stack, val);
