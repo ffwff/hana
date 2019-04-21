@@ -21,6 +21,7 @@ void hmap_init(struct hmap *hmap) {
     hmap->data = (a_hmap_buckets)array_init_n(a_hmap_entry, INITIAL_SIZE);
     for(size_t i = 0; i < INITIAL_SIZE; i++)
         hmap->data.data[i] = (a_hmap_entry)array_init(a_hmap_entry);
+    hmap->keys = (a_hmap_keys)array_init(char*);
 }
 
 void hmap_free(struct hmap *hmap) {
@@ -32,6 +33,9 @@ void hmap_free(struct hmap *hmap) {
         array_free(hmap->data.data[i]);
     }
     array_free(hmap->data);
+    // strings in hmap->keys are owned by hmap->data's entries
+    // no need to free it
+    array_free(hmap->keys);
     hmap->occupied = 0;
 }
 
@@ -55,11 +59,11 @@ struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, i
     if(!noalloc) {
         // expand if load factor > lf threshold
         const float load = ((float)hmap->occupied)/((float)hmap->data.length);
-        //printf("load factor: %f\n", load);
         if(load > LOAD_FACTOR) {
             struct hmap tmp;
             tmp.occupied = 0;
             tmp.data = (a_hmap_buckets)array_init_n(a_hmap_entry, 2*hmap->data.length);
+            tmp.keys = hmap->keys; // move keys
             for(size_t i = 0; i < tmp.data.length; i++)
                 tmp.data.data[i] = (a_hmap_entry)array_init(a_hmap_entry);
             for(size_t i = 0; i < hmap->data.length; i++)
@@ -71,6 +75,7 @@ struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, i
             array_free(hmap->data);
             hmap->occupied = tmp.occupied;
             hmap->data = tmp.data;
+            hmap->keys = tmp.keys; // give it back
         }
     }
     // set
@@ -78,6 +83,8 @@ struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, i
     for(size_t i = 0; i < entry->length; i++) {
         if(strcmp(entry->data[i].key, key) == 0) {
             if(noalloc) {
+                // we don't need to copy if we're just resizing it
+                // just move it
                 entry->data[i].val.type = val->type;
                 entry->data[i].val.as = val->as;
             } else {
@@ -88,6 +95,7 @@ struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, i
         }
     }
     struct hmap_entry mentry = {
+        // same goes for keys
         .key = noalloc ? (char*)key : strdup(key)
     };
     if(noalloc) {
@@ -95,6 +103,7 @@ struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, i
         mentry.val.as = val->as;
     } else {
         value_copy(&mentry.val, val);
+        array_push(hmap->keys, mentry.key);
     }
     array_ptr_push(entry, mentry);
     if(entry->length == 1) hmap->occupied++;

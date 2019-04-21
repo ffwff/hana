@@ -436,7 +436,15 @@ Each time you call a record, the record's `constructor` function gets called ins
 and will pass the record in addition to your arguments. I recommend using `self` to denote
 the argument containing the record.
 
-To delete a record's key, simply set its keys to `nil`.
+To delete a record's key, simply set the key to `nil`.
+
+Methods:
+
+```
+a = record() // => creates a new record
+a["key"] = "value" // => sets a key
+record::keys(a) // => ["key"] (gets all keys in record)
+```
 
 ## Arrays
 

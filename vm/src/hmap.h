@@ -13,10 +13,12 @@ struct hmap_entry {
 };
 typedef array(struct hmap_entry) a_hmap_entry;
 typedef array(a_hmap_entry) a_hmap_buckets;
+typedef array(char*) a_hmap_keys;
 
 struct hmap {
     a_hmap_buckets data;
     size_t occupied;
+    a_hmap_keys keys;
 };
 
 void hmap_init(struct hmap *);

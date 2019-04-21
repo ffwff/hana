@@ -60,6 +60,7 @@ namespace array {
 
 namespace record {
     fn(constructor);
+    fn(keys);
 }
 
 char *_to_string(struct value &val);
