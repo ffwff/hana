@@ -1,15 +1,14 @@
 #include <stdio.h>
-#include <assert.h>
+//#include <assert.h>
 #include <string.h>
 #include "vm.h"
 #include "string_.h"
 #include "dict.h"
 #include "array_obj.h"
 
+#define assert(...)
 #ifdef NOLOG
 #define LOG(...)
-#undef assert
-#define assert(...)
 #else
 #define LOG(fmt, ...) do { printf(fmt __VA_OPT__(,) __VA_ARGS__); } while(0)
 #endif
@@ -100,15 +99,17 @@ void vm_execute(struct vm *vm) {
 
     // stack manip
     // push int
-#define push_int_op(optype, type, _data) \
+#define push_int_op(optype, _type, _data) \
     doop(optype): { \
         vm->ip++; \
-        const type data = _data; \
-        vm->ip += sizeof(type); \
-        LOG(sizeof(type) == 8 ? "PUSH %ld\n" : "PUSH %d\n", data); \
+        const _type data = _data; \
+        vm->ip += sizeof(_type); \
+        LOG(sizeof(_type) == 8 ? "PUSH %ld\n" : "PUSH %d\n", data); \
 \
-        array_push(vm->stack, (struct value){}); \
-        value_int(&array_top(vm->stack), data); \
+        struct value val = { \
+            .type = TYPE_INT,\
+            .as.integer = data }; \
+        array_push(vm->stack, val); \
         dispatch(); \
     }
     push_int_op(OP_PUSH8,  uint8_t,  vm->code.data[vm->ip+0])
@@ -380,10 +381,10 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_JCOND): { // jcond [64-bit position]
         vm->ip++;
-        const uint64_t pos = vm->code.data[vm->ip+0] << 12 |
-        vm->code.data[vm->ip+1] << 8  |
-        vm->code.data[vm->ip+2] << 4  |
-        vm->code.data[vm->ip+3];
+        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
+                            vm->code.data[vm->ip+1] << 8  |
+                            vm->code.data[vm->ip+2] << 4  |
+                            vm->code.data[vm->ip+3];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         LOG("JCOND %ld\n", pos);
@@ -393,7 +394,7 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_JNCOND): { // jcond [64-bit position]
         vm->ip++;
-        const uint64_t pos = vm->code.data[vm->ip+0] << 12 |
+        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
                              vm->code.data[vm->ip+1] << 8  |
                              vm->code.data[vm->ip+2] << 4  |
                              vm->code.data[vm->ip+3];
@@ -541,6 +542,8 @@ void vm_execute(struct vm *vm) {
             } else if(val.type == TYPE_ARRAY) {
                 dict = vm->darray;
             } else if(val.type == TYPE_NIL) {
+                if(strcmp(key, "prototype") != 0)
+                    FATAL("can't access key of nil");
                 dispatch();
             } else {
                 FATAL("expected dictionary\n");

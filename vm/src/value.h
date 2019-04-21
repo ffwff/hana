@@ -26,9 +26,10 @@ struct value {
         struct native_obj *native;
     } as;
     enum value_type {
-        TYPE_NIL, TYPE_INT, TYPE_FLOAT, TYPE_STR,
-        TYPE_NATIVE_FN, TYPE_FN, TYPE_DICT, TYPE_ARRAY,
-        TYPE_NATIVE_OBJ
+        TYPE_NIL = 0, TYPE_INT = 1, TYPE_FLOAT = 2,
+        TYPE_NATIVE_FN = 3, TYPE_FN = 4,
+        TYPE_STR = 5, TYPE_DICT = 6, TYPE_ARRAY = 7,
+        TYPE_NATIVE_OBJ = 8
     } type;
 };
 
@@ -43,9 +44,10 @@ void value_array(struct value*);
 void value_array_n(struct value*, size_t n);
 void value_native_obj(struct value*, void *data, native_obj_free_fn free);
 
-void value_free(struct value*);
 void value_print(struct value*);
-void value_copy(struct value *left, struct value *right);
+
+void value_free(struct value *src);
+void value_copy(struct value *dst, struct value *src);
 
 void value_add(struct value *result, const struct value *left, const struct value *right);
 void value_sub(struct value *result, const struct value *left, const struct value *right);

@@ -640,6 +640,7 @@ AST::AST *ScriptParser::parse_block() {
             block->statements.emplace_back(stmt);
         }
     }
+    if(block->statements.empty()) return nullptr;
     return block;
 }
 

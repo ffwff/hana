@@ -97,19 +97,15 @@ void value_print(struct value *val) {
     }
 }
 
+static struct rc_struct { size_t refs; };
 void value_copy(struct value *dst, struct value *src) {
     dst->type = src->type;
-    if(src->type == TYPE_STR) {
-        src->as.str->refs++;
-    }
-    else if(src->type == TYPE_DICT) {
-        src->as.dict->refs++;
-    }
-    else if(src->type == TYPE_ARRAY) {
-        src->as.array->refs++;
-    }
-    else if(src->type == TYPE_NATIVE_OBJ) {
-        src->as.native->refs++;
+    switch(src->type) {
+        case TYPE_STR:        ((struct rc_struct*)src->as.str)->refs++; break;
+        case TYPE_DICT:       ((struct rc_struct*)src->as.dict)->refs++; break;
+        case TYPE_ARRAY:      ((struct rc_struct*)src->as.array)->refs++; break;
+        case TYPE_NATIVE_OBJ: ((struct rc_struct*)src->as.native)->refs++; break;
+        default: break;
     }
     dst->as = src->as;
 }
@@ -205,6 +201,8 @@ arith_op(eq, ==,
         value_int(result, left->as.ifn.ip == right->as.ifn.ip);
     else if(left->type == TYPE_DICT && right->type == TYPE_DICT)
         value_int(result, left->as.dict == right->as.dict);
+    else if(left->type == TYPE_NIL && right->type == TYPE_NIL)
+        value_int(result, 1);
 )
 arith_op(neq, !=,
     strcmp_op(!= 0)
@@ -214,6 +212,8 @@ arith_op(neq, !=,
         value_int(result, left->as.ifn.ip != right->as.ifn.ip);
     else if(left->type == TYPE_DICT && right->type == TYPE_DICT)
         value_int(result, left->as.dict != right->as.dict);
+    else if(left->type == TYPE_NIL && right->type == TYPE_NIL)
+        value_int(result, 0);
 )
 arith_op(lt, <,
     strcmp_op(< 0)

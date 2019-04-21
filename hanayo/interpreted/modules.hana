@@ -5,6 +5,7 @@ function import(x) begin
     dirs = __file__.split("/")
     dirs.pop()
     x = realpath("/" + dirs.join("/") + "/" + x)
+    if x == nil return false
     // don't import if it's already imported
     if __modules__[x] return false
     // save __file__ and import!
