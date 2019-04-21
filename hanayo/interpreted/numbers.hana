@@ -1,0 +1,14 @@
+
+// Numbers
+integer.even? = float.even? = function(self) return self mod 2 == 0
+integer.odd? = float.odd? = function(self) return self mod 2 != 0
+integer.positive? = float.positive? = function(self) return self > 0
+integer.negative? = float.negative? = function(self) return self < 0
+integer.abs = float.abs = abs(x) = x > 0 ? x : -x
+integer.round = identity
+
+// math
+min(x,y) = x > y ? x : y
+max(x,y) = x < y ? x : y
+nan = 0.0/0.0
+inf = 1.0/0.0

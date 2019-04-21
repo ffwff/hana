@@ -1,0 +1,9 @@
+
+// modules
+modules = record()
+function import(x) begin
+    x = realpath(x)
+    if modules[x] return
+    f = fopen(x, "r")
+    if eval(fread(f)) modules[x] = true
+end

@@ -1,0 +1,3 @@
+
+// containers (strings/arrays)
+string.empty? = array.empty? = empty?(self) = self.length() == 0

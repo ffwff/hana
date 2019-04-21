@@ -1,0 +1,7 @@
+
+// identity function, returns itself
+identity(x) = x
+
+// booleans
+true = 1
+false = 0

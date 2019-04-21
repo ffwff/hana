@@ -4,9 +4,9 @@ default: main
 # Program
 PARSER_SRC = $(wildcard src/*.cpp)
 VM_SRC = $(wildcard vm/src/*.c)
-HANAYO_SRC = $(wildcard hanayo/*.cpp)
+HANAYO_SRC = $(wildcard hanayo/native/*.cpp)
 OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
-       ${subst hanayo/,build/hanayo/,$(HANAYO_SRC:.cpp=.o)} \
+       ${subst hanayo/native,build/hanayo/,$(HANAYO_SRC:.cpp=.o)} \
        ${subst vm/src/,build/vm/,$(VM_SRC:.c=.o)}
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
@@ -66,10 +66,11 @@ build/vm/%.o: vm/src/%.c build/vm
 	$(CC) -c -o $@ $< $(CCFLAGS) -MMD
 build/hanayo:
 	mkdir -p build/hanayo
-build/hanayo/%.o: hanayo/%.cpp build/hanayo
+build/hanayo/%.o: hanayo/native/%.cpp build/hanayo
 	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD -fno-rtti -fno-exceptions -nostdinc++
-build/init.bin: init.hana ./main
-	./main -d init.hana 2>/dev/null >$@
+build/init.bin: hanayo/interpreted/*.hana ./main
+	(cpp hanayo/interpreted/init.hana | sed "s/^#.*//g") >build/init.hana
+	./main -d build/init.hana 2>/dev/null >$@
 
 clean:
 	rm -rf libhana.so $(OBJS) $(DEPS)

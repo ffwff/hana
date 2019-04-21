@@ -85,18 +85,19 @@ protected:
     int nexti() {
         const Token t = next();
         if(t.type != Token::INTEGER)
-            throw LexerError("Expected string value");
+            throw LexerError("Expected integer value");
         return t.intv;
     }
     int nextf() {
         const Token t = next();
         if(t.type != Token::FLOAT)
-            throw LexerError("Expected string value");
+            throw LexerError("Expected float value");
         return t.floatv;
     }
     void nextnl() {
         const Token t = next();
-        assert(t.type == Token::NONE || t.type == Token::NEWLINE);
+        if(t.type != Token::NONE && t.type != Token::NEWLINE)
+            throw LexerError("Expected newline");
     }
 
 public:

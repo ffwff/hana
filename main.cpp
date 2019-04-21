@@ -3,7 +3,7 @@
 #include <cmath>
 #include <getopt.h>
 #include "src/scriptparser.h"
-#include "hanayo/hanayo.h"
+#include "hanayo/native/hanayo.h"
 #ifdef LREADLINE
 #include <readline/readline.h>
 #include <readline/history.h>
