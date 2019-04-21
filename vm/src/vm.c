@@ -420,7 +420,7 @@ void vm_execute(struct vm *vm) {
                 array_pop(vm->stack);
                 struct value *ctor = dict_get(val.as.dict, "constructor");
                 if(ctor == NULL) {
-                    printf("expected dictionary to have constructor");
+                    FATAL("expected dictionary to have constructor\n");
                     return;
                 }
                 if(ctor->type == TYPE_NATIVE_FN) {
@@ -428,19 +428,19 @@ void vm_execute(struct vm *vm) {
                     ctor->as.fn(vm, nargs);
                     dispatch();
                 } else if(ctor->type != TYPE_FN) {
-                    printf("constructor must be a function!\n");
+                    FATAL("constructor must be a function!\n");
                     return;
                 }
                 fn_ip = ctor->as.ifn.ip;
                 if(nargs+1 != ctor->as.ifn.nargs) {
-                    printf("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1);
+                    FATAL("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1);
                     return;
                 }
             } else {
                 fn_ip = val.as.ifn.ip;
                 array_pop(vm->stack);
                 if(nargs != val.as.ifn.nargs) {
-                    printf("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs);
+                    FATAL("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs);
                     return;
                 }
             }
@@ -501,7 +501,7 @@ void vm_execute(struct vm *vm) {
         } else if(caller.type == TYPE_FN) {
             vm->ip = caller.as.ifn.ip;
         } else {
-            printf("wrong return value, expected function\n");
+            FATAL("wrong return value, expected function\n");
             return;
         }
         dispatch();
@@ -543,7 +543,7 @@ void vm_execute(struct vm *vm) {
             } else if(val.type == TYPE_NIL) {
                 dispatch();
             } else {
-                printf("expected dictionary\n");
+                FATAL("expected dictionary\n");
                 return;
             }
             if(strcmp(key, "prototype") == 0) {
@@ -553,7 +553,7 @@ void vm_execute(struct vm *vm) {
             }
         } else {
             if(val.type != TYPE_DICT) {
-                printf("expected dictionary\n");
+                FATAL("expected dictionary\n");
                 return;
             }
             dict = val.as.dict;
@@ -622,24 +622,24 @@ void vm_execute(struct vm *vm) {
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
-                printf("index type must be integer!\n");
+                FATAL("index type must be integer!\n");
                 return;
             }
             const int64_t i = index.as.integer;
             if(!(i >= 0 && i < dval.as.array->data.length)) {
-                printf("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
+                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
                 return;
             }
             array_push(vm->stack, (struct value){});
             value_copy(&array_top(vm->stack), &dval.as.array->data.data[i]);
         } else if(dval.type == TYPE_STR) {
             if(index.type != TYPE_INT) {
-                printf("index type must be integer!\n");
+                FATAL("index type must be integer!\n");
                 return;
             }
             const int64_t i = index.as.integer, len = string_len(dval.as.str);
             if(!(i >= 0 && i < len)) {
-                printf("accessing index (%ld) that lies out of range [0,%ld) \n", i, len);
+                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, len);
                 return;
             }
             char c[2] = { string_at(dval.as.str, i), 0 };
@@ -647,14 +647,14 @@ void vm_execute(struct vm *vm) {
             value_str(&array_top(vm->stack), c);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
-                printf("index type must be string!\n");
+                FATAL("index type must be string!\n");
                 return;
             }
             array_push(vm->stack, (struct value){});
             struct value *val = dict_get(dval.as.dict, string_data(index.as.str));
             if(val) value_copy(&array_top(vm->stack), val);
         } else {
-            printf("expected dictionary, array or string\n");
+            FATAL("expected dictionary, array or string\n");
             return;
         }
         value_free(&dval);
@@ -677,25 +677,25 @@ void vm_execute(struct vm *vm) {
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
                 value_free(&index);
-                printf("index type must be integer!\n");
+                FATAL("index type must be integer!\n");
                 return;
             }
             const int64_t i = index.as.integer;
             if(!(i >= 0 && i < dval.as.array->data.length)) {
-                printf("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
+                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
                 return;
             }
             value_free(&dval.as.array->data.data[i]);
             value_copy(&dval.as.array->data.data[i], val);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
-                printf("index type must be string!\n");
+                FATAL("index type must be string!\n");
                 return;
             }
             dict_set(dval.as.dict, string_data(index.as.str), val);
             value_free(&index);
         } else {
-            printf("expected dictionary or array\n");
+            FATAL("expected dictionary or array\n");
             return;
         }
         value_free(&dval);
