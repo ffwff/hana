@@ -2,6 +2,7 @@
 #include <memory>
 #include <cmath>
 #include <getopt.h>
+#include <limits.h>
 #include "src/scriptparser.h"
 #include "hanayo/native/hanayo.h"
 #ifdef LREADLINE
@@ -208,12 +209,25 @@ int main(int argc, char **argv) {
         p.loadf(argv[last_optiond]);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
         if(ast == nullptr) return 1;
+
+        // succesfully parsed
         if(opt_print_ast) ast->print();
         ast->emit(&m, &compiler);
         if(opt_no_run) goto cleanup;
+
+        // set up __file__
+        struct value val;
+        char actualpath[PATH_MAX+1];
+        char *ptr = ::realpath(argv[last_optiond], actualpath);
+        if(ptr != nullptr) {
+            value_str(&val, ptr);
+            hmap_set(&m.globalenv, "__file__", &val);
+            value_free(&val);
+        }
+
+        // run
         array_push(m.code, OP_HALT);
         vm_execute(&m);
-        //while(vm_step(&m)) std::cin.get();
         goto cleanup;
     }
 

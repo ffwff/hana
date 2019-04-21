@@ -181,11 +181,11 @@ fn(insert) {
 fn(split) {
     assert(nargs == 2);
 
-
     // string
     auto sval = array_top(vm->stack);
-    auto str = string_data(sval.as.str);
+    auto str = strdup(string_data(sval.as.str));
     array_pop(vm->stack);
+    value_free(&sval);
 
     // delim
     auto dval = _arg(vm, value::TYPE_STR);
@@ -211,7 +211,7 @@ fn(split) {
         }
     }
 
-    value_free(&sval);
+    free(str);
     value_free(&dval);
     array_push(vm->stack, val);
 }

@@ -1,4 +1,3 @@
-
 // identity function, returns itself
 identity(x) = x
 

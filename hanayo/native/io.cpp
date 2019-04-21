@@ -108,7 +108,7 @@ fn(realpath) {
         array_push(vm->stack, {0});
         return;
     }
+    value_free(&path);
     value_str(&path, ptr);
     array_push(vm->stack, path);
-
 }

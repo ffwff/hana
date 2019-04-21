@@ -1,9 +1,23 @@
-
 // modules
-modules = record()
+__modules__ = record()
 function import(x) begin
-    x = realpath(x)
-    if modules[x] return
+    // resolve relative path
+    dirs = __file__.split("/")
+    dirs.pop()
+    x = realpath("/" + dirs.join("/") + "/" + x)
+    // don't import if it's already imported
+    if __modules__[x] return false
+    // save __file__ and import!
+    old_file = ^__file__
+    ^__file__ = x
     f = fopen(x, "r")
-    if eval(fread(f)) modules[x] = true
+    if eval(fread(f)) begin // success
+        __modules__[x] = true
+        ^__file__ = old_file
+        return true
+    end
+    else begin // failed
+        ^__file__ = old_file
+        return false
+    end
 end

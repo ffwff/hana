@@ -1,3 +1,2 @@
-
 // arrays
 array.sum = function(self) return self.reduce(f(prev, curr) = prev + curr, 0)

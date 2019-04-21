@@ -158,6 +158,7 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("join",        array::join);
     hmap_set(&m->globalenv, "array", &val);
     value_free(&val);
+    m->darray = val.as.dict;
 
     // ## records
     value_dict(&val);
@@ -165,9 +166,6 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("keys",        record::keys);
     hmap_set(&m->globalenv, "record", &val);
     value_free(&val);
-
-    value_free(&val);
-    m->darray = val.as.dict;
 }
 
 struct value hanayo::_arg(struct vm *vm, value::value_type type) {

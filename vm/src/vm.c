@@ -653,6 +653,7 @@ void vm_execute(struct vm *vm) {
             array_push(vm->stack, (struct value){});
             struct value *val = dict_get(dval.as.dict, string_data(index.as.str));
             if(val) value_copy(&array_top(vm->stack), val);
+            value_free(&index);
         } else {
             FATAL("expected dictionary, array or string\n");
             return;

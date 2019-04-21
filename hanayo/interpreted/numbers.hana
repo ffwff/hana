@@ -1,4 +1,3 @@
-
 // Numbers
 integer.even? = float.even? = function(self) return self mod 2 == 0
 integer.odd? = float.odd? = function(self) return self mod 2 != 0

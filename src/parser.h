@@ -104,7 +104,6 @@ public:
     void loadf(const char *file) {
         std::ifstream f(file);
         this->f << f.rdbuf();
-
     };
     void loads(std::string &s) {
         f.str(s);
