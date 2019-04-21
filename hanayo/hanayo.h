@@ -58,6 +58,10 @@ namespace array {
     fn(join);
 }
 
+namespace record {
+    fn(constructor);
+}
+
 char *_to_string(struct value &val);
 void _init(struct vm *m);
 

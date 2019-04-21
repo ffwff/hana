@@ -157,6 +157,12 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("reduce",      array::reduce);
     native_obj_function("join",        array::join);
     hmap_set(&m->globalenv, "array", &val);
+
+    // ## records
+    value_dict(&val);
+    native_obj_function("constructor", record::constructor);
+    hmap_set(&m->globalenv, "record", &val);
+
     value_free(&val);
     m->darray = val.as.dict;
 }

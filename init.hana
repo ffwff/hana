@@ -31,8 +31,7 @@ string.empty? = array.empty? = empty?(self) = self.length() == 0
 array.sum = function(self) return self.reduce(f(prev, curr) = prev + curr, 0)
 
 // modules
-modules = record
-end
+modules = record()
 function import(x) begin
     x = realpath(x)
     if modules[x] return
