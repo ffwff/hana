@@ -589,6 +589,7 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_DICT_LOAD): {
         // stack: [nil][value][key]
+        LOG("dict load\n");
         vm->ip++;
         struct value dval;
         value_dict(&dval);

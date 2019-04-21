@@ -29,10 +29,14 @@ struct value *dict_get_hash(struct dict *dict, const char *key, const uint32_t h
 }
 
 void dict_set(struct dict *dict, const char *key, struct value *val) {
-    struct value *dval = _hmap_set(&dict->data, key, val, 0);
-    if(strcmp(key, "prototype") == 0 && val->type == TYPE_DICT) {
-        if(dict->prototypev) dict_free(dict->prototypev);
-        dict->prototypev = dval->as.dict;
+    if(val->type == TYPE_NIL) {
+        hmap_del(&dict->data, key);
+        if(strcmp(key, "prototype") == 0)
+            dict->prototypev = NULL;
+    } else {
+        struct value *dval = _hmap_set(&dict->data, key, val, 0);
+        if(strcmp(key, "prototype") == 0 && val->type == TYPE_DICT)
+            dict->prototypev = dval->as.dict;
     }
 }
 

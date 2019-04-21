@@ -336,7 +336,7 @@ set accordingly.
 
 ## Strings
 
-Strings are natively ASCII character arrays. There's no support for Unicode yet!
+Strings are immutable native ASCII character arrays. There's no support for Unicode yet!
 
 ```
 name = "Alice"
@@ -435,6 +435,8 @@ bob.talk() // => *Human noises*
 Each time you call a record, the record's `constructor` function gets called instead,
 and will pass the record in addition to your arguments. I recommend using `self` to denote
 the argument containing the record.
+
+To delete a record's key, simply set its keys to `nil`.
 
 ## Arrays
 
