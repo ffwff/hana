@@ -1,0 +1,48 @@
+record JSON
+
+    function parse() begin
+    end
+
+    function stringify(obj) begin
+        prototype = obj.prototype
+        if record::is_record?(obj) begin
+            // dictionaries
+            keys = record::keys(obj)
+            klen = keys.length() - 1
+            s = "{"
+            function print_key(i) begin
+                s = keys[i]
+                kv = JSON::stringify(s)
+                kv += ": "
+                kv += JSON::stringify(obj[s])
+                return kv
+            end
+            s += print_key(0)
+            if klen > 1 for i=1 to klen s += ", " + print_key(i)
+            s += "}"
+            keys = nil
+            return s
+        end
+        else if prototype == array begin
+            s = "["
+            s += obj.map(JSON::stringify).join(", ")
+            s += "]"
+            return s
+        end
+        else if prototype == string begin
+            s = "\""
+            slen = obj.length() - 1
+            for i = 0 to slen begin
+                if obj[i] == "\n" s += "\\n"
+                else if obj[i] == "\"" s += "\""
+                else s += obj[i]
+            end
+            s += "\""
+            return s
+        end
+        else if prototype == integer or prototype == float begin
+            return string(obj)
+        end
+    end
+
+end

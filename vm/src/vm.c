@@ -285,8 +285,7 @@ void vm_execute(struct vm *vm) {
                             vm->code.data[vm->ip+3];
         vm->ip += sizeof(key);
         LOG("SET LOCAL %d\n", key);
-        value_free(&vm->localenv->slots[key]);
-        value_copy(&vm->localenv->slots[key], &array_top(vm->stack));
+        env_set(vm->localenv, key, &array_top(vm->stack));
         dispatch();
     }
     doop(OP_SET_GLOBAL): {
@@ -307,7 +306,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(key);
         LOG("GET LOCAL %d\n", key);
         array_push(vm->stack, (struct value){});
-        value_copy(&array_top(vm->stack), &vm->localenv->slots[key]);
+        value_copy(&array_top(vm->stack), env_get(vm->localenv, key));
         dispatch();
     }
     doop(OP_GET_GLOBAL): {
@@ -655,8 +654,8 @@ void vm_execute(struct vm *vm) {
             }
             array_push(vm->stack, (struct value){});
             struct value *val = dict_get(dval.as.dict, string_data(index.as.str));
-            if(val) value_copy(&array_top(vm->stack), val);
             value_free(&index);
+            if(val != NULL) value_copy(&array_top(vm->stack), val);
         } else {
             FATAL("expected dictionary, array or string\n");
             return;

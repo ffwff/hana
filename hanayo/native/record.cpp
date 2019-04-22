@@ -15,11 +15,20 @@ fn(keys) {
     struct value val = _arg(vm, value::TYPE_DICT);
     struct value aval;
     value_array_n(&aval, val.as.dict->data.keys.length);
-    for(size_t i = 0; i < val.as.dict->data.keys.length; i++) {
-        struct value sval;
-        value_str(&sval, val.as.dict->data.keys.data[i]);
-        aval.as.array->data.data[i] = sval;
+    for(int i = (size_t)val.as.dict->data.keys.length-1, j=0; i >= 0; i--,j++) {
+        value_str(&aval.as.array->data.data[j], val.as.dict->data.keys.data[i]);
     }
     value_free(&val);
     array_push(vm->stack, aval);
+}
+
+fn(is_record) {
+    assert(nargs == 1);
+    struct value val = array_top(vm->stack);
+    int is_record = val.type == value::TYPE_DICT;
+    array_pop(vm->stack);
+    value_free(&val);
+    struct value ret;
+    value_int(&ret, is_record);
+    array_push(vm->stack, ret);
 }

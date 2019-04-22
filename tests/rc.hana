@@ -1,3 +1,4 @@
+/*
 function a() begin
     x = record()
     x.key = "value"
@@ -9,3 +10,14 @@ function a() begin
     end
 end
 a()()
+*/
+
+function a() begin
+    k = ["a", "b", "c"]
+    x = ""
+    function b(i) begin
+        x = k[i]
+    end
+    return b(0)
+end
+a()

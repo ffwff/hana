@@ -1,0 +1,12 @@
+print(JSON::stringify('"string\n"'), "\n")
+print(JSON::stringify(10), "\n")
+print(JSON::stringify(10.5), "\n")
+print(JSON::stringify(["a", "b", 1]), "\n")
+print(JSON::stringify(record
+    key = "value"
+    float = 1.5
+    num = 1
+    nested = record
+        another = "key"
+    end
+end), "\n")
