@@ -26,13 +26,12 @@ struct value *env_get(struct env *env, size_t n) {
 }
 
 void env_set(struct env *env, size_t n, struct value *val) {
-    value_free(&env->slots[n]);
+    if(!bit_check(env->popslot, n)) value_free(&env->slots[n]);
     value_copy(&env->slots[n], val);
     bit_set(env->popslot, n);
 }
 
 void env_free(struct env *env) {
-    return;
     if(env->slots == NULL) return;
     for(int i = 0; i < env->nslots; i++)
         value_free(&env->slots[i]);

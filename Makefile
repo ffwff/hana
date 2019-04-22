@@ -11,8 +11,6 @@ OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
 
-CXXFLAGS += -Wno-format-truncation
-
 # Version
 ifdef RELEASE
 CXXFLAGS += -O3 -DRELEASE
@@ -38,8 +36,8 @@ LDDFLAGS += -lreadline
 endif
 
 # Default flags
-CXXFLAGS += -std=c++11 -I. -Wall
-CCFLAGS += -Wall -Ivm/src -Iextern/xxHash
+CXXFLAGS += -std=c++11 -I. -Wall -Wno-format-truncation -Wno-switch
+CCFLAGS += -Wall -Wno-switch -Ivm/src -Iextern/xxHash
 #LDDFLAGS += -s
 
 # bytecode
