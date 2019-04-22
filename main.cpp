@@ -108,6 +108,7 @@ int main(int argc, char **argv) {
         Hana::ScriptParser p;
         p.loadf(argv[last_optiond]);
         auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        if(ast == nullptr) return 1;
         ast->emit(&m, &compiler);
         fwrite(m.code.data, 1, m.code.length, stdout);
         vm_free(&m);

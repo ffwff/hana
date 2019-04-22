@@ -32,13 +32,11 @@ void vm_init(struct vm *vm) {
 void vm_free(struct vm *vm) {
     hmap_free(&vm->globalenv);
     // TODO free localenv
-    if(vm->localenv != NULL) {
-        while(vm->localenv != NULL) {
-            struct env *localenv = vm->localenv->parent;
-            env_free(vm->localenv);
-            free(vm->localenv);
-            vm->localenv = localenv;
-        }
+    while(vm->localenv != NULL) {
+        struct env *localenv = vm->localenv->parent;
+        env_free(vm->localenv);
+        free(vm->localenv);
+        vm->localenv = localenv;
     }
     array_free(vm->code);
     for(size_t i = 0; i < vm->stack.length; i++)
@@ -266,12 +264,7 @@ void vm_execute(struct vm *vm) {
             vm->code.data[vm->ip+3];
         vm->ip += sizeof(n);
         LOG("RESERVE %d\n", n);
-        struct env *oldenv = vm->localenv;
-        vm->localenv = malloc(sizeof(struct env));
-        if(oldenv == NULL)
-            env_init(vm->localenv, n);
-        else
-            env_inherit(vm->localenv, oldenv, n);
+        env_init(vm->localenv, n);
         dispatch();
     }
 
@@ -451,9 +444,13 @@ void vm_execute(struct vm *vm) {
                 args[i] = val;
             }
             // caller
-            struct value caller;
-            value_function(&caller, vm->ip, 0);
-            array_push(vm->stack, caller);
+            //struct value caller;
+            //value_function(&caller, vm->ip, 0);
+            //array_push(vm->stack, caller);
+            struct env *oldenv = vm->localenv;
+            vm->localenv = calloc(1, sizeof(struct env));
+            vm->localenv->parent = oldenv;
+            vm->localenv->ifn = vm->ip;
             // arguments
             if(val.type == TYPE_DICT) {
                 if(vm->stack.length+nargs > vm->stack.capacity) {
@@ -484,25 +481,17 @@ void vm_execute(struct vm *vm) {
     doop(OP_RET): {
         LOG("RET\n");
 
-        struct value retval = array_top(vm->stack);
-        array_pop(vm->stack);
-
-        struct value caller = array_top(vm->stack);
-        array_pop(vm->stack);
-        array_push(vm->stack, retval);
-
         struct env *parent = vm->localenv->parent;
         env_free(vm->localenv);
-        free(vm->localenv);
-        vm->localenv = parent;
 
-        if(caller.type == TYPE_NATIVE_FN) {
+        if(vm->localenv->ifn == (uint32_t)-1) {
+            free(vm->localenv);
+            vm->localenv = parent;
             return;
-        } else if(caller.type == TYPE_FN) {
-            vm->ip = caller.as.ifn.ip;
         } else {
-            FATAL("wrong return value, expected function\n");
-            return;
+            vm->ip = vm->localenv->ifn;
+            free(vm->localenv);
+            vm->localenv = parent;
         }
         dispatch();
     }
@@ -767,12 +756,12 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
         return NULL;
     }
     const uint32_t last = vm->ip;
+    // setup env
+    struct env *oldenv = vm->localenv;
+    vm->localenv = calloc(1, sizeof(struct env));
+    vm->localenv->parent = oldenv;
+    vm->localenv->ifn = (uint32_t)-1;
     // setup stack/ip
-    struct value val = {
-        .type = TYPE_NATIVE_FN,
-        .as.fn = 0
-    };
-    array_push(vm->stack, val);
     for(int64_t i = args.length-1; i >= 0; i--) {
         array_push(vm->stack, (struct value){0});
         value_copy(&array_top(vm->stack), &args.data[i]);

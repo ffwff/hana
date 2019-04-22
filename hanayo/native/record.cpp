@@ -15,8 +15,8 @@ fn(keys) {
     struct value val = _arg(vm, value::TYPE_DICT);
     struct value aval;
     value_array_n(&aval, val.as.dict->data.keys.length);
-    for(int i = (size_t)val.as.dict->data.keys.length-1, j=0; i >= 0; i--,j++) {
-        value_str(&aval.as.array->data.data[j], val.as.dict->data.keys.data[i]);
+    for(size_t i = 0; i < val.as.dict->data.keys.length; i++) {
+        value_str(&aval.as.array->data.data[i], val.as.dict->data.keys.data[i]);
     }
     value_free(&val);
     array_push(vm->stack, aval);

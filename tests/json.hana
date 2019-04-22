@@ -10,3 +10,13 @@ print(JSON::stringify(record
         another = "key"
     end
 end), "\n")
+s = '{"key": "value", "float": 1.500000, "num": 1, "nested": {"another": "key"}}'
+f(x) = print(JSON::stringify(JSON::parse(x)), "\n")
+f("{}")
+f('{"a" : "b"}')
+print("--\n")
+f('{"a" : 10}')
+print("--\n")
+f('{"a" : 10, "b":"c"}')
+print("--\n")
+f('{"a":[1,2,3]}')

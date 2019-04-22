@@ -33,7 +33,7 @@ void hmap_free(struct hmap *hmap) {
         array_free(hmap->data.data[i]);
     }
     array_free(hmap->data);
-    // strings in hmap->keys are owned by hmap->data's entries
+    // NOTE: strings in hmap->keys are owned by hmap->data's entries
     // no need to free it
     array_free(hmap->keys);
     hmap->occupied = 0;

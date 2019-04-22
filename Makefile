@@ -41,7 +41,7 @@ endif
 # Default flags
 CXXFLAGS += -std=c++11 -I. -Wall -Iextern/BitArray
 CCFLAGS += -Wall -Ivm/src -Iextern/xxHash -Iextern/BitArray
-LDDFLAGS += -s
+#LDDFLAGS += -s
 
 # bytecode
 ADDITIONAL=
@@ -72,7 +72,7 @@ build/hanayo/%.o: hanayo/native/%.cpp build/hanayo
 	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD -fno-rtti -fno-exceptions -nostdinc++
 build/init.bin: hanayo/interpreted/*.hana ./main
 	(cpp hanayo/interpreted/init.hana | sed "s/^#.*//g") >build/init.hana
-	./main -d build/init.hana 2>/dev/null >$@
+	./main -d build/init.hana >$@
 
 clean:
 	rm -rf libhana.so $(OBJS) $(DEPS)

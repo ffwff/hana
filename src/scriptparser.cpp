@@ -51,6 +51,7 @@ Parser::Token ScriptParser::next() {
                 const char esc = f.get();
                 if(esc == 'n') str += '\n';
                 else if(esc == 'r') str += '\r';
+                else if(esc == 't') str += '\t';
                 else str += esc;
                 continue;
             }
@@ -123,8 +124,10 @@ AST::AST *ScriptParser::parse_factor() {
             auto expr = new AST::Array();
             fsave();
             auto op = next();
-            if(op.strv == "]")
+            if(op.strv == "]") {
+                fpop();
                 return expr;
+            }
             fload();
             expr->values.emplace_back(parse_expression());
             do {
@@ -598,7 +601,11 @@ AST::AST *ScriptParser::parse_statement() {
                 return new AST::ForStatement(id, from, to, stepN, parse_statement());
             }
 
-        } else if(token.strv == "begin") {
+        } /*else if(token.strv == "continue") {
+            fpop();
+            nextnl();
+            return new AST::ContinueStatement();
+        } */ else if(token.strv == "begin") {
             fpop();
             nextnl();
             auto blk = new AST::BlockStatement();

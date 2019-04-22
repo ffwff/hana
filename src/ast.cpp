@@ -473,6 +473,7 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_POP);
     // body
     size_t body_pos = vm->code.length;
+    compiler->for_stmts.push_back(body_pos);
     statement->emit(vm, compiler);
     // condition:
     // [body]
@@ -511,6 +512,12 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     vm_code_push32(vm, body_pos);
 
     fill_hole(vm, length, vm->code.length);
+
+    compiler->for_stmts.pop_back();
+}
+void AST::ContinueStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    //array_push(vm->code, OP_JMP);
+    //vm_code_push32(vm, compiler->for_stmts.back());
 }
 void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_DEF_FUNCTION_PUSH);

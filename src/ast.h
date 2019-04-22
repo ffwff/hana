@@ -18,6 +18,7 @@ enum Type {
     FUNCTION_STMT, STRUCT_STMT, EXPR_STMT, RETURN_STMT,
     FOR_STMT,
     BLOCK,
+    CONTINUE_STMT,
 
 };
 
@@ -157,6 +158,12 @@ struct ForStatement : Statement {
     ForStatement(const std::string &id, AST *from, AST *to, AST *step, const int stepN, AST *statement) : id(id), from(from), to(to), step(step), stepN(stepN), statement(statement) {}
     ForStatement(const std::string &id, AST *from, AST *to, const int stepN, AST *statement) : id(id), from(from), to(to), stepN(stepN), statement(statement) {}
     void print(int indent=0) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
+};
+
+struct ContinueStatement : Statement {
+    TYPE(CONTINUE_STMT)
+    ContinueStatement() {}
     void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
