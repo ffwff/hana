@@ -6,9 +6,7 @@ void env_init(struct env *env, size_t nslots) {
     env->popslots = bit_array_create(nslots);
     env->nslots = nslots;
 
-    // assume caller is already init
-    //env->caller->fn = 0;
-    //env->is_native_fn = 0;
+    // NOTE: parent and caller is already init in OP_CALL
 }
 
 struct value *env_get(struct env *env, size_t n) {
