@@ -1,2 +1,2 @@
-import("import-help.hana")
+import("./import-help.hana")
 //print(__file__)

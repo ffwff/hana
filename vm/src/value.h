@@ -26,16 +26,17 @@ struct value {
         struct native_obj *native;
     } as;
     enum value_type {
-        TYPE_NIL = 0, TYPE_INT = 1, TYPE_FLOAT = 2,
-        TYPE_NATIVE_FN = 3, TYPE_FN = 4,
-        TYPE_STR = 5, TYPE_DICT = 6, TYPE_ARRAY = 7,
-        TYPE_NATIVE_OBJ = 8
+        TYPE_NIL, TYPE_INT, TYPE_FLOAT,
+        TYPE_NATIVE_FN, TYPE_FN,
+        TYPE_STR, TYPE_DICT, TYPE_ARRAY,
+        TYPE_NATIVE_OBJ
     } type;
 };
 
 void value_int(struct value*, int64_t);
 void value_float(struct value*, double);
 void value_str(struct value*, const char*);
+void value_strmov(struct value*, struct string_header*);
 void value_native(struct value*, value_fn);
 void value_function(struct value*, uint32_t ip, int nargs);
 void value_dict(struct value*);

@@ -19,6 +19,10 @@ void value_str(struct value *val, const char *data) {
     val->as.str = malloc(string_size(data));
     string_init(val->as.str, data);
 }
+void value_strmov(struct value *val, struct string_header *str) {
+    val->type = TYPE_STR;
+    val->as.str = str;
+}
 void value_native(struct value *val, value_fn fn) {
     val->type = TYPE_NATIVE_FN;
     val->as.fn = fn;
@@ -56,7 +60,7 @@ void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
 
 void value_free(struct value *val) {
     if(val->type == TYPE_STR) {
-        string_free(val->as.str);
+        val->as.str->refs--;
         if(val->as.str->refs == 0)
             free(val->as.str);
     } else if(val->type == TYPE_DICT) {
@@ -97,14 +101,14 @@ void value_print(struct value *val) {
     }
 }
 
-static struct rc_struct { size_t refs; };
+struct _rc_struct { uint32_t refs; };
 void value_copy(struct value *dst, struct value *src) {
     dst->type = src->type;
     switch(src->type) {
-        case TYPE_STR:        ((struct rc_struct*)src->as.str)->refs++; break;
-        case TYPE_DICT:       ((struct rc_struct*)src->as.dict)->refs++; break;
-        case TYPE_ARRAY:      ((struct rc_struct*)src->as.array)->refs++; break;
-        case TYPE_NATIVE_OBJ: ((struct rc_struct*)src->as.native)->refs++; break;
+        case TYPE_STR:        ((struct _rc_struct*)src->as.str)->refs++; break;
+        case TYPE_DICT:       ((struct _rc_struct*)src->as.dict)->refs++; break;
+        case TYPE_ARRAY:      ((struct _rc_struct*)src->as.array)->refs++; break;
+        case TYPE_NATIVE_OBJ: ((struct _rc_struct*)src->as.native)->refs++; break;
         default: break;
     }
     dst->as = src->as;
@@ -128,27 +132,27 @@ void value_ ## name (struct value *result, const struct value *left, const struc
 }
 arith_op(add, +,
     else if(left->type == TYPE_STR && right->type == TYPE_STR) {
-        char s[string_len(left->as.str)+string_len(right->as.str)+1];
-        strcpy(s, string_data(left->as.str));
-        strcat(s, string_data(right->as.str));
-        s[sizeof(s)] = 0;
-        value_str(result, s);
+        struct string_header *s = string_alloc(string_len(left->as.str)+string_len(right->as.str));
+        char *ss = string_data(s); ss[0] = 0;
+        strcpy(ss, string_data(left->as.str));
+        strcpy(ss+string_len(left->as.str), string_data(right->as.str));
+        result->type = TYPE_STR;
+        result->as.str = s;
     }
 )
 arith_op(sub, -,)
 arith_op(mul, *,
-    else if( (left->type == TYPE_STR && right->type == TYPE_INT) ||
-             (left->type == TYPE_INT && right->type == TYPE_STR) ) {
-        const struct value *strv = left->type == TYPE_STR ? left : right;
-        const struct value *intv = left->type == TYPE_INT ? left : right;
-        if(intv->as.integer == 0) {
+    else if(left->type == TYPE_STR && right->type == TYPE_INT) {
+        if(right->as.integer == 0) {
             value_str(result, "");
         } else {
-            char s[string_len(strv->as.str)*intv->as.integer+1];
-            s[0] = 0; s[sizeof(s)] = 0;
-            for(int i = 0; i < intv->as.integer; i++)
-                strcat(s, string_data(strv->as.str));
-            value_str(result, s);
+            size_t n = string_len(left->as.str)*right->as.integer;
+            struct string_header *s = string_alloc(n);
+            char *ss = string_data(s); ss[0] = 0;
+            for(size_t i = 0; i < right->as.integer; i++)
+                strcat(ss, string_data(left->as.str));
+            result->type = TYPE_STR;
+            result->as.str = s;
         }
     } else if(left->type == TYPE_ARRAY && right->type == TYPE_INT) {
         size_t length = left->as.array->data.length*(size_t)right->as.integer;

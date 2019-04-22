@@ -29,6 +29,8 @@ namespace string {
     fn(index);
     fn(insert);
     fn(split);
+    fn(startswith);
+    fn(endswith);
 }
 
 namespace integer {

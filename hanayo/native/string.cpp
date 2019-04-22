@@ -4,6 +4,13 @@
 #include "vm/src/array_obj.h"
 #include "hanayo.h"
 
+struct string_header *string_alloc(size_t n) {
+    struct string_header *s = (struct string_header *)malloc(sizeof(struct string_header)+n+1);
+    s->length = n;
+    s->refs = 1;
+    return s;
+}
+
 #define fn(name) void hanayo::string::name(struct vm *vm, int nargs)
 
 fn(constructor) {
@@ -43,8 +50,12 @@ fn(delete_) {
 
     // string
     val = array_top(vm->stack);
+
     auto length = string_len(val.as.str);
-    auto s = strdup(string_data(val.as.str));
+    struct string_header *s = string_alloc(length);
+    char *ss = string_data(s);
+    strcpy(ss, string_data(val.as.str));
+
     value_free(&val);
     array_pop(vm->stack);
 
@@ -57,13 +68,12 @@ fn(delete_) {
     int64_t nchars = val.as.integer;
 
     // checks
-    assert(from_pos > 0 && from_pos < (int64_t)length);
+    assert(from_pos >= 0 && from_pos < (int64_t)length);
     assert((from_pos+nchars) >= 0 && (from_pos+nchars) < (int64_t)length);
 
     // do it
-    memmove(s+from_pos, s+from_pos+nchars, length-from_pos-nchars+1);
-    value_str(&val, s);
-    free(s);
+    memmove(ss+from_pos, ss+from_pos+nchars, length-from_pos-nchars+1);
+    value_strmov(&val, s);
     array_push(vm->stack, val);
 }
 fn(copy) {
@@ -85,17 +95,17 @@ fn(copy) {
     int64_t nchars = val.as.integer;
 
     // checks
-    assert(from_pos > 0 && from_pos < (int64_t)length);
+    assert(from_pos >= 0 && from_pos < (int64_t)length);
     assert((from_pos+nchars) >= 0 && (from_pos+nchars) < (int64_t)length);
 
     // do it
-    char *str = (char*)malloc(nchars+1);
-    strncpy(str, string_data(sval.as.str)+from_pos, nchars);
-    str[nchars] = 0;
+    struct string_header *s = string_alloc(nchars);
+    char *ss = string_data(s);
+    strncpy(ss, string_data(sval.as.str)+from_pos, nchars);
+    ss[nchars] = 0;
 
     value_free(&sval);
-    value_str(&val, str);
-    free(str);
+    value_strmov(&val, s);
     array_push(vm->stack, val);
 }
 fn(at) {
@@ -165,16 +175,17 @@ fn(insert) {
     assert(from_pos >= 0 && from_pos < (int64_t)string_len(dval.as.str));
 
     // doit
-    char *str = (char*)malloc(string_len(dval.as.str)+string_len(sval.as.str)+1);
-    strncpy(str, dst, from_pos); // dst lower half
-    memcpy(str+from_pos, src, strlen(src)); // src
-    strncpy(str+from_pos+string_len(sval.as.str),
+    struct string_header *s = string_alloc(string_len(dval.as.str)+string_len(sval.as.str));
+    char *ss = string_data(s);
+    strncpy(ss, dst, from_pos); // dst lower half
+    memcpy(ss+from_pos, src, strlen(src)); // src
+    strncpy(ss+from_pos+string_len(sval.as.str),
             dst+from_pos, string_len(dval.as.str)-from_pos); // dst upper half
-    str[string_len(dval.as.str)+string_len(sval.as.str)] = 0;
+    ss[string_len(dval.as.str)+string_len(sval.as.str)] = 0;
 
     value_free(&dval);
     value_free(&sval);
-    value_str(&val, str); free(str);
+    value_strmov(&val, s);
     array_push(vm->stack, val);
 }
 
@@ -213,5 +224,40 @@ fn(split) {
 
     free(str);
     value_free(&dval);
+    array_push(vm->stack, val);
+}
+
+fn(startswith) {
+    auto sval = array_top(vm->stack);
+    auto ls = string_len(sval.as.str);
+    array_pop(vm->stack);
+
+    auto dval = _arg(vm, value::TYPE_STR);
+    auto lt = string_len(dval.as.str);
+    bool sw = ls >= lt && strncmp(string_data(sval.as.str), string_data(dval.as.str), string_len(dval.as.str)) == 0;
+
+    value_free(&sval);
+    value_free(&dval);
+
+    struct value val = {0};
+    value_int(&val, sw);
+    array_push(vm->stack, val);
+}
+
+fn(endswith) {
+    auto sval = array_top(vm->stack);
+    auto ls = string_len(sval.as.str);
+    array_pop(vm->stack);
+
+    auto dval = _arg(vm, value::TYPE_STR);
+    auto lt = string_len(dval.as.str);
+
+    bool sw = ls >= lt && memcmp(string_data(dval.as.str), string_data(sval.as.str)+(ls-lt), lt) == 0;
+
+    value_free(&sval);
+    value_free(&dval);
+
+    struct value val = {0};
+    value_int(&val, sw);
     array_push(vm->stack, val);
 }

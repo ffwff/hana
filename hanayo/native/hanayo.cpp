@@ -99,9 +99,9 @@ void hanayo::_init(struct vm *m) {
     // ## io
     native_function(print)
     native_function(input)
-    native_function(fopen)
-    native_function(fread)
-    native_function(fwrite)
+    native_function_key(fopen, "__fopen")
+    native_function_key(fread, "__fread")
+    native_function_key(fwrite, "__fwrite")
     native_function(realpath)
     native_function(eval)
 
@@ -120,6 +120,8 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("index",       string::index);
     native_obj_function("insert",      string::insert);
     native_obj_function("split",       string::split);
+    native_obj_function("startswith?", string::startswith);
+    native_obj_function("endswith?",   string::endswith);
     hmap_set(&m->globalenv, "string", &val);
     value_free(&val);
     m->dstr = val.as.dict;

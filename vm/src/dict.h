@@ -5,7 +5,7 @@ extern "C" {
 
 #include "hmap.h"
 struct dict {
-    size_t refs;
+    uint32_t refs;
     struct hmap data;
     struct dict *prototypev;
 };

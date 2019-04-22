@@ -7,6 +7,13 @@ void string_init(struct string_header *string, const char *s) {
     strcpy(data, s);
 }
 
+struct string_header *string_alloc(size_t n) {
+    struct string_header *s = (struct string_header *)malloc(sizeof(struct string_header)+n+1);
+    s->length = n;
+    s->refs = 1;
+    return s;
+}
+
 void string_free(struct string_header *string) {
     string->refs--;
 }

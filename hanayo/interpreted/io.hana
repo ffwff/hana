@@ -1,0 +1,30 @@
+record File
+
+    function constructor(self, path, mode) begin
+        self.path = path
+        self.mode = mode
+        self.__f = __fopen(path, mode)
+        return self
+    end
+
+    // read
+    function read(self, n) begin
+        return __fread(self.__f, n)
+    end
+    function readall(self) begin
+        return __fread(self.__f)
+    end
+    function readline(self) begin
+        line = ""
+        while (chr = self.read(1)) != "\n" begin
+            line += chr
+        end
+        return line
+    end
+
+    // write
+    function write(self, str) begin
+        return __fwrite(self.__f, str)
+    end
+
+end

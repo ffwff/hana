@@ -1,9 +1,9 @@
 #pragma once
-#include <stddef.h>
+#include <stdint.h>
 
 typedef void (*native_obj_free_fn)(void *data);
 struct native_obj {
-    size_t refs;
+    uint32_t refs;
     void *data;
     native_obj_free_fn free;
 };
