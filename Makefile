@@ -7,8 +7,7 @@ VM_SRC = $(wildcard vm/src/*.c)
 HANAYO_SRC = $(wildcard hanayo/native/*.cpp)
 OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
        ${subst vm/src/,build/vm/,$(VM_SRC:.c=.o)} \
-       ${subst hanayo/native,build/hanayo/,$(HANAYO_SRC:.cpp=.o)} \
-       ./extern/BitArray/bit_array.o
+       ${subst hanayo/native,build/hanayo/,$(HANAYO_SRC:.cpp=.o)}
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
 
@@ -39,8 +38,8 @@ LDDFLAGS += -lreadline
 endif
 
 # Default flags
-CXXFLAGS += -std=c++11 -I. -Wall -Iextern/BitArray
-CCFLAGS += -Wall -Ivm/src -Iextern/xxHash -Iextern/BitArray
+CXXFLAGS += -std=c++11 -I. -Wall
+CCFLAGS += -Wall -Ivm/src -Iextern/xxHash
 #LDDFLAGS += -s
 
 # bytecode

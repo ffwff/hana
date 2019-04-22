@@ -58,23 +58,15 @@ void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
     native_obj_init(val->as.native, data, free);
 }
 
+struct _rc_struct { uint32_t refs; };
 void value_free(struct value *val) {
-    if(val->type == TYPE_STR) {
-        val->as.str->refs--;
-        if(val->as.str->refs == 0)
-            free(val->as.str);
-    } else if(val->type == TYPE_DICT) {
-        dict_free(val->as.dict);
-        if(val->as.dict->refs == 0)
-            free(val->as.dict);
-    } else if(val->type == TYPE_ARRAY) {
-        array_obj_free(val->as.array);
-        if(val->as.array->refs == 0)
-            free(val->as.array);
-    } else if(val->type == TYPE_NATIVE_OBJ) {
-        native_obj_free(val->as.native);
-        if(val->as.native->refs == 0)
-            free(val->as.native);
+#define X(x) if(val->as.x->refs == 0) {free(val->as.x);}
+    switch(val->type) {
+        case TYPE_STR:        ((struct _rc_struct*)val->as.str)->refs++;    X(str) break;
+        case TYPE_DICT:       ((struct _rc_struct*)val->as.dict)->refs++;   X(dict) break;
+        case TYPE_ARRAY:      ((struct _rc_struct*)val->as.array)->refs++;  X(array) break;
+        case TYPE_NATIVE_OBJ: ((struct _rc_struct*)val->as.native)->refs++; X(native) break;
+        default: break;
     }
     val->type = TYPE_NIL;
 }
@@ -101,7 +93,6 @@ void value_print(struct value *val) {
     }
 }
 
-struct _rc_struct { uint32_t refs; };
 void value_copy(struct value *dst, struct value *src) {
     dst->type = src->type;
     switch(src->type) {

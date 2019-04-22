@@ -63,6 +63,14 @@ do { \
     memcpy(array.data[array.length], src.data, sizeof(*src.data)*src.length); \
 } while (0)
 
+#define array_grow_by(array, n) \
+do { \
+    if(array.length+n > array.capacity) { \
+        array.capacity = array.length+n; \
+        array.data = VOID_CAST(array.data, realloc(array.data, sizeof(*array.data)*array.capacity)); \
+    } \
+} while (0)
+
 #define array_pop(array) \
     do {                 \
         array.length--;  \

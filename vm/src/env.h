@@ -2,11 +2,10 @@
 
 #include <stddef.h>
 #include "value.h"
-#include "bit_array.h"
 
 struct env {
     struct value *slots;
-    BIT_ARRAY *popslots;
+    uint64_t popslot;
     size_t nslots;
     struct env *parent;
 

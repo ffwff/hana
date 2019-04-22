@@ -327,8 +327,11 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             auto expr = static_cast<CallExpression*>(left.get());
             array_push(vm->code, OP_DEF_FUNCTION_PUSH);
             assert(expr->callee->type() == IDENTIFIER);
-            const auto id = static_cast<Identifier*>(expr->callee.get())->id.data();
-            vm_code_pushstr(vm, id);
+            const auto id = static_cast<Identifier*>(expr->callee.get())->id;
+            if(compiler->nscope > 0 && id[0] != '^') {
+                compiler->set_local(id);
+            }
+            vm_code_pushstr(vm, id.data());
             size_t length = vm->code.length;
             vm_code_push32(vm, FILLER32);
             array_push(vm->code, (uint8_t)(expr->arguments.size()));
@@ -573,10 +576,6 @@ void AST::StructStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_DICT_LOAD);
     emit_set_var(vm, compiler, id);
     if(!is_expr) array_push(vm->code, OP_POP);
-    /*if(is_namespace) {
-        LOG("namespace", id);
-        compiler->namespaces.emplace(id);
-    }*/
 }
 void AST::ExpressionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     expression->emit(vm, compiler);

@@ -58,7 +58,7 @@ void vm_execute(struct vm *vm) {
     } while(0)
 #endif
 
-    static void *dispatch_table[] = {
+    static const void *dispatch_table[] = {
         X(OP_HALT),
         // stack manip
         X(OP_PUSH8), X(OP_PUSH16), X(OP_PUSH32), X(OP_PUSH64),
