@@ -102,6 +102,14 @@ void hanayo::_init(struct vm *m) {
     native_function_key(fopen, "__fopen")
     native_function_key(fread, "__fread")
     native_function_key(fwrite, "__fwrite")
+    native_function_key(fseek, "__fseek")
+    native_function_key(ftell, "__ftell")
+    native_function_key(feof, "__feof")
+    native_function_key(ferror, "__ferror")
+    value_int(&val, SEEK_SET); hmap_set(&m->globalenv, "__SEEK_SET", &val);
+    value_int(&val, SEEK_CUR); hmap_set(&m->globalenv, "__SEEK_CUR", &val);
+    value_int(&val, SEEK_END); hmap_set(&m->globalenv, "__SEEK_END", &val);
+
     native_function(realpath)
     native_function(eval)
 

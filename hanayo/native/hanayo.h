@@ -10,9 +10,15 @@ namespace hanayo {
 // io
 fn(print);
 fn(input);
+
 fn(fopen);
 fn(fread);
 fn(fwrite);
+fn(fseek);
+fn(ftell);
+fn(feof);
+fn(ferror);
+
 fn(realpath);
 
 // language functions

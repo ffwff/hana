@@ -95,8 +95,44 @@ fn(fwrite) {
     value_free(&val);
     value_free(&buf);
     array_push(vm->stack, s);
-
 }
+
+fn(fseek) {
+    // file : FILE*, offset: integer, whence: integer
+    assert(nargs == 3);
+    auto val = _arg(vm, value::TYPE_NATIVE_OBJ);
+    auto offset = _arg(vm, value::TYPE_INT).as.integer;
+    auto whence = _arg(vm, value::TYPE_INT).as.integer;
+
+    struct value s;
+    value_int(&s, fseek((FILE*)val.as.native->data, offset, whence));
+    value_free(&val);
+    array_push(vm->stack, s);
+}
+
+fn(ftell) {
+    // file : FILE*, -> integer
+    assert(nargs == 1);
+    auto val = _arg(vm, value::TYPE_NATIVE_OBJ);
+
+    struct value s;
+    value_int(&s, ftell((FILE*)val.as.native->data));
+    value_free(&val);
+    array_push(vm->stack, s);
+}
+// file : FILE*, -> integer
+#define flagfn(_name) \
+fn(_name) { \
+    assert(nargs == 1); \
+    auto val = _arg(vm, value::TYPE_NATIVE_OBJ); \
+\
+    struct value s; \
+    value_int(&s, _name((FILE*)val.as.native->data)); \
+    value_free(&val); \
+    array_push(vm->stack, s); \
+}
+flagfn(feof)
+flagfn(ferror)
 
 fn(realpath) {
     assert(nargs == 1);

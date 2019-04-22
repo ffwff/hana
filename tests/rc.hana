@@ -1,0 +1,11 @@
+function a() begin
+    x = record()
+    x.key = "value"
+    return record
+        x = x
+        function constructor(self) begin
+            print(self.x.key)
+        end
+    end
+end
+a()()

@@ -1,0 +1,5 @@
+(function() begin
+a="a"
+for i=1 to 100000 a+="a"
+print(a)
+end)()

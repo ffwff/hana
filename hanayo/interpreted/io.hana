@@ -16,7 +16,8 @@ record File
     end
     function readline(self) begin
         line = ""
-        while (chr = self.read(1)) != "\n" begin
+        chr = ""
+        while not self.eof?() and (chr = self.read(1)) != "\n" begin
             line += chr
         end
         return line
@@ -25,6 +26,41 @@ record File
     // write
     function write(self, str) begin
         return __fwrite(self.__f, str)
+    end
+
+    // reopen
+    function reopen(self, mode) begin
+        self.mode = mode
+        self.__f = __fopen(self.path, mode)
+        return self
+    end
+
+    // seek
+    SEEK_SET = ^__SEEK_SET
+    SEEK_CUR = ^__SEEK_CUR
+    SEEK_END = ^__SEEK_END
+    function seek(self, offset, whence) begin
+        return __fseek(self.__f, offset, whence)
+    end
+    function tell(self) begin
+        return __ftell(self.__f)
+    end
+
+    function size(self) begin
+        f = self.__f
+        prev = __ftell(f)
+        __fseek(f, 0, File::SEEK_END)
+        sz = __ftell(f)
+        __fseek(f, prev, File::SEEK_SET)
+        return sz
+    end
+
+    // states
+    function eof?(self) begin
+        return __feof(self.__f)
+    end
+    function error?(self) begin
+        return __ferror(self.__f)
     end
 
 end

@@ -1,5 +1,8 @@
-x = fopen("/tmp/a", "w")
-//fread(x, 10)
-fwrite(x, "Hello World")
-x = fopen("/tmp/a", "r")
-print(fread(x, 12))
+x = File("/tmp/a", "w")
+x.write("Hello World")
+x.reopen("r")
+print(x.read(10), "\n") // => Hello Worl
+print(x.eof?(), "\n") // => false
+print(x.size(), "\n") // => 11
+x.seek(0, File::SEEK_SET)
+print(x.readline(), "\n")
