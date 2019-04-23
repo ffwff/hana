@@ -25,10 +25,8 @@ void env_set(struct env *env, size_t n, struct value *val) {
 }
 
 void env_free(struct env *env) {
-#if 0
     if(env->slots == NULL) return;
     for(int i = 0; i < env->nslots; i++)
     { value_free(&env->slots[i]); }
     free(env->slots);
-#endif
 }

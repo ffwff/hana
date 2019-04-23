@@ -61,24 +61,34 @@ void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
 struct _rc_struct { uint32_t refs; };
 void value_free(struct value *val) {
     switch(val->type) {
-        case TYPE_STR:
-        case TYPE_DICT:
-        case TYPE_ARRAY:
-        case TYPE_NATIVE_OBJ:
-            // TODO maybe pass this to GC
-            ((struct _rc_struct*)val->as.ptr)->refs--;
-            if(((struct _rc_struct*)val->as.ptr)->refs == 0) {
-#if 0
-                if(val->type == TYPE_STR) string_free(val->as.ptr);
-                else if(val->type == TYPE_DICT) dict_free(val->as.ptr);
-                else if(val->type == TYPE_ARRAY) array_obj_free(val->as.ptr);
-                else native_obj_free(val->as.ptr);
-                free(val->as.ptr);
-#endif
-                //asm("nop");
-            }
-            break;
-        default: break;
+    case TYPE_STR:
+        ((struct _rc_struct*)val->as.ptr)->refs--;
+        if(((struct _rc_struct*)val->as.ptr)->refs == 0) {
+            free(val->as.ptr);
+        }
+        break;
+    case TYPE_DICT:
+        ((struct _rc_struct*)val->as.ptr)->refs--;
+        if(((struct _rc_struct*)val->as.ptr)->refs == 0) {
+            dict_free(val->as.ptr);
+            free(val->as.ptr);
+        }
+        break;
+    case TYPE_ARRAY:
+        ((struct _rc_struct*)val->as.ptr)->refs--;
+        if(((struct _rc_struct*)val->as.ptr)->refs == 0) {
+            array_obj_free(val->as.ptr);
+            free(val->as.ptr);
+        }
+        break;
+    case TYPE_NATIVE_OBJ:
+        ((struct _rc_struct*)val->as.ptr)->refs--;
+        if(((struct _rc_struct*)val->as.ptr)->refs == 0) {
+            native_obj_free(val->as.ptr);
+            free(val->as.ptr);
+        }
+        break;
+    default: break;
     }
     val->type = TYPE_NIL;
 }

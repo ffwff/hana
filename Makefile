@@ -32,9 +32,21 @@ ifdef NOLOG
 CXXFLAGS += -DNOLOG
 CCFLAGS += -DNOLOG
 endif
-ifdef READLINE
+
+# additional
+ifdef ENABLE_READLINE
 CXXFLAGS += -DLREADLINE
 LDDFLAGS += -lreadline
+endif
+
+ifeq ($(shell jemalloc-config --version >/dev/null;printf $$?),0)
+ifndef DISABLE_JEMALLOC
+JEMALLOC_FLAGS = -L`jemalloc-config --libdir` \
+            -Wl,-rpath,`jemalloc-config --libdir`
+CXXFLAGS += $(JEMALLOC_FLAGS)
+CCFLAGS += $(JEMALLOC_FLAGS)
+LDDFLAGS += -ljemalloc `jemalloc-config --libs`
+endif
 endif
 
 # Default flags

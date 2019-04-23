@@ -30,7 +30,6 @@ void vm_init(struct vm *vm) {
 }
 
 void vm_free(struct vm *vm) {
-#if 0
     hmap_free(&vm->globalenv);
     // TODO free localenv
     while(vm->localenv != NULL) {
@@ -43,7 +42,6 @@ void vm_free(struct vm *vm) {
     for(size_t i = 0; i < vm->stack.length; i++)
         value_free(&vm->stack.data[i]);
     array_free(vm->stack);
-#endif
 }
 
 void vm_execute(struct vm *vm) {
