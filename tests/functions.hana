@@ -1,0 +1,9 @@
+function A() begin
+    return 10
+end
+
+function B() begin
+    return A()
+end
+
+print(B())

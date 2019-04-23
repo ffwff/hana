@@ -9,8 +9,7 @@ void dict_init(struct dict *dict) {
     dict->prototypev = NULL;
 }
 void dict_free(struct dict *dict) {
-    dict->refs--;
-    if(dict->refs == 0) hmap_free(&dict->data);
+    hmap_free(&dict->data);
 }
 
 struct value *dict_get(struct dict *dict, const char *key) {

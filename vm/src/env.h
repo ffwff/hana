@@ -5,7 +5,6 @@
 
 struct env {
     struct value *slots;
-    uint64_t popslot;
     size_t nslots;
     struct env *parent;
 

@@ -12,7 +12,7 @@
 #else
 #define LOG(fmt, ...) do { printf(fmt __VA_OPT__(,) __VA_ARGS__); } while(0)
 #endif
-#define FATAL(fmt, ...) printf(fmt __VA_OPT__(,) __VA_ARGS__)
+#define FATAL printf
 
 // notes: architecture is big endian!
 

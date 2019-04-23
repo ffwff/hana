@@ -4,7 +4,7 @@ struct vm;
 namespace Hana {
 
 namespace AST {
-class AST;
+struct AST;
 }
 
 }

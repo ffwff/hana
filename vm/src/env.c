@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include <math.h>
+#include <string.h>
 #include "env.h"
 
 #define is_slim(n) (n<=64)
@@ -7,33 +7,26 @@
 #define bit_set(var,pos) var |= 1UL << pos
 
 void env_init(struct env *env, size_t nslots) {
-    env->slots = malloc(sizeof(struct value)*nslots);
-    // NOTE: this assumes that nslots <= 64
-    env->popslot = 0;
+    env->slots = calloc(nslots, sizeof(struct value));
     env->nslots = nslots;
+    if(env->parent != NULL)
+        for(size_t i = 0; i < nslots; i++)
+            value_copy(&env->slots[i], &env->parent->slots[i]);
     // NOTE: parent and caller is already init in OP_CALL
 }
 
 struct value *env_get(struct env *env, size_t n) {
-    if(bit_check(env->popslot, n)) {
-        return &env->slots[n];
-    } else if(env->parent != NULL) {
-        value_copy(&env->slots[n], env_get(env->parent, n));
-        bit_set(env->popslot, n);
-        return &env->slots[n];
-    }
-    return NULL;
+    return &env->slots[n];
 }
 
 void env_set(struct env *env, size_t n, struct value *val) {
-    if(!bit_check(env->popslot, n)) value_free(&env->slots[n]);
+    value_free(&env->slots[n]);
     value_copy(&env->slots[n], val);
-    bit_set(env->popslot, n);
 }
 
 void env_free(struct env *env) {
     if(env->slots == NULL) return;
     for(int i = 0; i < env->nslots; i++)
-        value_free(&env->slots[i]);
+    { value_free(&env->slots[i]); }
     free(env->slots);
 }

@@ -1,0 +1,20 @@
+record A
+
+    function constructor(self) begin
+        return self
+    end
+
+end
+
+record B
+
+    function constructor(self) begin
+        return self
+    end
+
+end
+
+a = A()
+b = B()
+a.b = b
+b.a = a
