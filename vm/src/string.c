@@ -13,7 +13,3 @@ struct string_header *string_alloc(size_t n) {
     s->refs = 1;
     return s;
 }
-
-void string_free(struct string_header *string) {
-    string->refs--;
-}

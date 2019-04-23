@@ -13,17 +13,18 @@ DEPS = $(OBJS:.o=.d)
 
 # Version
 ifdef RELEASE
-CXXFLAGS += -O3 -DRELEASE -flto
-CCFLAGS += -O3 -DNOLOG -flto
-LDDFLAGS += -flto -O3
+CXXFLAGS += -DRELEASE -flto -g -O3
+CCFLAGS += -DNOLOG -flto -g -O3
+LDDFLAGS += -flto -O3 -g
+else
+ifdef PROFILE
+CXXFLAGS += -O3 -DRELEASE -DNOLOG -g -pg -flto
+CCFLAGS += -O3 -DNOLOG -g -pg -flto
+LDDFLAGS += -O3 -g -pg -flto
 else
 CXXFLAGS += -g -DDEBUG
 CCFLAGS += -g
 endif
-ifdef PROFILE
-CXXFLAGS += -O3 -DRELEASE -DNOLOG -g -pg
-CCFLAGS += -O3 -DNOLOG -g -pg
-LDDFLAGS += -O3 -g -pg
 endif
 
 # Logging

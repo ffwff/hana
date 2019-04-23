@@ -30,6 +30,7 @@ void vm_init(struct vm *vm) {
 }
 
 void vm_free(struct vm *vm) {
+#if 0
     hmap_free(&vm->globalenv);
     // TODO free localenv
     while(vm->localenv != NULL) {
@@ -42,6 +43,7 @@ void vm_free(struct vm *vm) {
     for(size_t i = 0; i < vm->stack.length; i++)
         value_free(&vm->stack.data[i]);
     array_free(vm->stack);
+#endif
 }
 
 void vm_execute(struct vm *vm) {
@@ -437,38 +439,18 @@ void vm_execute(struct vm *vm) {
                     return;
                 }
             }
-            struct value args[nargs];
-            for(int i = nargs-1; i >= 0; i--) {
-                struct value val = array_top(vm->stack);
-                array_pop(vm->stack);
-                args[i] = val;
-            }
             // caller
-            //struct value caller;
-            //value_function(&caller, vm->ip, 0);
-            //array_push(vm->stack, caller);
             struct env *oldenv = vm->localenv;
             vm->localenv = calloc(1, sizeof(struct env));
             vm->localenv->parent = oldenv;
             vm->localenv->ifn = vm->ip;
             // arguments
             if(val.type == TYPE_DICT) {
-                if(vm->stack.length+nargs > vm->stack.capacity) {
-                    vm->stack.capacity = vm->stack.length+nargs;
-                    vm->stack.data = (struct value*)realloc(vm->stack.data,
-                                                    sizeof(struct value)*vm->stack.capacity);
-                }
-                memcpy(vm->stack.data+vm->stack.length, args, sizeof(struct value)*nargs);
-                vm->stack.length += nargs;
-
                 struct value new_val;
                 value_dict(&new_val);
                 dict_set(new_val.as.dict, "prototype", &val);
                 value_free(&val); // reference carried by dict
                 array_push(vm->stack, new_val);
-            } else {
-                for(int i = 0; i < nargs; i++)
-                    array_push(vm->stack, args[i]);
             }
             // jump
             vm->ip = fn_ip;
@@ -485,12 +467,12 @@ void vm_execute(struct vm *vm) {
         env_free(vm->localenv);
 
         if(vm->localenv->ifn == (uint32_t)-1) {
-            free(vm->localenv);
+            //free(vm->localenv);
             vm->localenv = parent;
             return;
         } else {
             vm->ip = vm->localenv->ifn;
-            free(vm->localenv);
+            //free(vm->localenv);
             vm->localenv = parent;
         }
         dispatch();
