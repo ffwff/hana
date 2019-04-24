@@ -27,6 +27,7 @@ private:
     AST::AST *parse_record(bool is_expr=false);
     std::vector<std::string> parse_function_arguments();
     AST::AST *parse_statement();
+    AST::AST *expect_statement();
     void parse_procedure();
 
 public:

@@ -17,6 +17,7 @@ public:
     void scope();
     void unscope();
     size_t nscope = 0, slotsize=0; // 0 = global scope
+    size_t nslots();
     std::vector<size_t> for_stmts;
 
 private:

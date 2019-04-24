@@ -113,6 +113,7 @@ Parser::Token ScriptParser::next() {
     }
 }
 
+// Expressions
 AST::AST *ScriptParser::parse_factor() {
     const auto token = next();
     if(token.type == Token::Type::OPERATOR) {
@@ -402,6 +403,13 @@ std::vector<std::string> ScriptParser::parse_function_arguments() {
         throw ParserError("Expected function arguments");
 }
 
+// Statements
+AST::AST *ScriptParser::expect_statement() {
+    auto stmt = parse_statement();
+    if(stmt == nullptr) throw ParserError("Expected non-empty statement");
+    return stmt;
+}
+
 AST::AST *ScriptParser::parse_record(bool is_expr) {
     std::string id;
     if(!is_expr) {
@@ -557,9 +565,7 @@ AST::AST *ScriptParser::parse_statement() {
         } else if(token.strv == "if") {
             fpop();
             auto expr = parse_expression();
-            auto stmt = parse_statement();
-            if(stmt == nullptr)
-                throw ParserError("Expected conditional statement");
+            auto stmt = expect_statement();
             auto ifstmt = new AST::IfStatement(expr, stmt);
             fsave();
             auto token = next();
@@ -577,7 +583,7 @@ AST::AST *ScriptParser::parse_statement() {
             fpop();
 
             auto expr = parse_expression();
-            auto stmt = parse_statement();
+            auto stmt = expect_statement();
             return new AST::WhileStatement(expr, stmt);
         } else if(token.strv == "for") {
             fpop();
@@ -595,10 +601,10 @@ AST::AST *ScriptParser::parse_statement() {
             const int stepN = dir == "to" ? 1 : -1;
             if(token.type == Token::Type::STRING && token.strv == "step") {
                 fpop();
-                return new AST::ForStatement(id, from, to, parse_expression(), stepN, parse_statement());
+                return new AST::ForStatement(id, from, to, parse_expression(), stepN, expect_statement());
             } else {
                 fload();
-                return new AST::ForStatement(id, from, to, stepN, parse_statement());
+                return new AST::ForStatement(id, from, to, stepN, expect_statement());
             }
 
         } /*else if(token.strv == "continue") {
@@ -643,7 +649,7 @@ AST::AST *ScriptParser::parse_block() {
         auto stmt = parse_statement();
         if(stmt != nullptr) {
             if(stmt->type() == AST::RETURN_STMT)
-                throw ParserError("Return statements are only possible in functions");
+                throw ParserError("Return statements are only possible inside functions");
             block->statements.emplace_back(stmt);
         }
     }

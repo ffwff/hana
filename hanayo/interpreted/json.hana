@@ -102,7 +102,6 @@ record JSON
             end
         end
         r.parse_object = function() begin
-            print("object")
             key = ""
             obj = Record()
             r.i += 1 // "{"

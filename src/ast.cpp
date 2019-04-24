@@ -341,6 +341,7 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             array_push(vm->code, OP_ENV_NEW);
             size_t env_length = vm->code.length;
             vm_code_push32(vm, FILLER32);
+            vm_code_push32(vm, compiler->nslots());
             for(auto &arg : expr->arguments) {
                 assert(arg->type() == IDENTIFIER);
                 auto s = static_cast<Identifier*>(arg.get())->id;
@@ -533,6 +534,7 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_ENV_NEW);
     size_t env_length = vm->code.length;
     vm_code_push32(vm, FILLER32);
+    vm_code_push32(vm, compiler->nslots());
     // body
     for(auto &arg : arguments) {
         emit_set_var(vm, compiler, arg);

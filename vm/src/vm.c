@@ -263,8 +263,14 @@ void vm_execute(struct vm *vm) {
             vm->code.data[vm->ip+2] << 4  |
             vm->code.data[vm->ip+3];
         vm->ip += sizeof(n);
-        LOG("RESERVE %d\n", n);
-        env_init(vm->localenv, n);
+        const uint32_t up_to =
+            vm->code.data[vm->ip+0] << 12 |
+            vm->code.data[vm->ip+1] << 8  |
+            vm->code.data[vm->ip+2] << 4  |
+            vm->code.data[vm->ip+3];
+        vm->ip += sizeof(up_to);
+        LOG("RESERVE %d [up to %d]\n", n, up_to);
+        env_init(vm->localenv, n, up_to);
         dispatch();
     }
 

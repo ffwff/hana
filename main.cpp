@@ -148,11 +148,11 @@ int main(int argc, char **argv) {
         #ifdef LREADLINE
         rl_bind_key('\t', rl_insert);
         #endif
-#ifdef INCLUDE_BYTECODE
+        #ifdef INCLUDE_BYTECODE
         array_push(m.code, OP_HALT);
         vm_execute(&m);
         m.ip++;
-#endif
+        #endif
         while(1) {
             #ifdef LREADLINE
             int nread = 0;

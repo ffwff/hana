@@ -6,11 +6,11 @@
 #define bit_check(var,pos) ((var >> pos) & 1U)
 #define bit_set(var,pos) var |= 1UL << pos
 
-void env_init(struct env *env, size_t nslots) {
+void env_init(struct env *env, size_t nslots, size_t up_to) {
     env->slots = calloc(nslots, sizeof(struct value));
     env->nslots = nslots;
     if(env->parent != NULL)
-        for(size_t i = 0; i < nslots; i++)
+        for(size_t i = 0; i < up_to; i++)
             value_copy(&env->slots[i], &env->parent->slots[i]);
     // NOTE: parent and caller is already init in OP_CALL
 }

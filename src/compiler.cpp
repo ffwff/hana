@@ -30,3 +30,7 @@ void Hana::Compiler::unscope() {
     }
     nscope--;
 }
+
+size_t Hana::Compiler::nslots() {
+    return locals.size();
+}
