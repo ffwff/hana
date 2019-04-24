@@ -10,6 +10,7 @@ namespace hanayo {
 // io
 fn(print);
 fn(input);
+fn(realpath);
 
 fn(fopen);
 fn(fread);
@@ -19,7 +20,10 @@ fn(ftell);
 fn(feof);
 fn(ferror);
 
-fn(realpath);
+fn(getenv);
+fn(setenv);
+
+fn(exit);
 
 // language functions
 fn(eval);

@@ -21,6 +21,7 @@ fn(print) {
 }
 
 fn(input) {
+    assert(nargs == 1);
     char *line = nullptr;
     size_t n = 0;
     getline(&line, &n, stdin);

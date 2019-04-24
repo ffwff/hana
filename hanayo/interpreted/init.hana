@@ -1,3 +1,4 @@
+#include "panic.hana"
 #include "modules.hana"
 #include "io.hana"
-#include "json.hana"
+#include "env.hana"

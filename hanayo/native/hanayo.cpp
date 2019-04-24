@@ -104,18 +104,27 @@ void hanayo::_init(struct vm *m) {
     // ## io
     native_function(print)
     native_function(input)
-    native_function_key(fopen, "__fopen")
-    native_function_key(fread, "__fread")
+    native_function(realpath)
+
+    // ### builtins
+    native_function_key(fopen,  "__fopen")
+    native_function_key(fread,  "__fread")
     native_function_key(fwrite, "__fwrite")
-    native_function_key(fseek, "__fseek")
-    native_function_key(ftell, "__ftell")
-    native_function_key(feof, "__feof")
+    native_function_key(fseek,  "__fseek")
+    native_function_key(ftell,  "__ftell")
+    native_function_key(feof,   "__feof")
     native_function_key(ferror, "__ferror")
     value_int(&val, SEEK_SET); hmap_set(&m->globalenv, "__SEEK_SET", &val);
     value_int(&val, SEEK_CUR); hmap_set(&m->globalenv, "__SEEK_CUR", &val);
     value_int(&val, SEEK_END); hmap_set(&m->globalenv, "__SEEK_END", &val);
 
-    native_function(realpath)
+    // ## env
+    native_function_key(getenv, "__getenv")
+    native_function_key(setenv, "__setenv")
+
+    // ## exit
+    native_function_key(exit, "__exit")
+
     native_function(eval)
 
     // # objects
@@ -135,14 +144,14 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("split",       string::split);
     native_obj_function("startswith?", string::startswith);
     native_obj_function("endswith?",   string::endswith);
-    hmap_set(&m->globalenv, "string", &val);
+    hmap_set(&m->globalenv, "String", &val);
     value_free(&val);
     m->dstr = val.as.dict;
 
     // ## integers
     value_dict(&val);
     native_obj_function("constructor", integer::constructor);
-    hmap_set(&m->globalenv, "integer", &val);
+    hmap_set(&m->globalenv, "Int", &val);
     value_free(&val);
     m->dint = val.as.dict;
 
@@ -150,7 +159,7 @@ void hanayo::_init(struct vm *m) {
     value_dict(&val);
     native_obj_function("constructor", float_::constructor);
     native_obj_function("round",       float_::round);
-    hmap_set(&m->globalenv, "float", &val);
+    hmap_set(&m->globalenv, "Float", &val);
     value_free(&val);
     m->dfloat = val.as.dict;
 
@@ -171,7 +180,7 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("filter",      array::filter);
     native_obj_function("reduce",      array::reduce);
     native_obj_function("join",        array::join);
-    hmap_set(&m->globalenv, "array", &val);
+    hmap_set(&m->globalenv, "Array", &val);
     value_free(&val);
     m->darray = val.as.dict;
 
@@ -180,7 +189,7 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("constructor", record::constructor);
     native_obj_function("is_record?",  record::is_record);
     native_obj_function("keys",        record::keys);
-    hmap_set(&m->globalenv, "record", &val);
+    hmap_set(&m->globalenv, "Record", &val);
     value_free(&val);
 }
 

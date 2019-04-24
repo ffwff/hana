@@ -124,11 +124,9 @@ int main(int argc, char **argv) {
     // virtual machine
     struct vm m; vm_init(&m);
 #ifdef INCLUDE_BYTECODE
-    free(m.code.data);
-    m.code.data = (uint8_t*)malloc(gInitBytecodeSize);
+    vm_code_reserve(&m, gInitBytecodeSize);
     memcpy(m.code.data, gInitBytecodeData, gInitBytecodeSize);
-    m.code.length = gInitBytecodeSize;
-    m.code.capacity = gInitBytecodeSize;
+    m.code.length += gInitBytecodeSize;
 #endif
     hanayo::_init(&m);
 
@@ -150,6 +148,11 @@ int main(int argc, char **argv) {
         #ifdef LREADLINE
         rl_bind_key('\t', rl_insert);
         #endif
+#ifdef INCLUDE_BYTECODE
+        array_push(m.code, OP_HALT);
+        vm_execute(&m);
+        m.ip++;
+#endif
         while(1) {
             #ifdef LREADLINE
             int nread = 0;

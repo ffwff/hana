@@ -11,41 +11,52 @@ OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
 
+HANAYOFLAGS = -MMD -fno-rtti -fno-exceptions -nostdinc++
+
 # Version
 ifdef RELEASE
-CXXFLAGS += -DRELEASE -flto -g -O3
-CCFLAGS += -DNOLOG -flto -g -O3
-LDDFLAGS += -flto -O3 -g
+CXXFLAGS += -DRELEASE -O3
+CCFLAGS += -DNOLOG -O3 -flto
+LDDFLAGS += -O3 -flto
+HANAYOFLAGS += -flto
 else
 ifdef PROFILE
 CXXFLAGS += -O3 -DRELEASE -DNOLOG -g -pg -flto
 CCFLAGS += -O3 -DNOLOG -g -pg -flto
 LDDFLAGS += -O3 -g -pg -flto
+HANAYOFLAGS += -flto
 else
 CXXFLAGS += -g -DDEBUG
 CCFLAGS += -g
 endif
 endif
 
-# Logging
+# additional
+## Logging
 ifdef NOLOG
 CXXFLAGS += -DNOLOG
 CCFLAGS += -DNOLOG
 endif
 
-# additional
+## cleanup
+ifdef EXIT_CLEANUP
+CXXFLAGS += -DCLEANUP
+CCFLAGS += -DCLEANUP
+endif
+
+# linkage
+## readline
 ifdef ENABLE_READLINE
 CXXFLAGS += -DLREADLINE
 LDDFLAGS += -lreadline
 endif
 
-ifeq ($(shell jemalloc-config --version >/dev/null;printf $$?),0)
+## jemalloc (enabled by default)
+ifeq ($(shell jemalloc-config --version >/dev/null 2>/dev/null;printf $$?),0)
 ifndef DISABLE_JEMALLOC
-JEMALLOC_FLAGS = -L`jemalloc-config --libdir` \
-            -Wl,-rpath,`jemalloc-config --libdir`
-CXXFLAGS += $(JEMALLOC_FLAGS)
-CCFLAGS += $(JEMALLOC_FLAGS)
-LDDFLAGS += -ljemalloc `jemalloc-config --libs`
+LDDFLAGS += -L`jemalloc-config --libdir` \
+            -Wl,-rpath,`jemalloc-config --libdir` \
+            -ljemalloc `jemalloc-config --libs`
 endif
 endif
 
@@ -80,7 +91,7 @@ build/vm/%.o: vm/src/%.c build/vm
 build/hanayo:
 	mkdir -p build/hanayo
 build/hanayo/%.o: hanayo/native/%.cpp build/hanayo
-	$(CXX) -c -o $@ $< $(CXXFLAGS) -MMD -fno-rtti -fno-exceptions -nostdinc++
+	$(CXX) -c -o $@ $< $(CXXFLAGS) $(HANAYOFLAGS)
 build/init.bin: hanayo/interpreted/*.hana ./main
 	(cpp hanayo/interpreted/init.hana | sed "s/^#.*//g") >build/init.hana
 	./main -d build/init.hana >$@

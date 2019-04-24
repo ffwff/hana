@@ -1,6 +1,6 @@
-// modules
-__modules__ = record()
-function import(x) begin
+^__modules = Record()
+function ^import(x) begin
+    if not x.endswith?(".hana") x = x + ".hana"
     if x.startswith?("./") begin
         // resolve relative path
         dirs = __file__.split("/")
@@ -9,18 +9,29 @@ function import(x) begin
     end
     else begin
         // resolve builtin
+        env = Env::get?("HANA_PATH")
+        if env begin
+            name = x
+            path = env+"/"+name
+            x = realpath(path)
+            if x == nil panic!("can't find module " + name + "!")
+        end
+        else begin
+            panic!("can't find module dir, environment variable HANA_PATH isn't set!")
+            return false
+        end
     end
     if x == nil return false
 
     // don't import if it's already imported
-    if __modules__[x] return false
+    if ^__modules[x] return false
 
     // save __file__ and import!
     old_file = ^__file__
     ^__file__ = x
     f = fopen(x, "r")
     if eval(__fread(f)) begin // success
-        __modules__[x] = true
+        ^__modules[x] = true
         ^__file__ = old_file
         return true
     end
