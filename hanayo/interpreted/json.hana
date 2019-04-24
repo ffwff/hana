@@ -1,11 +1,11 @@
 record JSON
 
-    true = record()
-    false = record()
+    true = Record()
+    false = Record()
 
     function parse(str) begin
         slen = str.length()
-        r = record()
+        r = Record()
         r.i = 0
         ws = function() begin
             while r.i < slen and (str[r.i] == ' ' or str[r.i] == '\t') begin
@@ -32,9 +32,9 @@ record JSON
                     num += str[r.i]
                     r.i += 1
                 end
-                return float(num)
+                return Float(num)
             end
-            else return integer(num)
+            else return Int(num)
         end
         r.parse_str = function() begin
             next('"')
@@ -102,8 +102,9 @@ record JSON
             end
         end
         r.parse_object = function() begin
+            print("object")
             key = ""
-            obj = record()
+            obj = Record()
             r.i += 1 // "{"
             ws()
             if str[r.i] == "}" return obj
@@ -128,9 +129,9 @@ record JSON
 
     function stringify(obj) begin
         prototype = obj.prototype
-        if record::is_record?(obj) begin
+        if Record::is_record?(obj) begin
             // dictionaries
-            keys = record::keys(obj)
+            keys = Record::keys(obj)
             klen = keys.length() - 1
             s = "{"
             function print_key(i) begin
@@ -148,13 +149,13 @@ record JSON
             keys = nil
             return s
         end
-        else if prototype == array begin
+        else if prototype == Array begin
             s = "["
             s += obj.map(JSON::stringify).join(", ")
             s += "]"
             return s
         end
-        else if prototype == string begin
+        else if prototype == String begin
             s = "\""
             slen = obj.length() - 1
             for i = 0 to slen begin
@@ -165,8 +166,8 @@ record JSON
             s += "\""
             return s
         end
-        else if prototype == integer or prototype == float begin
-            return string(obj)
+        else if prototype == Int or prototype == Float begin
+            return String(obj)
         end
     end
 

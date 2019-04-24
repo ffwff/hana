@@ -1,5 +1,5 @@
-^__modules = Record()
-function ^import(x) begin
+__modules = Record()
+function import(x) begin
     if not x.endswith?(".hana") x = x + ".hana"
     if x.startswith?("./") begin
         // resolve relative path
@@ -24,14 +24,14 @@ function ^import(x) begin
     if x == nil return false
 
     // don't import if it's already imported
-    if ^__modules[x] return false
+    if __modules[x] return false
 
     // save __file__ and import!
     old_file = ^__file__
     ^__file__ = x
-    f = fopen(x, "r")
+    f = __fopen(x, "r")
     if eval(__fread(f)) begin // success
-        ^__modules[x] = true
+        __modules[x] = true
         ^__file__ = old_file
         return true
     end
