@@ -18,7 +18,7 @@ enum Type {
     FUNCTION_STMT, STRUCT_STMT, EXPR_STMT, RETURN_STMT,
     FOR_STMT,
     BLOCK,
-    CONTINUE_STMT,
+    CONTINUE_STMT, BREAK_STMT
 
 };
 
@@ -164,6 +164,12 @@ struct ForStatement : Statement {
 struct ContinueStatement : Statement {
     TYPE(CONTINUE_STMT)
     ContinueStatement() {}
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
+};
+
+struct BreakStatement : Statement {
+    TYPE(BREAK_STMT)
+    BreakStatement() {}
     void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 

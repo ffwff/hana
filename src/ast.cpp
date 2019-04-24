@@ -463,12 +463,27 @@ void AST::WhileStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_JMP);
     size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
+
+    compiler->loop_stmts.emplace_back();
+
     size_t length1 = vm->code.length;
     statement->emit(vm, compiler);
     fill_hole(vm, length, vm->code.length);
+
+    size_t next_it_pos = vm->code.length;
     condition->emit(vm, compiler);
     array_push(vm->code, OP_JCOND);
     vm_code_push32(vm, length1);
+
+    size_t end_pos = vm->code.length;
+
+    auto top = compiler->loop_stmts.back();
+    for(auto cont : top.fill_continue)
+        fill_hole(vm, cont, next_it_pos);
+    for(auto brk : top.fill_break)
+        fill_hole(vm, brk, end_pos);
+
+    compiler->loop_stmts.pop_back();
 }
 void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     // start
@@ -477,7 +492,7 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_POP);
     // body
     size_t body_pos = vm->code.length;
-    compiler->for_stmts.push_back(body_pos);
+    compiler->loop_stmts.emplace_back();
     statement->emit(vm, compiler);
     // condition:
     // [body]
@@ -488,6 +503,7 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     // step
     // jmp [body]
     // 1: done
+    size_t next_it_pos = vm->code.length;
     emit_get_var(vm, compiler, id);
     to->emit(vm, compiler);
     if(stepN == 1) array_push(vm->code, OP_GEQ);
@@ -515,13 +531,30 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_JMP);
     vm_code_push32(vm, body_pos);
 
-    fill_hole(vm, length, vm->code.length);
+    size_t end_pos = vm->code.length;
+    fill_hole(vm, length, end_pos);
 
-    compiler->for_stmts.pop_back();
+    auto top = compiler->loop_stmts.back();
+    for(auto cont : top.fill_continue)
+        fill_hole(vm, cont, next_it_pos);
+    for(auto brk : top.fill_break)
+        fill_hole(vm, brk, end_pos);
+
+    compiler->loop_stmts.pop_back();
 }
 void AST::ContinueStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
-    //array_push(vm->code, OP_JMP);
-    //vm_code_push32(vm, compiler->for_stmts.back());
+    assert(!compiler->loop_stmts.empty());
+    array_push(vm->code, OP_JMP);
+    size_t pos = vm->code.length;
+    vm_code_push32(vm, FILLER32);
+    compiler->loop_stmts.back().fill_continue.emplace_back(pos);
+}
+void AST::BreakStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    assert(!compiler->loop_stmts.empty());
+    array_push(vm->code, OP_JMP);
+    size_t pos = vm->code.length;
+    vm_code_push32(vm, FILLER32);
+    compiler->loop_stmts.back().fill_break.emplace_back(pos);
 }
 void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_DEF_FUNCTION_PUSH);

@@ -607,11 +607,15 @@ AST::AST *ScriptParser::parse_statement() {
                 return new AST::ForStatement(id, from, to, stepN, expect_statement());
             }
 
-        } /*else if(token.strv == "continue") {
+        } else if(token.strv == "continue") {
             fpop();
             nextnl();
             return new AST::ContinueStatement();
-        } */ else if(token.strv == "begin") {
+        } else if(token.strv == "break") {
+            fpop();
+            nextnl();
+            return new AST::BreakStatement();
+        } else if(token.strv == "begin") {
             fpop();
             nextnl();
             auto blk = new AST::BlockStatement();
