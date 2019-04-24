@@ -90,6 +90,11 @@ void hanayo::_init(struct vm *m) {
     struct value val;
     // # constants
     val = {0}; hmap_set(&m->globalenv, "nil", &val);
+    value_float(&val, 0.0/0.0); hmap_set(&m->globalenv, "nan", &val);
+    value_float(&val, 1.0/0.0); hmap_set(&m->globalenv, "inf", &val);
+    value_int(&val, 1); hmap_set(&m->globalenv, "true", &val);
+    value_int(&val, 0); hmap_set(&m->globalenv, "false", &val);
+
     // # functions
 #define native_function(name) \
     value_native(&val, hanayo::name);  hmap_set(&m->globalenv, #name, &val);

@@ -14,6 +14,11 @@
 INCBIN(InitBytecode, "build/init.bin");
 #endif
 
+#ifdef CLEANUP
+#define AST_PTR(x) std::unique_ptr<Hana::AST::AST>(x)
+#else
+#define AST_PTR(x) x
+#endif
 
 static void help(char *program) {
 printf(
@@ -107,7 +112,7 @@ int main(int argc, char **argv) {
         struct vm m; vm_init(&m);
         Hana::ScriptParser p;
         p.loadf(argv[last_optiond]);
-        auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        auto ast = AST_PTR(p.parse());
         if(ast == nullptr) return 1;
         ast->emit(&m, &compiler);
         fwrite(m.code.data, 1, m.code.length, stdout);
@@ -132,7 +137,7 @@ int main(int argc, char **argv) {
         Hana::ScriptParser p;
         std::string s(argv[command_optiond-1]);
         p.loads(s);
-        auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        auto ast = AST_PTR(p.parse());
         if(ast == nullptr) return 1;
         if(opt_print_ast) ast->print();
         ast->emit(&m, &compiler);
@@ -186,7 +191,7 @@ int main(int argc, char **argv) {
             if(s.empty()) continue;
             Hana::ScriptParser p;
             p.loads(s);
-            auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+            auto ast = AST_PTR(p.parse());
             if(ast == nullptr) continue;
             if(opt_print_ast) ast->print();
             ast->emit(&m, &compiler);
@@ -208,7 +213,7 @@ int main(int argc, char **argv) {
     } else {
         Hana::ScriptParser p;
         p.loadf(argv[last_optiond]);
-        auto ast = std::unique_ptr<Hana::AST::AST>(p.parse());
+        auto ast = AST_PTR(p.parse());
         if(ast == nullptr) return 1;
 
         // succesfully parsed
@@ -233,6 +238,8 @@ int main(int argc, char **argv) {
     }
 
 cleanup:
+#ifdef CLEANUP
     vm_free(&m);
+#endif
     return 0;
 }
