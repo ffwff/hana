@@ -5,6 +5,25 @@
 
 using namespace Hana;
 
+// macros to record line information
+#define START_GMR const auto _START_GMR = lines+1;
+#define END_GMR const auto _END_GMR = lines+1;
+static AST::AST *_wrap_line(AST::AST *ast, size_t start_line, size_t end_line) {
+    ast->start_line = start_line;
+    ast->end_line = end_line;
+    return ast;
+}
+#define WRAP_LINE(ast) _wrap_line(ast, _START_GMR, lines)
+static size_t _start_lines = 0;
+static AST::AST *_wrap_block(AST::AST *ast, size_t lines) {
+    ast->start_line = _start_lines;
+    ast->end_line = lines;
+    return ast;
+}
+#define WRAP_RET(ast) (_start_lines = lines+1, _wrap_block(ast, lines))
+#define WRAP_RET2(ast) (_start_lines = _START_GMR, _wrap_block(ast, lines))
+
+// tokeniser
 Parser::Token ScriptParser::next() {
     char c;
     const auto skip_un = [&]() {
@@ -411,6 +430,7 @@ AST::AST *ScriptParser::expect_statement() {
 }
 
 AST::AST *ScriptParser::parse_record(bool is_expr) {
+    START_GMR
     std::string id;
     if(!is_expr) {
         fsave();
@@ -439,38 +459,42 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
                 break;
             } else if(token.strv == "function") {
                 fpop();
+                START_GMR
                 auto fstmt = parse_function(RECORD);
-                stmt->statements.emplace_back(fstmt);
+                stmt->statements.emplace_back(WRAP_RET2(fstmt));
                 if(static_cast<AST::FunctionStatement*>(fstmt)->statement->type() != AST::Type::BLOCK_STMT)
                     nextnl();
             } else if(token.strv == "record") {
                 fpop();
+                START_GMR
                 auto ss = parse_record(false);
                 static_cast<AST::StructStatement*>(ss)->is_expr = true;
-                stmt->statements.emplace_back(ss);
                 nextnl();
+                stmt->statements.emplace_back(WRAP_RET2(ss));
             } else {
                 fload();
+                START_GMR
                 auto left = parse_call();
                 if (left->type() != AST::Type::MEMBER_EXPR &&
                     left->type() != AST::Type::IDENTIFIER)
                     throw ParserError("expected member expression or identifier");
                 nextop("=");
                 auto right = parse_expression();
-                stmt->statements.emplace_back(new AST::ExpressionStatement(
-                    new AST::BinaryExpression(left, right, AST::BinaryExpression::OpType::SET)
-                ));
                 nextnl();
+                stmt->statements.emplace_back(WRAP_RET2(new AST::ExpressionStatement(
+                    new AST::BinaryExpression(left, right, AST::BinaryExpression::OpType::SET)
+                )));
             }
             continue;
         }
         throw ParserError("expected end or struct statement");
     }
-    return stmt;
+    return WRAP_RET2(stmt);
 }
 
 AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
     fsave();
+    START_GMR
     auto token = next();
     AST::FunctionStatement *stmt = nullptr;
     if(type == EXPR) {
@@ -490,6 +514,7 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
     AST::AST *fstmt = nullptr;
     if(type == EXPR) {
         fsave();
+        START_GMR
         token = next();
         if(token.strv == "begin") {
             // this is here because blocks in function expressions behave like
@@ -510,7 +535,7 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
                         blk->statements.emplace_back(stmt);
                 }
             }
-            fstmt = blk;
+            fstmt = WRAP_RET2(blk);
         } else {
             fload();
             fstmt = parse_statement();
@@ -524,7 +549,7 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
         throw ParserError("expected function statement");
     if(type == EXPR || type == RECORD)
         stmt->record_fn = true;
-    return stmt;
+    return WRAP_RET2(stmt);
 }
 
 AST::AST *ScriptParser::parse_statement() {
@@ -542,28 +567,33 @@ AST::AST *ScriptParser::parse_statement() {
             return nullptr;
         } else if(token.strv == "return") {
             fpop();
+            START_GMR
             fsave();
             const auto token = next();
             if(token.type == Token::Type::NEWLINE) {
                 fpop();
-                return new AST::ReturnStatement();
+                return WRAP_RET2(new AST::ReturnStatement());
             } else {
                 fload();
-                return new AST::ReturnStatement(parse_expression());
+                return WRAP_RET2(new AST::ReturnStatement(parse_expression()));
             }
         } else if(token.strv == "function") {
             fpop();
-            return parse_function(STATEMENT);
+            START_GMR
+            auto ast = parse_function(STATEMENT);
+            return WRAP_RET2(ast);
         } else if(token.strv == "record") {
             //fpop();
+            START_GMR
             auto record = parse_record();
             if(record == nullptr) {
                 fload();
                 goto expression_stmt;
             } else
-                return record;
+                return WRAP_LINE(record);
         } else if(token.strv == "if") {
             fpop();
+            START_GMR
             auto expr = parse_expression();
             auto stmt = expect_statement();
             auto ifstmt = new AST::IfStatement(expr, stmt);
@@ -578,15 +608,19 @@ AST::AST *ScriptParser::parse_statement() {
             } else {
                 fload();
             }
-            return ifstmt;
+            return WRAP_LINE(ifstmt);
         } else if(token.strv == "while") {
             fpop();
 
+            START_GMR
+
             auto expr = parse_expression();
             auto stmt = expect_statement();
-            return new AST::WhileStatement(expr, stmt);
+            return WRAP_RET2(new AST::WhileStatement(expr, stmt));
         } else if(token.strv == "for") {
             fpop();
+
+            START_GMR
 
             auto id = nexts();
             nextop("=");
@@ -601,21 +635,26 @@ AST::AST *ScriptParser::parse_statement() {
             const int stepN = dir == "to" ? 1 : -1;
             if(token.type == Token::Type::STRING && token.strv == "step") {
                 fpop();
-                return new AST::ForStatement(id, from, to, parse_expression(), stepN, expect_statement());
+                auto ast = new AST::ForStatement(id, from, to, parse_expression(), stepN, expect_statement());
+                return WRAP_LINE(ast);
             } else {
                 fload();
-                return new AST::ForStatement(id, from, to, stepN, expect_statement());
+                auto ast = new AST::ForStatement(id, from, to, stepN, expect_statement());
+                return WRAP_LINE(ast);
             }
 
         } else if(token.strv == "continue") {
             fpop();
+            START_GMR
             nextnl();
-            return new AST::ContinueStatement();
+            return WRAP_RET2(new AST::ContinueStatement());
         } else if(token.strv == "break") {
             fpop();
+            START_GMR
             nextnl();
-            return new AST::BreakStatement();
+            return WRAP_RET2(new AST::BreakStatement());
         } else if(token.strv == "begin") {
+            START_GMR
             fpop();
             nextnl();
             auto blk = new AST::BlockStatement();
@@ -633,7 +672,7 @@ AST::AST *ScriptParser::parse_statement() {
                         blk->statements.emplace_back(stmt);
                 }
             }
-            return blk;
+            return WRAP_RET2(blk);
         } else {
             goto expression_stmt;
         }
@@ -641,9 +680,10 @@ AST::AST *ScriptParser::parse_statement() {
     expression_stmt:
         // expression statement
         fload();
+        START_GMR
         auto expr = parse_expression();
         nextnl();
-        return new AST::ExpressionStatement(expr);
+        return WRAP_RET2(new AST::ExpressionStatement(expr));
     }
 }
 

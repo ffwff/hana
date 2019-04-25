@@ -86,20 +86,20 @@ void AST::ConditionalExpression::print(int indent) {
 
 void AST::IfStatement::print(int indent) {
     pindent(indent);
-    std::cout << "if\n";
+    std::cout << "if (" << start_line << "->" << end_line << ")\n";
     condition->print(indent+1);
     statement->print(indent+1);
     if(alt) alt->print(indent+1);
 }
 void AST::WhileStatement::print(int indent) {
     pindent(indent);
-    std::cout << "while\n";
+    std::cout << "while (" << start_line << "->" << end_line << ")\n";
     condition->print(indent+1);
     statement->print(indent+1);
 }
 void AST::ForStatement::print(int indent) {
     pindent(indent);
-    std::cout << "for\n";
+    std::cout << "for (" << start_line << "->" << end_line << ")\n";
     from->print(indent+1);
     to->print(indent+1);
     if(step) step->print(indent+1);
@@ -111,7 +111,7 @@ void AST::ForStatement::print(int indent) {
 }
 void AST::FunctionStatement::print(int indent) {
     pindent(indent);
-    std::cout << "function " <<id<< "\n";
+    std::cout << "function " <<id<< " (" << start_line << "->" << end_line << ")\n";
     for(auto &arg : arguments) {
         pindent(indent);
         std::cout << arg << "\n";
@@ -120,18 +120,18 @@ void AST::FunctionStatement::print(int indent) {
 }
 void AST::StructStatement::print(int indent) {
     pindent(indent);
-    std::cout << "struct\n";
+    std::cout << "struct (" << start_line << "->" << end_line << ")\n";
     for(auto &s : statements)
         s->print(indent+1);
 }
 void AST::ExpressionStatement::print(int indent) {
     pindent(indent);
-    std::cout << "expr stmt\n";
+    std::cout << "expr stmt (" << start_line << "->" << end_line << ")\n";
     expression->print(indent+1);
 }
 void AST::ReturnStatement::print(int indent) {
     pindent(indent);
-    std::cout << "return\n";
+    std::cout << "return (" << start_line << "->" << end_line << ")\n";
     if(expression) expression->print(indent+1);
 }
 
@@ -143,7 +143,7 @@ void AST::Block::print(int indent) {
 }
 void AST::BlockStatement::print(int indent) {
     pindent(indent);
-    std::cout << "block stmt\n";
+    std::cout << "block stmt (" << start_line << "->" << end_line << ")\n";
     for(auto &s : statements)
         s->print(indent+1);
 }

@@ -13,7 +13,7 @@ private:
 
     struct Position {
         std::streamoff pos;
-        int lines;
+        size_t lines;
     };
     std::stack<Position> fposs;
 
@@ -21,7 +21,7 @@ protected:
 
     std::stringstream f;
     bool ended = false;
-    int lines = 0;
+    size_t lines = 0;
 
     // File position
     void fsave() {

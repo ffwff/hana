@@ -46,25 +46,20 @@ Hana::Compiler compiler;
 Hana::AST::AST *ast = nullptr;
 
 static bool opt_print_ast = false;
-static bool emit_ast_from_file(struct vm *m, std::string file) {
+static bool emit_ast(struct vm *m, std::string s, const bool load_file) {
     Hana::ScriptParser p;
-    p.loadf(file); ast = p.parse();
+    if(load_file) p.loadf(s);
+    else p.loads(s);
+    ast = p.parse();
     if(ast == nullptr) return false;
     if(opt_print_ast) ast->print();
     ast->emit(m, &compiler);
     return true;
 }
-static bool emit_ast_from_string(struct vm *m, std::string string) {
-    Hana::ScriptParser p;
-    p.loads(string); ast = p.parse();
-    if(ast == nullptr) return false;
-    if(opt_print_ast) ast->print();
-    ast->emit(m, &compiler);
-    return true;
-}
+#define emit_ast_from_file(m, s) emit_ast(m,s,true)
+#define emit_ast_from_string(m, s) emit_ast(m,s,false)
 
 int main(int argc, char **argv) {
-
     int last_optiond = 1;
     int command_optiond = -1;
     bool opt_dump_vmcode = false,

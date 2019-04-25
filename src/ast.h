@@ -26,6 +26,7 @@ enum Type {
 inline const Type type() override { return x; }
 
 struct AST {
+    size_t start_line, end_line;
     virtual ~AST() {};
     virtual const Type type() { return NONE; }
     virtual void print(int indent=0) {}
