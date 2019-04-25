@@ -1,0 +1,33 @@
+a = "a"
+
+print("Hello World")
+
+for i = 0 to 5 begin
+    print(i)
+end
+
+while i < 5 begin
+    print("?")
+end
+
+function X(abc) begin
+    function Y(abc) begin
+        print("nested")
+    end
+    print("not nested")
+end
+
+record A
+    function X(abc) begin
+
+    end
+    a = "10"
+    record B
+
+    end
+end
+
+x = function () begin
+    print("Test")
+    print("Help")
+end

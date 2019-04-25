@@ -21,7 +21,6 @@ protected:
 
     std::stringstream f;
     bool ended = false;
-    size_t lines = 0;
 
     // File position
     void fsave() {
@@ -111,6 +110,7 @@ public:
         ended = false;
     };
     void parse();
+    size_t lines = 0;
 
 // Errors
 class LexerError : public std::exception {

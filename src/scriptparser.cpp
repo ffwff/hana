@@ -13,15 +13,14 @@ static AST::AST *_wrap_line(AST::AST *ast, size_t start_line, size_t end_line) {
     ast->end_line = end_line;
     return ast;
 }
-#define WRAP_LINE(ast) _wrap_line(ast, _START_GMR, lines)
+#define WRAP_LINE(ast) _wrap_line(ast, _START_GMR, lines+1)
 static size_t _start_lines = 0;
-static AST::AST *_wrap_block(AST::AST *ast, size_t lines) {
+static AST::AST *_wrap_block(ScriptParser *p, AST::AST *ast) {
     ast->start_line = _start_lines;
-    ast->end_line = lines;
+    ast->end_line = p->lines;
     return ast;
 }
-#define WRAP_RET(ast) (_start_lines = lines+1, _wrap_block(ast, lines))
-#define WRAP_RET2(ast) (_start_lines = _START_GMR, _wrap_block(ast, lines))
+#define WRAP_RET2(ast) (_start_lines = _START_GMR, _wrap_block(this, ast))
 
 // tokeniser
 Parser::Token ScriptParser::next() {
@@ -635,12 +634,10 @@ AST::AST *ScriptParser::parse_statement() {
             const int stepN = dir == "to" ? 1 : -1;
             if(token.type == Token::Type::STRING && token.strv == "step") {
                 fpop();
-                auto ast = new AST::ForStatement(id, from, to, parse_expression(), stepN, expect_statement());
-                return WRAP_LINE(ast);
+                return WRAP_RET2(new AST::ForStatement(id, from, to, parse_expression(), stepN, expect_statement()));
             } else {
                 fload();
-                auto ast = new AST::ForStatement(id, from, to, stepN, expect_statement());
-                return WRAP_LINE(ast);
+                return WRAP_RET2(new AST::ForStatement(id, from, to, stepN, expect_statement()));
             }
 
         } else if(token.strv == "continue") {
@@ -654,8 +651,8 @@ AST::AST *ScriptParser::parse_statement() {
             nextnl();
             return WRAP_RET2(new AST::BreakStatement());
         } else if(token.strv == "begin") {
-            START_GMR
             fpop();
+            START_GMR
             nextnl();
             auto blk = new AST::BlockStatement();
             while(!f.eof()) {
@@ -663,6 +660,7 @@ AST::AST *ScriptParser::parse_statement() {
                 const auto token = next();
                 if(token.type == Token::Type::STRING && token.strv == "end") {
                     fpop();
+                    blk = (AST::BlockStatement*)WRAP_RET2(blk);
                     nextnl();
                     break;
                 } else {
@@ -672,7 +670,7 @@ AST::AST *ScriptParser::parse_statement() {
                         blk->statements.emplace_back(stmt);
                 }
             }
-            return WRAP_RET2(blk);
+            return blk;
         } else {
             goto expression_stmt;
         }
@@ -681,9 +679,9 @@ AST::AST *ScriptParser::parse_statement() {
         // expression statement
         fload();
         START_GMR
-        auto expr = parse_expression();
+        auto stmt = new AST::ExpressionStatement(parse_expression());
         nextnl();
-        return WRAP_RET2(new AST::ExpressionStatement(expr));
+        return WRAP_RET2(stmt);
     }
 }
 
