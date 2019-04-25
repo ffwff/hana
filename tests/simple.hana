@@ -8,6 +8,9 @@ end
 
 while i < 5 begin
     print("?")
+    continue
+    break
+    print("?")
 end
 
 function X(abc) begin
@@ -30,4 +33,11 @@ end
 x = function () begin
     print("Test")
     print("Help")
+end
+
+if a == 10 begin
+    print("yes")
+end
+else begin
+    print("no")
 end

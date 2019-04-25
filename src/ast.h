@@ -165,12 +165,14 @@ struct ForStatement : Statement {
 struct ContinueStatement : Statement {
     TYPE(CONTINUE_STMT)
     ContinueStatement() {}
+    void print(int indent=0) override;
     void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 struct BreakStatement : Statement {
     TYPE(BREAK_STMT)
     BreakStatement() {}
+    void print(int indent=0) override;
     void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 

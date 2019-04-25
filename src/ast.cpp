@@ -109,6 +109,14 @@ void AST::ForStatement::print(int indent) {
     }
     statement->print(indent+1);
 }
+void AST::ContinueStatement::print(int indent) {
+    pindent(indent);
+    std::cout << "continue (" << start_line << "->" << end_line << ")\n";
+}
+void AST::BreakStatement::print(int indent) {
+    pindent(indent);
+    std::cout << "break (" << start_line << "->" << end_line << ")\n";
+}
 void AST::FunctionStatement::print(int indent) {
     pindent(indent);
     std::cout << "function " <<id<< " (" << start_line << "->" << end_line << ")\n";

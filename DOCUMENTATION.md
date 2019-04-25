@@ -285,18 +285,20 @@ Record bodies only accept function, assignment and record statements.
 
 Basic types include:
 
- * `string`: string
- * `integer`: 64-bit int
- * `float`: 64-bit double precision floating point
- * `record`: records
- * `array`: array
- * `function`: function
+ * `String`: string
+ * `Int`: 64-bit int
+ * `Float`: 64-bit double precision floating point
+ * `Record`: records
+ * `Array`: array
+ * `Function`: function
 
-`integer`, `float`, `function` values are primitives, they are passed by copies
+`Int`, `Float`, `Function` values are primitives, they are passed by copies
 into (arguments) and out of (return) functions.
 
-`string`, `record` and `array` values are passed by reference. Those values are only deleted
+`String`, `Record` and `Array` values are passed by reference. Those values are only deleted
 whenever the last variable containing the value is deleted or set to another value.
+
+By convention, type names are title-cased.
 
 ## Functions
 
@@ -355,17 +357,12 @@ Methods:
 ```
 "abc".bytesize() // => 3 (number of bytes in string)
 "abc".length() // => 3 (number of characters in string)
+"".empty?() // => true (is string empty?)
 "abc".delete(1,2) // => "a" (deletes 2 characters starting from index 1)
 "abc".copy(1, 2) // => "bc" (copies 2 characters starting from index 1)
 "abc".at(1) // => "b" (character at index 1)
 "abc".index("bc") // => 1 (index of the string "bc" in "abc")
 "abc".insert(1, "bc") // => "abcbc" (inserts "bc" to "abc" in index 1)
-```
-
-Several additional methods are available if compiled with `init.hana`:
-
-```
-"".empty?() // => true (is string empty?)
 ```
 
 ## Numbers
@@ -376,17 +373,6 @@ Methods:
 
 ```
 1.1.round() // => 1 (float only, rounds number to int)
-```
-
-Several additional methods are available if compiled with `init.hana`:
-
-```
-(1).even? // => false (is it even?)
-(1).odd? // => true (is it odd?)
-(-1).positive? // => false (is it positive?)
-(-1).negative? // => true (is it negative?)
-(-1).abs // => 1 (gets the absolute of a number)
-(1).round // => 1 (returns itself if it's an integer)
 ```
 
 ## Records
@@ -441,9 +427,9 @@ To delete a record's key, simply set the key to `nil`.
 Methods:
 
 ```
-a = record() // => creates a new record
+a = Record() // => creates a new record
 a["key"] = "value" // => sets a key
-record::keys(a) // => ["key"] (gets all keys in record)
+Record::keys(a) // => ["key"] (gets all keys in record)
 ```
 
 ## Arrays
@@ -461,6 +447,7 @@ Methods:
 
 ```
 [1,2,3].length() // => 3 (number of elements in array)
+[].empty?() // => true (is array empty?)
 [1,2,3].delete(1,2) // => [1] (deletes 2 elements starting from index 1)
 [1,2,3].copy(1, 2) // => [2,3] (copies 2 elements starting from index 1)
 [1,2,3].at(1) // => 2 (element at index 1)
@@ -476,12 +463,6 @@ a.reduce(f(prev, curr) = prev+curr, 0) // => 21
 // then returns a single output
 ```
 
-Several additional methods are available if compiled with `init.hana`:
-
-```
-[].empty?() // => true (is array empty?)
-```
-
 # Standard library
 
 Hana's standard library is called `hanayo`! The library is imported by default upon running.
@@ -490,17 +471,15 @@ Hana's standard library is called `hanayo`! The library is imported by default u
 
 ```
 nil // => (nil)
-```
-
-If hana is compiled with the bootstrap bytecode (generated from `init.hana`), several helper constants
-will be available:
-
-```
 true // => 1
 false // => 0
 inf // => infinity
 nan // => not a number
 ```
+
+## Types
+
+(see [#Types](#types))
 
 ## IO
 
@@ -509,6 +488,61 @@ print(v) // => prints value "v" onto stdout
 v = input() // => gets a string from stdin
 ```
 
-## Types
+### Files
 
-(see [#Types](#types))
+```
+f = File("/tmp/a", "r") // => opens the file /tmp/a with the read flag
+f.read(10) // => read first 10 bytes of file as string
+f.readall() // => read all of file as string
+f.readline() // => read a line as string
+
+f = File("/tmp/a", "w") // => opens the file /tmp/a with the writer flag
+f.write("Hello World\n") // => overwrites the file with the string "Hello World\n"
+
+f.seek(offset, whence)
+f.tell()
+f.size()
+
+f.eof?()
+f.error?()
+```
+
+## Modules
+
+(see [#Imports](#imports))
+
+# Optional libraries
+
+In addition to the standard library, Hana also comes included with some optional libraries that
+must be imported.
+
+## JSON
+
+```
+JSON::parse('{"a": true}') // => record of a key = 1
+JSON::stringify(record
+    a = JSON::true
+end) // => {"a": true}
+```
+
+# Imports
+
+To import a module or a file, Hana must be compiled with the `INCLUDE_BYTECODE` flag.
+You can then invoke the `import` function with a string, which will lookup the specified module,
+and execute it in the global scope:
+
+```
+import("module")
+```
+
+If the module name starts with a `./`, it will lookup and import the file from the script's local
+directory.
+
+If the module name starts with a `/`, it will lookup and import the file from the root filesystem
+directory.
+
+Otherwise, it will lookup and import the file from the `HANA_PATH` environment variable.
+
+The import function returns 1 on once the module has been succesfully evaluated, otherwise it will
+return 0. Modules can only be imported once, subsequent calls to `import` with the same module
+parameter will return 0.

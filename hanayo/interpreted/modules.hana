@@ -7,6 +7,9 @@ function import(x) begin
         dirs.pop()
         x = realpath("/" + dirs.join("/") + "/" + x.delete(0, 2))
     end
+    else if x.startswith?("/") begin
+        x = realpath(x)
+    end
     else begin
         // resolve builtin
         env = Env::get?("HANA_PATH")
