@@ -25,7 +25,7 @@ static AST::AST *_wrap_block(ScriptParser *p, AST::AST *ast) {
 #define S1(x) #x
 #define S2(x) S1(x)
 #define fsave() (this->fsave_(std::string(__FUNCTION__) + ":" + std::string(S2(__LINE__))))
-#define fpop() (LOG("pop from ", __FUNCTION__, ":",__LINE__), this->fpop_())
+#define fpop() this->fpop_()
 #else
 #define dump_fposs()
 #endif
@@ -256,7 +256,6 @@ AST::AST *ScriptParser::parse_call() {
         fload();
         return expr;
     } else {
-        LOG("load (call)");
         fload();
         return factor;
     }
@@ -576,10 +575,9 @@ AST::AST *ScriptParser::parse_statement() {
         fpop();
         return nullptr;
     } else if(token.type == Token::Type::STRING) {
-        if(token.strv == "end") {
+        if(token.strv == "end")
             throw ParserError("end is not in block statement");
-            return nullptr;
-        } else if(token.strv == "return") {
+        else if(token.strv == "return") {
             fpop();
             START_GMR
             fsave();
@@ -667,6 +665,52 @@ AST::AST *ScriptParser::parse_statement() {
             START_GMR
             nextnl();
             return WRAP_RET2(new AST::BreakStatement());
+        } else if(token.strv == "try") {
+            fpop();
+            START_GMR
+            std::vector<std::unique_ptr<AST::AST>> statements;
+            std::vector<std::unique_ptr<AST::CaseStatement>> cases;
+            AST::CaseStatement *case_stmt = nullptr;
+            while(!f.eof()) {
+                fsave();
+                auto token = next();
+                if(token.strv == "case") {
+                    LOG("case");
+                    std::string etype, id;
+                    fpop();
+                    etype = nexts();
+                    auto token = next();
+                    if(token.strv == "as") {
+                        id = nexts();
+                        nextnl();
+                    } else if(token.type != Token::Type::NEWLINE) {
+                        throw ParserError("Expected newline or as [id]");
+                    }
+                    case_stmt = new AST::CaseStatement(etype, id);
+                    case_stmt->start_line = lines;
+                    cases.emplace_back(case_stmt);
+                    LOG(case_stmt);
+                } else {
+                    if(token.strv == "end") {
+                        fpop();
+                        case_stmt->end_line = lines+1;
+                        nextnl();
+                        break;
+                    } else if(case_stmt == nullptr) { // still in "try"
+                        fload();
+                        auto stmt = parse_statement();
+                        if(stmt) statements.emplace_back(stmt);
+                    } else { // in case statement's block
+                        fload();
+                        auto stmt = parse_statement();
+                        if(stmt) case_stmt->statements.emplace_back(stmt);
+                    }
+                }
+            }
+            auto trystmt = new AST::TryStatement();
+            trystmt->statements = std::move(statements);
+            trystmt->cases = std::move(cases);
+            return WRAP_RET2(trystmt);
         } else if(token.strv == "begin") {
             fpop();
             START_GMR
@@ -713,8 +757,6 @@ AST::AST *ScriptParser::parse_block() {
         }
     }
     if(block->statements.empty()) return nullptr;
-    LOG("stack size:",fposs.size());
-    dump_fposs();
     return block;
 }
 

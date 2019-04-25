@@ -18,7 +18,7 @@ enum Type {
     FUNCTION_STMT, STRUCT_STMT, EXPR_STMT, RETURN_STMT,
     FOR_STMT,
     BLOCK,
-    CONTINUE_STMT, BREAK_STMT
+    CONTINUE_STMT, BREAK_STMT, TRY_STMT, CASE_STMT
 
 };
 
@@ -197,14 +197,6 @@ struct StructStatement : Statement {
     void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
-struct ExpressionStatement : Statement {
-    TYPE(EXPR_STMT)
-    std::unique_ptr<AST> expression;
-    ExpressionStatement(AST *expression) : expression(expression) {}
-    void print(int indent=0) override;
-    void emit(struct vm *vm, Hana::Compiler *compiler) override;
-};
-
 struct ReturnStatement : Statement {
     TYPE(RETURN_STMT)
     std::unique_ptr<AST> expression;
@@ -214,7 +206,31 @@ struct ReturnStatement : Statement {
     void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
-// Block
+struct ExpressionStatement : Statement {
+    TYPE(EXPR_STMT)
+    std::unique_ptr<AST> expression;
+    ExpressionStatement(AST *expression) : expression(expression) {}
+    void print(int indent=0) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
+};
+
+struct CaseStatement : Statement {
+    TYPE(CASE_STMT)
+    std::string etype, id;
+    std::vector<std::unique_ptr<AST>> statements;
+    CaseStatement(std::string etype, std::string id) : etype(etype), id(id) {}
+    void print(int indent=0) override;
+};
+
+struct TryStatement : Statement {
+    TYPE(TRY_STMT)
+    std::vector<std::unique_ptr<AST>> statements;
+    std::vector<std::unique_ptr<CaseStatement>> cases;
+    TryStatement() {}
+    void print(int indent=0) override;
+};
+
+// Blocks
 struct Block : AST {
     TYPE(BLOCK)
     std::vector<std::unique_ptr<AST>> statements;

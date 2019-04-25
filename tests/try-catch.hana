@@ -1,0 +1,6 @@
+try
+    print("Help")
+case A as A
+    print("Help")
+    print("No")
+end

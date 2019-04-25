@@ -142,6 +142,20 @@ void AST::ReturnStatement::print(int indent) {
     std::cout << "return (" << start_line << "->" << end_line << ")\n";
     if(expression) expression->print(indent+1);
 }
+void AST::CaseStatement::print(int indent) {
+    pindent(indent);
+    std::cout << "case " << etype << "," << id <<"(" << start_line << "->" << end_line << ")\n";
+    for(auto &s : statements)
+        s->print(indent+1);
+}
+void AST::TryStatement::print(int indent) {
+    pindent(indent);
+    std::cout << "try (" << start_line << "->" << end_line << ")\n";
+    for(auto &s : statements)
+        s->print(indent+1);
+    for(auto &s : cases)
+        s->print(indent+1);
+}
 
 void AST::Block::print(int indent) {
     pindent(indent);
