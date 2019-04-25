@@ -101,7 +101,7 @@ protected:
     }
 
 public:
-    void loadf(const char *file) {
+    void loadf(std::string &file) {
         std::ifstream f(file);
         this->f << f.rdbuf();
     };

@@ -14,12 +14,6 @@
 INCBIN(InitBytecode, "build/init.bin");
 #endif
 
-#ifdef CLEANUP
-#define AST_PTR(x) std::unique_ptr<Hana::AST::AST>(x)
-#else
-#define AST_PTR(x) x
-#endif
-
 static void help(char *program) {
 printf(
 "usage: %s [-c cmd | file | -]\n\
@@ -48,12 +42,32 @@ the License, or (at your option) any later version.\n\
 ");
 }
 
+Hana::Compiler compiler;
+Hana::AST::AST *ast = nullptr;
+
+static bool opt_print_ast = false;
+static bool emit_ast_from_file(struct vm *m, std::string file) {
+    Hana::ScriptParser p;
+    p.loadf(file); ast = p.parse();
+    if(ast == nullptr) return false;
+    if(opt_print_ast) ast->print();
+    ast->emit(m, &compiler);
+    return true;
+}
+static bool emit_ast_from_string(struct vm *m, std::string string) {
+    Hana::ScriptParser p;
+    p.loads(string); ast = p.parse();
+    if(ast == nullptr) return false;
+    if(opt_print_ast) ast->print();
+    ast->emit(m, &compiler);
+    return true;
+}
+
 int main(int argc, char **argv) {
 
     int last_optiond = 1;
     int command_optiond = -1;
     bool opt_dump_vmcode = false,
-         opt_print_ast = false,
          opt_no_run = false,
          opt_bytecode = false;
     while(1) {
@@ -101,8 +115,6 @@ int main(int argc, char **argv) {
         last_optiond = optind;
     }
 
-    Hana::Compiler compiler;
-
     // dump
     if(opt_dump_vmcode) {
         if((argc-last_optiond) != 1) {
@@ -110,11 +122,8 @@ int main(int argc, char **argv) {
             return 1;
         }
         struct vm m; vm_init(&m);
-        Hana::ScriptParser p;
-        p.loadf(argv[last_optiond]);
-        auto ast = AST_PTR(p.parse());
-        if(ast == nullptr) return 1;
-        ast->emit(&m, &compiler);
+        if(!emit_ast_from_file(&m, argv[last_optiond]))
+            return 1;
         fwrite(m.code.data, 1, m.code.length, stdout);
         vm_free(&m);
         return 0;
@@ -132,13 +141,8 @@ int main(int argc, char **argv) {
 
     // command
     if(command_optiond != -1) {
-        Hana::ScriptParser p;
-        std::string s(argv[command_optiond-1]);
-        p.loads(s);
-        auto ast = AST_PTR(p.parse());
-        if(ast == nullptr) return 1;
-        if(opt_print_ast) ast->print();
-        ast->emit(&m, &compiler);
+        if(!emit_ast_from_string(&m, argv[last_optiond-1]))
+            goto cleanup;
         array_push(m.code, OP_HALT);
         vm_execute(&m);
         goto cleanup;
@@ -192,12 +196,7 @@ int main(int argc, char **argv) {
             }
             #endif
             if(s.empty()) continue;
-            Hana::ScriptParser p;
-            p.loads(s);
-            auto ast = AST_PTR(p.parse());
-            if(ast == nullptr) continue;
-            if(opt_print_ast) ast->print();
-            ast->emit(&m, &compiler);
+            if(!emit_ast_from_string(&m, s)) goto cleanup;
             array_push(m.code, OP_HALT);
             vm_execute(&m);
             m.ip = m.code.length;
@@ -214,14 +213,7 @@ int main(int argc, char **argv) {
         vm_execute(&m);
         goto cleanup;
     } else {
-        Hana::ScriptParser p;
-        p.loadf(argv[last_optiond]);
-        auto ast = AST_PTR(p.parse());
-        if(ast == nullptr) return 1;
-
-        // succesfully parsed
-        if(opt_print_ast) ast->print();
-        ast->emit(&m, &compiler);
+        if(!emit_ast_from_file(&m, argv[last_optiond])) goto cleanup;
         if(opt_no_run) goto cleanup;
 
         // set up __file__
@@ -243,6 +235,7 @@ int main(int argc, char **argv) {
 cleanup:
 #ifdef CLEANUP
     vm_free(&m);
+    delete ast;
 #endif
     return 0;
 }

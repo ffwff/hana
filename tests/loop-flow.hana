@@ -1,0 +1,20 @@
+for i=0 to 8 begin
+    if i == 4 continue
+    print(i,"\n")
+end
+
+for i=0 to 8 begin
+    if i == 4 break
+    print(i,"\n")
+end
+
+i = 0
+while i < 8 begin
+    if i == 2 begin
+        i += 1
+        continue
+    end
+    if i == 6 break
+    print(i,"\n")
+    i += 1
+end
