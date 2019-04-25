@@ -21,6 +21,14 @@ static AST::AST *_wrap_block(ScriptParser *p, AST::AST *ast) {
     return ast;
 }
 #define WRAP_RET2(ast) (_start_lines = _START_GMR, _wrap_block(this, ast))
+#ifndef RELEASE
+#define S1(x) #x
+#define S2(x) S1(x)
+#define fsave() (this->fsave_(std::string(__FUNCTION__) + ":" + std::string(S2(__LINE__))))
+#define fpop() (LOG("pop from ", __FUNCTION__, ":",__LINE__), this->fpop_())
+#else
+#define dump_fposs()
+#endif
 
 // tokeniser
 Parser::Token ScriptParser::next() {
@@ -116,6 +124,9 @@ Parser::Token ScriptParser::next() {
         else twoch("<=")
         else twoch("+=")
         else twoch("-=")
+        else twoch("*=")
+        else twoch("/=")
+        else twoch("%=")
         else twoch("::")
         else {
             f.seekg(prev);
@@ -245,6 +256,7 @@ AST::AST *ScriptParser::parse_call() {
         fload();
         return expr;
     } else {
+        LOG("load (call)");
         fload();
         return factor;
     }
@@ -432,14 +444,13 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
     START_GMR
     std::string id;
     if(!is_expr) {
-        fsave();
         const auto token = next();
         if(token.type != Token::Type::STRING) {
-            return nullptr;
+            throw ParserError("Expected record identifier");
         }
-        fpop();
         id = token.strv;
     }
+    LOG("is expr");
     auto stmt = new AST::StructStatement(id);
     stmt->is_expr = is_expr;
     fsave();
@@ -509,6 +520,7 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
             throw ParserError("expected function id");
         }
     }
+
     stmt->arguments = parse_function_arguments();
     AST::AST *fstmt = nullptr;
     if(type == EXPR) {
@@ -547,7 +559,9 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
     else
         throw ParserError("expected function statement");
     if(type == EXPR || type == RECORD)
-        stmt->record_fn = true;
+        stmt->record_fn = true;/*
+    LOG(next().strv);
+    assert(0);*/
     return WRAP_RET2(stmt);
 }
 
@@ -555,6 +569,7 @@ AST::AST *ScriptParser::parse_statement() {
     fsave();
     const auto token = next();
     if(token.type == Token::Type::NONE) {
+        fpop();
         ended = true;
         return nullptr;
     } else if(token.type == Token::Type::NEWLINE) {
@@ -582,10 +597,12 @@ AST::AST *ScriptParser::parse_statement() {
             auto ast = parse_function(STATEMENT);
             return WRAP_RET2(ast);
         } else if(token.strv == "record") {
-            //fpop();
+            fpop();
             START_GMR
-            auto record = parse_record();
+            auto record = parse_record(false);
+            LOG("end of record stmt: ", record);
             if(record == nullptr) {
+                LOG("not record");
                 fload();
                 goto expression_stmt;
             } else
@@ -696,6 +713,8 @@ AST::AST *ScriptParser::parse_block() {
         }
     }
     if(block->statements.empty()) return nullptr;
+    LOG("stack size:",fposs.size());
+    dump_fposs();
     return block;
 }
 
@@ -703,9 +722,9 @@ AST::AST *ScriptParser::parse() {
     try {
         return parse_block();
     } catch(ParserError &e) {
-        std::cerr << "Parser error: " << e.what() << " at line " << lines << "\n";
+        std::cerr << "Parser error: " << e.what() << " at line " << lines+1 << "\n";
     } catch(LexerError &e) {
-        std::cerr << "Lexer error: " << e.what() << " at line " << lines << "\n";
+        std::cerr << "Lexer error: " << e.what() << " at line " << lines+1 << "\n";
     }
     return nullptr;
 }

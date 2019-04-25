@@ -14,21 +14,40 @@ private:
     struct Position {
         std::streamoff pos;
         size_t lines;
+#ifndef RELEASE
+        std::string caller;
+#endif
     };
-    std::stack<Position> fposs;
 
 protected:
 
     std::stringstream f;
+    std::stack<Position> fposs;
     bool ended = false;
 
     // File position
+#ifndef RELEASE
+    void fsave_(std::string caller) {
+        fposs.push({
+            .pos = f.tellg(),
+            .lines = lines,
+            .caller = caller
+        });
+    }
+    void fpop_() {
+        fposs.pop();
+    }
+#else
     void fsave() {
         fposs.push({
             .pos = f.tellg(),
             .lines = lines
         });
     }
+    void fpop() {
+        fposs.pop();
+    }
+#endif
     void floadn() {
         const auto p = fposs.top();
         f.clear();
@@ -40,9 +59,6 @@ protected:
         f.clear();
         f.seekg(p.pos);
         lines = p.lines;
-        fposs.pop();
-    }
-    void fpop() {
         fposs.pop();
     }
     size_t fpsize() const {

@@ -31,7 +31,7 @@ static void _LOG(First && first, Rest && ...rest)
 #ifdef NOLOG
 #define LOG(...)
 #else
-#define LOG(...) _LOG(__AT, __VA_ARGS__)
+#define LOG(...) _LOG(__AT, __FUNCTION__," :  ", __VA_ARGS__)
 #endif
 #else
 //#define FATAL(...) _FATAL(__VA_ARGS__)
