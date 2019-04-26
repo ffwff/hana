@@ -144,7 +144,8 @@ void AST::ReturnStatement::print(int indent) {
 }
 void AST::CaseStatement::print(int indent) {
     pindent(indent);
-    std::cout << "case " << etype << "," << id <<"(" << start_line << "->" << end_line << ")\n";
+    std::cout << "case "<< id <<"(" << start_line << "->" << end_line << ")\n";
+    etype->print(indent+1);
     for(auto &s : statements)
         s->print(indent+1);
 }
@@ -611,6 +612,10 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     }
 }
 void AST::StructStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    if(statements.empty()) {
+        array_push(vm->code, OP_DICT_NEW);
+        return;
+    }
     array_push(vm->code, OP_PUSH_NIL);
     for(auto &s : statements) {
         if(s->type() == EXPR_STMT) {
@@ -646,6 +651,30 @@ void AST::ReturnStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     else
         expression->emit(vm, compiler);
     array_push(vm->code, OP_RET);
+}
+void AST::TryStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    array_push(vm->code, OP_PUSH_NIL);
+    // case statements is generated as a function
+    for(auto &case_stmt : cases) {
+        // function will take in 1 arg if id is set
+        array_push(vm->code, OP_DEF_FUNCTION_PUSH);
+        vm_code_push16(vm, !case_stmt->id.empty());
+        size_t body_start = vm->code.length;
+        vm_code_push32(vm, FILLER32);
+        // body
+        for(auto &s : case_stmt->statements)
+            s->emit(vm, compiler);
+        // end
+        fill_hole(vm, body_start, vm->code.length);
+        // exception type
+        case_stmt->etype->emit(vm, compiler);
+    }
+    array_push(vm->code, OP_TRY);
+    size_t body_start = vm->code.length;
+    vm_code_push32(vm, FILLER32);
+    for(auto &s : statements)
+        s->emit(vm, compiler);
+    fill_hole(vm, body_start, vm->code.length);
 }
 
 void AST::Block::emit(struct vm *vm, Hana::Compiler *compiler) {

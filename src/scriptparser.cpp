@@ -679,9 +679,9 @@ AST::AST *ScriptParser::parse_statement() {
                 auto token = next();
                 if(token.strv == "case") {
                     LOG("case");
-                    std::string etype, id;
+                    std::string id;
                     fpop();
-                    etype = nexts();
+                    auto etype = parse_expression();
                     auto token = next();
                     if(token.strv == "as") {
                         id = nexts();

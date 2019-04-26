@@ -5,6 +5,7 @@
 #include "string_.h"
 #include "dict.h"
 #include "array_obj.h"
+#include "exception_frame.h"
 
 #define assert(...)
 #ifdef NOLOG
@@ -19,6 +20,7 @@
 void vm_init(struct vm *vm) {
     hmap_init(&vm->globalenv);
     vm->localenv = NULL;
+    vm->eframe = NULL;
     vm->code = (a_uint8)array_init(uint8_t);
     vm->stack = (a_value){
         .data = calloc(8, sizeof(struct value)),
@@ -83,6 +85,8 @@ void vm_execute(struct vm *vm) {
         X(OP_DICT_NEW), X(OP_MEMBER_GET), X(OP_MEMBER_GET_NO_POP),
         X(OP_MEMBER_SET), X(OP_DICT_LOAD), X(OP_ARRAY_LOAD),
         X(OP_INDEX_GET), X(OP_INDEX_SET),
+        // exceptions
+        X(OP_TRY)
     };
 
 #undef X
@@ -565,7 +569,9 @@ void vm_execute(struct vm *vm) {
         struct value key = {0};
         while((key = array_top(vm->stack)).type != TYPE_NIL) {
             assert(key.type == TYPE_STR);
-            array_pop(vm->stack); // pop val
+            // key
+            array_pop(vm->stack);
+            // val
             struct value val = array_top(vm->stack);
             array_pop(vm->stack);
             dict_set(dval.as.dict, string_data(key.as.str), &val);
@@ -697,6 +703,38 @@ void vm_execute(struct vm *vm) {
     }
 
     // exceptions
+    doop(OP_TRY): {
+        // stack: [nil][function][error type]
+        LOG("try\n");
+        vm->ip++;
+
+        const uint32_t end_ip =
+            vm->code.data[vm->ip+0] << 12 |
+            vm->code.data[vm->ip+1] << 8  |
+            vm->code.data[vm->ip+2] << 4  |
+            vm->code.data[vm->ip+3];
+        vm->ip += sizeof(end_ip);
+
+        struct exception_frame *parent = vm->eframe;
+        vm->eframe = malloc(sizeof(struct exception_frame));
+        exception_frame_init(vm->eframe, parent, vm->stack.length, end_ip);
+
+        struct value error = {0};
+        while((error = array_top(vm->stack)).type != TYPE_NIL) {
+            // error type
+            array_pop(vm->stack);
+            // val
+            struct value fn = array_top(vm->stack);
+            array_pop(vm->stack);
+            struct exception_frame_data data = {
+                .etype = error,
+                .fn = fn
+            };
+            array_push(vm->eframe->handlers, data);
+        }
+        array_pop(vm->stack); // pop nil
+        dispatch();
+    }
 
     }
 }
@@ -746,10 +784,9 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
         value_copy(&array_top(vm->stack), &args.data[i]);
     }
     vm->ip = ip;
-    // environment (already set up by body)
     // call it
     vm_execute(vm);
-    // restore env
+    // restore ip
     vm->ip = last;
     return &array_top(vm->stack);
 }

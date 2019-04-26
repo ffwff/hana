@@ -216,9 +216,10 @@ struct ExpressionStatement : Statement {
 
 struct CaseStatement : Statement {
     TYPE(CASE_STMT)
-    std::string etype, id;
+    std::unique_ptr<AST> etype;
+    std::string id;
     std::vector<std::unique_ptr<AST>> statements;
-    CaseStatement(std::string etype, std::string id) : etype(etype), id(id) {}
+    CaseStatement(AST *etype, std::string id) : etype(etype), id(id) {}
     void print(int indent=0) override;
 };
 
@@ -228,6 +229,7 @@ struct TryStatement : Statement {
     std::vector<std::unique_ptr<CaseStatement>> cases;
     TryStatement() {}
     void print(int indent=0) override;
+    void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };
 
 // Blocks

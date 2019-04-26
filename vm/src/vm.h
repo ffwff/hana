@@ -40,11 +40,13 @@ enum vm_opcode {
 
 typedef array(uint8_t) a_uint8;
 typedef array(struct value) a_value;
+struct exception_frame;
 
 struct vm {
     uint32_t ip;
     struct env *localenv;
     struct hmap globalenv;
+    struct exception_frame *eframe;
     a_uint8 code;
     a_value stack;
     struct dict *dstr, *dint, *dfloat, *darray;
