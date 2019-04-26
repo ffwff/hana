@@ -212,7 +212,10 @@ AST::AST *ScriptParser::parse_call() {
                     goto next;
                 } else {
                     fload();
-                    static_cast<AST::CallExpression*>(expr)->arguments.emplace_back(parse_expression());
+                    auto callexpr = static_cast<AST::CallExpression*>(expr);
+                    callexpr->arguments.emplace_back(parse_expression());
+                    if(callexpr->arguments.size() > 65535)
+                        throw ParserError("Only 65535 arguments are allowed");
                 }
 
                 while(!f.eof()) {

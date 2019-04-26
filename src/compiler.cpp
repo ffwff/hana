@@ -1,15 +1,17 @@
 #include "compiler.h"
 #include "error.h"
 
+// scoping
 void Hana::Compiler::set_local(const std::string &id) {
     locals.emplace_back((Local){
         .id = id,
         .scope = nscope,
         .slot = locals.size()
     });
+    assert(locals.size() < 65535);
     slotsize++;
 }
-Hana::Compiler::Local *Hana::Compiler::get_local(const std::string &id) {
+const Hana::Compiler::Local *Hana::Compiler::get_local(const std::string &id) const {
     for(auto it = locals.rbegin(); it != locals.rend(); it++) {
         if((*it).id == id) {
             return &*it;
@@ -17,9 +19,7 @@ Hana::Compiler::Local *Hana::Compiler::get_local(const std::string &id) {
     }
     return nullptr;
 }
-
 void Hana::Compiler::scope() {
-    LOG("scope");
     nscope++;
 }
 void Hana::Compiler::unscope() {
@@ -30,7 +30,8 @@ void Hana::Compiler::unscope() {
     }
     nscope--;
 }
-
-size_t Hana::Compiler::nslots() {
+size_t Hana::Compiler::nslots() const {
     return locals.size();
 }
+
+// exceptions

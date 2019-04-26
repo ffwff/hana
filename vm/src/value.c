@@ -27,10 +27,11 @@ void value_native(struct value *val, value_fn fn) {
     val->type = TYPE_NATIVE_FN;
     val->as.fn = fn;
 }
-void value_function(struct value *val, uint32_t ip, int nargs) {
+void value_function(struct value *val, uint32_t ip, uint16_t nargs) {
     val->type = TYPE_FN;
     val->as.ifn.ip = ip;
     val->as.ifn.nargs = nargs;
+    val->as.ifn.reserved = 0;
 }
 void value_dict(struct value *val) {
     val->type = TYPE_DICT;

@@ -10,9 +10,9 @@ struct hana_ast *hana_parse(const char *str) {
     return (hana_ast*)p.parse();
 }
 
+extern Hana::Compiler compiler;
 void hana_ast_emit(struct hana_ast *ast, struct vm *vm) {
-    Hana::Compiler c;
-    static_cast<Hana::AST::AST *>((void*)ast)->emit(vm, &c);
+    static_cast<Hana::AST::AST *>((void*)ast)->emit(vm, &compiler);
 }
 
 void hana_free_ast(struct hana_ast *ast) {

@@ -182,11 +182,11 @@ static void emit_set_var(struct vm *vm, Hana::Compiler *compiler, std::string s)
     } else {
         array_push(vm->code, OP_SET_LOCAL);
         auto local = compiler->get_local(s);
-        if(local) vm_code_push32(vm, local->slot);
+        if(local) vm_code_push16(vm, local->slot);
         else {
             compiler->set_local(s);
             local = compiler->get_local(s);
-            vm_code_push32(vm, local->slot);
+            vm_code_push16(vm, local->slot);
         }
     }
 }
@@ -209,7 +209,7 @@ static void emit_get_var(struct vm *vm, Hana::Compiler *compiler, std::string s)
             vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
         } else {
             array_push(vm->code, OP_GET_LOCAL);
-            vm_code_push32(vm, local->slot);
+            vm_code_push16(vm, local->slot);
         }
     }
 }
@@ -310,9 +310,9 @@ void AST::CallExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_CALL);
     if( callee->type() == MEMBER_EXPR &&
         !static_cast<MemberExpression*>(callee.get())->is_namespace )
-        array_push(vm->code, arguments.size()+1);
+        vm_code_push16(vm, arguments.size()+1);
     else
-        array_push(vm->code, arguments.size());
+        vm_code_push16(vm, arguments.size());
 }
 void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
     if(op == SET || op == ADDS || op == SUBS || op == MULS || op == DIVS) { // assignment
@@ -348,15 +348,17 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
         } else if(left->type() == CALL_EXPR) {
             auto expr = static_cast<CallExpression*>(left.get());
             array_push(vm->code, OP_DEF_FUNCTION_PUSH);
-            assert(expr->callee->type() == IDENTIFIER);
+            //assert(expr->callee->type() == IDENTIFIER);
+            vm_code_push16(vm, (uint16_t)(expr->arguments.size()));
+            LOG((uint16_t)(expr->arguments.size()));
+
             const auto id = static_cast<Identifier*>(expr->callee.get())->id;
-            if(compiler->nscope > 0 && id[0] != '^') {
+            if(compiler->nscope > 0 && id[0] != '^')
                 compiler->set_local(id);
-            }
-            vm_code_pushstr(vm, id.data());
+
             size_t length = vm->code.length;
             vm_code_push32(vm, FILLER32);
-            array_push(vm->code, (uint8_t)(expr->arguments.size()));
+
             //body
             size_t body_start = vm->code.length;
             compiler->scope();
@@ -411,6 +413,7 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             array_push(vm->code, OP_RET); // pops env for us
             //fill in
             fill_hole(vm, length, vm->code.length);
+            LOG("len: ", vm->code.length);
             emit_set_var(vm, compiler, id);
         }
     }
@@ -580,10 +583,9 @@ void AST::BreakStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
 }
 void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_DEF_FUNCTION_PUSH);
-    vm_code_pushstr(vm, id.data());
+    vm_code_push16(vm, arguments.size());
     size_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
-    array_push(vm->code, (uint8_t)arguments.size());
     // scope
     compiler->scope();
     array_push(vm->code, OP_ENV_NEW);

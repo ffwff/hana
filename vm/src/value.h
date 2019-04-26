@@ -19,7 +19,8 @@ struct value {
         value_fn fn;
         struct {
             uint32_t ip;
-            uint32_t nargs;
+            uint16_t nargs;
+            uint16_t reserved;
         } ifn;
         struct dict *dict;
         struct array_obj *array;
@@ -39,7 +40,7 @@ void value_float(struct value*, double);
 void value_str(struct value*, const char*);
 void value_strmov(struct value*, struct string_header*);
 void value_native(struct value*, value_fn);
-void value_function(struct value*, uint32_t ip, int nargs);
+void value_function(struct value*, uint32_t ip, uint16_t nargs);
 void value_dict(struct value*);
 void value_dict_copy(struct value*, struct dict*);
 void value_array(struct value*);
