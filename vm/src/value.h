@@ -69,6 +69,7 @@ void value_eq(struct value *result, const struct value *left, const struct value
 void value_neq(struct value *result, const struct value *left, const struct value *right);
 
 int value_is_true(const struct value *);
+struct dict *value_get_prototype(struct vm *vm, struct value *val);
 
 #ifdef __cplusplus
 }

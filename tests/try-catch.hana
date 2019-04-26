@@ -1,6 +1,21 @@
-try
-    print("Help")
-case A as A
-    print("Help")
-    print("No")
+record Error
+    function constructor(self) begin
+        return self
+    end
 end
+
+function umm() begin
+    raise Error()
+end
+
+function B() begin
+    try
+        raise 1
+        1+umm()
+    case Int
+        print("test")
+    end
+    return 2
+end
+
+1 + B()

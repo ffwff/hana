@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "string_.h"
 #include "value.h"
+#include "vm.h"
 #include "dict.h"
 #include "array_obj.h"
 
@@ -265,4 +266,19 @@ int value_is_true(const struct value *val) {
     case TYPE_STR: return string_len(val->as.str) > 0;
     default: return 0;
     }
+}
+
+struct dict *value_get_prototype(struct vm *vm, struct value *val) {
+    if(val->type == TYPE_STR) {
+        return vm->dstr;
+    } else if(val->type == TYPE_INT) {
+        return vm->dint;
+    } else if(val->type == TYPE_FLOAT) {
+        return vm->dfloat;
+    } else if(val->type == TYPE_ARRAY) {
+        return vm->darray;
+    } else if(val->type == TYPE_DICT) {
+        return val->as.dict->prototypev;
+    }
+    return NULL;
 }

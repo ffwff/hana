@@ -157,6 +157,11 @@ void AST::TryStatement::print(int indent) {
     for(auto &s : cases)
         s->print(indent+1);
 }
+void AST::RaiseStatement::print(int indent) {
+    pindent(indent);
+    std::cout << "return (" << start_line << "->" << end_line << ")\n";
+    if(expression) expression->print(indent+1);
+}
 
 void AST::Block::print(int indent) {
     pindent(indent);
@@ -654,6 +659,7 @@ void AST::ReturnStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
 }
 void AST::TryStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_PUSH_NIL);
+    std::vector<size_t> cases_to_fill;
     // case statements is generated as a function
     for(auto &case_stmt : cases) {
         // function will take in 1 arg if id is set
@@ -664,17 +670,27 @@ void AST::TryStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
         // body
         for(auto &s : case_stmt->statements)
             s->emit(vm, compiler);
+        array_push(vm->code, OP_EXFRAME_RET);
+        size_t body_end = vm->code.length;
+        vm_code_push32(vm, FILLER32);
+        cases_to_fill.push_back(body_end);
         // end
         fill_hole(vm, body_start, vm->code.length);
         // exception type
         case_stmt->etype->emit(vm, compiler);
     }
     array_push(vm->code, OP_TRY);
-    size_t body_start = vm->code.length;
-    vm_code_push32(vm, FILLER32);
     for(auto &s : statements)
         s->emit(vm, compiler);
-    fill_hole(vm, body_start, vm->code.length);
+    for(auto hole : cases_to_fill)
+        fill_hole(vm, hole, vm->code.length);
+}
+void AST::RaiseStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    if(expression == nullptr)
+        array_push(vm->code, OP_PUSH_NIL);
+    else
+        expression->emit(vm, compiler);
+    array_push(vm->code, OP_RAISE);
 }
 
 void AST::Block::emit(struct vm *vm, Hana::Compiler *compiler) {

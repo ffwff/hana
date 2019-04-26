@@ -710,10 +710,24 @@ AST::AST *ScriptParser::parse_statement() {
                     }
                 }
             }
+            if(cases.empty())
+                throw new ParserError("Expected try block to have case statement");
             auto trystmt = new AST::TryStatement();
             trystmt->statements = std::move(statements);
             trystmt->cases = std::move(cases);
             return WRAP_RET2(trystmt);
+        } else if(token.strv == "raise") {
+            fpop();
+            START_GMR
+            fsave();
+            const auto token = next();
+            if(token.type == Token::Type::NEWLINE) {
+                fpop();
+                return WRAP_RET2(new AST::RaiseStatement());
+            } else {
+                fload();
+                return WRAP_RET2(new AST::RaiseStatement(parse_expression()));
+            }
         } else if(token.strv == "begin") {
             fpop();
             START_GMR

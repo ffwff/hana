@@ -33,12 +33,17 @@ void vm_init(struct vm *vm) {
 
 void vm_free(struct vm *vm) {
     hmap_free(&vm->globalenv);
-    // TODO free localenv
     while(vm->localenv != NULL) {
         struct env *localenv = vm->localenv->parent;
         env_free(vm->localenv);
         free(vm->localenv);
         vm->localenv = localenv;
+    }
+    while(vm->eframe != NULL) {
+        struct exception_frame *eframe = vm->eframe->prev;
+        exception_frame_free(vm->eframe);
+        free(vm->eframe);
+        vm->eframe = eframe;
     }
     array_free(vm->code);
     for(size_t i = 0; i < vm->stack.length; i++)
@@ -86,7 +91,7 @@ void vm_execute(struct vm *vm) {
         X(OP_MEMBER_SET), X(OP_DICT_LOAD), X(OP_ARRAY_LOAD),
         X(OP_INDEX_GET), X(OP_INDEX_SET),
         // exceptions
-        X(OP_TRY)
+        X(OP_TRY), X(OP_RAISE), X(OP_EXFRAME_RET)
     };
 
 #undef X
@@ -364,7 +369,7 @@ void vm_execute(struct vm *vm) {
                              vm->code.data[vm->ip+1] << 8  |
                              vm->code.data[vm->ip+2] << 4  |
                              vm->code.data[vm->ip+3];
-        LOG("JMP %ld\n", pos);
+        LOG("JMP %d\n", pos);
         vm->ip = pos;
         dispatch();
     }
@@ -376,7 +381,7 @@ void vm_execute(struct vm *vm) {
                             vm->code.data[vm->ip+3];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
-        LOG("JCOND %ld\n", pos);
+        LOG("JCOND %d\n", pos);
         if(value_is_true(&val)) vm->ip = pos;
         else vm->ip += 4;
         dispatch();
@@ -389,7 +394,7 @@ void vm_execute(struct vm *vm) {
                              vm->code.data[vm->ip+3];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
-        LOG("JNCOND %ld\n", pos);
+        LOG("JNCOND %d\n", pos);
         if(!value_is_true(&val)) vm->ip = pos;
         else vm->ip += 4;
         dispatch();
@@ -502,21 +507,15 @@ void vm_execute(struct vm *vm) {
         struct value val = array_top(vm->stack);
         struct dict *dict = NULL;
         if(val.type != TYPE_DICT) {
-            if(val.type == TYPE_STR) {
-                dict = vm->dstr;
-            } else if(val.type == TYPE_INT) {
-                dict = vm->dint;
-            } else if(val.type == TYPE_FLOAT) {
-                dict = vm->dfloat;
-            } else if(val.type == TYPE_ARRAY) {
-                dict = vm->darray;
-            } else if(val.type == TYPE_NIL) {
-                if(strcmp(key, "prototype") != 0)
-                    FATAL("can't access key of nil");
-                dispatch();
-            } else {
-                FATAL("expected dictionary\n");
-                return;
+            if((dict = value_get_prototype(vm, &val)) == NULL) {
+                if(val.type == TYPE_NIL) {
+                    if(strcmp(key, "prototype") != 0)
+                        FATAL("can't access key of nil");
+                    dispatch();
+                } else {
+                    FATAL("expected dictionary\n");
+                    return;
+                }
             }
             if(strcmp(key, "prototype") == 0) {
                 value_free(&array_top(vm->stack));
@@ -708,20 +707,17 @@ void vm_execute(struct vm *vm) {
         LOG("try\n");
         vm->ip++;
 
-        const uint32_t end_ip =
-            vm->code.data[vm->ip+0] << 12 |
-            vm->code.data[vm->ip+1] << 8  |
-            vm->code.data[vm->ip+2] << 4  |
-            vm->code.data[vm->ip+3];
-        vm->ip += sizeof(end_ip);
-
         struct exception_frame *parent = vm->eframe;
         vm->eframe = malloc(sizeof(struct exception_frame));
-        exception_frame_init(vm->eframe, parent, vm->stack.length, end_ip);
+        exception_frame_init(vm->eframe, parent);
 
         struct value error = {0};
         while((error = array_top(vm->stack)).type != TYPE_NIL) {
             // error type
+            if(error.type != TYPE_DICT) {
+                FATAL("expected error to be a dictionary\n");
+                return;
+            }
             array_pop(vm->stack);
             // val
             struct value fn = array_top(vm->stack);
@@ -733,6 +729,48 @@ void vm_execute(struct vm *vm) {
             array_push(vm->eframe->handlers, data);
         }
         array_pop(vm->stack); // pop nil
+        exception_frame_init_vm(vm->eframe, vm);
+        dispatch();
+    }
+    doop(OP_RAISE): {
+        LOG("RAISE\n");
+        vm->ip++;
+
+        struct value raiseval = array_top(vm->stack);
+        array_pop(vm->stack);
+
+        // search eframes for exact handler
+        for(struct exception_frame *eframe = vm->eframe;
+            eframe != NULL; eframe = eframe->prev) {
+            struct value *val = exception_frame_get_handler_for_error(eframe, vm, &raiseval);
+            if(val != NULL) {
+                assert(val->type == TYPE_FN);
+                // unwind & jump to exception handler
+                exception_frame_unwind(eframe, vm);
+                vm->ip = val->as.ifn.ip;
+                dispatch();
+            }
+        }
+
+        FATAL("unhandled exception!\n");
+        return;
+    }
+    doop(OP_EXFRAME_RET): {
+
+        struct exception_frame *eframe = vm->eframe->prev;
+        exception_frame_free(vm->eframe);
+        free(vm->eframe);
+        vm->eframe = eframe;
+
+        vm->ip++;
+
+        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
+                        vm->code.data[vm->ip+1] << 8  |
+                        vm->code.data[vm->ip+2] << 4  |
+                        vm->code.data[vm->ip+3];
+        LOG("FRAME POP %d\n", pos);
+        vm->ip = pos;
+
         dispatch();
     }
 
@@ -802,7 +840,6 @@ void vm_print_stack(const struct vm *vm) {
 
 // push bits
 void vm_code_push16(struct vm *vm, uint16_t n) {
-    LOG("push 16: %x %x\n",(n >> 4) & 0xff, (n >> 0) & 0xff);
     array_push(vm->code, (n >> 4) & 0xff);
     array_push(vm->code, (n >> 0) & 0xff);
 }
