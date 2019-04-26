@@ -88,7 +88,7 @@ void vm_execute(struct vm *vm) {
         X(OP_DEF_FUNCTION_PUSH),
         // flow control
         X(OP_JMP), X(OP_JCOND), X(OP_JNCOND), X(OP_CALL), X(OP_RET),
-        // dictionary
+        // record
         X(OP_DICT_NEW), X(OP_MEMBER_GET), X(OP_MEMBER_GET_NO_POP),
         X(OP_MEMBER_SET), X(OP_DICT_LOAD), X(OP_ARRAY_LOAD),
         X(OP_INDEX_GET), X(OP_INDEX_SET),
@@ -401,7 +401,7 @@ void vm_execute(struct vm *vm) {
         else vm->ip += 4;
         dispatch();
     }
-    // pops a function/dictionary constructor on top of the stack,
+    // pops a function/record constructor on top of the stack,
     // sets up necessary environment and calls it.
     doop(OP_CALL): {
         // argument: [arg2][arg1]
@@ -420,7 +420,7 @@ void vm_execute(struct vm *vm) {
                 array_pop(vm->stack);
                 struct value *ctor = dict_get(val.as.dict, "constructor");
                 if(ctor == NULL) {
-                    FATAL("expected dictionary to have constructor\n");
+                    FATAL("expected record to have constructor\n");
                     ERROR();
                 }
                 if(ctor->type == TYPE_NATIVE_FN) {
@@ -460,7 +460,7 @@ void vm_execute(struct vm *vm) {
             // jump
             vm->ip = fn_ip;
         } else {
-            printf("is not a function\n");
+            FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
         }
         dispatch();
@@ -517,7 +517,7 @@ void vm_execute(struct vm *vm) {
                     }
                     dispatch();
                 } else {
-                    FATAL("expected dictionary\n");
+                    FATAL("can only access key of record\n");
                     ERROR();
                 }
             }
@@ -528,7 +528,7 @@ void vm_execute(struct vm *vm) {
             }
         } else {
             if(val.type != TYPE_DICT) {
-                FATAL("expected dictionary\n");
+                FATAL("can only access key of record\n");
                 ERROR();
             }
             dict = val.as.dict;
@@ -552,7 +552,10 @@ void vm_execute(struct vm *vm) {
         vm->ip += strlen(key)+1;
         LOG("MEMBER_SET %s\n", key);
         struct value dval = array_top(vm->stack);
-        assert(dval.type == TYPE_DICT);
+        if(dval.type != TYPE_DICT) {
+            FATAL("can only set key of record\n");
+            ERROR();
+        }
         array_pop(vm->stack);
 
         struct value val = array_top(vm->stack);
@@ -598,7 +601,7 @@ void vm_execute(struct vm *vm) {
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
-                FATAL("index type must be integer!\n");
+                FATAL("index type for array must be integer!\n");
                 return;
             }
             const int64_t i = index.as.integer;
@@ -610,7 +613,7 @@ void vm_execute(struct vm *vm) {
             value_copy(&array_top(vm->stack), &dval.as.array->data.data[i]);
         } else if(dval.type == TYPE_STR) {
             if(index.type != TYPE_INT) {
-                FATAL("index type must be integer!\n");
+                FATAL("index type for string must be integer!\n");
                 ERROR();
             }
             const int64_t i = index.as.integer, len = string_len(dval.as.str);
@@ -623,7 +626,7 @@ void vm_execute(struct vm *vm) {
             value_str(&array_top(vm->stack), c);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
-                FATAL("index type must be string!\n");
+                FATAL("index type for record must be string!\n");
                 ERROR();
             }
             array_push(vm->stack, (struct value){});
@@ -631,7 +634,7 @@ void vm_execute(struct vm *vm) {
             value_free(&index);
             if(val != NULL) value_copy(&array_top(vm->stack), val);
         } else {
-            FATAL("expected dictionary, array or string\n");
+            FATAL("can only access keys of record, array or string\n");
             ERROR();
         }
         value_free(&dval);
@@ -654,7 +657,7 @@ void vm_execute(struct vm *vm) {
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
                 value_free(&index);
-                FATAL("index type must be integer!\n");
+                FATAL("index type of array must be integer!\n");
                 ERROR();
             }
             const int64_t i = index.as.integer;
@@ -666,13 +669,13 @@ void vm_execute(struct vm *vm) {
             value_copy(&dval.as.array->data.data[i], val);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
-                FATAL("index type must be string!\n");
+                FATAL("index type of record must be string!\n");
                 ERROR();
             }
             dict_set(dval.as.dict, string_data(index.as.str), val);
             value_free(&index);
         } else {
-            FATAL("expected dictionary or array\n");
+            FATAL("can only set keys of record or array\n");
             ERROR();
         }
         value_free(&dval);
@@ -718,7 +721,7 @@ void vm_execute(struct vm *vm) {
         while((error = array_top(vm->stack)).type != TYPE_NIL) {
             // error type
             if(error.type != TYPE_DICT) {
-                FATAL("expected error to be a dictionary\n");
+                FATAL("expression in case must be of record type\n");
                 ERROR();
             }
             array_pop(vm->stack);
@@ -794,7 +797,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     if(fn->type == TYPE_DICT) {
         struct value *ctor = dict_get(fn->as.dict, "constructor");
         if(ctor == NULL) {
-            printf("expected dictionary to have constructor");
+            printf("expected record to have constructor");
             return NULL;
         }
         if(ctor->type == TYPE_NATIVE_FN) {
