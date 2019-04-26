@@ -1,4 +1,4 @@
-Welcome to hana! Hana is a dynamically-typed interpreted language, built upon minimalist
+Welcome to *hana*! Hana is a dynamically-typed interpreted language, built upon minimalist
 philosophy, it's inspired by Pascal, Ruby and Javascript, and it's fairly fast and lightweight.
 Enjoy your stay in Hana!
 
@@ -219,8 +219,37 @@ for [var]=[from] [to/downto] [dest] step [step] [statement]
 The statement sets `[var]` to `[from]`, and loops to (or down to) `[dest]` (inclusive)
 stepping `[step]` each iteration. With each iteration, it executes `[statement]`.
 
-`step [step]` is optional, if the `to` keyword is used, `[step]` will be 1, otherwise if
-`downto` is used, then `[step]` will be -1.
+`step [step]` is optional, if not specified, and the `to` keyword is used, `[step]` will be 1,
+otherwise if `downto` is used, then `[step]` will be -1.
+
+### Try statements
+
+Syntax:
+
+```
+try
+    [body]
+case [type] as [e]
+    [catch]
+    ...
+case [type2]
+    ...
+end
+```
+
+The statement tries to execute statements in `[body]`, if an exception is raised, it will
+lookup the raised value's type in the `case` statements, once it finds a match, it will
+execute the statements after the matching case statement.
+
+Use `as [e]` to capture the raised value into the variable `[e]`.
+
+#### Raise statement
+
+Syntax:
+
+```
+raise [value]
+```
 
 ### Blocks
 
@@ -420,7 +449,7 @@ bob.talk() // => *Human noises*
 
 Each time you call a record, the record's `constructor` function gets called instead,
 and will pass the record in addition to your arguments. I recommend using `self` to denote
-the argument containing the record.
+the argument containing the record. **You must return the record (self) manually in the constructor.**
 
 To delete a record's key, simply set the key to `nil`.
 
@@ -463,11 +492,13 @@ a.reduce(f(prev, curr) = prev+curr, 0) // => 21
 // then returns a single output
 ```
 
-# Standard library
+# Libraries
+
+## Standard library
 
 Hana's standard library is called `hanayo`! The library is imported by default upon running.
 
-## Special constants
+### Special constants
 
 ```
 nil // => (nil)
@@ -477,18 +508,18 @@ inf // => infinity
 nan // => not a number
 ```
 
-## Types
+### Types
 
 (see [#Types](#types))
 
-## IO
+### IO
 
 ```
 print(v) // => prints value "v" onto stdout
 v = input() // => gets a string from stdin
 ```
 
-### Files
+#### Files
 
 ```
 f = File("/tmp/a", "r") // => opens the file /tmp/a with the read flag
@@ -507,16 +538,12 @@ f.eof?()
 f.error?()
 ```
 
-## Modules
-
-(see [#Imports](#imports))
-
-# Optional libraries
+## Optional libraries
 
 In addition to the standard library, Hana also comes included with some optional libraries that
 must be imported.
 
-## JSON
+### JSON
 
 ```
 JSON::parse('{"a": true}') // => record of a key = 1
@@ -525,7 +552,7 @@ JSON::stringify(record
 end) // => {"a": true}
 ```
 
-# Imports
+## Imports
 
 To import a module or a file, Hana must be compiled with the `INCLUDE_BYTECODE` flag.
 You can then invoke the `import` function with a string, which will lookup the specified module,
