@@ -552,7 +552,6 @@ void vm_execute(struct vm *vm) {
         array_pop(vm->stack);
 
         struct value val = array_top(vm->stack);
-        LOG("SECOND %s\n", key);
         dict_set(dval.as.dict, key, &val);
         value_free(&dval);
         // NOTE: val should not be free'd.
@@ -736,7 +735,8 @@ void vm_execute(struct vm *vm) {
         LOG("RAISE\n");
         vm->ip++;
 
-        struct value raiseval = array_top(vm->stack);
+        struct value raiseval;
+        value_copy(&raiseval, &array_top(vm->stack));
         array_pop(vm->stack);
 
         // search eframes for exact handler
@@ -747,16 +747,22 @@ void vm_execute(struct vm *vm) {
                 assert(val->type == TYPE_FN);
                 // unwind & jump to exception handler
                 exception_frame_unwind(eframe, vm);
+                array_push(vm->stack, raiseval);
                 vm->ip = val->as.ifn.ip;
                 dispatch();
             }
         }
 
         FATAL("unhandled exception!\n");
+        if(raiseval.type == TYPE_DICT) {
+            struct value *val = dict_get(raiseval.as.dict, "what?");
+            if(val != NULL)
+                FATAL("what? => %s\n",
+                    val->type == TYPE_STR ? string_data(val->as.str) : "[non-string]");
+        }
         return;
     }
     doop(OP_EXFRAME_RET): {
-
         struct exception_frame *eframe = vm->eframe->prev;
         exception_frame_free(vm->eframe);
         free(vm->eframe);

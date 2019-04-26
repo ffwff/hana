@@ -268,7 +268,7 @@ int value_is_true(const struct value *val) {
     }
 }
 
-struct dict *value_get_prototype(struct vm *vm, struct value *val) {
+struct dict *value_get_prototype(const struct vm *vm, const struct value *val) {
     if(val->type == TYPE_STR) {
         return vm->dstr;
     } else if(val->type == TYPE_INT) {

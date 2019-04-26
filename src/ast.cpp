@@ -667,6 +667,10 @@ void AST::TryStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
         vm_code_push16(vm, !case_stmt->id.empty());
         size_t body_start = vm->code.length;
         vm_code_push32(vm, FILLER32);
+        // id
+        if(!case_stmt->id.empty())
+            emit_set_var(vm, compiler, case_stmt->id);
+        array_push(vm->code, OP_POP);
         // body
         for(auto &s : case_stmt->statements)
             s->emit(vm, compiler);

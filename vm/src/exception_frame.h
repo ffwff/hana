@@ -19,7 +19,7 @@ struct exception_frame {
 void exception_frame_init(struct exception_frame *frame, struct exception_frame *prev);
 void exception_frame_init_vm(struct exception_frame *frame, struct vm *vm);
 void exception_frame_free(struct exception_frame *frame);
-struct value *exception_frame_get_handler_for_error(struct exception_frame *frame, struct vm *vm, struct value *error);
+struct value *exception_frame_get_handler_for_error(struct exception_frame *frame, const struct vm *vm, const struct value *error);
 void exception_frame_unwind(struct exception_frame *frame, struct vm *vm);
 
 #ifdef __cplusplus

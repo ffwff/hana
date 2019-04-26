@@ -23,3 +23,9 @@ print("--\n")
 f('{"a":[1,2,3]}')
 print("--\n")
 f('{"a":{"nested":"key"}}')
+print("--\n")
+try
+    f('{?}')
+case JSON::ParserError as e
+    print(e.what?, "\n")
+end

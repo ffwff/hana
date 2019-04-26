@@ -1,19 +1,19 @@
 record Error
-    function constructor(self) begin
+    function constructor(self, what?) begin
+        self.what? = what?
         return self
     end
 end
 
 function umm() begin
-    raise Error()
+    raise Error("test")
 end
 
 function B() begin
     try
-        raise 1
         1+umm()
-    case Int
-        print("test")
+    case Error as e
+        print(e.what?)
     end
     return 2
 end

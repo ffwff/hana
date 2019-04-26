@@ -17,7 +17,7 @@ record JSON
                 r.i += 1
                 return
             end
-            print("Expected ", ch, ", got ",str[r.i],"\n")
+            raise JSON::ParserError("Expected " + ch + ", got " + str[r.i])
         end
         r.parse_number = function() begin
             num = ""
@@ -167,6 +167,22 @@ record JSON
         end
         else if prototype == Int or prototype == Float begin
             return String(obj)
+        end
+        raise SerialiserError("Unknown type!")
+    end
+
+    // error
+    record ParserError
+        function constructor(self, what?) begin
+            self.what? = what?
+            return self
+        end
+    end
+
+    record SerialiserError
+        function constructor(self, what?) begin
+            self.what? = what?
+            return self
         end
     end
 
