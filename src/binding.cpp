@@ -3,18 +3,18 @@
 #include "compiler.h"
 #include "scriptparser.h"
 
-Hana::AST::AST *hanayo_parse(const char *str) {
+struct hana_ast *hana_parse(const char *str) {
     Hana::ScriptParser p;
     std::string s(str);
     p.loads(s);
-    return p.parse();
+    return (hana_ast*)p.parse();
 }
 
-void hanayo_ast_emit(Hana::AST::AST *ast, struct vm *vm) {
+void hana_ast_emit(struct hana_ast *ast, struct vm *vm) {
     Hana::Compiler c;
-    ast->emit(vm, &c);
+    static_cast<Hana::AST::AST *>((void*)ast)->emit(vm, &c);
 }
 
-void hanayo_free_ast(Hana::AST::AST *ast) {
-    delete ast;
+void hana_free_ast(struct hana_ast *ast) {
+    delete static_cast<Hana::AST::AST *>((void*)ast);
 }

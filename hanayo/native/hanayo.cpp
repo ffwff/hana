@@ -64,13 +64,13 @@ fn(eval) {
     struct value retval = {0};
 
     // generate ast & emit
-    auto ast = hanayo_parse(string_data(script));
+    auto ast = hana_parse(string_data(script));
     if(ast == nullptr) {
         value_int(&retval, 0);
     } else {
         auto target_ip = vm->code.length;
-        hanayo_ast_emit(ast, vm);
-        hanayo_free_ast(ast);
+        hana_ast_emit(ast, vm);
+        hana_free_ast(ast);
 
         // save state, execute then return
         auto ip = vm->ip;

@@ -1,13 +1,7 @@
 #pragma once
 
 struct vm;
-namespace Hana {
-
-namespace AST {
-struct AST;
-}
-
-}
-Hana::AST::AST *hanayo_parse(const char *str);
-void hanayo_ast_emit(Hana::AST::AST *, struct vm*);
-void hanayo_free_ast(Hana::AST::AST *);
+struct hana_ast {};
+struct hana_ast *hana_parse(const char *str);
+void hana_ast_emit(struct hana_ast *, struct vm*);
+void hana_free_ast(struct hana_ast *);
