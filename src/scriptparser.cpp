@@ -46,7 +46,8 @@ Parser::Token ScriptParser::next() {
                         f.get();
                 } else if(c == '*') {
                     while((c = f.peek()) != EOF) {
-                        f.get();
+                        char c = f.get();
+                        if(c == '\n') lines++;
                         const char c1 = f.get();
                         if(c == '*' && c1 == '/')
                             break;
@@ -79,9 +80,11 @@ Parser::Token ScriptParser::next() {
                 else if(esc == 'r') str += '\r';
                 else if(esc == 't') str += '\t';
                 else str += esc;
-                continue;
+            } else {
+                auto c = f.get();
+                if(c == '\n') lines++;
+                str += c;
             }
-            str += f.get();
         }
         return Token(str, Token::Type::STRLITERAL);
     } else if(c == '\n') {
@@ -681,8 +684,21 @@ AST::AST *ScriptParser::parse_statement() {
                     LOG("case");
                     std::string id;
                     fpop();
-                    auto etype = parse_expression();
+
+                    // empty case statement
+                    fsave();
                     auto token = next();
+                    if(token.type == Token::Type::NEWLINE) {
+                        fpop();
+                        case_stmt = new AST::CaseStatement(nullptr, "");
+                        case_stmt->start_line = lines;
+                        cases.emplace_back(case_stmt);
+                        continue;
+                    }
+                    fload();
+
+                    auto etype = parse_expression();
+                    token = next();
                     if(token.strv == "as") {
                         id = nexts();
                         nextnl();
@@ -692,10 +708,11 @@ AST::AST *ScriptParser::parse_statement() {
                     case_stmt = new AST::CaseStatement(etype, id);
                     case_stmt->start_line = lines;
                     cases.emplace_back(case_stmt);
-                    LOG(case_stmt);
                 } else {
                     if(token.strv == "end") {
                         fpop();
+                        if(case_stmt == nullptr)
+                            throw ParserError("Expected try block to have case statement");
                         case_stmt->end_line = lines+1;
                         nextnl();
                         break;
@@ -710,8 +727,6 @@ AST::AST *ScriptParser::parse_statement() {
                     }
                 }
             }
-            if(cases.empty())
-                throw new ParserError("Expected try block to have case statement");
             auto trystmt = new AST::TryStatement();
             trystmt->statements = std::move(statements);
             trystmt->cases = std::move(cases);

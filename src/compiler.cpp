@@ -34,4 +34,12 @@ size_t Hana::Compiler::nslots() const {
     return locals.size();
 }
 
-// exceptions
+// source map
+Hana::Compiler::SourceMap Hana::Compiler::find_src_map(size_t bytecode_idx) {
+    for(auto it = src_maps.rbegin(); it != src_maps.rend(); it++) {
+        Hana::Compiler::SourceMap src_map = **it;
+        if(bytecode_idx >= src_map.start_byte && bytecode_idx <= src_map.end_byte)
+            return src_map;
+    }
+    return Hana::Compiler::SourceMap();
+}

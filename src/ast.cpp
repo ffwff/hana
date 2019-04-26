@@ -5,6 +5,17 @@
 
 using namespace Hana;
 
+// macros
+#define START_AST \
+Hana::Compiler::SourceMap *_SRC_MAP = new Hana::Compiler::SourceMap( \
+    vm->code.length, start_line, end_line \
+); \
+compiler->src_maps.emplace_back(_SRC_MAP);
+
+#define END_AST \
+_SRC_MAP->end_byte = vm->code.length;
+
+// indent
 static void pindent(int levels) {
     while(levels--)
         std::cout << " ";
@@ -31,7 +42,7 @@ void AST::Identifier::print(int indent) {
 void AST::Array::print(int indent) {
 }
 
-//
+// Expressions
 void AST::UnaryExpression::print(int indent) {
     pindent(indent);
     std::cout << "unaryexpr\n";
@@ -84,6 +95,7 @@ void AST::ConditionalExpression::print(int indent) {
     alt->print(indent+1);
 }
 
+// Statements
 void AST::IfStatement::print(int indent) {
     pindent(indent);
     std::cout << "if (" << start_line << "->" << end_line << ")\n";
@@ -145,7 +157,7 @@ void AST::ReturnStatement::print(int indent) {
 void AST::CaseStatement::print(int indent) {
     pindent(indent);
     std::cout << "case "<< id <<"(" << start_line << "->" << end_line << ")\n";
-    etype->print(indent+1);
+    if(etype) etype->print(indent+1);
     for(auto &s : statements)
         s->print(indent+1);
 }
@@ -220,7 +232,7 @@ static void emit_get_var(struct vm *vm, Hana::Compiler *compiler, std::string s)
     }
 }
 
-// DEBUG
+// emits
 // Literals
 void AST::StrLiteral::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_PUSHSTR);
@@ -459,7 +471,9 @@ void AST::ConditionalExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
     fill_hole(vm, length1, n1);
 }
 
+// Statements
 void AST::IfStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     // condition
     // jcond [else]
     // [statement]
@@ -485,8 +499,10 @@ void AST::IfStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
         size_t n = vm->code.length;
         fill_hole(vm, length, n);
     }
+    END_AST
 }
 void AST::WhileStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     // 1: jmp condition
     // [statement]
     // [condition]
@@ -515,8 +531,10 @@ void AST::WhileStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
         fill_hole(vm, brk, end_pos);
 
     compiler->loop_stmts.pop_back();
+    END_AST
 }
 void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     // start
     from->emit(vm, compiler);
     emit_set_var(vm, compiler, id);
@@ -572,22 +590,28 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
         fill_hole(vm, brk, end_pos);
 
     compiler->loop_stmts.pop_back();
+    END_AST
 }
 void AST::ContinueStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     assert(!compiler->loop_stmts.empty());
     array_push(vm->code, OP_JMP);
     size_t pos = vm->code.length;
     vm_code_push32(vm, FILLER32);
     compiler->loop_stmts.back().fill_continue.emplace_back(pos);
+    END_AST
 }
 void AST::BreakStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     assert(!compiler->loop_stmts.empty());
     array_push(vm->code, OP_JMP);
     size_t pos = vm->code.length;
     vm_code_push32(vm, FILLER32);
     compiler->loop_stmts.back().fill_break.emplace_back(pos);
+    END_AST
 }
 void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     array_push(vm->code, OP_DEF_FUNCTION_PUSH);
     vm_code_push16(vm, arguments.size());
     size_t length = vm->code.length;
@@ -615,8 +639,10 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
         emit_set_var(vm, compiler, id);
         array_push(vm->code, OP_POP);
     }
+    END_AST
 }
 void AST::StructStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     if(statements.empty()) {
         array_push(vm->code, OP_DICT_NEW);
         return;
@@ -645,19 +671,25 @@ void AST::StructStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_DICT_LOAD);
     emit_set_var(vm, compiler, id);
     if(!is_expr) array_push(vm->code, OP_POP);
+    END_AST
 }
 void AST::ExpressionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     expression->emit(vm, compiler);
     array_push(vm->code, OP_POP);
+    END_AST
 }
 void AST::ReturnStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     if(expression == nullptr)
         array_push(vm->code, OP_PUSH_NIL);
     else
         expression->emit(vm, compiler);
     array_push(vm->code, OP_RET);
+    END_AST
 }
 void AST::TryStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     array_push(vm->code, OP_PUSH_NIL);
     std::vector<size_t> cases_to_fill;
     // case statements is generated as a function
@@ -688,13 +720,16 @@ void AST::TryStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
         s->emit(vm, compiler);
     for(auto hole : cases_to_fill)
         fill_hole(vm, hole, vm->code.length);
+    END_AST
 }
 void AST::RaiseStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
+    START_AST
     if(expression == nullptr)
         array_push(vm->code, OP_PUSH_NIL);
     else
         expression->emit(vm, compiler);
     array_push(vm->code, OP_RAISE);
+    END_AST
 }
 
 void AST::Block::emit(struct vm *vm, Hana::Compiler *compiler) {

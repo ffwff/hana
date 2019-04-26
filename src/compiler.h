@@ -2,8 +2,11 @@
 #include <string>
 #include <vector>
 #include <cstddef>
+#include <memory>
 
 namespace Hana {
+
+namespace AST { struct AST; };
 
 class Compiler {
 
@@ -26,7 +29,17 @@ public:
     };
     std::vector<Loop> loop_stmts;
 
-    // exceptions
+    // source mapping
+    struct SourceMap {
+        size_t start_byte, end_byte;
+        size_t start_line, end_line;
+        // TODO add file info
+        SourceMap() {};
+        SourceMap(size_t start_byte, size_t start_line, size_t end_line)
+        : start_byte(start_byte), start_line(start_line), end_line(end_line) {};
+    };
+    std::vector<std::unique_ptr<SourceMap>> src_maps;
+    SourceMap find_src_map(size_t bytecode_idx);
 
 private:
     std::vector<Local> locals;

@@ -50,6 +50,7 @@ struct vm {
     a_uint8 code;
     a_value stack;
     struct dict *dstr, *dint, *dfloat, *darray;
+    int error;
 };
 
 void vm_init(struct vm*);

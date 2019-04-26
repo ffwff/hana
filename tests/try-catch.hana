@@ -12,8 +12,8 @@ end
 function B() begin
     try
         1+umm()
-    case Error as e
-        print(e.what?)
+    case Int
+        print("no")
     end
     return 2
 end

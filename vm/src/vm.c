@@ -13,12 +13,13 @@
 #else
 #define LOG(fmt, ...) do { printf(fmt __VA_OPT__(,) __VA_ARGS__); } while(0)
 #endif
-#define FATAL printf
+#define FATAL(fmt, ...) fprintf(stderr, fmt __VA_OPT__(,) __VA_ARGS__)
 
 // notes: architecture is big endian!
 
 void vm_init(struct vm *vm) {
     hmap_init(&vm->globalenv);
+    vm->error = 0;
     vm->localenv = NULL;
     vm->eframe = NULL;
     vm->code = (a_uint8)array_init(uint8_t);
@@ -52,6 +53,7 @@ void vm_free(struct vm *vm) {
 }
 
 void vm_execute(struct vm *vm) {
+#define ERROR() do { vm->error = 1; return; } while(0)
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
 #ifdef NOLOG
@@ -335,7 +337,7 @@ void vm_execute(struct vm *vm) {
         struct value *val = hmap_get(&vm->globalenv, key);
         if(val == NULL) {
             FATAL("no key named %s!\n", key);
-            return;
+            ERROR();
         } else
             value_copy(&array_top(vm->stack), val);
         dispatch();
@@ -419,7 +421,7 @@ void vm_execute(struct vm *vm) {
                 struct value *ctor = dict_get(val.as.dict, "constructor");
                 if(ctor == NULL) {
                     FATAL("expected dictionary to have constructor\n");
-                    return;
+                    ERROR();
                 }
                 if(ctor->type == TYPE_NATIVE_FN) {
                     value_free(&val);
@@ -427,19 +429,19 @@ void vm_execute(struct vm *vm) {
                     dispatch();
                 } else if(ctor->type != TYPE_FN) {
                     FATAL("constructor must be a function!\n");
-                    return;
+                    ERROR();
                 }
                 fn_ip = ctor->as.ifn.ip;
                 if(nargs+1 != ctor->as.ifn.nargs) {
                     FATAL("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1);
-                    return;
+                    ERROR();
                 }
             } else {
                 fn_ip = val.as.ifn.ip;
                 array_pop(vm->stack);
                 if(nargs != val.as.ifn.nargs) {
                     FATAL("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs);
-                    return;
+                    ERROR();
                 }
             }
             // caller
@@ -459,7 +461,7 @@ void vm_execute(struct vm *vm) {
             vm->ip = fn_ip;
         } else {
             printf("is not a function\n");
-            return;
+            ERROR();
         }
         dispatch();
     }
@@ -509,12 +511,14 @@ void vm_execute(struct vm *vm) {
         if(val.type != TYPE_DICT) {
             if((dict = value_get_prototype(vm, &val)) == NULL) {
                 if(val.type == TYPE_NIL) {
-                    if(strcmp(key, "prototype") != 0)
+                    if(strcmp(key, "prototype") != 0) {
                         FATAL("can't access key of nil");
+                        ERROR();
+                    }
                     dispatch();
                 } else {
                     FATAL("expected dictionary\n");
-                    return;
+                    ERROR();
                 }
             }
             if(strcmp(key, "prototype") == 0) {
@@ -525,7 +529,7 @@ void vm_execute(struct vm *vm) {
         } else {
             if(val.type != TYPE_DICT) {
                 FATAL("expected dictionary\n");
-                return;
+                ERROR();
             }
             dict = val.as.dict;
             if(op == OP_MEMBER_GET) array_pop(vm->stack);
@@ -600,19 +604,19 @@ void vm_execute(struct vm *vm) {
             const int64_t i = index.as.integer;
             if(!(i >= 0 && i < dval.as.array->data.length)) {
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
-                return;
+                ERROR();
             }
             array_push(vm->stack, (struct value){});
             value_copy(&array_top(vm->stack), &dval.as.array->data.data[i]);
         } else if(dval.type == TYPE_STR) {
             if(index.type != TYPE_INT) {
                 FATAL("index type must be integer!\n");
-                return;
+                ERROR();
             }
             const int64_t i = index.as.integer, len = string_len(dval.as.str);
             if(!(i >= 0 && i < len)) {
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, len);
-                return;
+                ERROR();
             }
             char c[2] = { string_at(dval.as.str, i), 0 };
             array_push(vm->stack, (struct value){});
@@ -620,7 +624,7 @@ void vm_execute(struct vm *vm) {
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
                 FATAL("index type must be string!\n");
-                return;
+                ERROR();
             }
             array_push(vm->stack, (struct value){});
             struct value *val = dict_get(dval.as.dict, string_data(index.as.str));
@@ -628,7 +632,7 @@ void vm_execute(struct vm *vm) {
             if(val != NULL) value_copy(&array_top(vm->stack), val);
         } else {
             FATAL("expected dictionary, array or string\n");
-            return;
+            ERROR();
         }
         value_free(&dval);
         dispatch();
@@ -651,25 +655,25 @@ void vm_execute(struct vm *vm) {
             if(index.type != TYPE_INT) {
                 value_free(&index);
                 FATAL("index type must be integer!\n");
-                return;
+                ERROR();
             }
             const int64_t i = index.as.integer;
             if(!(i >= 0 && i < dval.as.array->data.length)) {
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
-                return;
+                ERROR();
             }
             value_free(&dval.as.array->data.data[i]);
             value_copy(&dval.as.array->data.data[i], val);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
                 FATAL("index type must be string!\n");
-                return;
+                ERROR();
             }
             dict_set(dval.as.dict, string_data(index.as.str), val);
             value_free(&index);
         } else {
             FATAL("expected dictionary or array\n");
-            return;
+            ERROR();
         }
         value_free(&dval);
         dispatch();
@@ -678,7 +682,7 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
 
         struct value val = array_top(vm->stack);
-        int length = val.as.integer;
+        int64_t length = val.as.integer;
         array_pop(vm->stack);
         assert(val.type == TYPE_INT);
         LOG("ARRAY_LOAD %d\n", length);
@@ -715,7 +719,7 @@ void vm_execute(struct vm *vm) {
             // error type
             if(error.type != TYPE_DICT) {
                 FATAL("expected error to be a dictionary\n");
-                return;
+                ERROR();
             }
             array_pop(vm->stack);
             // val
@@ -753,14 +757,14 @@ void vm_execute(struct vm *vm) {
             }
         }
 
-        FATAL("unhandled exception!\n");
+        FATAL("unhandled exception!");
         if(raiseval.type == TYPE_DICT) {
             struct value *val = dict_get(raiseval.as.dict, "what?");
             if(val != NULL)
-                FATAL("what? => %s\n",
+                FATAL(" (what? => %s)\n",
                     val->type == TYPE_STR ? string_data(val->as.str) : "[non-string]");
         }
-        return;
+        ERROR();
     }
     doop(OP_EXFRAME_RET): {
         struct exception_frame *eframe = vm->eframe->prev;

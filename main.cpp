@@ -42,6 +42,7 @@ the License, or (at your option) any later version.\n\
 ");
 }
 
+// parsing
 Hana::Compiler compiler;
 Hana::AST::AST *ast = nullptr;
 
@@ -58,6 +59,15 @@ static bool emit_ast(struct vm *m, std::string s, const bool load_file) {
 }
 #define emit_ast_from_file(m, s) emit_ast(m,s,true)
 #define emit_ast_from_string(m, s) emit_ast(m,s,false)
+
+// executing
+static void execute_gracefully(struct vm *m) {
+    vm_execute(m);
+    if(m->error) {
+        auto map = compiler.find_src_map(m->ip);
+        fprintf(stderr, "error at bytecode index %d, line: %ld\n", m->ip, map.start_line);
+    }
+}
 
 int main(int argc, char **argv) {
     int last_optiond = 1;
@@ -139,7 +149,7 @@ int main(int argc, char **argv) {
         if(!emit_ast_from_string(&m, argv[last_optiond-1]))
             goto cleanup;
         array_push(m.code, OP_HALT);
-        vm_execute(&m);
+        execute_gracefully(&m);
         goto cleanup;
     }
     // repl
@@ -149,7 +159,7 @@ int main(int argc, char **argv) {
         #endif
         #ifdef INCLUDE_BYTECODE
         array_push(m.code, OP_HALT);
-        vm_execute(&m);
+        execute_gracefully(&m);
         m.ip++;
         #endif
         while(1) {
@@ -176,7 +186,7 @@ int main(int argc, char **argv) {
                 }
             }
             #else
-            std::cout << ">> ";
+            printf(">> ");
             std::string s, line;
             while(1) {
                 std::getline(std::cin, line);
@@ -193,7 +203,8 @@ int main(int argc, char **argv) {
             if(s.empty()) continue;
             if(!emit_ast_from_string(&m, s)) goto cleanup;
             array_push(m.code, OP_HALT);
-            vm_execute(&m);
+            m.error = 0;
+            execute_gracefully(&m);
             m.ip = m.code.length;
         }
     }
@@ -205,7 +216,7 @@ int main(int argc, char **argv) {
 
         vm_code_reserve(&m, size);
         file.read((char*)m.code.data, size);
-        vm_execute(&m);
+        execute_gracefully(&m);
         goto cleanup;
     } else {
         if(!emit_ast_from_file(&m, argv[last_optiond])) goto cleanup;
@@ -223,7 +234,7 @@ int main(int argc, char **argv) {
 
         // run
         array_push(m.code, OP_HALT);
-        vm_execute(&m);
+        execute_gracefully(&m);
         goto cleanup;
     }
 
@@ -232,5 +243,5 @@ cleanup:
     vm_free(&m);
     delete ast;
 #endif
-    return 0;
+    return m.error;
 }
