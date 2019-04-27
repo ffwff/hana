@@ -1,0 +1,8 @@
+a = record
+    a = "Hello"
+    b = 12
+end
+
+b = Record::copy(a)
+a.b = 10
+b.b

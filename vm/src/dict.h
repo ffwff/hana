@@ -15,7 +15,7 @@ void dict_free(struct dict*);
 struct value *dict_get(struct dict *dict, const char *key);
 struct value *dict_get_hash(struct dict *dict, const char *key, const uint32_t hash);
 void dict_set(struct dict *dict, const char *key, struct value *val);
-void dict_copy(struct dict *dst, struct dict *src);
+void dict_copy(struct dict *dst, const struct dict *src);
 
 #ifdef __cplusplus
 }

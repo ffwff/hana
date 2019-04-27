@@ -189,6 +189,7 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("constructor", record::constructor);
     native_obj_function("is_record?",  record::is_record);
     native_obj_function("keys",        record::keys);
+    native_obj_function("copy",        record::copy);
     hmap_set(&m->globalenv, "Record", &val);
     value_free(&val);
 }

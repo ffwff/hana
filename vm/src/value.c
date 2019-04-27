@@ -44,6 +44,12 @@ void value_dict_copy(struct value *val, struct dict *dict) {
     val->as.dict = dict;
     dict->refs++;
 }
+void value_dict_copy_noref(struct value *val, const struct dict *dict) {
+    val->type = TYPE_DICT;
+    val->as.dict = malloc(sizeof(struct dict));
+    val->as.dict->refs = 1;
+    dict_copy(val->as.dict, dict);
+}
 void value_array(struct value *val) {
     val->type = TYPE_ARRAY;
     val->as.array = malloc(sizeof(struct array_obj));

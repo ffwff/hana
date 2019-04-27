@@ -32,3 +32,12 @@ fn(is_record) {
     value_int(&ret, is_record);
     array_push(vm->stack, ret);
 }
+
+fn(copy) {
+    assert(nargs == 1);
+    struct value val = _arg(vm, value::TYPE_DICT);
+    struct value nval;
+    value_dict_copy_noref(&nval, val.as.dict);
+    value_free(&val);
+    array_push(vm->stack, nval);
+}

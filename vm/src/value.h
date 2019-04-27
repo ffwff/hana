@@ -43,6 +43,7 @@ void value_native(struct value*, value_fn);
 void value_function(struct value*, uint32_t ip, uint16_t nargs);
 void value_dict(struct value*);
 void value_dict_copy(struct value*, struct dict*);
+void value_dict_copy_noref(struct value*, const struct dict*);
 void value_array(struct value*);
 void value_array_n(struct value*, size_t n);
 void value_native_obj(struct value*, void *data, native_obj_free_fn free);

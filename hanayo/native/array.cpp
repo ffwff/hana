@@ -59,6 +59,19 @@ fn_(delete_) {
     array_push(vm->stack, aval);
 }
 fn_(copy) {
+    if(nargs == 1) {
+        struct value val = array_top(vm->stack);
+
+        struct value aval;
+        value_array_n(&aval, val.as.array->data.length);
+        for(size_t i = 0; i < val.as.array->data.length; i++)
+            value_copy(&aval.as.array->data.data[i], &val.as.array->data.data[i]);
+
+        value_free(&val);
+        value_copy(&array_top(vm->stack), &aval);
+        return;
+    }
+
     assert(nargs == 3);
 
     struct value val = {0};

@@ -6,8 +6,6 @@ end
 
 call_1000_times(10)
 
-/*
 g(x) = 10*x
 f(x) = g(x)
 print(f(10))
-*/

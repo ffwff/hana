@@ -74,6 +74,7 @@ namespace record {
     fn(constructor);
     fn(keys);
     fn(is_record);
+    fn(copy);
 }
 
 char *_to_string(struct value &val);

@@ -110,6 +110,22 @@ struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, i
     return &entry->data[entry->length-1].val;
 }
 
+void hmap_copy(struct hmap *dst, const struct hmap *src) {
+    dst->occupied = src->occupied;
+    dst->data = (a_hmap_buckets)array_init_n(a_hmap_entry, src->data.length);
+    dst->keys = (a_hmap_keys)array_init_n(char*, src->keys.length);
+    size_t key_idx = 0;
+    for(size_t i = 0; i < src->data.length; i++) {
+        dst->data.data[i] = (a_hmap_entry)array_init_n(struct hmap_entry, src->data.data[i].length);
+        for(size_t j = 0; j < src->data.data[i].length; j++) {
+            struct hmap_entry *entry = &dst->data.data[i].data[j];
+            entry->key = strdup(src->data.data[i].data[j].key);
+            value_copy(&entry->val, &src->data.data[i].data[j].val);
+            dst->keys.data[key_idx++] = entry->key;
+        }
+    }
+}
+
 void hmap_del(struct hmap *hmap, const char *key) {
     a_hmap_entry *entry = &hmap->data.data[hmap_index(hmap, key)];
     if(entry->length == 1) {
