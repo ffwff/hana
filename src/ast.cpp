@@ -171,7 +171,7 @@ void AST::TryStatement::print(int indent) {
 }
 void AST::RaiseStatement::print(int indent) {
     pindent(indent);
-    std::cout << "return (" << start_line << "->" << end_line << ")\n";
+    std::cout << "raise (" << start_line << "->" << end_line << ")\n";
     if(expression) expression->print(indent+1);
 }
 
@@ -283,7 +283,7 @@ void AST::Array::emit(struct vm *vm, Hana::Compiler *compiler) {
 
 //
 #define FILLER32 0xdeadbeef
-static void fill_hole(struct vm *vm, size_t length, size_t n) {
+static void fill_hole(struct vm *vm, uint32_t length, uint32_t n) {
     vm->code.data[length+0] = (n >> 12) & 0xff;
     vm->code.data[length+1] = (n >> 8) & 0xff;
     vm->code.data[length+2] = (n >> 4) & 0xff;
@@ -374,14 +374,14 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             if(compiler->nscope > 0 && id[0] != '^')
                 compiler->set_local(id);
 
-            size_t length = vm->code.length;
+            uint32_t length = vm->code.length;
             vm_code_push32(vm, FILLER32);
 
             //body
-            size_t body_start = vm->code.length;
+            uint32_t body_start = vm->code.length;
             compiler->scope();
             array_push(vm->code, OP_ENV_NEW);
-            size_t env_length = vm->code.length;
+            uint32_t env_length = vm->code.length;
             vm_code_push32(vm, FILLER32);
             vm_code_push32(vm, compiler->nslots());
             for(auto &arg : expr->arguments) {
@@ -396,7 +396,7 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
                 if( c->expression->type() == CALL_EXPR || c->alt->type() == CALL_EXPR ) {
                     c->condition->emit(vm, compiler);
                     array_push(vm->code, OP_JNCOND);
-                    size_t length = vm->code.length;
+                    uint32_t length = vm->code.length;
                     vm_code_push32(vm, FILLER32);
                     // then statement
                 #define OPTIMIZE_BRANCH(branch) \
@@ -414,11 +414,11 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
                     OPTIMIZE_BRANCH(expression)
                     // alt
                     array_push(vm->code, OP_JMP);
-                    size_t length1 = vm->code.length;
+                    uint32_t length1 = vm->code.length;
                     vm_code_push32(vm, FILLER32);
-                    size_t n = vm->code.length;
+                    uint32_t n = vm->code.length;
                     OPTIMIZE_BRANCH(alt)
-                    size_t n1 = vm->code.length;
+                    uint32_t n1 = vm->code.length;
                     fill_hole(vm, length, n);
                     fill_hole(vm, length1, n1);
                 } else // no optimization possible
@@ -456,17 +456,17 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
 void AST::ConditionalExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
     condition->emit(vm, compiler);
     array_push(vm->code, OP_JNCOND);
-    size_t length = vm->code.length;
+    uint32_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
     // then statement
     expression->emit(vm, compiler);
     // alt
     array_push(vm->code, OP_JMP);
-    size_t length1 = vm->code.length;
+    uint32_t length1 = vm->code.length;
     vm_code_push32(vm, FILLER32);
-    size_t n = vm->code.length;
+    uint32_t n = vm->code.length;
     alt->emit(vm, compiler);
-    size_t n1 = vm->code.length;
+    uint32_t n1 = vm->code.length;
     fill_hole(vm, length, n);
     fill_hole(vm, length1, n1);
 }
@@ -482,21 +482,21 @@ void AST::IfStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     // done:
     condition->emit(vm, compiler);
     array_push(vm->code, OP_JNCOND);
-    size_t length = vm->code.length;
+    uint32_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
     // then statement
     statement->emit(vm, compiler);
     if(alt) {
         array_push(vm->code, OP_JMP);
-        size_t length1 = vm->code.length;
+        uint32_t length1 = vm->code.length;
         vm_code_push32(vm, FILLER32);
-        size_t n = vm->code.length;
+        uint32_t n = vm->code.length;
         alt->emit(vm, compiler);
-        size_t n1 = vm->code.length;
+        uint32_t n1 = vm->code.length;
         fill_hole(vm, length, n);
         fill_hole(vm, length1, n1);
     } else {
-        size_t n = vm->code.length;
+        uint32_t n = vm->code.length;
         fill_hole(vm, length, n);
     }
     END_AST
@@ -508,21 +508,21 @@ void AST::WhileStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     // [condition]
     // jcond 1
     array_push(vm->code, OP_JMP);
-    size_t length = vm->code.length;
+    uint32_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
 
     compiler->loop_stmts.emplace_back();
 
-    size_t length1 = vm->code.length;
+    uint32_t length1 = vm->code.length;
     statement->emit(vm, compiler);
     fill_hole(vm, length, vm->code.length);
 
-    size_t next_it_pos = vm->code.length;
+    uint32_t next_it_pos = vm->code.length;
     condition->emit(vm, compiler);
     array_push(vm->code, OP_JCOND);
     vm_code_push32(vm, length1);
 
-    size_t end_pos = vm->code.length;
+    uint32_t end_pos = vm->code.length;
 
     auto top = compiler->loop_stmts.back();
     for(auto cont : top.fill_continue)
@@ -540,7 +540,7 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     emit_set_var(vm, compiler, id);
     array_push(vm->code, OP_POP);
     // body
-    size_t body_pos = vm->code.length;
+    uint32_t body_pos = vm->code.length;
     compiler->loop_stmts.emplace_back();
     statement->emit(vm, compiler);
     // condition:
@@ -552,14 +552,14 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     // step
     // jmp [body]
     // 1: done
-    size_t next_it_pos = vm->code.length;
+    uint32_t next_it_pos = vm->code.length;
     emit_get_var(vm, compiler, id);
     to->emit(vm, compiler);
     if(stepN == 1) array_push(vm->code, OP_GEQ);
     else array_push(vm->code, OP_LEQ);
 
     array_push(vm->code, OP_JCOND);
-    size_t length = vm->code.length;
+    uint32_t length = vm->code.length;
     vm_code_push32(vm, FILLER32);
 
     if(step) {
@@ -580,7 +580,7 @@ void AST::ForStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_JMP);
     vm_code_push32(vm, body_pos);
 
-    size_t end_pos = vm->code.length;
+    uint32_t end_pos = vm->code.length;
     fill_hole(vm, length, end_pos);
 
     auto top = compiler->loop_stmts.back();
@@ -596,7 +596,7 @@ void AST::ContinueStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     START_AST
     assert(!compiler->loop_stmts.empty());
     array_push(vm->code, OP_JMP);
-    size_t pos = vm->code.length;
+    uint32_t pos = vm->code.length;
     vm_code_push32(vm, FILLER32);
     compiler->loop_stmts.back().fill_continue.emplace_back(pos);
     END_AST
@@ -605,7 +605,7 @@ void AST::BreakStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     START_AST
     assert(!compiler->loop_stmts.empty());
     array_push(vm->code, OP_JMP);
-    size_t pos = vm->code.length;
+    uint32_t pos = vm->code.length;
     vm_code_push32(vm, FILLER32);
     compiler->loop_stmts.back().fill_break.emplace_back(pos);
     END_AST
@@ -614,27 +614,38 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     START_AST
     array_push(vm->code, OP_DEF_FUNCTION_PUSH);
     vm_code_push16(vm, arguments.size());
-    size_t length = vm->code.length;
+    uint32_t function_end = vm->code.length;
     vm_code_push32(vm, FILLER32);
     // scope
     compiler->scope();
     array_push(vm->code, OP_ENV_NEW);
-    size_t env_length = vm->code.length;
+    uint32_t env_length = vm->code.length;
     vm_code_push32(vm, FILLER32);
     vm_code_push32(vm, compiler->nslots());
     // body
+    Hana::Compiler::Function fn;
+    fn.fn_ast = this;
+    uint32_t body_start = vm->code.length;
+    fn.body_start = body_start;
+    compiler->functions.emplace_back(fn);
     for(auto &arg : arguments) {
         emit_set_var(vm, compiler, arg);
         array_push(vm->code, OP_POP);
     }
     statement->emit(vm, compiler);
+    //auto fn = compiler->functions.back();
+    compiler->functions.pop_back();
     fill_hole(vm, env_length, compiler->slotsize);
     compiler->unscope();
     // default return
-    array_push(vm->code, OP_PUSH_NIL);
-    array_push(vm->code, OP_RET); // pops env for us
-    //fill in
-    fill_hole(vm, length, vm->code.length);
+    if(vm->code.data[vm->code.length] != OP_RET) {
+        array_push(vm->code, OP_PUSH_NIL);
+        array_push(vm->code, OP_RET); // pops env for us
+    }
+    // fill holes
+    fill_hole(vm, function_end, vm->code.length);
+
+    // push set var
     if(!record_fn) {
         emit_set_var(vm, compiler, id);
         array_push(vm->code, OP_POP);
@@ -681,8 +692,22 @@ void AST::ExpressionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
 }
 void AST::ReturnStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     START_AST
+    auto &fn = compiler->functions.back();
     if(expression == nullptr)
         array_push(vm->code, OP_PUSH_NIL);
+    else if(!fn.fn_ast->id.empty() && expression->type() == CALL_EXPR &&
+        ((CallExpression*)(expression.get()))->callee->type() == IDENTIFIER &&
+        ((Identifier*)(((CallExpression*)(expression.get()))->callee).get())->id == fn.fn_ast->id) {
+        // recursive tail call, perform tco
+        auto call = ((CallExpression*)(expression.get()));
+        for(auto arg = call->arguments.rbegin(); arg != call->arguments.rend(); arg++) {
+            (*arg)->emit(vm, compiler);
+        }
+        array_push(vm->code, OP_JMP);
+        vm_code_push32(vm, fn.body_start);
+        END_AST
+        return;
+    }
     else
         expression->emit(vm, compiler);
     array_push(vm->code, OP_RET);
@@ -691,13 +716,13 @@ void AST::ReturnStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
 void AST::TryStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     START_AST
     array_push(vm->code, OP_PUSH_NIL);
-    std::vector<size_t> cases_to_fill;
+    std::vector<uint32_t> cases_to_fill;
     // case statements is generated as a function
     for(auto &case_stmt : cases) {
         // function will take in 1 arg if id is set
         array_push(vm->code, OP_DEF_FUNCTION_PUSH);
         vm_code_push16(vm, !case_stmt->id.empty());
-        size_t body_start = vm->code.length;
+        uint32_t body_start = vm->code.length;
         vm_code_push32(vm, FILLER32);
         // id
         if(!case_stmt->id.empty())
@@ -707,7 +732,7 @@ void AST::TryStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
         for(auto &s : case_stmt->statements)
             s->emit(vm, compiler);
         array_push(vm->code, OP_EXFRAME_RET);
-        size_t body_end = vm->code.length;
+        uint32_t body_end = vm->code.length;
         vm_code_push32(vm, FILLER32);
         cases_to_fill.push_back(body_end);
         // end

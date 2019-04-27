@@ -6,7 +6,7 @@
 
 namespace Hana {
 
-namespace AST { struct AST; };
+namespace AST { struct AST; struct FunctionStatement; };
 
 class Compiler {
 
@@ -40,6 +40,13 @@ public:
     };
     std::vector<std::unique_ptr<SourceMap>> src_maps;
     SourceMap find_src_map(size_t bytecode_idx);
+
+    // functions
+    struct Function {
+        AST::FunctionStatement *fn_ast;
+        uint32_t body_start;
+    };
+    std::vector<Function> functions;
 
 private:
     std::vector<Local> locals;
