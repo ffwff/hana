@@ -522,6 +522,7 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
             fpop();
             stmt = new AST::FunctionStatement(token.strv);
         } else {
+            printf("%d\n", token.type);
             throw ParserError("expected function id");
         }
     }
@@ -772,12 +773,7 @@ AST::AST *ScriptParser::parse_statement() {
         // expression statement
         fload();
         START_GMR
-        auto expr = parse_expression();
-        if(expr == nullptr){
-            delete expr;
-            return nullptr;
-        }
-        auto stmt = new AST::ExpressionStatement(expr);
+        auto stmt = new AST::ExpressionStatement(parse_expression());
         nextnl();
         return WRAP_RET2(stmt);
     }

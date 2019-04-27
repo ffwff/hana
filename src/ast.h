@@ -24,12 +24,12 @@ enum Type {
 };
 
 #define TYPE(x) \
-inline const Type type() override { return x; }
+inline Type type() override { return x; }
 
 struct AST {
     size_t start_line, end_line;
     virtual ~AST() {};
-    virtual const Type type() { return NONE; }
+    virtual Type type() { return NONE; }
     virtual void print(int indent=0) {}
     virtual void emit(struct vm *vm, Hana::Compiler *compiler) {}
 };

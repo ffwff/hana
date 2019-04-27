@@ -11,7 +11,14 @@ OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
 
-HANAYOFLAGS = -MMD -fno-exceptions -nostdinc++
+HANAYOFLAGS = -MMD -fno-rtti -fno-exceptions -nostdinc++
+
+# Default flags
+CXXFLAGS ?= -std=c++11 -Wall
+CCFLAGS ?= -Wall -Wno-switch
+
+CXXFLAGS += -I.
+CCFLAGS += -Ivm/src -Iextern/xxHash
 
 # Version
 ifdef RELEASE
@@ -59,11 +66,6 @@ LDDFLAGS += -L`jemalloc-config --libdir` \
             -ljemalloc `jemalloc-config --libs`
 endif
 endif
-
-# Default flags
-CXXFLAGS += -std=c++11 -I. -Wall -Wno-format-truncation -Wno-switch -fno-rtti
-CCFLAGS += -Wall -Wno-switch -Ivm/src -Iextern/xxHash
-#LDDFLAGS += -s
 
 # bytecode
 ADDITIONAL=

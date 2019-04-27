@@ -1,5 +1,6 @@
 #pragma once
 #include <fstream>
+#include <sstream>
 #include <cassert>
 #include <stack>
 #include <exception>
@@ -20,7 +21,7 @@ private:
 
 protected:
 
-    size_t pos;
+    size_t pos = 0;
     std::stack<Position> fposs;
     bool ended = false;
 
@@ -125,9 +126,10 @@ public:
         std::ifstream f(file);
         f.seekg(0, std::ios::end);
         size_t size = f.tellg();
-        s = std::string(size, '\0');
+        s = std::string(size, ' ');
         f.seekg(0);
         f.read(&s[0], size);
+        pos = 0;
     };
     void loads(std::string &s) {
         this->s = s;
