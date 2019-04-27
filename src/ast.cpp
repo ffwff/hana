@@ -281,7 +281,7 @@ void AST::Array::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_ARRAY_LOAD);
 }
 
-//
+// helper
 #define FILLER32 0xdeadbeef
 static void fill_hole(struct vm *vm, uint32_t length, uint32_t n) {
     vm->code.data[length+0] = (n >> 12) & 0xff;
@@ -290,8 +290,19 @@ static void fill_hole(struct vm *vm, uint32_t length, uint32_t n) {
     vm->code.data[length+3] = (n >> 0) & 0xff;
 }
 
-//
+static void emit_tail_call(AST::CallExpression *call, struct vm *vm, Hana::Compiler *compiler) {
+    for(auto arg = call->arguments.rbegin(); arg != call->arguments.rend(); arg++)
+        { (*arg)->emit(vm, compiler); }
+    call->callee->emit(vm, compiler);
+    array_push(vm->code, OP_RETCALL);
+    if( call->callee->type() == AST::MEMBER_EXPR &&
+        !static_cast<AST::MemberExpression*>(call->callee.get())->is_namespace )
+        vm_code_push16(vm, call->arguments.size()+1);
+    else
+        vm_code_push16(vm, call->arguments.size());
+}
 
+//
 void AST::UnaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
     body->emit(vm, compiler);
     if(op == NEG) array_push(vm->code, OP_NEGATE);
@@ -378,7 +389,6 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             vm_code_push32(vm, FILLER32);
 
             //body
-            uint32_t body_start = vm->code.length;
             compiler->scope();
             array_push(vm->code, OP_ENV_NEW);
             uint32_t env_length = vm->code.length;
@@ -390,8 +400,9 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
                 emit_set_var(vm, compiler, s);
                 array_push(vm->code, OP_POP);
             }
-            // primitive tail call optimizations
-            if(right->type() == COND_EXPR) {
+            if(right->type() == CALL_EXPR) {
+                emit_tail_call(static_cast<CallExpression*>(right.get()), vm, compiler);
+            } else if(right->type() == COND_EXPR) {
                 auto c = static_cast<ConditionalExpression*>(right.get());
                 if( c->expression->type() == CALL_EXPR || c->alt->type() == CALL_EXPR ) {
                     c->condition->emit(vm, compiler);
@@ -400,14 +411,8 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
                     vm_code_push32(vm, FILLER32);
                     // then statement
                 #define OPTIMIZE_BRANCH(branch) \
-                    if( c->branch->type() == CALL_EXPR && \
-                        static_cast<CallExpression*>(c->branch.get())->callee->type() == IDENTIFIER && \
-                        static_cast<Identifier*>(static_cast<CallExpression*>(c->branch.get())->callee.get())->id == id) { \
-                        auto call = static_cast<CallExpression*>(c->branch.get()); \
-                        for(auto arg = call->arguments.rbegin(); arg != call->arguments.rend(); arg++) \
-                        { (*arg)->emit(vm, compiler); } \
-                        array_push(vm->code, OP_JMP); \
-                        vm_code_push32(vm, body_start); \
+                    if( c->branch->type() == CALL_EXPR ) { \
+                        emit_tail_call(static_cast<CallExpression*>(c->branch.get()), vm, compiler); \
                     } else { \
                         c->branch->emit(vm, compiler);\
                     }
@@ -623,22 +628,16 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     vm_code_push32(vm, FILLER32);
     vm_code_push32(vm, compiler->nslots());
     // body
-    Hana::Compiler::Function fn;
-    fn.fn_ast = this;
-    uint32_t body_start = vm->code.length;
-    fn.body_start = body_start;
-    compiler->functions.emplace_back(fn);
     for(auto &arg : arguments) {
         emit_set_var(vm, compiler, arg);
         array_push(vm->code, OP_POP);
     }
     statement->emit(vm, compiler);
-    //auto fn = compiler->functions.back();
-    compiler->functions.pop_back();
     fill_hole(vm, env_length, compiler->slotsize);
     compiler->unscope();
     // default return
-    if(vm->code.data[vm->code.length] != OP_RET) {
+    if( vm->code.data[vm->code.length] != OP_RET &&
+        vm->code.data[vm->code.length] != OP_RETCALL) {
         array_push(vm->code, OP_PUSH_NIL);
         array_push(vm->code, OP_RET); // pops env for us
     }
@@ -692,19 +691,11 @@ void AST::ExpressionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
 }
 void AST::ReturnStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     START_AST
-    auto &fn = compiler->functions.back();
     if(expression == nullptr)
         array_push(vm->code, OP_PUSH_NIL);
-    else if(!fn.fn_ast->id.empty() && expression->type() == CALL_EXPR &&
-        ((CallExpression*)(expression.get()))->callee->type() == IDENTIFIER &&
-        ((Identifier*)(((CallExpression*)(expression.get()))->callee).get())->id == fn.fn_ast->id) {
+    else if(expression->type() == CALL_EXPR) {
         // recursive tail call, perform tco
-        auto call = ((CallExpression*)(expression.get()));
-        for(auto arg = call->arguments.rbegin(); arg != call->arguments.rend(); arg++) {
-            (*arg)->emit(vm, compiler);
-        }
-        array_push(vm->code, OP_JMP);
-        vm_code_push32(vm, fn.body_start);
+        emit_tail_call(static_cast<CallExpression*>(expression.get()), vm, compiler);
         END_AST
         return;
     }

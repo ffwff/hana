@@ -93,7 +93,9 @@ void vm_execute(struct vm *vm) {
         X(OP_MEMBER_SET), X(OP_DICT_LOAD), X(OP_ARRAY_LOAD),
         X(OP_INDEX_GET), X(OP_INDEX_SET),
         // exceptions
-        X(OP_TRY), X(OP_RAISE), X(OP_EXFRAME_RET)
+        X(OP_TRY), X(OP_RAISE), X(OP_EXFRAME_RET),
+        // tail calls
+        X(OP_RETCALL)
     };
 
 #undef X
@@ -783,6 +785,74 @@ void vm_execute(struct vm *vm) {
         LOG("FRAME POP %d\n", pos);
         vm->ip = pos;
 
+        dispatch();
+    }
+
+    // tail calls
+    doop(OP_RETCALL): {
+        vm->ip++;
+        struct value val = array_top(vm->stack);
+        const uint16_t nargs = vm->code.data[vm->ip+0] << 4 | vm->code.data[vm->ip+1];
+        vm->ip += sizeof(nargs);
+        assert(vm->stack.length >= nargs);
+        LOG("TAIL RET %d\n", nargs);
+        if(val.type == TYPE_NATIVE_FN) {
+
+            array_pop(vm->stack);
+            val.as.fn(vm, nargs);
+
+            // return regularly if it's a native function
+            struct env *parent = vm->localenv->parent;
+            env_free(vm->localenv);
+            vm->ip = vm->localenv->ifn;
+            free(vm->localenv);
+            vm->localenv = parent;
+
+        } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
+            // TODO should probably move this to a separate function
+            size_t fn_ip = 0;
+            if(val.type == TYPE_DICT) {
+                array_pop(vm->stack);
+                struct value *ctor = dict_get(val.as.dict, "constructor");
+                if(ctor == NULL) {
+                    FATAL("expected record to have constructor\n");
+                    ERROR();
+                }
+                if(ctor->type == TYPE_NATIVE_FN) {
+                    value_free(&val);
+                    ctor->as.fn(vm, nargs);
+                    dispatch();
+                } else if(ctor->type != TYPE_FN) {
+                    FATAL("constructor must be a function!\n");
+                    ERROR();
+                }
+                fn_ip = ctor->as.ifn.ip;
+                if(nargs+1 != ctor->as.ifn.nargs) {
+                    FATAL("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1);
+                    ERROR();
+                }
+            } else {
+                fn_ip = val.as.ifn.ip;
+                array_pop(vm->stack);
+                if(nargs != val.as.ifn.nargs) {
+                    FATAL("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs);
+                    ERROR();
+                }
+            }
+            // arguments
+            if(val.type == TYPE_DICT) {
+                struct value new_val;
+                value_dict(&new_val);
+                dict_set(new_val.as.dict, "prototype", &val);
+                value_free(&val); // reference carried by dict
+                array_push(vm->stack, new_val);
+            }
+            // jump
+            vm->ip = fn_ip;
+        } else {
+            FATAL("calling a value that's not a record constructor or a function\n");
+            ERROR();
+        }
         dispatch();
     }
 

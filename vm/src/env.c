@@ -7,8 +7,14 @@
 #define bit_set(var,pos) var |= 1UL << pos
 
 void env_init(struct env *env, size_t nslots, size_t up_to) {
-    env->slots = calloc(nslots, sizeof(struct value));
-    env->nslots = nslots;
+    if(env->slots == NULL) {
+        env->slots = calloc(nslots, sizeof(struct value));
+    } else if(env->nslots < nslots) {
+        free(env->slots);
+        env->slots = calloc(nslots, sizeof(struct value));
+    } else { // reused env for tail call
+        memset(env->slots, 0, nslots*sizeof(struct value));
+    }
     if(env->parent != NULL)
         for(size_t i = 0; i < up_to; i++)
             value_copy(&env->slots[i], &env->parent->slots[i]);

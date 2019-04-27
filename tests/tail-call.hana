@@ -4,4 +4,10 @@ function call_1000_times(count) begin
     else return call_1000_times(count+1)
 end
 
-call_1000_times(0)
+call_1000_times(10)
+
+/*
+g(x) = 10*x
+f(x) = g(x)
+print(f(10))
+*/
