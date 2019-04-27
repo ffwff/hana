@@ -1,0 +1,2 @@
+fn = Cffi::function("puts", [String], Int)
+Cffi::call(fn, "AAAAAA")

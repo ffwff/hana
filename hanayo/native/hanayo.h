@@ -10,23 +10,13 @@ namespace hanayo {
 // io
 fn(print);
 fn(input);
-fn(realpath);
-
-fn(fopen);
-fn(fread);
-fn(fwrite);
-fn(fseek);
-fn(ftell);
-fn(feof);
-fn(ferror);
-
-fn(getenv);
-fn(setenv);
-
-fn(exit);
-
-// language functions
 fn(eval);
+
+// ffi
+namespace ffi {
+    fn(function);
+    fn(call);
+};
 
 namespace string {
     fn(constructor);

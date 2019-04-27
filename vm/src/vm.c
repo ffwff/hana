@@ -689,7 +689,7 @@ void vm_execute(struct vm *vm) {
         int64_t length = val.as.integer;
         array_pop(vm->stack);
         assert(val.type == TYPE_INT);
-        LOG("ARRAY_LOAD %d\n", length);
+        LOG("ARRAY_LOAD %ld\n", length);
 
         struct value aval;
         if(length == 0) {

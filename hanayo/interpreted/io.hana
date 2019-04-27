@@ -36,9 +36,9 @@ record File
     end
 
     // seek
-    SEEK_SET = ^__SEEK_SET
-    SEEK_CUR = ^__SEEK_CUR
-    SEEK_END = ^__SEEK_END
+    SEEK_SET = 0
+    SEEK_CUR = 1
+    SEEK_END = 2
     function seek(self, offset, whence) begin
         return __fseek(self.__f, offset, whence)
     end

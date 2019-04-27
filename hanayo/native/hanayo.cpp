@@ -100,36 +100,22 @@ void hanayo::_init(struct vm *m) {
     value_native(&val, hanayo::name);  hmap_set(&m->globalenv, #name, &val);
 #define native_function_key(name, key) \
     value_native(&val, hanayo::name);  hmap_set(&m->globalenv, key, &val);
+    // # objects
+#define native_obj_function(key, name) \
+    do{ struct value v; value_native(&v, hanayo::name); hmap_set(&val.as.dict->data, key, &v); } while(0)
+
 
     // ## io
     native_function(print)
     native_function(input)
-    native_function(realpath)
-
-    // ### builtins
-    native_function_key(fopen,  "__fopen")
-    native_function_key(fread,  "__fread")
-    native_function_key(fwrite, "__fwrite")
-    native_function_key(fseek,  "__fseek")
-    native_function_key(ftell,  "__ftell")
-    native_function_key(feof,   "__feof")
-    native_function_key(ferror, "__ferror")
-    value_int(&val, SEEK_SET); hmap_set(&m->globalenv, "__SEEK_SET", &val);
-    value_int(&val, SEEK_CUR); hmap_set(&m->globalenv, "__SEEK_CUR", &val);
-    value_int(&val, SEEK_END); hmap_set(&m->globalenv, "__SEEK_END", &val);
-
-    // ## env
-    native_function_key(getenv, "__getenv")
-    native_function_key(setenv, "__setenv")
-
-    // ## exit
-    native_function_key(exit, "__exit")
-
     native_function(eval)
 
-    // # objects
-#define native_obj_function(key, name) \
-    do{ struct value v; value_native(&v, hanayo::name); hmap_set(&val.as.dict->data, key, &v); } while(0)
+    // ffi
+    value_dict(&val);
+    native_obj_function("function"   , ffi::function);
+    native_obj_function("call",        ffi::call);
+    hmap_set(&m->globalenv, "Cffi", &val);
+    value_free(&val);
 
     // ## strings
     value_dict(&val);

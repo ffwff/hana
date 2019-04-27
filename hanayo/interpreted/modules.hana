@@ -32,8 +32,8 @@ function import(x) begin
     // save __file__ and import!
     old_file = ^__file__
     ^__file__ = x
-    f = __fopen(x, "r")
-    if eval(__fread(f)) begin // success
+    f = File(x, "r")
+    if eval(f.readall()) begin // success
         __modules[x] = true
         ^__file__ = old_file
         return true

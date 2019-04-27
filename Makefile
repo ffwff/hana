@@ -17,7 +17,7 @@ HANAYOFLAGS = -MMD -fno-rtti -fno-exceptions -nostdinc++
 CXXFLAGS ?= -std=c++11 -Wall
 CCFLAGS ?= -Wall -Wno-switch
 
-CXXFLAGS += -I.
+CXXFLAGS += -I. -Wno-format-truncation
 CCFLAGS += -Ivm/src -Iextern/xxHash
 
 # Version
@@ -28,7 +28,7 @@ LDDFLAGS += -O3 -flto
 HANAYOFLAGS += -flto
 else
 ifdef PROFILE
-CXXFLAGS += -O3 -DRELEASE -DNOLOG -g -pg -flto
+CXXFLAGS += -O3 -DRELEASE -DNOLOG -g -pg
 CCFLAGS += -O3 -DNOLOG -g -pg -flto
 LDDFLAGS += -O3 -g -pg -flto
 HANAYOFLAGS += -flto
@@ -66,6 +66,10 @@ LDDFLAGS += -L`jemalloc-config --libdir` \
             -ljemalloc `jemalloc-config --libs`
 endif
 endif
+
+## ffi
+HANAYOFLAGS += $(shell pkg-config --cflags libffi)
+LDDFLAGS += $(shell pkg-config --libs libffi) -ldl
 
 # bytecode
 ADDITIONAL=
