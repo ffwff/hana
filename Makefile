@@ -11,7 +11,7 @@ OBJS = ${subst src/,build/,$(PARSER_SRC:.cpp=.o)} \
 DEPS = $(OBJS:.o=.d)
 -include $(DEPS)
 
-HANAYOFLAGS = -MMD -fno-rtti -fno-exceptions -nostdinc++
+HANAYOFLAGS = -MMD -fno-exceptions -nostdinc++
 
 # Version
 ifdef RELEASE
@@ -61,7 +61,7 @@ endif
 endif
 
 # Default flags
-CXXFLAGS += -std=c++11 -I. -Wall -Wno-format-truncation -Wno-switch
+CXXFLAGS += -std=c++11 -I. -Wall -Wno-format-truncation -Wno-switch -fno-rtti
 CCFLAGS += -Wall -Wno-switch -Ivm/src -Iextern/xxHash
 #LDDFLAGS += -s
 

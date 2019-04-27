@@ -2,6 +2,7 @@
 #include "error.h"
 #include "vm/src/vm.h"
 #include "vm/src/xxhash.h"
+#include <stdio.h>
 
 using namespace Hana;
 
@@ -18,26 +19,26 @@ _SRC_MAP->end_byte = vm->code.length;
 // indent
 static void pindent(int levels) {
     while(levels--)
-        std::cout << " ";
+        fputs(" ", stdout);
 }
 
 // DEBUG
 // Literals
 void AST::StrLiteral::print(int indent) {
     pindent(indent);
-    std::cout << "\"" << str << "\"\n";
+    printf("\"%s\"\n", str.data());
 }
 void AST::IntLiteral::print(int indent) {
     pindent(indent);
-    std::cout << i << '\n';
+    printf("%ld\n", i);
 }
 void AST::FloatLiteral::print(int indent) {
     pindent(indent);
-    std::cout << f << '\n';
+    printf("%f\n", f);
 }
 void AST::Identifier::print(int indent) {
     pindent(indent);
-    std::cout << id << '\n';
+    printf("%s\n", id.data());
 }
 void AST::Array::print(int indent) {
 }
@@ -45,51 +46,51 @@ void AST::Array::print(int indent) {
 // Expressions
 void AST::UnaryExpression::print(int indent) {
     pindent(indent);
-    std::cout << "unaryexpr\n";
+    fputs("unaryexpr\n", stdout);
     body->print(indent+1);
 }
 void AST::MemberExpression::print(int indent) {
     pindent(indent);
-    std::cout << "memexpr\n";
+    fputs("memexpr\n", stdout);
     left->print(indent+1);
     right->print(indent+1);
 }
 void AST::CallExpression::print(int indent) {
     pindent(indent);
-    std::cout << "callexpr\n";
+    fputs("callexpr\n", stdout);
     callee->print(indent+1);
     for(auto &arg : arguments)
         arg->print(indent+1);
 }
 void AST::BinaryExpression::print(int indent) {
     pindent(indent);
-    std::cout << "binexpr\n";
+    fputs("binexpr\n", stdout);
     left->print(indent+1);
     pindent(indent+1);
-    if(op == ADD) std::cout << "+";
-    else if(op == SUB) std::cout << "-";
-    else if(op == MUL) std::cout << "*";
-    else if(op == DIV) std::cout << "/";
-    else if(op == MOD) std::cout << "mod";
-    else if(op == AND) std::cout << "and";
-    else if(op == OR) std::cout << "or";
-    else if(op == EQ) std::cout << "==";
-    else if(op == NEQ) std::cout << "!=";
-    else if(op == GT) std::cout << ">";
-    else if(op == LT) std::cout << "<";
-    else if(op == GEQ) std::cout << ">=";
-    else if(op == LEQ) std::cout << "<=";
-    else if(op == SET) std::cout << "=";
-    else if(op == ADDS) std::cout << "+=";
-    else if(op == SUBS) std::cout << "-=";
-    else if(op == MULS) std::cout << "*=";
-    else if(op == DIVS) std::cout << "/=";
-    std::cout << "\n";
+    if(op == ADD) fputs("+", stdout);
+    else if(op == SUB) fputs("-", stdout);
+    else if(op == MUL) fputs("*", stdout);
+    else if(op == DIV) fputs("/", stdout);
+    else if(op == MOD) fputs("mod", stdout);
+    else if(op == AND) fputs("and", stdout);
+    else if(op == OR) fputs("or", stdout);
+    else if(op == EQ) fputs("==", stdout);
+    else if(op == NEQ) fputs("!=", stdout);
+    else if(op == GT) fputs(">", stdout);
+    else if(op == LT) fputs("<", stdout);
+    else if(op == GEQ) fputs(">=", stdout);
+    else if(op == LEQ) fputs("<=", stdout);
+    else if(op == SET) fputs("=", stdout);
+    else if(op == ADDS) fputs("+=", stdout);
+    else if(op == SUBS) fputs("-=", stdout);
+    else if(op == MULS) fputs("*=", stdout);
+    else if(op == DIVS) fputs("/=", stdout);
+    fputs("\n", stdout);
     right->print(indent+1);
 }
 void AST::ConditionalExpression::print(int indent) {
     pindent(indent);
-    std::cout << "conditional\n";
+    fputs("conditional\n", stdout);
     condition->print(indent+1);
     expression->print(indent+1);
     alt->print(indent+1);
@@ -98,72 +99,72 @@ void AST::ConditionalExpression::print(int indent) {
 // Statements
 void AST::IfStatement::print(int indent) {
     pindent(indent);
-    std::cout << "if (" << start_line << "->" << end_line << ")\n";
+    printf("if (%ld->%ld)\n", start_line, end_line);
     condition->print(indent+1);
     statement->print(indent+1);
     if(alt) alt->print(indent+1);
 }
 void AST::WhileStatement::print(int indent) {
     pindent(indent);
-    std::cout << "while (" << start_line << "->" << end_line << ")\n";
+    printf("while (%ld->%ld)\n", start_line, end_line);
     condition->print(indent+1);
     statement->print(indent+1);
 }
 void AST::ForStatement::print(int indent) {
     pindent(indent);
-    std::cout << "for (" << start_line << "->" << end_line << ")\n";
+    printf("for (%ld->%ld)\n", start_line, end_line);
     from->print(indent+1);
     to->print(indent+1);
     if(step) step->print(indent+1);
     else {
         pindent(indent+1);
-        std::cout << stepN << "\n";
+        printf("%d\n", stepN);
     }
     statement->print(indent+1);
 }
 void AST::ContinueStatement::print(int indent) {
     pindent(indent);
-    std::cout << "continue (" << start_line << "->" << end_line << ")\n";
+    printf("continue (%ld->%ld)\n", start_line, end_line);
 }
 void AST::BreakStatement::print(int indent) {
     pindent(indent);
-    std::cout << "break (" << start_line << "->" << end_line << ")\n";
+    printf("break (%ld->%ld)\n", start_line, end_line);
 }
 void AST::FunctionStatement::print(int indent) {
     pindent(indent);
-    std::cout << "function " <<id<< " (" << start_line << "->" << end_line << ")\n";
+    printf("function (%ld->%ld)\n", start_line, end_line);
     for(auto &arg : arguments) {
         pindent(indent);
-        std::cout << arg << "\n";
+        printf("%s\n", arg.data());
     }
     statement->print(indent+1);
 }
 void AST::StructStatement::print(int indent) {
     pindent(indent);
-    std::cout << "struct (" << start_line << "->" << end_line << ")\n";
+    printf("struct (%ld->%ld)\n", start_line, end_line);
     for(auto &s : statements)
         s->print(indent+1);
 }
 void AST::ExpressionStatement::print(int indent) {
     pindent(indent);
-    std::cout << "expr stmt (" << start_line << "->" << end_line << ")\n";
+    printf("expr stmt (%ld->%ld)\n", start_line, end_line);
     expression->print(indent+1);
 }
 void AST::ReturnStatement::print(int indent) {
     pindent(indent);
-    std::cout << "return (" << start_line << "->" << end_line << ")\n";
+    printf("return (%ld->%ld)\n", start_line, end_line);
     if(expression) expression->print(indent+1);
 }
 void AST::CaseStatement::print(int indent) {
     pindent(indent);
-    std::cout << "case "<< id <<"(" << start_line << "->" << end_line << ")\n";
+    printf("case (%ld->%ld)\n", start_line, end_line);
     if(etype) etype->print(indent+1);
     for(auto &s : statements)
         s->print(indent+1);
 }
 void AST::TryStatement::print(int indent) {
     pindent(indent);
-    std::cout << "try (" << start_line << "->" << end_line << ")\n";
+    printf("try (%ld->%ld)\n", start_line, end_line);
     for(auto &s : statements)
         s->print(indent+1);
     for(auto &s : cases)
@@ -171,19 +172,19 @@ void AST::TryStatement::print(int indent) {
 }
 void AST::RaiseStatement::print(int indent) {
     pindent(indent);
-    std::cout << "raise (" << start_line << "->" << end_line << ")\n";
+    printf("raise (%ld->%ld)\n", start_line, end_line);
     if(expression) expression->print(indent+1);
 }
 
 void AST::Block::print(int indent) {
     pindent(indent);
-    std::cout << "block\n";
+    fputs("block\n", stdout);
     for(auto &s : statements)
         s->print(indent+1);
 }
 void AST::BlockStatement::print(int indent) {
     pindent(indent);
-    std::cout << "block stmt (" << start_line << "->" << end_line << ")\n";
+    printf("block stmt (%ld->%ld)\n", start_line, end_line);
     for(auto &s : statements)
         s->print(indent+1);
 }

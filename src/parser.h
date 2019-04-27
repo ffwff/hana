@@ -1,6 +1,5 @@
 #pragma once
 #include <fstream>
-#include <sstream>
 #include <cassert>
 #include <stack>
 #include <exception>
@@ -12,24 +11,32 @@ class Parser {
 private:
 
     struct Position {
-        std::streamoff pos;
-        size_t lines;
+        size_t pos, lines;
 #ifndef RELEASE
         std::string caller;
 #endif
     };
+    std::string s;
 
 protected:
 
-    std::stringstream f;
+    size_t pos;
     std::stack<Position> fposs;
     bool ended = false;
+
+    // Get/unget
+    char getc() { return pos >= s.size() ? EOF : s[pos++]; }
+    char peek() const { return pos >= s.size() ? EOF : s[pos]; }
+    void unget() { pos--; }
+    bool eof() { return pos >= s.size(); }
+    size_t tellg() const { return pos; }
+    void seekg(size_t s) { pos = s; }
 
     // File position
 #ifndef RELEASE
     void fsave_(std::string caller) {
         fposs.push({
-            .pos = f.tellg(),
+            .pos = pos,
             .lines = lines,
             .caller = caller
         });
@@ -40,7 +47,7 @@ protected:
 #else
     void fsave() {
         fposs.push({
-            .pos = f.tellg(),
+            .pos = pos,
             .lines = lines
         });
     }
@@ -50,14 +57,12 @@ protected:
 #endif
     void floadn() {
         const auto p = fposs.top();
-        f.clear();
-        f.seekg(p.pos);
+        pos = p.pos;
         lines = p.lines;
     }
     void fload() {
         const auto p = fposs.top();
-        f.clear();
-        f.seekg(p.pos);
+        pos = p.pos;
         lines = p.lines;
         fposs.pop();
     }
@@ -112,18 +117,22 @@ protected:
     void nextnl() {
         const Token t = next();
         if(t.type != Token::NONE && t.type != Token::NEWLINE)
-            throw LexerError("Expected newline");
+            throw LexerError("Expected newline, got " + t.strv);
     }
 
 public:
     void loadf(std::string &file) {
         std::ifstream f(file);
-        this->f << f.rdbuf();
+        f.seekg(0, std::ios::end);
+        size_t size = f.tellg();
+        s = std::string(size, '\0');
+        f.seekg(0);
+        f.read(&s[0], size);
     };
     void loads(std::string &s) {
-        f.str(s);
-        f.clear();
+        this->s = s;
         ended = false;
+        pos = 0;
     };
     void parse();
     size_t lines = 0;

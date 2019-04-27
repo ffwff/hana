@@ -34,27 +34,27 @@ static AST::AST *_wrap_block(ScriptParser *p, AST::AST *ast) {
 Parser::Token ScriptParser::next() {
     char c;
     const auto skip_un = [&]() {
-        while((c = f.peek()) != EOF) {
+        while((c = peek()) != EOF) {
             if(c == ' ' || c == '\t' || c == '\r') {
-                c = f.get();
+                c = getc();
             } else if (c == '/') {
-                const auto pos = f.tellg();
-                f.get();
-                char c = f.get();
+                const auto pos = tellg();
+                getc();
+                char c = getc();
                 if(c == '/') {
-                    while((c = f.peek()) != EOF && c != '\n')
-                        f.get();
+                    while((c = peek()) != EOF && c != '\n')
+                        getc();
                 } else if(c == '*') {
-                    while((c = f.peek()) != EOF) {
-                        char c = f.get();
+                    while((c = peek()) != EOF) {
+                        char c = getc();
                         if(c == '\n') lines++;
-                        const char c1 = f.get();
+                        const char c1 = getc();
                         if(c == '*' && c1 == '/')
                             break;
-                        else f.unget();
+                        else unget();
                     }
                 } else {
-                    f.seekg(pos);
+                    seekg(pos);
                     return; // this is an operator, so it should be handled below
                 }
             } else break;
@@ -63,48 +63,48 @@ Parser::Token ScriptParser::next() {
     skip_un();
     std::string token;
     if(c == EOF) {
-        f.get();
+        getc();
         return Token();
     } else if(c == '\'' || c == '"') {
         const char start = c;
-        f.get();
+        getc();
         std::string str;
-        while((c = f.peek()) != EOF) {
+        while((c = peek()) != EOF) {
             if(c == start) {
-                f.get();
+                getc();
                 break;
             } else if(c == '\\') {
-                f.get();
-                const char esc = f.get();
+                getc();
+                const char esc = getc();
                 if(esc == 'n') str += '\n';
                 else if(esc == 'r') str += '\r';
                 else if(esc == 't') str += '\t';
                 else str += esc;
             } else {
-                auto c = f.get();
+                auto c = getc();
                 if(c == '\n') lines++;
                 str += c;
             }
         }
         return Token(str, Token::Type::STRLITERAL);
     } else if(c == '\n') {
-        f.get();
+        getc();
         lines++;
-        while((c = f.peek()) != EOF) {
+        while((c = peek()) != EOF) {
             skip_un();
             if(c == '\n') {
-                f.get();
+                getc();
                 lines++;
             } else break;
         }
         return Token(true);
     } else if(isdigit(c)) {
-        while((c = f.peek()) != EOF && isdigit(c))
-            token += f.get();
-        if(f.peek() == '.') {
-            token += f.get();
-            while((c = f.peek()) != EOF && isdigit(c))
-                token += f.get();
+        while((c = peek()) != EOF && isdigit(c))
+            token += getc();
+        if(peek() == '.') {
+            token += getc();
+            while((c = peek()) != EOF && isdigit(c))
+                token += getc();
             return Token(std::stof(token));
         }
         return Token(std::stoi(token));
@@ -115,9 +115,9 @@ Parser::Token ScriptParser::next() {
     c == '.' || c == ',' || c == '?' || c == '!' || c == ':')
     else if(is_onech_op(c)) {
         // "=="|"!="|">"|"<"|">="|"<="|"+"|"-"|"/"|"*"
-        c = f.get();
-        const auto prev = f.tellg();
-        const char nc = f.get();
+        c = getc();
+        const auto prev = tellg();
+        const char nc = getc();
 #define twoch(str) \
         if(c == str[0] && nc == str[1]) return Token(str, Token::Type::OPERATOR);
 
@@ -132,15 +132,15 @@ Parser::Token ScriptParser::next() {
         else twoch("%=")
         else twoch("::")
         else {
-            f.seekg(prev);
+            seekg(prev);
             token = c;
             return Token(token, Token::Type::OPERATOR);
         }
 
     } else {
-        token += f.get();
-        while((c = f.peek()) != EOF && !isspace(c) && (!is_onech_op(c) || c == '?' || c == '!'))
-            token += f.get();
+        token += getc();
+        while((c = peek()) != EOF && !isspace(c) && (!is_onech_op(c) || c == '?' || c == '!'))
+            token += getc();
         return Token(token);
     }
 }
@@ -170,7 +170,7 @@ AST::AST *ScriptParser::parse_factor() {
                 } else if(op.strv == "]") {
                     break;
                 }
-            } while(!f.eof());
+            } while(!eof());
             return expr;
         }
     } else if(token.type == Token::Type::STRING) {
@@ -221,13 +221,13 @@ AST::AST *ScriptParser::parse_call() {
                         throw ParserError("Only 65535 arguments are allowed");
                 }
 
-                while(!f.eof()) {
+                while(!eof()) {
                     op = next();
                     if(op.type == Token::Type::OPERATOR) {
                         if(op.strv == ",") {
                             static_cast<AST::CallExpression*>(expr)->arguments.emplace_back(parse_expression());
                         } else if(op.strv == ")") {
-                            LOG("break", f.tellg());
+                            LOG("break", tellg());
                             goto next;
                         } else
                             throw ParserError("Expected , or ) operator");
@@ -257,7 +257,7 @@ AST::AST *ScriptParser::parse_call() {
             fsave();
             op = next();
 
-        } while(!f.eof());
+        } while(!eof());
 
         fload();
         return expr;
@@ -350,7 +350,7 @@ AST::AST *ScriptParser::parse_binexpr() {
             binexpr->left = std::unique_ptr<AST::AST>(left); \
             binexpr->op = ot; \
             binexpr->right = std::unique_ptr<AST::AST>(down()); \
-            while(!f.eof()) { \
+            while(!eof()) { \
                 fsave(); \
                 token = next(); \
                 if ((ot = optype(token.strv)) != AST::BinaryExpression::OpType::NONE) { \
@@ -421,7 +421,7 @@ std::vector<std::string> ScriptParser::parse_function_arguments() {
         return arguments;
     } else if(token.type == Token::Type::STRING) {
         arguments.push_back(token.strv);
-        while(!f.eof()) {
+        while(!eof()) {
             token = next();
             if(token.type == Token::Type::OPERATOR) {
                 if(token.strv == ",") {
@@ -465,7 +465,7 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
         delete stmt;
         return nullptr;
     } else fpop();
-    while(!f.eof()) {
+    while(!eof()) {
         fsave();
         auto token = next();
         if(token.type == Token::Type::STRING) {
@@ -538,7 +538,7 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
             fpop();
             nextnl();
             auto blk = new AST::BlockStatement();
-            while(!f.eof()) {
+            while(!eof()) {
                 fsave();
                 const auto token = next();
                 if(token.type == Token::Type::STRING && token.strv == "end") {
@@ -677,7 +677,7 @@ AST::AST *ScriptParser::parse_statement() {
             std::vector<std::unique_ptr<AST::AST>> statements;
             std::vector<std::unique_ptr<AST::CaseStatement>> cases;
             AST::CaseStatement *case_stmt = nullptr;
-            while(!f.eof()) {
+            while(!eof()) {
                 fsave();
                 auto token = next();
                 if(token.strv == "case") {
@@ -748,7 +748,7 @@ AST::AST *ScriptParser::parse_statement() {
             START_GMR
             nextnl();
             auto blk = new AST::BlockStatement();
-            while(!f.eof()) {
+            while(!eof()) {
                 fsave();
                 const auto token = next();
                 if(token.type == Token::Type::STRING && token.strv == "end") {
@@ -772,7 +772,12 @@ AST::AST *ScriptParser::parse_statement() {
         // expression statement
         fload();
         START_GMR
-        auto stmt = new AST::ExpressionStatement(parse_expression());
+        auto expr = parse_expression();
+        if(expr == nullptr){
+            delete expr;
+            return nullptr;
+        }
+        auto stmt = new AST::ExpressionStatement(expr);
         nextnl();
         return WRAP_RET2(stmt);
     }
