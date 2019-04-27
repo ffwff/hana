@@ -61,6 +61,7 @@ fn_(delete_) {
 fn_(copy) {
     if(nargs == 1) {
         struct value val = array_top(vm->stack);
+        array_pop(vm->stack);
 
         struct value aval;
         value_array_n(&aval, val.as.array->data.length);
@@ -68,7 +69,7 @@ fn_(copy) {
             value_copy(&aval.as.array->data.data[i], &val.as.array->data.data[i]);
 
         value_free(&val);
-        value_copy(&array_top(vm->stack), &aval);
+        array_push(vm->stack, aval);
         return;
     }
 

@@ -6,3 +6,8 @@ end
 b = Record::copy(a)
 a.b = 10
 b.b
+
+a = [1,2,3]
+b = Array::copy(a)
+b[0] = 10
+a[0]
