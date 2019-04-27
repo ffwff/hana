@@ -274,6 +274,14 @@ fn_(map) {
             value_copy(&args.data[0], &aval.as.array->data.data[i]);
             // return
             struct value *ret = vm_call(vm, &fn, args);
+            if(ret == (struct value*)-1) {
+                value_free(&args.data[0]);
+                array_free(args);
+                value_free(&aval);
+                value_free(&fn);
+                value_free(&new_val);
+                return;
+            }
             value_copy(&new_val.as.array->data.data[i], ret);
             // cleanup
             value_free(&args.data[0]);
@@ -332,6 +340,14 @@ fn_(filter) {
             value_copy(&args.data[0], &aval.as.array->data.data[i]);
             // return
             struct value *ret = vm_call(vm, &fn, args);
+            if(ret == (struct value*)-1) {
+                value_free(&args.data[0]);
+                array_free(args);
+                value_free(&aval);
+                value_free(&fn);
+                value_free(&new_val);
+                return;
+            }
             if(value_is_true(ret)) {
                 struct value val;
                 value_copy(&val, &aval.as.array->data.data[i]);
@@ -399,6 +415,15 @@ fn_(reduce) {
             value_copy(&args.data[1], &aval.as.array->data.data[i]);
             // return
             struct value *ret = vm_call(vm, &fn, args);
+            if(ret == (struct value*)-1) {
+                value_free(&args.data[0]);
+                value_free(&args.data[1]);
+                array_free(args);
+                value_free(&aval);
+                value_free(&fn);
+                value_free(&acc);
+                return;
+            }
             value_free(&acc);
             value_copy(&acc, ret);
             // cleanup

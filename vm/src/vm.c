@@ -473,7 +473,6 @@ void vm_execute(struct vm *vm) {
         env_free(vm->localenv);
 
         if(vm->localenv->ifn == (uint32_t)-1) {
-            free(vm->localenv);
             vm->localenv = parent;
             return;
         } else {
@@ -826,7 +825,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     const uint32_t last = vm->ip;
     // setup env
     struct env *oldenv = vm->localenv;
-    vm->localenv = calloc(1, sizeof(struct env));
+    struct env *curenv = vm->localenv = calloc(1, sizeof(struct env));
     vm->localenv->parent = oldenv;
     vm->localenv->ifn = (uint32_t)-1;
     // setup stack/ip
@@ -837,6 +836,12 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     vm->ip = ip;
     // call it
     vm_execute(vm);
+    if(vm->error) // unhandled exception
+        return NULL;
+    if(vm->localenv != curenv) { // exception occurred outside of function's scope
+        // NOTE: curenv already free'd from unwinding
+        return (struct value *)-1;
+    }
     // restore ip
     vm->ip = last;
     return &array_top(vm->stack);
