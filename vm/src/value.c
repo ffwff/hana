@@ -6,6 +6,7 @@
 #include "vm.h"
 #include "dict.h"
 #include "array_obj.h"
+#include "function.h"
 
 void value_int(struct value *val, int64_t data) {
     val->type = TYPE_INT;
@@ -34,11 +35,10 @@ void value_native(struct value *val, value_fn fn) {
     val->type = TYPE_NATIVE_FN;
     val->as.fn = fn;
 }
-void value_function(struct value *val, uint32_t ip, uint16_t nargs) {
+void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *env) {
     val->type = TYPE_FN;
-    val->as.ifn.ip = ip;
-    val->as.ifn.nargs = nargs;
-    val->as.ifn.reserved = 0;
+    val->as.ifn = malloc(sizeof(struct function));
+    function_init(val->as.ifn, ip, nargs, env);
 }
 void value_dict(struct value *val) {
     val->type = TYPE_DICT;
@@ -102,6 +102,13 @@ void value_free(struct value *val) {
             free(val->as.ptr);
         }
         break;
+    case TYPE_FN:
+        ((struct _rc_struct*)val->as.ptr)->refs--;
+        if(((struct _rc_struct*)val->as.ptr)->refs == 0) {
+            function_free(val->as.ptr);
+            free(val->as.ptr);
+        }
+        break;
     default: break;
     }
     val->type = TYPE_NIL;
@@ -117,7 +124,7 @@ void value_print(struct value *val) {
     else if(val->type == TYPE_NATIVE_FN)
         printf("[native fn %lx]", (intptr_t)val->as.fn);
     else if(val->type == TYPE_FN)
-        printf("[fn %d]", (uint32_t)val->as.ifn.ip);
+        printf("[fn %d]", (uint32_t)val->as.ifn->ip);
     else if(val->type == TYPE_DICT)
         printf("[dict %ld]", (intptr_t)val->as.dict);
     else if(val->type == TYPE_ARRAY)
@@ -137,6 +144,7 @@ void value_copy(struct value *dst, struct value *src) {
         case TYPE_DICT:
         case TYPE_ARRAY:
         case TYPE_NATIVE_OBJ:
+        case TYPE_FN:
             ((struct _rc_struct*)src->as.ptr)->refs++; break;
         default: break;
     }

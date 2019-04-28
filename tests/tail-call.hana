@@ -1,5 +1,5 @@
 function call_1000_times(count) begin
-    print(count)
+    print(count,"\n")
     if count == 1000 return true
     else return call_1000_times(count+1)
 end

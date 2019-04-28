@@ -1,9 +1,38 @@
-function A() begin
-    return 10
+/*
+x = "a"
+function outer() begin
+    x = "b"
+    function inner() begin
+        x
+    end
+    inner()
+    "outer " + x // wtf? x => GET LOCAL UP 0 1?
 end
 
-function B() begin
-    return A()
+outer()
+"global " + x
+*/
+
+
+function a() begin
+
+/*
+    function b() begin
+        print(b)
+    end
+    b()*/
+
+end
+a()
+
+
+/*
+function adder(n) begin
+    function inner(x) begin
+        return n + x
+    end
+    return inner
 end
 
-print(B())
+x = adder(5)
+x(10)*/

@@ -182,8 +182,8 @@ struct FunctionStatement : Statement {
     std::string id;
     std::unique_ptr<AST> statement;
     std::vector<std::string> arguments;
-    bool record_fn;
-    FunctionStatement(const std::string &id) : id(id), record_fn(false) {}
+    bool is_expr;
+    FunctionStatement(const std::string &id) : id(id), is_expr(false) {}
     void print(int indent=0) override;
     void emit(struct vm *vm, Hana::Compiler *compiler) override;
 };

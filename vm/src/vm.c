@@ -5,6 +5,7 @@
 #include "string_.h"
 #include "dict.h"
 #include "array_obj.h"
+#include "function.h"
 #include "exception_frame.h"
 
 #define assert(...)
@@ -14,6 +15,8 @@
 #define LOG(fmt, ...) do { printf(fmt __VA_OPT__(,) __VA_ARGS__); } while(0)
 #endif
 #define FATAL(fmt, ...) fprintf(stderr, fmt __VA_OPT__(,) __VA_ARGS__)
+
+void debug(){}
 
 // notes: architecture is big endian!
 
@@ -63,6 +66,7 @@ void vm_execute(struct vm *vm) {
 #else
 #define dispatch() do { \
         vm_print_stack(vm); \
+        /*getchar();*/ \
         goto *dispatch_table[vm->code.data[vm->ip]]; \
     } while(0)
 #endif
@@ -84,7 +88,9 @@ void vm_execute(struct vm *vm) {
         X(OP_EQ), X(OP_NEQ),
         // variables
         X(OP_ENV_NEW),
-        X(OP_SET_LOCAL), X(OP_SET_GLOBAL), X(OP_GET_LOCAL), X(OP_GET_GLOBAL),
+        X(OP_SET_LOCAL), X(OP_GET_LOCAL),
+        X(OP_SET_LOCAL_UP), X(OP_GET_LOCAL_UP),
+        X(OP_SET_GLOBAL), X(OP_GET_GLOBAL),
         X(OP_DEF_FUNCTION_PUSH),
         // flow control
         X(OP_JMP), X(OP_JCOND), X(OP_JNCOND), X(OP_CALL), X(OP_RET),
@@ -274,11 +280,9 @@ void vm_execute(struct vm *vm) {
     // the environment is initialized with a copy of the current environment's variables
     doop(OP_ENV_NEW): {
         vm->ip++;
-        const uint32_t n =
-            vm->code.data[vm->ip+0] << 12 |
-            vm->code.data[vm->ip+1] << 8  |
-            vm->code.data[vm->ip+2] << 4  |
-            vm->code.data[vm->ip+3];
+        const uint16_t n =
+            vm->code.data[vm->ip+0] << 4 |
+            vm->code.data[vm->ip+1];
         vm->ip += sizeof(n);
         LOG("RESERVE %d\n", n);
         env_init(vm->localenv, n);
@@ -289,14 +293,60 @@ void vm_execute(struct vm *vm) {
     // sets the value of current environment's slot to the top of the stack
     doop(OP_SET_LOCAL): {
         vm->ip++;
-        const uint16_t key =
-                            vm->code.data[vm->ip+0] << 4 |
-                            vm->code.data[vm->ip+1];
+        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+                             vm->code.data[vm->ip+1];
         vm->ip += sizeof(key);
         LOG("SET LOCAL %d\n", key);
         env_set(vm->localenv, key, &array_top(vm->stack));
         dispatch();
     }
+    // same as above but set the upper scope
+    doop(OP_SET_LOCAL_UP): {
+        vm->ip++;
+        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+                             vm->code.data[vm->ip+1];
+        vm->ip += sizeof(key);
+        uint16_t relascope = vm->code.data[vm->ip+0] << 4 |
+                             vm->code.data[vm->ip+1];
+        vm->ip += sizeof(relascope);
+        LOG("SET LOCAL UP %d %d\n", key, relascope);
+
+        struct env *env = vm->localenv;
+        while(relascope--) env = env->lexical_parent;
+        env_set(env, key, &array_top(vm->stack));
+        dispatch();
+    }
+    // pushes a copy of the value of current environment's slot
+    doop(OP_GET_LOCAL): {
+        vm->ip++;
+        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+                             vm->code.data[vm->ip+1];
+        vm->ip += sizeof(key);
+        LOG("GET LOCAL %d\n", key);
+        array_push(vm->stack, (struct value){});
+        value_copy(&array_top(vm->stack), env_get(vm->localenv, key));
+        dispatch();
+    }
+    doop(OP_GET_LOCAL_UP): {
+        vm->ip++;
+        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+                             vm->code.data[vm->ip+1];
+        vm->ip += sizeof(key);
+        uint16_t relascope = vm->code.data[vm->ip+0] << 4 |
+                             vm->code.data[vm->ip+1];
+        vm->ip += sizeof(relascope);
+        LOG("GET LOCAL UP %d %d\n", key, relascope);
+
+        struct env *env = vm->localenv;
+        while(relascope--) {
+            env = env->lexical_parent;
+            LOG("UP\n");
+        }
+        array_push(vm->stack, (struct value){});
+        value_copy(&array_top(vm->stack), env_get(env, key));
+        dispatch();
+    }
+
     // sets the value of the global variable to the top of the stack
     doop(OP_SET_GLOBAL): {
         vm->ip++;
@@ -304,17 +354,6 @@ void vm_execute(struct vm *vm) {
         vm->ip += strlen(key)+1;
         LOG("SET GLOBAL %s\n", key);
         hmap_set(&vm->globalenv, key, &array_top(vm->stack));
-        dispatch();
-    }
-    // pushes a copy of the value of current environment's slot
-    doop(OP_GET_LOCAL): {
-        vm->ip++;
-        const uint16_t key =
-                            vm->code.data[vm->ip+0] << 4 |
-                            vm->code.data[vm->ip+1];
-        vm->ip += sizeof(key);
-        array_push(vm->stack, (struct value){});
-        value_copy(&array_top(vm->stack), env_get(vm->localenv, key));
         dispatch();
     }
     // pushes a copy of the value of the global variable
@@ -354,7 +393,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(pos);
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
         struct value val;
-        value_function(&val, vm->ip, nargs);
+        value_function(&val, vm->ip, nargs, vm->localenv);
         vm->ip = pos;
         array_push(vm->stack, val);
         dispatch();
@@ -401,7 +440,6 @@ void vm_execute(struct vm *vm) {
     // sets up necessary environment and calls it.
 #define JMP_INTERPRETED_FN \
 do { \
-    size_t fn_ip = 0; \
     if(val.type == TYPE_DICT) { \
         array_pop(vm->stack); \
         struct value *ctor = dict_get(val.as.dict, "constructor"); \
@@ -417,27 +455,25 @@ do { \
             FATAL("constructor must be a function!\n"); \
             ERROR(); \
         } \
-        fn_ip = ctor->as.ifn.ip; \
-        if(nargs+1 != ctor->as.ifn.nargs) { \
-            FATAL("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1); \
+        ifn = ctor->as.ifn; \
+        if(nargs+1 != ifn->nargs) { \
+            FATAL("constructor expects exactly %d arguments, got %d\n", ifn->nargs, nargs+1); \
             ERROR(); \
         } \
-    } else { \
-        fn_ip = val.as.ifn.ip; \
-        array_pop(vm->stack); \
-        if(nargs != val.as.ifn.nargs) { \
-            FATAL("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs); \
-            ERROR(); \
-        } \
-    } \
-    if(val.type == TYPE_DICT) { \
         struct value new_val; \
         value_dict(&new_val); \
         dict_set(new_val.as.dict, "prototype", &val); \
         value_free(&val); \
         array_push(vm->stack, new_val); \
+    } else { \
+        ifn = val.as.ifn; \
+        array_pop(vm->stack); \
+        if(nargs != ifn->nargs) { \
+            FATAL("function expects exactly %d arguments, got %d\n", ifn->nargs, nargs); \
+            ERROR(); \
+        } \
     } \
-    vm->ip = fn_ip; \
+    /*vm->ip = fn_ip;*/ \
 } while(0)
     doop(OP_CALL): {
         // argument: [arg2][arg1]
@@ -453,10 +489,18 @@ do { \
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
             // caller
             struct env *oldenv = vm->localenv;
-            vm->localenv = calloc(1, sizeof(struct env));
+            vm->localenv = calloc(1, sizeof(struct env)); // why this not free?
             vm->localenv->parent = oldenv;
-            vm->localenv->ifn = vm->ip;
+            vm->localenv->retip = vm->ip;
+            vm->localenv->is_function_bound = 0;
+
+            struct function *ifn;
             JMP_INTERPRETED_FN;
+            vm->localenv->lexical_parent = ifn->bound;
+            vm->ip = ifn->ip;
+            ifn->refs--;
+
+            LOG("%lx %d\n", vm->localenv, vm->ip);
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
@@ -468,14 +512,14 @@ do { \
         LOG("RET\n");
 
         struct env *parent = vm->localenv->parent;
-        env_free(vm->localenv);
+        if(!vm->localenv->is_function_bound) env_free(vm->localenv);
 
-        if(vm->localenv->ifn == (uint32_t)-1) {
+        if(vm->localenv->retip == (uint32_t)-1) {
             vm->localenv = parent;
             return;
         } else {
-            vm->ip = vm->localenv->ifn;
-            free(vm->localenv);
+            vm->ip = vm->localenv->retip;
+            if(!vm->localenv->is_function_bound) free(vm->localenv);
             vm->localenv = parent;
         }
         dispatch();
@@ -752,7 +796,7 @@ do { \
                 // unwind & jump to exception handler
                 exception_frame_unwind(eframe, vm);
                 array_push(vm->stack, raiseval);
-                vm->ip = val->as.ifn.ip;
+                vm->ip = val->as.ifn->ip;
                 dispatch();
             }
         }
@@ -800,12 +844,16 @@ do { \
             // return regularly if it's a native function
             struct env *parent = vm->localenv->parent;
             env_free(vm->localenv);
-            vm->ip = vm->localenv->ifn;
+            vm->ip = vm->localenv->retip;
             free(vm->localenv);
             vm->localenv = parent;
 
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
+            struct function *ifn;
             JMP_INTERPRETED_FN;
+            vm->localenv->lexical_parent = ifn->bound;
+            vm->ip = ifn->ip;
+            ifn->refs--;
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
@@ -817,6 +865,8 @@ do { \
 }
 
 struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
+    assert(0);
+#if 0
     assert(fn->type == TYPE_FN || fn->type == TYPE_DICT);
 
     uint32_t nargs = 0, ip = 0;
@@ -842,7 +892,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
         }
     } else if(fn->type == TYPE_FN) {
         nargs = fn->as.ifn.nargs;
-        ip = fn->as.ifn.ip;
+        ip = fn->as.ifn->ip;
     }
 
     if((uint32_t)args.length != nargs) {
@@ -872,6 +922,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     // restore ip
     vm->ip = last;
     return &array_top(vm->stack);
+#endif
 }
 
 void vm_print_stack(const struct vm *vm) {

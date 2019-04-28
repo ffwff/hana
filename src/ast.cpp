@@ -191,44 +191,44 @@ void AST::BlockStatement::print(int indent) {
 
 // EMIT
 static void emit_set_var(struct vm *vm, Hana::Compiler *compiler, std::string s) {
-    if(s.size() > 1 && s[0] == '^') { // global var
-        s.erase(0, 1);
+    if((s.size() > 1 && s[0] == '$') || compiler->scopes.size() == 0) { // global var
+        if(s.size() > 1 && s[0] == '$') s.erase(0, 1);
+        LOG("set global var ", s);
         array_push(vm->code, OP_SET_GLOBAL);
         vm_code_pushstr(vm, s.data());
-    } else if(compiler->nscope == 0) {
-        array_push(vm->code, OP_SET_GLOBAL);
-        vm_code_pushstr(vm, s.data());
-    } else {
-        array_push(vm->code, OP_SET_LOCAL);
+    } else { // local var
         auto local = compiler->get_local(s);
-        if(local) vm_code_push16(vm, local->slot);
-        else {
+        if(local.relascope != 0) {
             compiler->set_local(s);
             local = compiler->get_local(s);
-            vm_code_push16(vm, local->slot);
+            LOG("actually -1");
         }
+        array_push(vm->code, OP_SET_LOCAL);
+        LOG("set local var ", s, ":", local.relascope);
+        vm_code_push16(vm, local.idx);
     }
 }
+void debug(){}
 static void emit_get_var(struct vm *vm, Hana::Compiler *compiler, std::string s) {
-    // TODO clean this up
-    if(s.size() > 1 && s[0] == '^') { // global var
-        s.erase(0, 1);
+    if((s.size() > 1 && s[0] == '$') || compiler->scopes.size() == 0) { // global var
+        if(s.size() > 1 && s[0] == '$') s.erase(0, 1);
         array_push(vm->code, OP_GET_GLOBAL);
         vm_code_pushstr(vm, s.data());
         vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
-    } else if(compiler->nscope == 0) {
-        array_push(vm->code, OP_GET_GLOBAL);
-        vm_code_pushstr(vm, s.data());
-        vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
-    } else {
+    } else { // local var
         auto local = compiler->get_local(s);
-        if(local == nullptr) {
+        LOG("get local var ", s, ":", local.relascope);
+        if(local.relascope == (size_t)-1) {
             array_push(vm->code, OP_GET_GLOBAL);
             vm_code_pushstr(vm, s.data());
             vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
-        } else {
+        } else if(local.relascope == 0) {
             array_push(vm->code, OP_GET_LOCAL);
-            vm_code_push16(vm, local->slot);
+            vm_code_push16(vm, local.idx);
+        } else {
+            array_push(vm->code, OP_GET_LOCAL_UP);
+            vm_code_push16(vm, local.idx);
+            vm_code_push16(vm, local.relascope);
         }
     }
 }
@@ -282,13 +282,17 @@ void AST::Array::emit(struct vm *vm, Hana::Compiler *compiler) {
     array_push(vm->code, OP_ARRAY_LOAD);
 }
 
-// helper
+// helpers
 #define FILLER32 0xdeadbeef
 static void fill_hole(struct vm *vm, uint32_t length, uint32_t n) {
     vm->code.data[length+0] = (n >> 12) & 0xff;
     vm->code.data[length+1] = (n >> 8) & 0xff;
     vm->code.data[length+2] = (n >> 4) & 0xff;
     vm->code.data[length+3] = (n >> 0) & 0xff;
+}
+static void fill_hole16(struct vm *vm, uint32_t length, uint16_t n) {
+    vm->code.data[length+0] = (n >> 4) & 0xff;
+    vm->code.data[length+1] = (n >> 0) & 0xff;
 }
 
 static void emit_tail_call(AST::CallExpression *call, struct vm *vm, Hana::Compiler *compiler) {
@@ -383,7 +387,7 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             LOG((uint16_t)(expr->arguments.size()));
 
             const auto id = static_cast<Identifier*>(expr->callee.get())->id;
-            if(compiler->nscope > 0 && id[0] != '^')
+            if(!(id.size()>1 && id[0] == '$'))
                 compiler->set_local(id);
 
             uint32_t length = vm->code.length;
@@ -393,8 +397,7 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             compiler->scope();
             array_push(vm->code, OP_ENV_NEW);
             uint32_t env_length = vm->code.length;
-            vm_code_push32(vm, FILLER32);
-            vm_code_push32(vm, compiler->nslots());
+            vm_code_push16(vm, 0xFFFF);
             for(auto &arg : expr->arguments) {
                 assert(arg->type() == IDENTIFIER);
                 auto s = static_cast<Identifier*>(arg.get())->id;
@@ -432,9 +435,9 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             } else {
                 right->emit(vm, compiler);
             }
-            fill_hole(vm, env_length, compiler->slotsize);
-            compiler->unscope();
-            array_push(vm->code, OP_RET); // pops env for us
+            auto scope_size = compiler->unscope();
+            fill_hole16(vm, env_length, scope_size);
+            array_push(vm->code, OP_RET);
             //fill in
             fill_hole(vm, length, vm->code.length);
             LOG("len: ", vm->code.length);
@@ -622,20 +625,20 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     vm_code_push16(vm, arguments.size());
     uint32_t function_end = vm->code.length;
     vm_code_push32(vm, FILLER32);
+    compiler->set_local(id);
     // scope
     compiler->scope();
     array_push(vm->code, OP_ENV_NEW);
     uint32_t env_length = vm->code.length;
-    vm_code_push32(vm, FILLER32);
-    vm_code_push32(vm, compiler->nslots());
+    vm_code_push16(vm, 0xFFFF);
     // body
     for(auto &arg : arguments) {
         emit_set_var(vm, compiler, arg);
         array_push(vm->code, OP_POP);
     }
     statement->emit(vm, compiler);
-    fill_hole(vm, env_length, compiler->slotsize);
-    compiler->unscope();
+    auto scope_size = compiler->unscope();
+    fill_hole16(vm, env_length, scope_size);
     // default return
     if( vm->code.data[vm->code.length] != OP_RET &&
         vm->code.data[vm->code.length] != OP_RETCALL) {
@@ -646,7 +649,7 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     fill_hole(vm, function_end, vm->code.length);
 
     // push set var
-    if(!record_fn) {
+    if(!is_expr) {
         emit_set_var(vm, compiler, id);
         array_push(vm->code, OP_POP);
     }

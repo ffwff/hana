@@ -1,37 +1,37 @@
 #include "compiler.h"
 #include "error.h"
+#include <algorithm>
 
 // scoping
 void Hana::Compiler::set_local(const std::string &id) {
-    locals.emplace_back((Local){
-        .id = id,
-        .scope = nscope,
-        .slot = locals.size()
-    });
-    assert(locals.size() < 65535);
-    slotsize++;
+    if(scopes.empty()) return;
+    auto &scope = scopes.back();
+    scope.ids.push_back(id);
 }
-const Hana::Compiler::Local *Hana::Compiler::get_local(const std::string &id) const {
-    for(auto it = locals.rbegin(); it != locals.rend(); it++) {
-        if((*it).id == id) {
-            return &*it;
+const Hana::Compiler::Identifier Hana::Compiler::get_local(const std::string &id) const {
+    size_t gscope = 0;
+    for(auto it = scopes.rbegin();
+        it != scopes.rend(); it++, gscope++) {
+        LOG(id, " up ",gscope);
+        auto scope = *it;
+        auto iit = std::find(scope.ids.begin(), scope.ids.end(), id);
+        if(iit != scope.ids.end()) {
+            auto idx = std::distance(scope.ids.begin(), iit);
+            return Identifier(idx, gscope);
         }
     }
-    return nullptr;
+    LOG("can't get ", id);
+    return Identifier();
 }
 void Hana::Compiler::scope() {
-    nscope++;
+    LOG("new scope");
+    scopes.emplace_back();
 }
-void Hana::Compiler::unscope() {
-    Local local;
-    while(!locals.empty() && (local = locals.back()).scope == nscope) {
-        locals.pop_back();
-        slotsize--;
-    }
-    nscope--;
-}
-size_t Hana::Compiler::nslots() const {
-    return locals.size();
+uint16_t Hana::Compiler::unscope() {
+    LOG("descope");
+    auto sz = scopes.back().ids.size();
+    scopes.pop_back();
+    return sz;
 }
 
 // source map

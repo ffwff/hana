@@ -565,7 +565,7 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
     else
         throw ParserError("expected function statement");
     if(type == EXPR || type == RECORD)
-        stmt->record_fn = true;/*
+        stmt->is_expr = true;/*
     LOG(next().strv);
     assert(0);*/
     return WRAP_RET2(stmt);

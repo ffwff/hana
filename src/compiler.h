@@ -12,16 +12,19 @@ class Compiler {
 
 public:
     // scoping
-    struct Local {
-        std::string id;
-        size_t scope, slot;
+    struct Scope {
+        std::vector<std::string> ids;
     };
+    std::vector<Scope> scopes;
     void set_local(const std::string &id);
-    const Local *get_local(const std::string &id) const;
+    struct Identifier {
+        uint32_t idx; size_t relascope;
+        Identifier() : relascope((size_t)-1) {}
+        Identifier(uint32_t idx, size_t relascope) : idx(idx), relascope(relascope) {}
+    };
+    const Identifier get_local(const std::string &id) const;
     void scope();
-    void unscope();
-    size_t nscope = 0, slotsize=0; // 0 = global scope
-    size_t nslots() const;
+    uint16_t unscope();
 
     // loops
     struct Loop {
@@ -40,8 +43,6 @@ public:
     std::vector<std::unique_ptr<SourceMap>> src_maps;
     SourceMap find_src_map(size_t bytecode_idx);
 
-private:
-    std::vector<Local> locals;
 
 };
 

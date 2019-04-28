@@ -26,7 +26,9 @@ enum vm_opcode {
     OP_EQ, OP_NEQ,
     // variables
     OP_ENV_NEW,
-    OP_SET_LOCAL, OP_SET_GLOBAL, OP_GET_LOCAL, OP_GET_GLOBAL,
+    OP_SET_LOCAL, OP_GET_LOCAL,
+    OP_SET_LOCAL_UP, OP_GET_LOCAL_UP,
+    OP_SET_GLOBAL, OP_GET_GLOBAL,
     OP_DEF_FUNCTION_PUSH,
     // flow control
     OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
