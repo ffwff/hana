@@ -7,26 +7,34 @@ record File
 
     _fopen = Cffi::Function("fopen", [Cffi.String, Cffi.String], Cffi.Pointer)
     _fwrite = Cffi::Function("fwrite", [Cffi.String, Cffi.UInt64, Cffi.UInt64, Cffi.Pointer], Cffi.UInt64)
+    _fread = Cffi::Function("fread", [Cffi.String, Cffi.UInt64, Cffi.UInt64, Cffi.Pointer], Cffi.UInt64)
     _fclose = Cffi::Function("fclose", [Cffi.Pointer], Cffi.Void)
-
+    _fseek = Cffi::Function("fseek", [Cffi.Pointer, Cffi.UInt64, Cffi.Int64], Cffi.Int64)
+    _ftell = Cffi::Function("ftell", [Cffi.Pointer], Cffi.UInt64)
+    _feof = Cffi::Function("feof", [Cffi.Pointer], Cffi.Int64)
+    _ferror = Cffi::Function("ferror", [Cffi.Pointer], Cffi.Int64)
 
     // constructor
     function constructor(self, path, mode) begin
         self.path = path
         self.mode = mode
-        self._fptr = Cffi::RcPointer(File::_fopen(path, mode), File::_fclose)
+        self._fptr = Cffi::RcPointer(Cffi::call(File::_fopen, path, mode), File::_fclose)
         return self
     end
 
     // read
     function read(self, n) begin
         read = String::reserve(n)
-        s = File::_fread(buffer, 1, n, self._fptr.pointer!)
-        read.shrink(s)
+        s = Cffi::call(File::_fread, read, 1, n, self._fptr.pointer!)
+        read.shrink!(s)
         return read
     end
     function readall(self) begin
-        return __fread(self.__f)
+        sz = self.size()
+        read = String::reserve()
+        s = Cffi::call(File::_fread, read, 1, sz, self._fptr.pointer!)
+        read.shrink!(s)
+        return read
     end
     function readline(self) begin
         line = ""
@@ -39,39 +47,38 @@ record File
 
     // write
     function write(self, str) begin
-        return __fwrite(self.__f, str)
+        return Cffi::call(File::_fwrite, str, 1, str.bytesize(), self._fptr.pointer!)
     end
 
     // reopen
     function reopen(self, mode) begin
         self.mode = mode
-        self.__f = __fopen(self.path, mode)
+        self._fptr = Cffi::RcPointer(Cffi::call(File::_fopen, self.path, mode), File::_fclose)
         return self
     end
 
     // seek
     function seek(self, offset, whence) begin
-        return __fseek(self.__f, offset, whence)
+        return Cffi::call(File::_fseek, self._fptr.pointer!, offset, whence)
     end
     function tell(self) begin
-        return __ftell(self.__f)
+        return Cffi::call(File::_ftell, self._fptr.pointer!)
     end
 
     function size(self) begin
-        f = self.__f
-        prev = __ftell(f)
-        __fseek(f, 0, File::SEEK_END)
-        sz = __ftell(f)
-        __fseek(f, prev, File::SEEK_SET)
+        prev = self.tell()
+        self.seek(0, File::SEEK_END)
+        sz = self.tell()
+        self.seek(prev, File::SEEK_SET)
         return sz
     end
 
     // states
     function eof?(self) begin
-        return __feof(self.__f)
+        return Cffi::call(File::_feof, self._fptr.pointer!)
     end
     function error?(self) begin
-        return __ferror(self.__f)
+        return Cffi::call(File::_ferror, self._fptr.pointer!)
     end
 
 end

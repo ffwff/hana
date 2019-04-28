@@ -5,4 +5,4 @@ print(x.read(10), "\n") // => Hello Worl
 print(x.eof?(), "\n") // => false
 print(x.size(), "\n") // => 11
 x.seek(0, File::SEEK_SET)
-print(x.readline(), "\n")
+print(x.readline(), "\n") // => Hello World

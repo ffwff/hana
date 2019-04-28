@@ -41,7 +41,7 @@ namespace string {
     fn(split);
     fn(startswith);
     fn(endswith);
-    fn(shrink!);
+    fn(shrink_);
 }
 
 namespace integer {

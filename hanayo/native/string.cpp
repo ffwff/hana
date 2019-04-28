@@ -272,10 +272,11 @@ fn(endswith) {
 }
 
 fn(shrink_) {
-    auto *sval = &array_top(vm->stack);
+    auto sval = _arg(vm, value::TYPE_STR);
     auto len = _arg(vm, value::TYPE_INT).as.integer;
-    if(sval->as.str->length < len) return;
-    sval->as.str->length = len;
-    char *s = string_data(sval->as.str);
+    if(sval.as.str->length < len) return;
+    sval.as.str->length = len;
+    char *s = string_data(sval.as.str);
     s[len] = 0;
+    array_push(vm->stack, sval);
 }
