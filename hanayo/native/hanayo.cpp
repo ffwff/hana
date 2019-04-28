@@ -121,6 +121,7 @@ void hanayo::_init(struct vm *m) {
         dict_set(rc.as.dict, "constructor", &v);
 
         dict_set(val.as.dict, "RcPointer", &rc);
+        value_free(&rc);
     }
     native_obj_function("call",        ffi::call);
 #define X(x) {struct value v; value_int(&v, hanayo::ffi::type::x); dict_set(val.as.dict, # x, &v);}

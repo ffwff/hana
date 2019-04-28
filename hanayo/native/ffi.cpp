@@ -24,6 +24,7 @@ struct ffi_function {
 static void ffi_function_free(void *ffn_) {
     auto ffn = (struct ffi_function *)ffn_;
     array_free(ffn->argtypes);
+    free(ffn->ffi_argtypes);
     free(ffn_);
 }
 
@@ -90,6 +91,7 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
         }
         value_free(&v);
     }
+    value_free(&val);
     ffn->ffi_argtypes[ffi_nargs] = nullptr;
 
     // ret type
@@ -135,8 +137,8 @@ fn(call) {
     struct value val;
 
     // ffn
-    val = _arg(vm, value::TYPE_NATIVE_OBJ);
-    struct ffi_function *ffn = (struct ffi_function *)(val.as.native->data);
+    auto ffnv = _arg(vm, value::TYPE_NATIVE_OBJ);
+    struct ffi_function *ffn = (struct ffi_function *)(ffnv.as.native->data);
     nargs--;
 
     // arguments
@@ -230,7 +232,8 @@ fn(call) {
 
     // cleanup args
     for(int64_t i = 0; i < nargs; i++)
-        value_free(avalues_v);
+        value_free(&avalues_v[i]);
+    value_free(&ffnv);
 
 }
 
