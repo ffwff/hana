@@ -34,7 +34,6 @@ public:
         size_t start_byte, end_byte;
         size_t start_line, end_line;
         // TODO add file info
-        SourceMap() {};
         SourceMap(size_t start_byte, size_t start_line, size_t end_line)
         : start_byte(start_byte), start_line(start_line), end_line(end_line) {};
     };

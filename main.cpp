@@ -65,7 +65,11 @@ static void execute_gracefully(struct vm *m) {
     vm_execute(m);
     if(m->error) {
         auto map = compiler.find_src_map(m->ip);
-        fprintf(stderr, "error at bytecode index %d, line: %ld\n", m->ip, map.start_line);
+        fprintf(stderr, "error at bytecode index %d", m->ip);
+        if(map.start_line == -1)
+            fprintf(stderr, ", from native\n");
+        else
+            fprintf(stderr, ", line: %ld\n", map.start_line);
     }
 }
 

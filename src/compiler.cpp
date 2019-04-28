@@ -41,5 +41,5 @@ Hana::Compiler::SourceMap Hana::Compiler::find_src_map(size_t bytecode_idx) {
         if(bytecode_idx >= src_map.start_byte && bytecode_idx <= src_map.end_byte)
             return src_map;
     }
-    return Hana::Compiler::SourceMap();
+    return Hana::Compiler::SourceMap(0, -1, -1);
 }
