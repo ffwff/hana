@@ -13,3 +13,9 @@ fwrite = Cffi::Function("fwrite", [Cffi.String, Cffi.UInt64, Cffi.UInt64, Cffi.P
 fclose = Cffi::Function("fclose", [Cffi.Pointer], Cffi.Void)
 fptr = Cffi::RcPointer(Cffi::call(fopen, "/tmp/a", "w"), fclose)
 Cffi::call(fwrite, "ABCDEF", 1, 6, fptr.pointer!)
+
+fread = Cffi::Function("fread", [Cffi.String, Cffi.UInt64, Cffi.UInt64, Cffi.Pointer], Cffi.UInt64)
+fptr = Cffi::RcPointer(Cffi::call(fopen, "/tmp/a", "r"), fclose)
+buffer = String::reserve(6)
+Cffi::call(fread, buffer, 1, 6, fptr.pointer!)
+print(buffer)

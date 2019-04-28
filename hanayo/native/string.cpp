@@ -13,6 +13,7 @@ struct string_header *string_alloc(size_t n) {
 
 #define fn(name) void hanayo::string::name(struct vm *vm, int nargs)
 
+// static
 fn(constructor) {
     assert(nargs == 1);
     struct value val = array_top(vm->stack);
@@ -22,7 +23,15 @@ fn(constructor) {
     value_str(&val, s); free(s);
     array_push(vm->stack, val);
 }
+fn(reserve) {
+    assert(nargs == 1);
+    auto len = _arg(vm, value::TYPE_INT).as.integer;
+    struct value val;
+    value_str_reserve(&val, len);
+    array_push(vm->stack, val);
+}
 
+// instance
 fn(bytesize) {
     assert(nargs == 1);
     struct value *val = &array_top(vm->stack);
@@ -260,4 +269,13 @@ fn(endswith) {
     struct value val = {0};
     value_int(&val, sw);
     array_push(vm->stack, val);
+}
+
+fn(shrink_) {
+    auto *sval = &array_top(vm->stack);
+    auto len = _arg(vm, value::TYPE_INT).as.integer;
+    if(sval->as.str->length < len) return;
+    sval->as.str->length = len;
+    char *s = string_data(sval->as.str);
+    s[len] = 0;
 }

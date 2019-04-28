@@ -1,15 +1,29 @@
 record File
 
+    // native defs
+    SEEK_SET = 0
+    SEEK_CUR = 1
+    SEEK_END = 2
+
+    _fopen = Cffi::Function("fopen", [Cffi.String, Cffi.String], Cffi.Pointer)
+    _fwrite = Cffi::Function("fwrite", [Cffi.String, Cffi.UInt64, Cffi.UInt64, Cffi.Pointer], Cffi.UInt64)
+    _fclose = Cffi::Function("fclose", [Cffi.Pointer], Cffi.Void)
+
+
+    // constructor
     function constructor(self, path, mode) begin
         self.path = path
         self.mode = mode
-        self.__f = __fopen(path, mode)
+        self._fptr = Cffi::RcPointer(File::_fopen(path, mode), File::_fclose)
         return self
     end
 
     // read
     function read(self, n) begin
-        return __fread(self.__f, n)
+        read = String::reserve(n)
+        s = File::_fread(buffer, 1, n, self._fptr.pointer!)
+        read.shrink(s)
+        return read
     end
     function readall(self) begin
         return __fread(self.__f)
@@ -36,9 +50,6 @@ record File
     end
 
     // seek
-    SEEK_SET = 0
-    SEEK_CUR = 1
-    SEEK_END = 2
     function seek(self, offset, whence) begin
         return __fseek(self.__f, offset, whence)
     end

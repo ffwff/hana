@@ -20,6 +20,12 @@ void value_str(struct value *val, const char *data) {
     val->as.str = malloc(string_size(data));
     string_init(val->as.str, data);
 }
+void value_str_reserve(struct value *val, const size_t size) {
+    val->type = TYPE_STR;
+    val->as.str = calloc(1, sizeof(struct string_header)+size+1);
+    val->as.str->refs = 1;
+    val->as.str->length = size;
+}
 void value_strmov(struct value *val, struct string_header *str) {
     val->type = TYPE_STR;
     val->as.str = str;

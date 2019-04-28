@@ -29,6 +29,7 @@ namespace ffi {
 
 namespace string {
     fn(constructor);
+    fn(reserve);
     // methods
     fn(bytesize);
     fn(length);
@@ -40,6 +41,7 @@ namespace string {
     fn(split);
     fn(startswith);
     fn(endswith);
+    fn(shrink!);
 }
 
 namespace integer {

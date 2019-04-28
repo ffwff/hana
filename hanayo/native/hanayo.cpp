@@ -134,6 +134,7 @@ void hanayo::_init(struct vm *m) {
     // ## strings
     value_dict(&val);
     native_obj_function("constructor", string::constructor);
+    native_obj_function("reserve",     string::reserve);
     native_obj_function("bytesize",    string::bytesize);
     native_obj_function("length",      string::length);
     native_obj_function("delete",      string::delete_);
@@ -144,6 +145,7 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("split",       string::split);
     native_obj_function("startswith?", string::startswith);
     native_obj_function("endswith?",   string::endswith);
+    native_obj_function("shrink!",     string::shrink);
     hmap_set(&m->globalenv, "String", &val);
     value_free(&val);
     m->dstr = val.as.dict;

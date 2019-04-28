@@ -38,6 +38,7 @@ struct value {
 void value_int(struct value*, int64_t);
 void value_float(struct value*, double);
 void value_str(struct value*, const char*);
+void value_str_reserve(struct value*, size_t);
 void value_strmov(struct value*, struct string_header*);
 void value_native(struct value*, value_fn);
 void value_function(struct value*, uint32_t ip, uint16_t nargs);
