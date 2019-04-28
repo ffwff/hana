@@ -196,7 +196,8 @@ fn(call) {
     case String: {
         const char *s;
         ffi_call(&ffn->cif, ffn->sym, &s, avalues);
-        value_str(&retval, s);
+        if(s == nullptr) value_str(&retval, "");
+        else value_str(&retval, s);
         break;
     }
 #define X(x,y) \
