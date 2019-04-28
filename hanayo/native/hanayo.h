@@ -16,6 +16,15 @@ fn(eval);
 namespace ffi {
     fn(function);
     fn(call);
+    enum type {
+        UInt8, Int8, UInt16, Int16, UInt32, Int32, UInt64, Int64,
+        Float32, Float64, UChar, Char, UShort, Short, ULong, Long,
+        Pointer, String, Void
+    };
+    namespace rcpointer {
+        extern struct value prototype;
+        fn(constructor);
+    };
 };
 
 namespace string {

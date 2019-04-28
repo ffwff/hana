@@ -1,2 +1,15 @@
-fn = Cffi::function("puts", [String], Int)
-Cffi::call(fn, "AAAAAA")
+/*
+fn = Cffi::function("abs", [Cffi.Int64], Cffi.Int64)
+Cffi::call(abs, -10)
+
+fn = Cffi::function("sin", [Cffi.Float64], Cffi.Float64)
+Cffi::call(fn, 1.5)
+*/
+//fn = Cffi::function("getenv", [Cffi.String], Cffi.String)
+//Cffi::call(fn, "PWD")
+
+fopen = Cffi::Function("fopen", [Cffi.String, Cffi.String], Cffi.Pointer)
+fwrite = Cffi::Function("fwrite", [Cffi.String, Cffi.UInt64, Cffi.UInt64, Cffi.Pointer], Cffi.UInt64)
+fclose = Cffi::Function("fclose", [Cffi.Pointer], Cffi.Void)
+fptr = Cffi::RcPointer(Cffi::call(fopen, "/tmp/a", "w"), fclose)
+Cffi::call(fwrite, "ABCDEF", 1, 6, fptr.pointer!)

@@ -112,8 +112,21 @@ void hanayo::_init(struct vm *m) {
 
     // ffi
     value_dict(&val);
-    native_obj_function("function"   , ffi::function);
+    native_obj_function("Function"   , ffi::function);
+    {
+        struct value rc; value_dict(&rc);
+        hanayo::ffi::rcpointer::prototype = rc;
+
+        struct value v; value_native(&v, hanayo::ffi::rcpointer::constructor);
+        dict_set(rc.as.dict, "constructor", &v);
+
+        dict_set(val.as.dict, "RcPointer", &rc);
+    }
     native_obj_function("call",        ffi::call);
+#define X(x) {struct value v; value_int(&v, hanayo::ffi::type::x); dict_set(val.as.dict, # x, &v);}
+    X(UInt8); X(Int8); X(UInt16); X(Int16); X(UInt32); X(Int32); X(UInt64); X(Int64);
+    X(Float32); X(Float64); X(UChar); X(Char); X(UShort); X(Short); X(ULong); X(Long);
+    X(Pointer); X(String); X(Void);
     hmap_set(&m->globalenv, "Cffi", &val);
     value_free(&val);
 

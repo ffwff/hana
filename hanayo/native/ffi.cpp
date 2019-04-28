@@ -4,19 +4,21 @@
 #include "hanayo.h"
 #include "vm/src/string_.h"
 #include "vm/src/array_obj.h"
+#include "vm/src/dict.h"
 
 #define fn(name) void hanayo::ffi::name(struct vm *vm, int nargs)
 
-int debug(const char *ptr) { return 1; }
-typedef array(value::value_type) a_value_type;
+//int debug(float ptr) { return 1; }
+int debug(double ptr) { return 1; }
+typedef array(hanayo::ffi::type) a_ffi_type;
 typedef void (*ffi_fnptr)();
 
 struct ffi_function {
     ffi_fnptr sym;
     ffi_cif cif;
-    a_value_type argtypes;
+    a_ffi_type argtypes;
     ffi_type **ffi_argtypes;
-    value::value_type rettype;
+    hanayo::ffi::type rettype;
 };
 
 static void ffi_function_free(void *ffn_) {
@@ -30,7 +32,7 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
     void *dl = nullptr;
     struct ffi_function *ffn = (struct ffi_function *)malloc(sizeof(struct ffi_function));
     ffn->argtypes = {
-        .data = (value::value_type*)calloc(1, sizeof(value::value_type)),
+        .data = (hanayo::ffi::type*)calloc(1, sizeof(hanayo::ffi::type)),
         .length = 0,
         .capacity = 1
     };
@@ -58,18 +60,32 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
     ffn->ffi_argtypes = (ffi_type**)malloc(sizeof(ffi_type*)*(ffi_nargs+1));
     for(size_t i = 0; i < ffi_nargs; i++) {
         auto v = val.as.array->data.data[i];
-        assert(v.type == value::TYPE_DICT);
-        auto dict = v.as.dict;
-        if(dict == vm->dstr) {
+        assert(v.type == value::TYPE_INT);
+        hanayo::ffi::type t = (hanayo::ffi::type)v.as.integer;
+        switch(t) {
+        case String:
             ffn->ffi_argtypes[i] = &ffi_type_pointer;
-            array_push(ffn->argtypes, value::TYPE_STR);
-        } else if(dict == vm->dint) {
-            ffn->ffi_argtypes[i] = &ffi_type_sint64;
-            array_push(ffn->argtypes, value::TYPE_INT);
-        } else if(dict == vm->dfloat) {
-            ffn->ffi_argtypes[i] = &ffi_type_double;
-            array_push(ffn->argtypes, value::TYPE_FLOAT);
-        } else {
+            array_push(ffn->argtypes, String);
+            break;
+        // primitives (numbers/floats)
+#define X(x,y) \
+        case x: \
+            ffn->ffi_argtypes[i] = &ffi_type_ ## y; \
+            array_push(ffn->argtypes, x); \
+            break;
+        X(UInt8,  uint8)  X(Int8 , sint8)
+        X(UInt16, uint16) X(Int16, sint16)
+        X(UInt32, uint32) X(Int32, sint32)
+        X(UInt64, uint64) X(Int64, sint64)
+        X(Float32, float)
+        X(Float64, double)
+        X(UChar,  uchar)  X(Char,  schar)
+        X(UShort, ushort) X(Short, sshort)
+        X(ULong,  ulong)  X(Long,  slong)
+        X(Pointer, pointer)
+        X(Void, void)
+#undef X
+        default:
             assert(0);
         }
         value_free(&v);
@@ -77,19 +93,32 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
     ffn->ffi_argtypes[ffi_nargs] = nullptr;
 
     // ret type
-    val = _arg(vm, value::TYPE_DICT);
+    val = _arg(vm, value::TYPE_INT);
+    const hanayo::ffi::type t = (hanayo::ffi::type)val.as.integer;
     ffi_type *rettype;
-    const auto dict = val.as.dict;
-    if(dict == vm->dstr) {
+    switch(t) {
+    case String:
         rettype = &ffi_type_pointer;
-        ffn->rettype = value::TYPE_STR;
-    } else if(dict == vm->dint) {
-        rettype = &ffi_type_sint64;
-        ffn->rettype = value::TYPE_INT;
-    } else if(dict == vm->dfloat) {
-        rettype = &ffi_type_double;
-        ffn->rettype = value::TYPE_FLOAT;
-    } else {
+        ffn->rettype = String;
+        break;
+#define X(x,y) \
+    case x: \
+        rettype = &ffi_type_ ## y; \
+        ffn->rettype = x; \
+        break;
+    X(UInt8,  uint8)  X(Int8 , sint8)
+    X(UInt16, uint16) X(Int16, sint16)
+    X(UInt32, uint32) X(Int32, sint32)
+    X(UInt64, uint64) X(Int64, sint64)
+    X(Float32, float)
+    X(Float64, double)
+    X(UChar,  uchar)  X(Char,  schar)
+    X(UShort, ushort) X(Short, sshort)
+    X(ULong,  ulong)  X(Long,  slong)
+    X(Pointer, pointer)
+    X(Void, void)
+#undef X
+    default:
         assert(0);
     }
     value_free(&val);
@@ -112,35 +141,89 @@ fn(call) {
 
     // arguments
     assert((size_t)nargs == ffn->argtypes.length);
-    void *aptr[nargs]; // maybe a HACK to store pointers to strings
+    void *aptr[nargs]; // HACK: arguments store for strings
     // libffi apparently gets the pointer in the dereferenced key of avalues
     // essentially a double pointer
     void *avalues[nargs];
     struct value avalues_v[nargs];
     for(int64_t i = 0; i < nargs; i++) {
         struct value val;
-        if(ffn->argtypes.data[i] == value::TYPE_STR) {
+        switch (ffn->argtypes.data[i]) {
+        case String:
             val = _arg(vm, value::TYPE_STR);
+            avalues_v[i] = val;
             aptr[i] = string_data(val.as.str);
             avalues[i] = &aptr[i];
-        } else if(ffn->argtypes.data[i] == value::TYPE_INT) {
-            // TODO
-        } else if(ffn->argtypes.data[i] == value::TYPE_FLOAT) {
-            // TODO
-        } else {
+            break;
+#define X(x,z) \
+        case x: \
+            val = _arg(vm, value::TYPE_INT); \
+            avalues_v[i].type = value::TYPE_INT; \
+            avalues_v[i].as.integer = (z)val.as.integer; \
+            avalues[i] = &avalues_v[i].as.integer; \
+            break;
+        X(UInt8,  uint8_t)  X(Int8 , int8_t)
+        X(UInt16, uint16_t) X(Int16, int16_t)
+        X(UInt32, uint32_t) X(Int32, int32_t)
+        X(UInt64, uint64_t) X(Int64, int64_t)
+        X(UChar,  uint8_t)  X(Char,  int8_t)
+        X(UShort, uint16_t) X(Short, int16_t)
+        X(ULong,  uint64_t) X(Long,  int64_t)
+        X(Pointer, intptr_t)
+#undef X
+#define X(x,z) \
+        case x: \
+            val = _arg(vm, value::TYPE_FLOAT); \
+            avalues_v[i].type = value::TYPE_FLOAT; \
+            avalues_v[i].as.floatp = (z)val.as.floatp; \
+            avalues[i] = &avalues_v[i].as.floatp; \
+            break;
+        X(Float32, float)
+        X(Float64, double)
+#undef X
+        //X(Void, void)
+        default:
             assert(0);
+            break;
         }
-        avalues_v[i] = val;
     }
 
     // call and ret
     struct value retval;
-    if(ffn->rettype == value::TYPE_INT) {
-        int64_t n;
-        ffi_call(&ffn->cif, ffn->sym, &n, avalues);
-        value_int(&retval, n);
-    } else {
+    switch(ffn->rettype) {
+    case String: {
+        const char *s;
+        ffi_call(&ffn->cif, ffn->sym, &s, avalues);
+        value_str(&retval, s);
+        break;
+    }
+#define X(x,y) \
+    case x: { \
+        y n; \
+        ffi_call(&ffn->cif, ffn->sym, &n, avalues); \
+        value_int(&retval, n); \
+        break; }
+    X(UInt8,  uint8_t)  X(Int8 , int8_t)
+    X(UInt16, uint16_t) X(Int16, int16_t)
+    X(UInt32, uint32_t) X(Int32, int32_t)
+    X(UInt64, uint64_t) X(Int64, int64_t)
+    X(UChar,  uint8_t)  X(Char,  int8_t)
+    X(UShort, uint16_t) X(Short, int16_t)
+    X(ULong,  uint64_t) X(Long,  int64_t)
+    X(Pointer, intptr_t)
+#undef X
+#define X(x,y) \
+    case x: { \
+        y n; \
+        ffi_call(&ffn->cif, ffn->sym, &n, avalues); \
+        value_float(&retval, n); \
+        break; }
+    X(Float32, float)
+    X(Float64, double)
+#undef X
+    default:
         assert(0);
+        break;
     }
 
     array_push(vm->stack, retval);
@@ -149,4 +232,37 @@ fn(call) {
     for(int64_t i = 0; i < nargs; i++)
         value_free(avalues_v);
 
+}
+
+// RC Pointer
+struct value hanayo::ffi::rcpointer::prototype;
+
+#undef fn
+#define fn(name) void hanayo::ffi::rcpointer::name(struct vm *vm, int nargs)
+fn(constructor) {
+    assert(nargs == 2);
+
+    struct value ptrv = _arg(vm, value::TYPE_INT);
+    intptr_t ptr = ptrv.as.integer;
+
+    struct value ffnv = _arg(vm, value::TYPE_NATIVE_OBJ);
+    auto ffn = (struct ffi_function *)ffnv.as.native->data;
+    // free function must be of type void (*fn)(void *data);
+    assert(ffn->argtypes.length == 1 && ffn->argtypes.data[0] == hanayo::ffi::type::Pointer);
+    assert(ffn->rettype == hanayo::ffi::type::Void);
+    value_free(&ffnv);
+
+    struct value val; value_dict(&val);
+    {
+        struct value nval; value_native_obj(&nval, (void*)ptr, (native_obj_free_fn)ffn->sym);
+        dict_set(val.as.dict, "free_fn", &nval);
+        value_free(&nval);
+    }
+    {
+        struct value nval; value_int(&nval, ptr);
+        dict_set(val.as.dict, "pointer!", &nval);
+    }
+    dict_set(val.as.dict, "prototype", &hanayo::ffi::rcpointer::prototype);
+    //;
+    array_push(vm->stack, val);
 }
