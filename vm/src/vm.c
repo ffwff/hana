@@ -280,14 +280,8 @@ void vm_execute(struct vm *vm) {
             vm->code.data[vm->ip+2] << 4  |
             vm->code.data[vm->ip+3];
         vm->ip += sizeof(n);
-        const uint32_t up_to =
-            vm->code.data[vm->ip+0] << 12 |
-            vm->code.data[vm->ip+1] << 8  |
-            vm->code.data[vm->ip+2] << 4  |
-            vm->code.data[vm->ip+3];
-        vm->ip += sizeof(up_to);
-        LOG("RESERVE %d [up to %d]\n", n, up_to);
-        env_init(vm->localenv, n, up_to);
+        LOG("RESERVE %d\n", n);
+        env_init(vm->localenv, n);
         dispatch();
     }
 
@@ -405,6 +399,46 @@ void vm_execute(struct vm *vm) {
     }
     // pops a function/record constructor on top of the stack,
     // sets up necessary environment and calls it.
+#define JMP_INTERPRETED_FN \
+do { \
+    size_t fn_ip = 0; \
+    if(val.type == TYPE_DICT) { \
+        array_pop(vm->stack); \
+        struct value *ctor = dict_get(val.as.dict, "constructor"); \
+        if(ctor == NULL) { \
+            FATAL("expected record to have constructor\n"); \
+            ERROR(); \
+        } \
+        if(ctor->type == TYPE_NATIVE_FN) { \
+            value_free(&val); \
+            ctor->as.fn(vm, nargs); \
+            dispatch(); \
+        } else if(ctor->type != TYPE_FN) { \
+            FATAL("constructor must be a function!\n"); \
+            ERROR(); \
+        } \
+        fn_ip = ctor->as.ifn.ip; \
+        if(nargs+1 != ctor->as.ifn.nargs) { \
+            FATAL("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1); \
+            ERROR(); \
+        } \
+    } else { \
+        fn_ip = val.as.ifn.ip; \
+        array_pop(vm->stack); \
+        if(nargs != val.as.ifn.nargs) { \
+            FATAL("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs); \
+            ERROR(); \
+        } \
+    } \
+    if(val.type == TYPE_DICT) { \
+        struct value new_val; \
+        value_dict(&new_val); \
+        dict_set(new_val.as.dict, "prototype", &val); \
+        value_free(&val); \
+        array_push(vm->stack, new_val); \
+    } \
+    vm->ip = fn_ip; \
+} while(0)
     doop(OP_CALL): {
         // argument: [arg2][arg1]
         vm->ip++;
@@ -417,50 +451,12 @@ void vm_execute(struct vm *vm) {
             array_pop(vm->stack);
             val.as.fn(vm, nargs);
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
-            size_t fn_ip = 0;
-            if(val.type == TYPE_DICT) {
-                array_pop(vm->stack);
-                struct value *ctor = dict_get(val.as.dict, "constructor");
-                if(ctor == NULL) {
-                    FATAL("expected record to have constructor\n");
-                    ERROR();
-                }
-                if(ctor->type == TYPE_NATIVE_FN) {
-                    value_free(&val);
-                    ctor->as.fn(vm, nargs);
-                    dispatch();
-                } else if(ctor->type != TYPE_FN) {
-                    FATAL("constructor must be a function!\n");
-                    ERROR();
-                }
-                fn_ip = ctor->as.ifn.ip;
-                if(nargs+1 != ctor->as.ifn.nargs) {
-                    FATAL("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1);
-                    ERROR();
-                }
-            } else {
-                fn_ip = val.as.ifn.ip;
-                array_pop(vm->stack);
-                if(nargs != val.as.ifn.nargs) {
-                    FATAL("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs);
-                    ERROR();
-                }
-            }
             // caller
             struct env *oldenv = vm->localenv;
             vm->localenv = calloc(1, sizeof(struct env));
             vm->localenv->parent = oldenv;
             vm->localenv->ifn = vm->ip;
-            // arguments
-            if(val.type == TYPE_DICT) {
-                struct value new_val;
-                value_dict(&new_val);
-                dict_set(new_val.as.dict, "prototype", &val);
-                value_free(&val); // reference carried by dict
-                array_push(vm->stack, new_val);
-            }
-            // jump
-            vm->ip = fn_ip;
+            JMP_INTERPRETED_FN;
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
@@ -809,46 +805,7 @@ void vm_execute(struct vm *vm) {
             vm->localenv = parent;
 
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
-            // TODO should probably move this to a separate function
-            size_t fn_ip = 0;
-            if(val.type == TYPE_DICT) {
-                array_pop(vm->stack);
-                struct value *ctor = dict_get(val.as.dict, "constructor");
-                if(ctor == NULL) {
-                    FATAL("expected record to have constructor\n");
-                    ERROR();
-                }
-                if(ctor->type == TYPE_NATIVE_FN) {
-                    value_free(&val);
-                    ctor->as.fn(vm, nargs);
-                    dispatch();
-                } else if(ctor->type != TYPE_FN) {
-                    FATAL("constructor must be a function!\n");
-                    ERROR();
-                }
-                fn_ip = ctor->as.ifn.ip;
-                if(nargs+1 != ctor->as.ifn.nargs) {
-                    FATAL("constructor expects exactly %d arguments, got %d\n", ctor->as.ifn.nargs, nargs+1);
-                    ERROR();
-                }
-            } else {
-                fn_ip = val.as.ifn.ip;
-                array_pop(vm->stack);
-                if(nargs != val.as.ifn.nargs) {
-                    FATAL("function expects exactly %d arguments, got %d\n", val.as.ifn.nargs, nargs);
-                    ERROR();
-                }
-            }
-            // arguments
-            if(val.type == TYPE_DICT) {
-                struct value new_val;
-                value_dict(&new_val);
-                dict_set(new_val.as.dict, "prototype", &val);
-                value_free(&val); // reference carried by dict
-                array_push(vm->stack, new_val);
-            }
-            // jump
-            vm->ip = fn_ip;
+            JMP_INTERPRETED_FN;
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
