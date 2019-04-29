@@ -17,21 +17,21 @@ git clone --recursive https://github.com/ffwff/hana
 For release builds, just do:
 
 ```
-make RELEASE=1 NOLOG=1
+make RELEASE=1
 ```
 
 It is recommended that you build the interpreter with libreadline for a better REPL:
 
 ```
-make RELEASE=1 NOLOG=1 READLINE=1
+make RELEASE=1 READLINE=1
 ```
 
 To bootstrap the init bytecode, compile it using a debug/release build, then remake the interpreter:
 
 ```
-make RELEASE=1 NOLOG=1
+make
 make build/init.bin
-make RELEASE=1 NOLOG=1
+make RELEASE=1 INCLUDE_BYTECODE=1
 ```
 
 For debug:
@@ -39,6 +39,9 @@ For debug:
 ```
 make DEBUG=1
 ```
+
+For faster memory allocations, it is recommended that jemalloc be installed. By default, the build
+script will enable linking to jemalloc unless `DISABLE_JEMALLOC` is set.
 
 ## Running
 
