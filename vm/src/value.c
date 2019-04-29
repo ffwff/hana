@@ -279,7 +279,7 @@ arith_op(geq, >=,
 )
 
 // boolean
-int value_is_true(const struct value *val) {
+bool value_is_true(const struct value *val) {
     switch(val->type) {
     case TYPE_INT: return val->as.integer > 0;
     case TYPE_FLOAT: return val->as.floatp > 0;

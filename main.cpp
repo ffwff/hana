@@ -70,6 +70,15 @@ static void execute_gracefully(struct vm *m) {
             fprintf(stderr, ", from native\n");
         else
             fprintf(stderr, ", line: %ld\n", map.start_line);
+        fprintf(stderr, "stack trace:\n");
+        for(struct env *env = m->localenv; env != nullptr; env = env->parent) {
+            fprintf(stderr, " at bytecode index %d", env->retip);
+            auto map = compiler.find_src_map(env->retip);
+            if(map.start_line == (size_t)-1)
+                fprintf(stderr, ", from native\n");
+            else
+                fprintf(stderr, ", line: %ld\n", map.start_line);
+        }
     }
 }
 
@@ -214,12 +223,14 @@ int main(int argc, char **argv) {
     }
     // file
     else if(opt_bytecode) {
-        std::ifstream file(argv[last_optiond], std::ios::binary | std::ios::ate);
-        std::streamsize size = file.tellg();
-        file.seekg(0, std::ios::beg);
+        FILE *f = fopen(argv[last_optiond], "r");
+        fseek(f, 0, SEEK_END);
+        auto size = ftell(f);
+        fseek(f, 0, SEEK_SET);
 
         vm_code_reserve(&m, size);
-        file.read((char*)m.code.data, size);
+        fread((char*)m.code.data, 1, size, f);
+        fclose(f);
         execute_gracefully(&m);
         goto cleanup;
     } else {

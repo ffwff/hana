@@ -3,6 +3,7 @@
 extern "C" {
 #endif
 #include <stdint.h>
+#include <stdbool.h>
 #include "native_obj.h"
 
 struct vm;
@@ -67,7 +68,7 @@ void value_geq(struct value *result, const struct value *left, const struct valu
 void value_eq(struct value *result, const struct value *left, const struct value *right);
 void value_neq(struct value *result, const struct value *left, const struct value *right);
 
-int value_is_true(const struct value *);
+bool value_is_true(const struct value *);
 struct dict *value_get_prototype(const struct vm *vm, const struct value *val);
 
 #ifdef __cplusplus

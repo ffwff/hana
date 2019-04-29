@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdbool.h>
 #include "value.h"
 
 struct env { // function's stack frame
@@ -8,7 +9,7 @@ struct env { // function's stack frame
     size_t nslots;
     struct env *parent;
 
-    int is_function_bound;
+    bool is_function_bound;
     struct env *lexical_parent;
     // lexical parents are the parent of the function's lexical scopes
     // this should be set to (struct function*)->bound
