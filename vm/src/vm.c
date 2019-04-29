@@ -208,7 +208,6 @@ void vm_execute(struct vm *vm) {
     // frees top of the stack and pops the stack
     doop(OP_POP): {
         LOG("POP\n");
-        assert(vm->stack.length > 0);
         vm->ip++;
         value_free(&array_top(vm->stack));
         array_pop(vm->stack);
@@ -496,11 +495,9 @@ do { \
 
             struct function *ifn;
             JMP_INTERPRETED_FN;
-            vm->localenv->lexical_parent = ifn->bound;
+            vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
             ifn->refs--;
-
-            LOG("%lx %d\n", vm->localenv, vm->ip);
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
@@ -852,7 +849,7 @@ do { \
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
             struct function *ifn;
             JMP_INTERPRETED_FN;
-            vm->localenv->lexical_parent = ifn->bound;
+            vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
             ifn->refs--;
         } else {
@@ -904,7 +901,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     struct env *curenv = vm->localenv = calloc(1, sizeof(struct env));
     vm->localenv->parent = oldenv;
     vm->localenv->retip = (uint32_t)-1;
-    vm->localenv->lexical_parent = ifn->bound;
+    vm->localenv->lexical_parent = &ifn->bound;
     // setup stack/ip
     for(int64_t i = args.length-1; i >= 0; i--) {
         array_push(vm->stack, (struct value){0});

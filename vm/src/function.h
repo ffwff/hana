@@ -9,7 +9,7 @@ struct function {
     uint32_t refs;
     uint32_t ip;
     uint16_t nargs;
-    struct env *bound;
+    struct env bound;
     // NOTE: bound represents the current local environment
     // at the time the function is declared
 };

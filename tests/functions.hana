@@ -13,20 +13,18 @@ outer()
 "global " + x
 */
 
-
-function a() begin
-
 /*
+function a() begin
     function b() begin
-        print(b)
     end
-    b()*/
+
+    // b isn't free?
 
 end
 a()
+*/
 
 
-/*
 function adder(n) begin
     function inner(x) begin
         return n + x
@@ -35,4 +33,4 @@ function adder(n) begin
 end
 
 x = adder(5)
-x(10)*/
+x(10)
