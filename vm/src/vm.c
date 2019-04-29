@@ -453,6 +453,7 @@ do { \
             ERROR(); \
         } \
         if(ctor->type == TYPE_NATIVE_FN) { \
+            LOG("NATIVE CONSTRUCTOR\n"); \
             value_free(&val); \
             ctor->as.fn(vm, nargs); \
             END_IF_NATIVE; \
@@ -511,13 +512,13 @@ do { \
     }
     // returns from function
     doop(OP_RET): {
-        LOG("RET\n");
-
-        struct env *parent = vm->localenv->parent;
+        LOG("RET %p\n", vm->localenv);
 
         if(vm->localenv->retip == (uint32_t)-1) {
+            LOG("return from vm_call\n");
             return;
         } else {
+            struct env *parent = vm->localenv->parent;
             vm->ip = vm->localenv->retip;
             env_free(vm->localenv);
             free(vm->localenv);
@@ -860,9 +861,9 @@ do { \
                     LOG("return to vm_call\n");
                     return;
                 }
+                vm->ip = vm->localenv->retip;
                 struct env *parent = vm->localenv->parent;
                 env_free(vm->localenv);
-                vm->ip = vm->localenv->retip; // this is wrong?
                 free(vm->localenv);
                 vm->localenv = parent;
                 dispatch();
