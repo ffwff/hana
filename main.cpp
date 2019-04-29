@@ -70,7 +70,8 @@ static void execute_gracefully(struct vm *m) {
             fprintf(stderr, ", from native\n");
         else
             fprintf(stderr, ", line: %ld\n", map.start_line);
-        fprintf(stderr, "stack trace:\n");
+        if(m->localenv != nullptr)
+            fprintf(stderr, "stack trace:\n");
         for(struct env *env = m->localenv; env != nullptr; env = env->parent) {
             fprintf(stderr, " at bytecode index %d", env->retip);
             auto map = compiler.find_src_map(env->retip);

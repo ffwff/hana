@@ -7,14 +7,13 @@ void function_init(struct function *fn, uint32_t ip, uint16_t nargs, struct env 
     fn->nargs = nargs;
     if(parent != NULL) {
         env_copy(&fn->bound, parent);
-        fn->bound.is_function_bound = 1;
     } else {
-        fn->bound.is_function_bound = 0;
+        fn->bound.nslots = 0;
     }
 }
 
 void function_free(struct function *fn) {
-    if(fn->bound.is_function_bound) {
+    if(fn->bound.nslots != 0) {
         env_free(&fn->bound);
     }
 }

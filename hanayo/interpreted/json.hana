@@ -145,7 +145,6 @@ record JSON
                 if klen >= 1 for i=1 to klen s += ", " + print_key(i)
             end
             s += "}"
-            keys = nil
             return s
         end
         else if prototype == Array begin

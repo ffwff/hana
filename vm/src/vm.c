@@ -443,7 +443,7 @@ void vm_execute(struct vm *vm) {
     }
     // pops a function/record constructor on top of the stack,
     // sets up necessary environment and calls it.
-#define JMP_INTERPRETED_FN \
+#define JMP_INTERPRETED_FN(END_IF_NATIVE) \
 do { \
     if(val.type == TYPE_DICT) { \
         array_pop(vm->stack); \
@@ -455,7 +455,7 @@ do { \
         if(ctor->type == TYPE_NATIVE_FN) { \
             value_free(&val); \
             ctor->as.fn(vm, nargs); \
-            dispatch(); \
+            END_IF_NATIVE; \
         } else if(ctor->type != TYPE_FN) { \
             FATAL("constructor must be a function!\n"); \
             ERROR(); \
@@ -492,14 +492,13 @@ do { \
             val.as.fn(vm, nargs);
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
             struct function *ifn;
-            JMP_INTERPRETED_FN;
+            JMP_INTERPRETED_FN(dispatch());
 
             // caller
             struct env *oldenv = vm->localenv;
             vm->localenv = calloc(1, sizeof(struct env)); // why this not free?
             vm->localenv->parent = oldenv;
             vm->localenv->retip = vm->ip;
-            vm->localenv->is_function_bound = 0;
 
             vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
@@ -520,10 +519,8 @@ do { \
             return;
         } else {
             vm->ip = vm->localenv->retip;
-            if(!vm->localenv->is_function_bound) {
-                env_free(vm->localenv);
-                free(vm->localenv);
-            }
+            env_free(vm->localenv);
+            free(vm->localenv);
             vm->localenv = parent;
         }
         dispatch();
@@ -846,6 +843,10 @@ do { \
             val.as.fn(vm, nargs);
 
             // return regularly if it's a native function
+            if(vm->localenv->retip == (uint32_t)-1) {
+                LOG("return to vm_call\n");
+                return;
+            }
             struct env *parent = vm->localenv->parent;
             env_free(vm->localenv);
             vm->ip = vm->localenv->retip;
@@ -854,7 +855,18 @@ do { \
 
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
             struct function *ifn;
-            JMP_INTERPRETED_FN;
+            JMP_INTERPRETED_FN(do{
+                if(vm->localenv->retip == (uint32_t)-1) {
+                    LOG("return to vm_call\n");
+                    return;
+                }
+                struct env *parent = vm->localenv->parent;
+                env_free(vm->localenv);
+                vm->ip = vm->localenv->retip; // this is wrong?
+                free(vm->localenv);
+                vm->localenv = parent;
+                dispatch();
+            } while(0));
             vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
             ifn->refs--;
@@ -923,6 +935,10 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
         return (struct value *)-1;
     }
     // restore ip
+    LOG("vm_call complete. %d\n", last);
+    env_free(vm->localenv);
+    free(vm->localenv);
+    vm->localenv = oldenv;
     vm->ip = last;
     return &array_top(vm->stack);
 }
@@ -997,4 +1013,5 @@ void vm_code_reserve(struct vm *vm, size_t s) {
     free(vm->code.data);
     vm->code.data = malloc(s);
     vm->code.length = 0;
+    vm->code.capacity = s;
 }

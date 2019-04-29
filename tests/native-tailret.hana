@@ -1,0 +1,11 @@
+record A
+    function B(x) begin
+        return String(x)
+    end
+
+    function test() begin
+        return [1,2,3].map(A::B)
+    end
+end
+
+print(A::test())
