@@ -59,7 +59,7 @@ void vm_execute(struct vm *vm) {
 #define ERROR() do { vm->error = 1; return; } while(0)
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
-#ifdef RELEASE
+#ifdef NOLOG
 #define dispatch() do { \
         goto *dispatch_table[vm->code.data[vm->ip]]; \
     } while(0)
