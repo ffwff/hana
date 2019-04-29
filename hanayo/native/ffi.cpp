@@ -134,8 +134,6 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
 }
 
 fn(call) {
-    struct value val;
-
     // ffn
     auto ffnv = _arg(vm, value::TYPE_NATIVE_OBJ);
     struct ffi_function *ffn = (struct ffi_function *)(ffnv.as.native->data);

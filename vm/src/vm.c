@@ -512,14 +512,15 @@ do { \
         LOG("RET\n");
 
         struct env *parent = vm->localenv->parent;
-        if(!vm->localenv->is_function_bound) env_free(vm->localenv);
 
         if(vm->localenv->retip == (uint32_t)-1) {
-            vm->localenv = parent;
             return;
         } else {
             vm->ip = vm->localenv->retip;
-            if(!vm->localenv->is_function_bound) free(vm->localenv);
+            if(!vm->localenv->is_function_bound) {
+                env_free(vm->localenv);
+                free(vm->localenv);
+            }
             vm->localenv = parent;
         }
         dispatch();
@@ -865,15 +866,14 @@ do { \
 }
 
 struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
-    assert(0);
-#if 0
     assert(fn->type == TYPE_FN || fn->type == TYPE_DICT);
 
-    uint32_t nargs = 0, ip = 0;
+    struct function *ifn;
+
     if(fn->type == TYPE_DICT) {
         struct value *ctor = dict_get(fn->as.dict, "constructor");
         if(ctor == NULL) {
-            printf("expected record to have constructor");
+            FATAL("expected record to have constructor\n");
             return NULL;
         }
         if(ctor->type == TYPE_NATIVE_FN) {
@@ -887,30 +887,30 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
             printf("constructor must be a function!\n");
             return NULL;
         } else {
-            nargs = ctor->as.ifn.nargs;
-            ip = ctor->as.ifn.ip;
+            ifn = ctor->as.ifn;
         }
-    } else if(fn->type == TYPE_FN) {
-        nargs = fn->as.ifn.nargs;
-        ip = fn->as.ifn->ip;
+    } else {
+        ifn = fn->as.ifn;
     }
 
-    if((uint32_t)args.length != nargs) {
-        printf("function requires %d arguments, got %ld\n", nargs, args.length);
+    if((uint32_t)args.length != ifn->nargs) {
+        printf("function requires %d arguments, got %ld\n", ifn->nargs, args.length);
         return NULL;
     }
+
     const uint32_t last = vm->ip;
     // setup env
     struct env *oldenv = vm->localenv;
     struct env *curenv = vm->localenv = calloc(1, sizeof(struct env));
     vm->localenv->parent = oldenv;
-    vm->localenv->ifn = (uint32_t)-1;
+    vm->localenv->retip = (uint32_t)-1;
+    vm->localenv->lexical_parent = ifn->bound;
     // setup stack/ip
     for(int64_t i = args.length-1; i >= 0; i--) {
         array_push(vm->stack, (struct value){0});
         value_copy(&array_top(vm->stack), &args.data[i]);
     }
-    vm->ip = ip;
+    vm->ip = ifn->ip;
     // call it
     vm_execute(vm);
     if(vm->error) // unhandled exception
@@ -922,7 +922,6 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     // restore ip
     vm->ip = last;
     return &array_top(vm->stack);
-#endif
 }
 
 void vm_print_stack(const struct vm *vm) {

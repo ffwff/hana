@@ -1,10 +1,9 @@
 a = [1, 2]
 print(a[0], "\n")
 
-a = array(1,2,3,4,5)
+a = Array(1,2,3,4,5)
 a.delete(2, 2)
-print(a.at(2), "\n")
-a.index(2)
+print(a, "\n")
 
 a = ["a", "b", "c"]
 print(a.index("b"), "\n",a,"\n")
@@ -17,4 +16,4 @@ print(["A"]*3,"\n") // => [A A A]
 a=[3,5,78,2]
 print(a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr,0),"\n")
 a=[1,2,3]
-print(a.map(string).join(" "))
+print(a.map(String).join(" "))
