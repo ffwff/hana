@@ -4,6 +4,7 @@ record File
     SEEK_SET = 0
     SEEK_CUR = 1
     SEEK_END = 2
+    PATH_MAX = 4096
 
     _fopen = Cffi::Function("fopen", [Cffi.String, Cffi.String], Cffi.Pointer)
     _fwrite = Cffi::Function("fwrite", [Cffi.String, Cffi.UInt64, Cffi.UInt64, Cffi.Pointer], Cffi.UInt64)
@@ -13,6 +14,7 @@ record File
     _ftell = Cffi::Function("ftell", [Cffi.Pointer], Cffi.UInt64)
     _feof = Cffi::Function("feof", [Cffi.Pointer], Cffi.Int64)
     _ferror = Cffi::Function("ferror", [Cffi.Pointer], Cffi.Int64)
+    _realpath = Cffi::Function("realpath", [Cffi.String, Cffi.String], Cffi.Pointer)
 
     // constructor
     function constructor(self, path, mode) begin
@@ -31,7 +33,7 @@ record File
     end
     function readall(self) begin
         sz = self.size()
-        read = String::reserve()
+        read = String::reserve(sz)
         s = Cffi::call(File::_fread, read, 1, sz, self._fptr.pointer!)
         read.shrink!(s)
         return read
@@ -79,6 +81,15 @@ record File
     end
     function error?(self) begin
         return Cffi::call(File::_ferror, self._fptr.pointer!)
+    end
+
+    // static
+    function realpath(path) begin
+        actualpath = String::reserve(File::PATH_MAX)
+        ptr = Cffi::call(File::_realpath, path, actualpath)
+        if ptr == 0 return ""
+        actualpath.shrink!()
+        return actualpath
     end
 
 end

@@ -11,6 +11,7 @@ namespace hanayo {
 fn(print);
 fn(input);
 fn(eval);
+fn(exit);
 
 // ffi
 namespace ffi {

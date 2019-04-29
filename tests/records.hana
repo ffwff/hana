@@ -26,4 +26,4 @@ function greet(self) begin
 end
 Person.greet = greet
 lain.greet()
-print(record::keys(lain))
+print(Record::keys(lain))

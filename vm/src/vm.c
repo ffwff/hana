@@ -372,12 +372,6 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
-        const uint32_t hash =
-                            vm->code.data[vm->ip+0] << 12 |
-                            vm->code.data[vm->ip+1] << 8  |
-                            vm->code.data[vm->ip+2] << 4  |
-                            vm->code.data[vm->ip+3];
-        vm->ip+=sizeof(hash);
         LOG("GET GLOBAL %s\n", key);
         array_push(vm->stack, (struct value){});
         struct value *val = hmap_get(&vm->globalenv, key);
@@ -484,7 +478,6 @@ do { \
             ERROR(); \
         } \
     } \
-    /*vm->ip = fn_ip;*/ \
 } while(0)
     doop(OP_CALL): {
         // argument: [arg2][arg1]
@@ -498,6 +491,9 @@ do { \
             array_pop(vm->stack);
             val.as.fn(vm, nargs);
         } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
+            struct function *ifn;
+            JMP_INTERPRETED_FN;
+
             // caller
             struct env *oldenv = vm->localenv;
             vm->localenv = calloc(1, sizeof(struct env)); // why this not free?
@@ -505,8 +501,6 @@ do { \
             vm->localenv->retip = vm->ip;
             vm->localenv->is_function_bound = 0;
 
-            struct function *ifn;
-            JMP_INTERPRETED_FN;
             vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
             ifn->refs--;

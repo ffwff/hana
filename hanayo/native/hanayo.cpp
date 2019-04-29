@@ -85,6 +85,11 @@ fn(eval) {
     array_push(vm->stack, retval);
 }
 
+fn(exit) {
+    auto code = _arg(vm, value::TYPE_INT);
+    ::exit(code.as.integer);
+}
+
 void hanayo::_init(struct vm *m) {
     // variables:
     struct value val;
@@ -104,11 +109,11 @@ void hanayo::_init(struct vm *m) {
 #define native_obj_function(key, name) \
     do{ struct value v; value_native(&v, hanayo::name); hmap_set(&val.as.dict->data, key, &v); } while(0)
 
-
     // ## io
     native_function(print)
     native_function(input)
     native_function(eval)
+    native_function(exit)
 
     // ffi
     value_dict(&val);

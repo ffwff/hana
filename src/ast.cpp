@@ -214,14 +214,12 @@ static void emit_get_var(struct vm *vm, Hana::Compiler *compiler, std::string s)
         if(s.size() > 1 && s[0] == '$') s.erase(0, 1);
         array_push(vm->code, OP_GET_GLOBAL);
         vm_code_pushstr(vm, s.data());
-        vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
     } else { // local var
         auto local = compiler->get_local(s);
         LOG("get local var ", s, ":", local.relascope);
         if(local.relascope == (size_t)-1) {
             array_push(vm->code, OP_GET_GLOBAL);
             vm_code_pushstr(vm, s.data());
-            vm_code_push32(vm, XXH32(s.data(), s.size(), 0));
         } else if(local.relascope == 0) {
             array_push(vm->code, OP_GET_LOCAL);
             vm_code_push16(vm, local.idx);
