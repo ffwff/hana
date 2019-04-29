@@ -59,7 +59,7 @@ void vm_execute(struct vm *vm) {
 #define ERROR() do { vm->error = 1; return; } while(0)
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
-#ifdef NOLOG
+#ifdef RELEASE
 #define dispatch() do { \
         goto *dispatch_table[vm->code.data[vm->ip]]; \
     } while(0)
@@ -1012,7 +1012,7 @@ void vm_code_pushf64(struct vm *vm, double d) {
 
 void vm_code_reserve(struct vm *vm, size_t s) {
     free(vm->code.data);
-    vm->code.data = malloc(s);
+    vm->code.data = calloc(s, 1);
     vm->code.length = 0;
     vm->code.capacity = s;
 }

@@ -638,8 +638,8 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     auto scope_size = compiler->unscope();
     fill_hole16(vm, env_length, scope_size);
     // default return
-    if( vm->code.data[vm->code.length] != OP_RET &&
-        vm->code.data[vm->code.length] != OP_RETCALL) {
+    if( vm->code.data[vm->code.length-1] != OP_RET &&
+        vm->code.data[vm->code.length-1] != OP_RETCALL) {
         array_push(vm->code, OP_PUSH_NIL);
         array_push(vm->code, OP_RET); // pops env for us
     }

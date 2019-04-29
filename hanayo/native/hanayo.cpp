@@ -68,12 +68,12 @@ fn(eval) {
     if(ast == nullptr) {
         value_int(&retval, 0);
     } else {
-        auto target_ip = vm->code.length;
+        const auto target_ip = vm->code.length;
         hana_ast_emit(ast, vm);
         hana_free_ast(ast);
 
         // save state, execute then return
-        auto ip = vm->ip;
+        const auto ip = vm->ip;
         vm->ip = target_ip;
         vm_execute(vm);
         vm->ip = ip;

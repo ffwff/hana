@@ -4,14 +4,16 @@
 #include "env.h"
 
 void env_init(struct env *env, size_t nslots) {
-    env->nslots = nslots;
     if(env->slots == NULL) {
         env->slots = calloc(nslots, sizeof(struct value));
+        env->nslots = nslots;
     } else if(env->nslots < nslots) {
         free(env->slots);
         env->slots = calloc(nslots, sizeof(struct value));
+        env->nslots = nslots;
     } else { // reused env for tail call
-        memset(env->slots, 0, nslots*sizeof(struct value));
+        memset(env->slots, 0, env->nslots*sizeof(struct value));
+        env->nslots = nslots;
     }
     // NOTE: parent and caller is already init in OP_CALL
 }
