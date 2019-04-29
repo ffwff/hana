@@ -12,8 +12,10 @@ void exception_frame_init_vm(struct exception_frame *frame, struct vm *vm) {
 }
 
 void exception_frame_free(struct exception_frame *frame) {
-    for(size_t i = 0; i < frame->handlers.length; i++)
+    for(size_t i = 0; i < frame->handlers.length; i++) {
         value_free(&frame->handlers.data[i].etype);
+        value_free(&frame->handlers.data[i].fn);
+    }
     array_free(frame->handlers);
 }
 

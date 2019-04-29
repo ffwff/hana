@@ -56,6 +56,7 @@ void vm_free(struct vm *vm) {
 }
 
 void vm_execute(struct vm *vm) {
+    LOG("vm: %p\n", vm);
 #define ERROR() do { vm->error = 1; return; } while(0)
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
@@ -321,10 +322,11 @@ void vm_execute(struct vm *vm) {
         const uint16_t key = vm->code.data[vm->ip+0] << 4 |
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(key);
-        LOG("SET LOCAL FUNCTION DEF %d\n", key);
         struct value *val = &array_top(vm->stack);
+        LOG("SET LOCAL FUNCTION DEF %d %p\n", key, val->as.ifn);
         env_set(vm->localenv, key, val);
-        env_set(&val->as.ifn->bound, key, val);
+        val->as.ifn->bound.slots[key] = *val;
+        // NOTE: this is a weakref for recursive function calls
         dispatch();
     }
     // pushes a copy of the value of current environment's slot
@@ -469,7 +471,6 @@ do { \
         struct value new_val; \
         value_dict(&new_val); \
         dict_set(new_val.as.dict, "prototype", &val); \
-        value_free(&val); \
         array_push(vm->stack, new_val); \
     } else { \
         ifn = val.as.ifn; \
@@ -503,7 +504,7 @@ do { \
 
             vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
-            ifn->refs--;
+            value_free(&val);
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
@@ -870,7 +871,7 @@ do { \
             } while(0));
             vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
-            ifn->refs--;
+            value_free(&val);
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
