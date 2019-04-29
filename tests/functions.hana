@@ -1,29 +1,16 @@
-/*
 x = "a"
 function outer() begin
     x = "b"
     function inner() begin
-        x
+        x = "c"
+        print("inner ", x, "\n")
     end
     inner()
-    "outer " + x // wtf? x => GET LOCAL UP 0 1?
+    print("outer ", x, "\n")
 end
 
 outer()
-"global " + x
-*/
-
-/*
-function a() begin
-    function b() begin
-    end
-
-    // b isn't free?
-
-end
-a()
-*/
-
+print("global ", x, "\n")
 
 function adder(n) begin
     function inner(x) begin
@@ -33,4 +20,4 @@ function adder(n) begin
 end
 
 x = adder(5)
-x(10)
+print(x(10),"\n")
