@@ -269,8 +269,8 @@ end
 
 A scope is a container which stores local variables. Every time a function is called,
 a new scope is setup. Scopes can be nested, meaning functions (A) inside of functions (B) can
-get its parent's variables (B), but not the other way around. Scopes can't currently set
-its parent's variables, doing so will **create a new local variable with the same name**.
+get its parent's variables (B), but not the other way around. Scopes can't set its parent
+scope's variables, doing so will **create a new local variable with the same name**.
 
 Example:
 
@@ -289,6 +289,32 @@ function a() begin
 end
 
 a()
+```
+
+Local variables inside of scopes can be used inside of functions that escapes the scope
+(through returns, global variables or through dictionary/array keys). These are called
+[closures](https://en.wikipedia.org/wiki/Closure_(computer_programming)):
+
+```
+function adder(n) begin
+    return function(x) begin
+        return x + n
+    end
+end
+
+x = adder(5)
+y = x(10) // => 15
+```
+
+Functions can do recursion, calling itself in its scopes:
+
+```
+function call_1000_times(n) begin
+    print(n, "\n")
+    if n == 1000 return
+    return call_1000_times(n+1)
+end
+call_1000_times(0)
 ```
 
 #### Return statements
@@ -363,7 +389,7 @@ fib(30) // => 1346269
 
 Each function creates a scope (a separate variable environment). Variables that don't
 exist in the upper scope will be declared locally, while existing variables will
-set accordingly.
+set accordingly. (see [#Scoping rules](#scoping-rules))
 
 ## Strings
 
