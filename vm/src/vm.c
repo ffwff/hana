@@ -88,7 +88,7 @@ void vm_execute(struct vm *vm) {
         X(OP_EQ), X(OP_NEQ),
         // variables
         X(OP_ENV_NEW),
-        X(OP_SET_LOCAL), X(OP_GET_LOCAL),
+        X(OP_SET_LOCAL), X(OP_SET_LOCAL_FUNCTION_DEF), X(OP_GET_LOCAL),
         X(OP_SET_LOCAL_UP), X(OP_GET_LOCAL_UP),
         X(OP_SET_GLOBAL), X(OP_GET_GLOBAL),
         X(OP_DEF_FUNCTION_PUSH),
@@ -313,6 +313,18 @@ void vm_execute(struct vm *vm) {
         struct env *env = vm->localenv;
         while(relascope--) env = env->lexical_parent;
         env_set(env, key, &array_top(vm->stack));
+        dispatch();
+    }
+    // this is for recursive function
+    doop(OP_SET_LOCAL_FUNCTION_DEF): {
+        vm->ip++;
+        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+                             vm->code.data[vm->ip+1];
+        vm->ip += sizeof(key);
+        LOG("SET LOCAL FUNCTION DEF %d\n", key);
+        struct value *val = &array_top(vm->stack);
+        env_set(vm->localenv, key, val);
+        env_set(&val->as.ifn->bound, key, val);
         dispatch();
     }
     // pushes a copy of the value of current environment's slot

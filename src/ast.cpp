@@ -190,7 +190,7 @@ void AST::BlockStatement::print(int indent) {
 }
 
 // EMIT
-static void emit_set_var(struct vm *vm, Hana::Compiler *compiler, std::string s) {
+static void emit_set_var(struct vm *vm, Hana::Compiler *compiler, std::string s, bool is_function_def=false) {
     if((s.size() > 1 && s[0] == '$') || compiler->scopes.size() == 0) { // global var
         if(s.size() > 1 && s[0] == '$') s.erase(0, 1);
         LOG("set global var ", s);
@@ -203,7 +203,7 @@ static void emit_set_var(struct vm *vm, Hana::Compiler *compiler, std::string s)
             local = compiler->get_local(s);
             LOG("actually -1");
         }
-        array_push(vm->code, OP_SET_LOCAL);
+        array_push(vm->code, is_function_def ? OP_SET_LOCAL_FUNCTION_DEF : OP_SET_LOCAL);
         LOG("set local var ", s, ":", local.relascope);
         vm_code_push16(vm, local.idx);
     }
@@ -441,7 +441,7 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             //fill in
             fill_hole(vm, length, vm->code.length);
             LOG("len: ", vm->code.length);
-            emit_set_var(vm, compiler, id);
+            emit_set_var(vm, compiler, id, true);
         }
     }
     else {
@@ -650,7 +650,7 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
 
     // push set var
     if(!is_expr) {
-        emit_set_var(vm, compiler, id);
+        emit_set_var(vm, compiler, id, true);
         array_push(vm->code, OP_POP);
     }
     END_AST

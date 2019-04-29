@@ -33,10 +33,8 @@ void env_set(struct env *env, size_t n, struct value *val) {
 }
 
 void env_free(struct env *env) {
-    printf("FREE ENV\n"); // wtf
     if(env->slots == NULL) return;
     for(int i = 0; i < env->nslots; i++) {
-        printf("FREE SLOT\n");
         value_free(&env->slots[i]);
     }
     free(env->slots);

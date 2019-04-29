@@ -14,7 +14,6 @@ void function_init(struct function *fn, uint32_t ip, uint16_t nargs, struct env 
 }
 
 void function_free(struct function *fn) {
-    printf("BOUND: 0x%lx\n", fn->bound); // 0x0?
     if(fn->bound.is_function_bound) {
         env_free(&fn->bound);
     }
