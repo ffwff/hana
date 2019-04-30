@@ -14,9 +14,7 @@ git clone --recursive https://github.com/ffwff/hana
 
 (building was tested by using gcc-7 on an x64 with Linux, mileage may vary on other architectures)
 
-You'll need to install **libffi**. For faster memory allocations, it is recommended that jemalloc be
-installed. By default, the build script will enable linking to **jemalloc** unless `DISABLE_JEMALLOC`
-is set.
+You'll need to install **libffi** and **libgc** (BoehmGC garbage collector).
 
 For release builds, just do:
 
