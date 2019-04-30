@@ -51,7 +51,6 @@ void vm_free(struct vm *vm) {
     }
     array_free(vm->code);
     for(size_t i = 0; i < vm->stack.length; i++)
-        value_free(&vm->stack.data[i]);
     array_free(vm->stack);
 }
 
@@ -210,7 +209,6 @@ void vm_execute(struct vm *vm) {
     doop(OP_POP): {
         LOG("POP\n");
         vm->ip++;
-        value_free(&array_top(vm->stack));
         array_pop(vm->stack);
         dispatch();
     }
@@ -221,7 +219,6 @@ void vm_execute(struct vm *vm) {
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         int truth = value_is_true(&val);
-        value_free(&val);
         value_int(&val, !truth);
         array_push(vm->stack, val);
         dispatch();
@@ -254,7 +251,6 @@ void vm_execute(struct vm *vm) {
         array_push(vm->stack, (struct value){}); \
         struct value *result = &array_top(vm->stack); \
         fn(result, &left, &right); \
-        value_free(&left); value_free(&right); \
         dispatch(); \
     }
     binop(OP_ADD, value_add)
@@ -325,8 +321,7 @@ void vm_execute(struct vm *vm) {
         struct value *val = &array_top(vm->stack);
         LOG("SET LOCAL FUNCTION DEF %d %p\n", key, val->as.ifn);
         env_set(vm->localenv, key, val);
-        val->as.ifn->bound.slots[key] = *val;
-        // NOTE: this is a weakref for recursive function calls
+        env_set(&val->as.ifn->bound, key, val);
         dispatch();
     }
     // pushes a copy of the value of current environment's slot
@@ -456,7 +451,6 @@ do { \
         } \
         if(ctor->type == TYPE_NATIVE_FN) { \
             LOG("NATIVE CONSTRUCTOR\n"); \
-            value_free(&val); \
             ctor->as.fn(vm, nargs); \
             END_IF_NATIVE; \
         } else if(ctor->type != TYPE_FN) { \
@@ -504,7 +498,6 @@ do { \
 
             vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
-            value_free(&val);
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();
@@ -566,7 +559,6 @@ do { \
                 }
             }
             if(strcmp(key, "prototype") == 0) {
-                value_free(&array_top(vm->stack));
                 value_dict_copy(&array_top(vm->stack), dict);
                 dispatch();
             }
@@ -585,7 +577,6 @@ do { \
             value_copy(&array_top(vm->stack), result);
 
         if(op == OP_MEMBER_GET) {
-            value_free(&val);
         }
         dispatch();
     }
@@ -604,7 +595,6 @@ do { \
 
         struct value val = array_top(vm->stack);
         dict_set(dval.as.dict, key, &val);
-        value_free(&dval);
         // NOTE: val should not be free'd.
         dispatch();
     }
@@ -625,8 +615,6 @@ do { \
             array_pop(vm->stack);
             dict_set(dval.as.dict, string_data(key.as.str), &val);
             // pop key
-            value_free(&val);
-            value_free(&key);
         }
         array_pop(vm->stack); // pop nil
         array_push(vm->stack, dval);
@@ -635,9 +623,9 @@ do { \
     // array
     doop(OP_INDEX_GET): {
         vm->ip++;
-        struct value index;
-        value_copy(&index, &array_top(vm->stack));
-        value_free(&array_top(vm->stack));
+        LOG("INDEX_GET\n");
+
+        struct value index = array_top(vm->stack);
         array_pop(vm->stack);
 
         struct value dval = array_top(vm->stack);
@@ -669,28 +657,26 @@ do { \
             array_push(vm->stack, (struct value){});
             value_str(&array_top(vm->stack), c);
         } else if(dval.type == TYPE_DICT) {
+            LOG("GET DICT %p %s\n", dval.as.dict, string_data(index.as.str));
             if(index.type != TYPE_STR) {
                 FATAL("index type for record must be string!\n");
                 ERROR();
             }
             array_push(vm->stack, (struct value){});
             struct value *val = dict_get(dval.as.dict, string_data(index.as.str));
-            value_free(&index);
+            LOG("%p\n", val);
             if(val != NULL) value_copy(&array_top(vm->stack), val);
         } else {
             FATAL("can only access keys of record, array or string\n");
             ERROR();
         }
-        value_free(&dval);
         dispatch();
     }
     doop(OP_INDEX_SET): {
         vm->ip++;
         LOG("INDEX_SET\n");
 
-        struct value index;
-        value_copy(&index, &array_top(vm->stack));
-        value_free(&array_top(vm->stack));
+        struct value index = array_top(vm->stack);
         array_pop(vm->stack);
 
         struct value dval = array_top(vm->stack);
@@ -700,7 +686,6 @@ do { \
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
-                value_free(&index);
                 FATAL("index type of array must be integer!\n");
                 ERROR();
             }
@@ -709,7 +694,6 @@ do { \
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
                 ERROR();
             }
-            value_free(&dval.as.array->data.data[i]);
             value_copy(&dval.as.array->data.data[i], val);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
@@ -717,12 +701,10 @@ do { \
                 ERROR();
             }
             dict_set(dval.as.dict, string_data(index.as.str), val);
-            value_free(&index);
         } else {
             FATAL("can only set keys of record or array\n");
             ERROR();
         }
-        value_free(&dval);
         dispatch();
     }
     doop(OP_ARRAY_LOAD): {
@@ -744,7 +726,6 @@ do { \
                 struct value val = array_top(vm->stack);
                 value_copy(&aval.as.array->data.data[length], &val);
                 array_pop(vm->stack);
-                value_free(&val);
             }
         }
         array_push(vm->stack, aval);
@@ -871,7 +852,6 @@ do { \
             } while(0));
             vm->localenv->lexical_parent = &ifn->bound;
             vm->ip = ifn->ip;
-            value_free(&val);
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
             ERROR();

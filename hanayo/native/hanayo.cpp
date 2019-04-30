@@ -124,7 +124,6 @@ void hanayo::_init(struct vm *m) {
         dict_set(rc.as.dict, "constructor", &v);
 
         dict_set(val.as.dict, "RcPointer", &rc);
-        value_free(&rc);
     }
     native_obj_function("call",        ffi::call);
 #define X(x) {struct value v; value_int(&v, hanayo::ffi::type::x); dict_set(val.as.dict, # x, &v);}
@@ -132,7 +131,6 @@ void hanayo::_init(struct vm *m) {
     X(Float32); X(Float64); X(UChar); X(Char); X(UShort); X(Short); X(ULong); X(Long);
     X(Pointer); X(String); X(Void);
     hmap_set(&m->globalenv, "Cffi", &val);
-    value_free(&val);
 
     // ## strings
     value_dict(&val);
@@ -150,14 +148,12 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("endswith?",   string::endswith);
     native_obj_function("shrink!",     string::shrink_);
     hmap_set(&m->globalenv, "String", &val);
-    value_free(&val);
     m->dstr = val.as.dict;
 
     // ## integers
     value_dict(&val);
     native_obj_function("constructor", integer::constructor);
     hmap_set(&m->globalenv, "Int", &val);
-    value_free(&val);
     m->dint = val.as.dict;
 
     // ## floats
@@ -165,7 +161,6 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("constructor", float_::constructor);
     native_obj_function("round",       float_::round);
     hmap_set(&m->globalenv, "Float", &val);
-    value_free(&val);
     m->dfloat = val.as.dict;
 
     // ## arrays
@@ -186,7 +181,6 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("reduce",      array::reduce);
     native_obj_function("join",        array::join);
     hmap_set(&m->globalenv, "Array", &val);
-    value_free(&val);
     m->darray = val.as.dict;
 
     // ## records
@@ -196,15 +190,15 @@ void hanayo::_init(struct vm *m) {
     native_obj_function("keys",        record::keys);
     native_obj_function("copy",        record::copy);
     hmap_set(&m->globalenv, "Record", &val);
-    value_free(&val);
 }
 
 // helpers
-hanayo::Value hanayo::_top(struct vm *vm) { return Value::move(array_top(vm->stack)); }
+hanayo::Value hanayo::_top(struct vm *vm) { return array_top(vm->stack); }
 hanayo::Value hanayo::_pop(struct vm *vm) {
-    auto v = Value::move(array_top(vm->stack));
+    auto v = array_top(vm->stack);
     array_pop(vm->stack);
-    return v;
+    Value vv; vv.v = v;
+    return vv;
 }
 void hanayo::_push(struct vm *vm, Value &val) {
     array_push(vm->stack, val);
@@ -214,7 +208,7 @@ void hanayo::_push(struct vm *vm, Value &val) {
 hanayo::Value hanayo::_arg(struct vm *vm, value::value_type type) {
     struct value v = array_top(vm->stack);
     assert(v.type == type);
-    Value val = Value::move(v);
+    Value val; val.v = v;
     array_pop(vm->stack);
     return val;
 }

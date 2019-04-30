@@ -73,6 +73,7 @@ void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
 }
 
 struct _rc_struct { uint32_t refs; };
+#if 0
 void value_free(struct value *val) {
     switch(val->type) {
     case TYPE_STR:
@@ -111,8 +112,10 @@ void value_free(struct value *val) {
         break;
     default: break;
     }
+//     if(val->type == TYPE_DICT) printf("FREE: %p %d\n", val->as.ptr, ((struct _rc_struct*)val->as.ptr)->refs);
     val->type = TYPE_NIL;
 }
+#endif
 
 void value_print(struct value *val) {
     if(val->type == TYPE_INT)
@@ -126,11 +129,11 @@ void value_print(struct value *val) {
     else if(val->type == TYPE_FN)
         printf("[fn %d]", (uint32_t)val->as.ifn->ip);
     else if(val->type == TYPE_DICT)
-        printf("[dict %ld]", (intptr_t)val->as.dict);
+        printf("[dict %p]", val->as.dict);
     else if(val->type == TYPE_ARRAY)
-        printf("[array %ld]", (intptr_t)val->as.array);
+        printf("[array %p]", val->as.array);
     else if(val->type == TYPE_NATIVE_OBJ)
-        printf("[native obj %ld]", (intptr_t)val->as.native);
+        printf("[native obj %p]", val->as.native);
     else {
         printf("nil");
     }
@@ -139,6 +142,7 @@ void value_print(struct value *val) {
 void value_copy(struct value *dst, struct value *src) {
     dst->type = src->type;
     dst->as = src->as;
+#if 0
     switch(src->type) {
         case TYPE_STR:
         case TYPE_DICT:
@@ -148,6 +152,8 @@ void value_copy(struct value *dst, struct value *src) {
             ((struct _rc_struct*)src->as.ptr)->refs++; break;
         default: break;
     }
+#endif
+//     if(src->type == TYPE_DICT) printf("COPY: %p %d\n", src->as.ptr, ((struct _rc_struct*)src->as.ptr)->refs);
 }
 
 // arith

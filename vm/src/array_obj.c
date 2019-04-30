@@ -11,7 +11,7 @@ void array_obj_init_n(struct array_obj *array_obj, size_t n) {
 }
 
 void array_obj_free(struct array_obj *array_obj) {
-    for(size_t i = 0; i < array_obj->data.length; i++)
-        value_free(&array_obj->data.data[i]);
+    //for(size_t i = 0; i < array_obj->data.length; i++)
+        //value_free(&array_obj->data.data[i]);
     array_free(array_obj->data);
 }

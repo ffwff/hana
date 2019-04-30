@@ -28,7 +28,7 @@ void hmap_free(struct hmap *hmap) {
     for(size_t i = 0; i < hmap->data.length; i++) {
         for(size_t j = 0; j < hmap->data.data[i].length; j++) {
             free(hmap->data.data[i].data[j].key);
-            value_free(&hmap->data.data[i].data[j].val);
+            //value_free(&hmap->data.data[i].data[j].val);
         }
         array_free(hmap->data.data[i]);
     }
@@ -88,7 +88,7 @@ struct value *_hmap_set(struct hmap *hmap, const char *key, struct value *val, i
                 entry->data[i].val.type = val->type;
                 entry->data[i].val.as = val->as;
             } else {
-                value_free(&entry->data[i].val);
+                //value_free(&entry->data[i].val);
                 value_copy(&entry->data[i].val, val);
             }
             return &entry->data[i].val;
@@ -130,7 +130,7 @@ void hmap_del(struct hmap *hmap, const char *key) {
     a_hmap_entry *entry = &hmap->data.data[hmap_index(hmap, key)];
     if(entry->length == 1) {
         free(entry->data[0].key);
-        value_free(&entry->data[0].val);
+        //value_free(&entry->data[0].val);
         entry->length--;
         if(entry->length == 0) hmap->occupied--;
     } else {
@@ -138,7 +138,7 @@ void hmap_del(struct hmap *hmap, const char *key) {
             if(strcmp(entry->data[i].key, key) == 0) {
                 // free entry
                 free(entry->data[i].key);
-                value_free(&entry->data[i].val);
+                //value_free(&entry->data[i].val);
                 // move it
                 i++;
                 for(; i < entry->length; i++)

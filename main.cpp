@@ -245,7 +245,6 @@ int main(int argc, char **argv) {
         if(ptr != nullptr) {
             value_str(&val, ptr);
             hmap_set(&m.globalenv, "__file__", &val);
-            value_free(&val);
         }
 
         // run

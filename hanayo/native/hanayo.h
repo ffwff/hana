@@ -11,33 +11,12 @@ namespace hanayo {
 struct Value { // wrapper
     struct value v;
     Value() { v.type = value::value_type::TYPE_NIL; }
-    ~Value() { value_free(&v); }
+    Value(struct value v) : v(v) {}
     struct value deref() {
         struct value v = this->v;
         this->v.type = value::value_type::TYPE_NIL;
         return v;
     }
-    // move/copy
-    static Value move(struct value &val) {
-        Value v;
-        v.v = val;
-        val.type = value::value_type::TYPE_NIL;
-        val.as.ptr = 0;
-        return v;
-    }
-    static void move(Value &dst, Value &src) {
-        value_free(&dst.v);
-        dst.v = src.v;
-        src.v.type = value::value_type::TYPE_NIL;
-        src.v.as.ptr = 0;
-    }
-    static Value copy(struct value &val) {
-        Value v;
-        value_copy(&v.v, &val);
-        return v;
-    }
-    // disable operators
-    Value &operator=(Value &other) = delete;
     // deref
     operator value&() { return v; }
     operator value*() { return &v; }

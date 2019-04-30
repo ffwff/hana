@@ -13,12 +13,10 @@ fn(constructor) {
     else if(val->type == value::TYPE_INT)
         value_float(val, (double)val->as.integer);
     else if(val->type == value::TYPE_STR) {
-        value_free(val);
         double f;
         sscanf(string_data(val->as.str), "%lf", &f);
         value_float(val, f);
     } else {
-        value_free(val);
         value_float(val, 0);
     }
 }

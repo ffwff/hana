@@ -87,7 +87,6 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
         default:
             assert(0);
         }
-        value_free(&v);
     }
     ffn->ffi_argtypes[ffi_nargs] = nullptr;
 
@@ -146,7 +145,7 @@ fn(call) {
         switch (ffn->argtypes.data[i]) {
         case String: {
             Value val = _arg(vm, value::TYPE_STR);
-            Value::move(avalues_v[i], val);
+            avalues_v[i] = val;
             aptr[i] = string_data(avalues_v[i].v.as.str);
             avalues[i] = &aptr[i];
             break; }

@@ -35,7 +35,6 @@ fn_(delete_) {
 
     assert(from_pos >= 0 && from_pos+nelems < aval.v.as.array->data.length);
     for(size_t i = from_pos; i < (from_pos+nelems); i++) {
-        value_free(&aval.v.as.array->data.data[i]);
     }
     size_t remaining = (aval.v.as.array->data.length-from_pos-nelems)*sizeof(struct value);
     memmove(&aval.v.as.array->data.data[from_pos],
@@ -79,7 +78,7 @@ fn_(at) {
     const int64_t index = _arg(vm, value::TYPE_INT).v.as.integer;
 
     if(index < (int64_t)(aval.v.as.array->data.length) && index >= 0) {
-        Value val = Value::copy(aval.v.as.array->data.data[index]);
+        Value val = aval.v.as.array->data.data[index];
         _push(vm, val);
     } else {
         Value val;
@@ -144,7 +143,7 @@ fn_(pop) {
         Value retval; _push(vm, retval);
         return;
     }
-    Value retval = Value::move(aval.v.as.array->data.data[aval.v.as.array->data.length-1]);
+    Value retval = aval.v.as.array->data.data[aval.v.as.array->data.length-1];
     aval.v.as.array->data.length--;
     _push(vm, retval);
 }
@@ -207,15 +206,12 @@ fn_(map) {
             // return
             struct value *ret = vm_call(vm, &fn.v, args);
             if(ret == (struct value*)-1) {
-                value_free(&args.data[0]);
                 array_free(args);
                 return;
             }
             value_copy(&newval.v.as.array->data.data[i], ret);
             // cleanup
-            value_free(&args.data[0]);
             array_free(args);
-            value_free(ret);
             array_pop(vm->stack);
         }
     } else {
@@ -227,7 +223,6 @@ fn_(map) {
             fn.v.as.fn(vm, 1);
             newval.v.as.array->data.data[i] = array_top(vm->stack);
             // cleanup
-            value_free(&array_top(vm->stack));
             array_pop(vm->stack);
         }
     }
@@ -266,7 +261,6 @@ fn_(filter) {
             // return
             struct value *ret = vm_call(vm, fn, args);
             if(ret == (struct value*)-1) {
-                value_free(&args.data[0]);
                 array_free(args);
                 return;
             }
@@ -276,9 +270,7 @@ fn_(filter) {
                 array_push(newval.v.as.array->data, val);
             }
             // cleanup
-            value_free(&args.data[0]);
             array_free(args);
-            value_free(ret);
             array_pop(vm->stack);
         }
     } else {
@@ -294,7 +286,6 @@ fn_(filter) {
                 array_push(newval.v.as.array->data, val);
             }
             // cleanup
-            value_free(&array_top(vm->stack));
             array_pop(vm->stack);
         }
     }
@@ -333,16 +324,11 @@ fn_(reduce) {
             // return
             struct value *ret = vm_call(vm, fn, args);
             if(ret == (struct value*)-1) {
-                value_free(&args.data[0]);
-                value_free(&args.data[1]);
                 array_free(args);
                 return;
             }
-            Value newval = _pop(vm);
-            Value::move(acc, newval);
+            acc = _pop(vm);
             // cleanup
-            value_free(&args.data[0]);
-            value_free(&args.data[1]);
             array_free(args);
         }
     } else {
@@ -354,8 +340,7 @@ fn_(reduce) {
             value_copy(&array_top(vm->stack), &acc.v);
             // call function
             fn.v.as.fn(vm, 2);
-            Value newval = _pop(vm);
-            Value::move(acc, newval);
+            acc = _pop(vm);
         }
     }
 
