@@ -10,11 +10,11 @@ namespace hanayo {
 // Helper functions
 struct Value { // wrapper
     struct value v;
-    Value() { v.type = value::value_type::TYPE_NIL; }
+    Value() { v.type = TYPE_NIL; }
     Value(struct value v) : v(v) {}
     struct value deref() {
         struct value v = this->v;
-        this->v.type = value::value_type::TYPE_NIL;
+        this->v.type = TYPE_NIL;
         return v;
     }
     // deref
@@ -27,7 +27,7 @@ void _init(struct vm *m);
 Value _top(struct vm *vm);
 Value _pop(struct vm *vm);
 void _push(struct vm *vm, Value &val);
-Value _arg(struct vm *vm, value::value_type type);
+Value _arg(struct vm *vm, uint8_t type);
 
 // io
 fn(print);

@@ -2,6 +2,7 @@
 #include <dlfcn.h>
 #include <ffi.h>
 #include "hanayo.h"
+#include "vm/src/value.h"
 #include "vm/src/string_.h"
 #include "vm/src/array_obj.h"
 #include "vm/src/dict.h"
@@ -38,7 +39,7 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
     };
 
     if(nargs == 4) { // TODO
-        Value val = _arg(vm, value::TYPE_STR);
+        Value val = _arg(vm, TYPE_STR);
         dl = dlopen(string_data(val.v.as.str), RTLD_LAZY);
     } else if(nargs == 3) {
         dl = dlopen(nullptr, RTLD_LAZY);
@@ -48,18 +49,18 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
 
     // function name
     {
-        Value val = _arg(vm, value::TYPE_STR);
+        Value val = _arg(vm, TYPE_STR);
         ffn->sym = (ffi_fnptr)dlsym(dl, string_data(val.v.as.str));
         assert(ffn->sym != nullptr);
     }
 
     // argtypes
-    Value args = _arg(vm, value::TYPE_ARRAY);
+    Value args = _arg(vm, TYPE_ARRAY);
     size_t ffi_nargs = args.v.as.array->data.length;
     ffn->ffi_argtypes = (ffi_type**)malloc(sizeof(ffi_type*)*(ffi_nargs+1));
     for(size_t i = 0; i < ffi_nargs; i++) {
         auto v = args.v.as.array->data.data[i];
-        assert(v.type == value::TYPE_INT);
+        assert(v.type == TYPE_INT);
         hanayo::ffi::type t = (hanayo::ffi::type)v.as.integer;
         switch(t) {
         case String:
@@ -91,7 +92,7 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
     ffn->ffi_argtypes[ffi_nargs] = nullptr;
 
     // ret type
-    Value retval = _arg(vm, value::TYPE_INT);
+    Value retval = _arg(vm, TYPE_INT);
     const hanayo::ffi::type t = (hanayo::ffi::type)retval.v.as.integer;
     ffi_type *rettype;
     switch(t) {
@@ -130,7 +131,7 @@ fn(function) { // cffi_function("name", [argtypes,...], rettype)
 
 fn(call) {
     // ffn
-    auto ffnv = _arg(vm, value::TYPE_NATIVE_OBJ);
+    auto ffnv = _arg(vm, TYPE_NATIVE_OBJ);
     struct ffi_function *ffn = (struct ffi_function *)(ffnv.v.as.native->data);
     nargs--;
 
@@ -144,15 +145,15 @@ fn(call) {
     for(int64_t i = 0; i < nargs; i++) {
         switch (ffn->argtypes.data[i]) {
         case String: {
-            Value val = _arg(vm, value::TYPE_STR);
+            Value val = _arg(vm, TYPE_STR);
             avalues_v[i] = val;
             aptr[i] = string_data(avalues_v[i].v.as.str);
             avalues[i] = &aptr[i];
             break; }
 #define X(x,z) \
         case x: { \
-            const Value val = _arg(vm, value::TYPE_INT); \
-            avalues_v[i].v.type = value::TYPE_INT; \
+            const Value val = _arg(vm, TYPE_INT); \
+            avalues_v[i].v.type = TYPE_INT; \
             avalues_v[i].v.as.integer = (z)val.v.as.integer; \
             avalues[i] = &avalues_v[i].v.as.integer; \
             break; }
@@ -167,8 +168,8 @@ fn(call) {
 #undef X
 #define X(x,z) \
         case x: { \
-            const Value val = _arg(vm, value::TYPE_FLOAT); \
-            avalues_v[i].v.type = value::TYPE_FLOAT; \
+            const Value val = _arg(vm, TYPE_FLOAT); \
+            avalues_v[i].v.type = TYPE_FLOAT; \
             avalues_v[i].v.as.floatp = (z)val.v.as.floatp; \
             avalues[i] = &avalues_v[i].v.as.floatp; \
             break; }
@@ -233,10 +234,10 @@ struct value hanayo::ffi::rcpointer::prototype;
 fn(constructor) {
     assert(nargs == 2);
 
-    const auto ptrv = _arg(vm, value::TYPE_INT);
+    const auto ptrv = _arg(vm, TYPE_INT);
     intptr_t ptr = ptrv.v.as.integer;
 
-    const auto ffnv = _arg(vm, value::TYPE_NATIVE_OBJ);
+    const auto ffnv = _arg(vm, TYPE_NATIVE_OBJ);
     auto ffn = (struct ffi_function *)ffnv.v.as.native->data;
     // free function must be of type void (*fn)(void *data);
     assert(ffn->argtypes.length == 1 && ffn->argtypes.data[0] == hanayo::ffi::type::Pointer);

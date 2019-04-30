@@ -22,16 +22,16 @@ fn_(constructor) {
 
 fn_(length) {
     assert(nargs == 1);
-    const Value val = _arg(vm, value::value_type::TYPE_ARRAY);
+    const Value val = _arg(vm, TYPE_ARRAY);
     Value retval; value_int(retval, val.v.as.array->data.length);
     _push(vm, retval);
 }
 fn_(delete_) {
     assert(nargs == 3);
 
-    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
-    const size_t from_pos = (size_t)_arg(vm, value::TYPE_INT).v.as.integer;
-    const size_t nelems = (size_t)_arg(vm, value::TYPE_INT).v.as.integer;
+    Value aval = _arg(vm, TYPE_ARRAY);
+    const size_t from_pos = (size_t)_arg(vm, TYPE_INT).v.as.integer;
+    const size_t nelems = (size_t)_arg(vm, TYPE_INT).v.as.integer;
 
     assert(from_pos >= 0 && from_pos+nelems < aval.v.as.array->data.length);
     for(size_t i = from_pos; i < (from_pos+nelems); i++) {
@@ -44,7 +44,7 @@ fn_(delete_) {
 }
 fn_(copy) {
     if(nargs == 1) {
-        const Value val = _arg(vm, value::value_type::TYPE_ARRAY);
+        const Value val = _arg(vm, TYPE_ARRAY);
 
         Value aval; value_array_n(aval, val.v.as.array->data.length);
         for(size_t i = 0; i < val.v.as.array->data.length; i++)
@@ -56,9 +56,9 @@ fn_(copy) {
 
     assert(nargs == 3);
 
-    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
-    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
-    const int64_t nelems = _arg(vm, value::TYPE_INT).v.as.integer;
+    Value aval = _arg(vm, TYPE_ARRAY);
+    const int64_t from_pos = _arg(vm, TYPE_INT).v.as.integer;
+    const int64_t nelems = _arg(vm, TYPE_INT).v.as.integer;
 
     if(nelems == 0) {
         _push(vm, aval);
@@ -74,8 +74,8 @@ fn_(copy) {
 fn_(at) {
     assert(nargs == 2);
 
-    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
-    const int64_t index = _arg(vm, value::TYPE_INT).v.as.integer;
+    Value aval = _arg(vm, TYPE_ARRAY);
+    const int64_t index = _arg(vm, TYPE_INT).v.as.integer;
 
     if(index < (int64_t)(aval.v.as.array->data.length) && index >= 0) {
         Value val = aval.v.as.array->data.data[index];
@@ -88,7 +88,7 @@ fn_(at) {
 fn_(index) {
     assert(nargs == 2);
 
-    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    Value aval = _arg(vm, TYPE_ARRAY);
     Value needle = _pop(vm);
 
     for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
@@ -106,8 +106,8 @@ fn_(index) {
 fn_(insert) {
     assert(nargs == 3);
 
-    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
-    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
+    Value aval = _arg(vm, TYPE_ARRAY);
+    const int64_t from_pos = _arg(vm, TYPE_INT).v.as.integer;
     Value newval = _pop(vm);
 
     if(from_pos < 0) {
@@ -131,14 +131,14 @@ fn_(insert) {
 fn_(push) {
     assert(nargs == 2);
 
-    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    Value aval = _arg(vm, TYPE_ARRAY);
     Value newval = _pop(vm);
     array_push(aval.v.as.array->data, newval.deref());
     _push(vm, aval);
 }
 fn_(pop) {
     assert(nargs == 1);
-    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    Value aval = _arg(vm, TYPE_ARRAY);
     if(aval.v.as.array->data.length == 0) {
         Value retval; _push(vm, retval);
         return;
@@ -161,7 +161,7 @@ qsort(x->data.data, x->data.length, sizeof(struct value), [](const void *a, cons
 });
 fn_(sort) {
     assert(nargs == 1);
-    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    Value aval = _arg(vm, TYPE_ARRAY);
     Value retval; value_array_n(retval, aval.v.as.array->data.length);
     for(size_t i = 0; i < aval.v.as.array->data.length; i++)
         value_copy(&retval.v.as.array->data.data[i], &aval.v.as.array->data.data[i]);
@@ -178,13 +178,13 @@ fn_(sort_) {
 fn_(map) {
     assert(nargs == 2);
 
-    const Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    const Value aval = _arg(vm, TYPE_ARRAY);
 
     // cb (should be function)
     Value fn = _pop(vm);
-    assert(fn.v.type == value::TYPE_FN || // TODO move this somewhere else
-        fn.v.type == value::TYPE_DICT  ||
-        fn.v.type == value::TYPE_NATIVE_FN);
+    assert(fn.v.type == TYPE_FN || // TODO move this somewhere else
+        fn.v.type == TYPE_DICT  ||
+        fn.v.type == TYPE_NATIVE_FN);
 
     if(aval.v.as.array->data.length == 0) {
         Value retval; _push(vm, retval);
@@ -194,7 +194,7 @@ fn_(map) {
     // init array with same length
     Value newval; value_array_n(newval, aval.v.as.array->data.length);
 
-    if(fn.v.type != value::TYPE_NATIVE_FN) {
+    if(fn.v.type != TYPE_NATIVE_FN) {
         for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // setup arguments
             a_arguments args = {
@@ -233,13 +233,13 @@ fn_(map) {
 fn_(filter) {
     assert(nargs == 2);
 
-    const Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    const Value aval = _arg(vm, TYPE_ARRAY);
 
     // cb (should be function)
     Value fn = _pop(vm);
-    assert(fn.v.type == value::TYPE_FN ||
-        fn.v.type == value::TYPE_DICT  ||
-        fn.v.type == value::TYPE_NATIVE_FN);
+    assert(fn.v.type == TYPE_FN ||
+        fn.v.type == TYPE_DICT  ||
+        fn.v.type == TYPE_NATIVE_FN);
 
     if(aval.v.as.array->data.length == 0) {
         Value retval; _push(vm, retval);
@@ -249,7 +249,7 @@ fn_(filter) {
     // init array with same length
     Value newval; value_array(newval);
 
-    if(fn.v.type != value::TYPE_NATIVE_FN) {
+    if(fn.v.type != TYPE_NATIVE_FN) {
         for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // setup arguments
             a_arguments args = {
@@ -295,13 +295,13 @@ fn_(filter) {
 fn_(reduce) {
     assert(nargs == 3);
 
-    const Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    const Value aval = _arg(vm, TYPE_ARRAY);
 
     // cb (should be function)
     Value fn = _pop(vm);
-    assert(fn.v.type == value::TYPE_FN ||
-        fn.v.type == value::TYPE_DICT  ||
-        fn.v.type == value::TYPE_NATIVE_FN);
+    assert(fn.v.type == TYPE_FN ||
+        fn.v.type == TYPE_DICT  ||
+        fn.v.type == TYPE_NATIVE_FN);
 
     if(aval.v.as.array->data.length == 0) {
         Value retval; _push(vm, retval);
@@ -311,7 +311,7 @@ fn_(reduce) {
     // accumulator
     Value acc = _pop(vm);
 
-    if(fn.v.type != value::TYPE_NATIVE_FN) {
+    if(fn.v.type != TYPE_NATIVE_FN) {
         for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // setup arguments
             a_arguments args = {
@@ -351,8 +351,8 @@ fn_(join) {
     assert(nargs == 2);
 
     // array
-    const Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
-    const Value jval = _arg(vm, value::value_type::TYPE_STR);
+    const Value aval = _arg(vm, TYPE_ARRAY);
+    const Value jval = _arg(vm, TYPE_STR);
     const auto joiner = string_data(jval.v.as.str);
     const auto joiner_len = string_len(jval.v.as.str);
 
@@ -360,13 +360,13 @@ fn_(join) {
     char *s = (char*)malloc(len+1);
     s[0] = 0;
     if(aval.v.as.array->data.length) {
-        assert(aval.v.as.array->data.data[0].type == value::TYPE_STR);
+        assert(aval.v.as.array->data.data[0].type == TYPE_STR);
         const auto ss = aval.v.as.array->data.data[0].as.str;
         len += string_len(ss); s = (char*)realloc(s, len+1);
         strcat(s, string_data(ss));
     }
     for(size_t i = 1; i < aval.v.as.array->data.length; i++) {
-        assert(aval.v.as.array->data.data[i].type == value::TYPE_STR);
+        assert(aval.v.as.array->data.data[i].type == TYPE_STR);
         const auto ss = aval.v.as.array->data.data[i].as.str;
         len += joiner_len + string_len(ss); s = (char*)realloc(s, len+1);
         strcat(s, joiner);

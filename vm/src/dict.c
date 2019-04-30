@@ -4,11 +4,10 @@
 #include "dict.h"
 
 void dict_init(struct dict *dict) {
-    dict->refs = 1;
     hmap_init(&dict->data);
     dict->prototypev = NULL;
 }
-void dict_free(struct dict *dict) {
+void dict_free(struct dict *dict, void *p) {
     hmap_free(&dict->data);
 }
 

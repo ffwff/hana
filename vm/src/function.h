@@ -3,10 +3,10 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include "env.h"
 
 struct function {
-    uint32_t refs;
     uint32_t ip;
     uint16_t nargs;
     struct env bound;
@@ -17,7 +17,7 @@ struct function {
 };
 
 void function_init(struct function *, uint32_t addr, uint16_t nargs, struct env *env);
-void function_free(struct function *);
+void function_free(struct function *, void*);
 
 #ifdef __cplusplus
 }

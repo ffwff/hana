@@ -2,12 +2,12 @@
 #include <string.h>
 #include "vm/src/string_.h"
 #include "vm/src/array_obj.h"
+#include "vm/src/value.h"
 #include "hanayo.h"
 
 struct string_header *string_alloc(size_t n) {
     struct string_header *s = (struct string_header *)malloc(sizeof(struct string_header)+n+1);
     s->length = n;
-    s->refs = 1;
     return s;
 }
 
@@ -23,7 +23,7 @@ fn(constructor) {
 }
 fn(reserve) {
     assert(nargs == 1);
-    const auto len = _arg(vm, value::TYPE_INT).v.as.integer;
+    const auto len = _arg(vm, TYPE_INT).v.as.integer;
     Value val; value_str_reserve(val, len);
     _push(vm, val);
 }
@@ -31,13 +31,13 @@ fn(reserve) {
 // instance
 fn(bytesize) {
     assert(nargs == 1);
-    Value val = _arg(vm, value::TYPE_STR);
+    Value val = _arg(vm, TYPE_STR);
     Value retval; value_int(retval, string_len(val.v.as.str));
     _push(vm, retval);
 }
 fn(length) { // TODO unicode char length
     assert(nargs == 1);
-    Value val = _arg(vm, value::TYPE_STR);
+    Value val = _arg(vm, TYPE_STR);
     Value retval; value_int(retval, string_len(val.v.as.str));
     _push(vm, retval);
 }
@@ -49,7 +49,7 @@ fn(delete_) {
     char *ss = nullptr;
     int64_t length;
     {
-        Value val = _arg(vm, value::TYPE_STR);
+        Value val = _arg(vm, TYPE_STR);
 
         length = string_len(val.v.as.str);
         s = string_alloc(length);
@@ -58,8 +58,8 @@ fn(delete_) {
     }
 
     // arguments
-    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
-    const int64_t nchars = _arg(vm, value::TYPE_INT).v.as.integer;
+    const int64_t from_pos = _arg(vm, TYPE_INT).v.as.integer;
+    const int64_t nchars = _arg(vm, TYPE_INT).v.as.integer;
 
     // checks
     assert(from_pos >= 0 && from_pos < (int64_t)length);
@@ -76,11 +76,11 @@ fn(copy) {
     assert(nargs == 3);
 
     // string
-    const auto sval = _arg(vm, value::TYPE_STR);
+    const auto sval = _arg(vm, TYPE_STR);
     const int64_t length = string_len(sval.v.as.str);
 
-    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
-    const int64_t nchars = _arg(vm, value::TYPE_INT).v.as.integer;
+    const int64_t from_pos = _arg(vm, TYPE_INT).v.as.integer;
+    const int64_t nchars = _arg(vm, TYPE_INT).v.as.integer;
 
     // checks
     assert(from_pos >= 0 && from_pos < (int64_t)length);
@@ -101,8 +101,8 @@ fn(at) {
     assert(nargs == 2);
 
     // args
-    const auto sval = _arg(vm, value::TYPE_STR);
-    const int64_t index = _arg(vm, value::TYPE_INT).v.as.integer;
+    const auto sval = _arg(vm, TYPE_STR);
+    const int64_t index = _arg(vm, TYPE_INT).v.as.integer;
 
     if(index < (int64_t)string_len(sval.v.as.str) && index >= 0) {
         char str[2] = { string_at(sval.v.as.str, index), 0 };
@@ -117,11 +117,11 @@ fn(index) {
     assert(nargs == 2);
 
     // string
-    const auto hval = _arg(vm, value::TYPE_STR);
+    const auto hval = _arg(vm, TYPE_STR);
     const char *haystack = string_data(hval.v.as.str);
 
     // needle
-    const auto nval = _arg(vm, value::TYPE_STR);
+    const auto nval = _arg(vm, TYPE_STR);
     const char *needle = string_data(nval.v.as.str);
 
     const auto occ = strstr(haystack, needle);
@@ -138,14 +138,14 @@ fn(insert) {
     assert(nargs == 3);
 
     // string
-    const auto dval = _arg(vm, value::TYPE_STR);
+    const auto dval = _arg(vm, TYPE_STR);
     const char *dst = string_data(dval.v.as.str);
 
     // from pos
-    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
+    const int64_t from_pos = _arg(vm, TYPE_INT).v.as.integer;
 
     // string
-    const auto sval = _arg(vm, value::TYPE_STR);
+    const auto sval = _arg(vm, TYPE_STR);
     const char *src = string_data(sval.v.as.str);
 
     // checks
@@ -173,13 +173,13 @@ fn(split) {
     char *str = nullptr;
     size_t sval_len;
     {
-        const auto sval = _arg(vm, value::TYPE_STR);
+        const auto sval = _arg(vm, TYPE_STR);
         str = strdup(string_data(sval.v.as.str));
         sval_len = string_len(sval.v.as.str);
     }
 
     // delim
-    const auto dval = _arg(vm, value::TYPE_STR);
+    const auto dval = _arg(vm, TYPE_STR);
     const char *delim = string_data(dval.v.as.str);
 
     Value retval; value_array(retval);
@@ -206,10 +206,10 @@ fn(split) {
 }
 
 fn(startswith) {
-    const auto sval = _arg(vm, value::TYPE_STR);
+    const auto sval = _arg(vm, TYPE_STR);
     const size_t ls = string_len(sval.v.as.str);
 
-    const auto dval = _arg(vm, value::TYPE_STR);
+    const auto dval = _arg(vm, TYPE_STR);
     const size_t lt = string_len(dval.v.as.str);
 
     const bool sw = ls >= lt && strncmp(string_data(sval.v.as.str), string_data(dval.v.as.str), string_len(dval.v.as.str)) == 0;
@@ -219,10 +219,10 @@ fn(startswith) {
 }
 
 fn(endswith) {
-    const auto sval = _arg(vm, value::TYPE_STR);
+    const auto sval = _arg(vm, TYPE_STR);
     const size_t ls = string_len(sval.v.as.str);
 
-    const auto dval = _arg(vm, value::TYPE_STR);
+    const auto dval = _arg(vm, TYPE_STR);
     const size_t lt = string_len(dval.v.as.str);
 
     const bool ew = ls >= lt && memcmp(string_data(dval.v.as.str), string_data(sval.v.as.str)+(ls-lt), lt) == 0;
@@ -233,13 +233,13 @@ fn(endswith) {
 
 fn(shrink_) {
     if(nargs == 1) {
-        auto sval = _arg(vm, value::TYPE_STR);
+        auto sval = _arg(vm, TYPE_STR);
         const auto len = strlen(string_data(sval.v.as.str));
         sval.v.as.str->length = len;
         _push(vm, sval);
     } else if(nargs == 2) {
-        auto sval = _arg(vm, value::TYPE_STR);
-        const auto len = _arg(vm, value::TYPE_INT).v.as.integer;
+        auto sval = _arg(vm, TYPE_STR);
+        const auto len = _arg(vm, TYPE_INT).v.as.integer;
         if(sval.v.as.str->length < len) return;
         sval.v.as.str->length = len;
         char *s = string_data(sval.v.as.str);

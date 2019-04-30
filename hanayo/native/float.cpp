@@ -8,11 +8,11 @@
 
 fn(constructor) {
     struct value *val = &array_top(vm->stack);
-    if(val->type == value::TYPE_FLOAT)
+    if(val->type == TYPE_FLOAT)
         return;
-    else if(val->type == value::TYPE_INT)
+    else if(val->type == TYPE_INT)
         value_float(val, (double)val->as.integer);
-    else if(val->type == value::TYPE_STR) {
+    else if(val->type == TYPE_STR) {
         double f;
         sscanf(string_data(val->as.str), "%lf", &f);
         value_float(val, f);

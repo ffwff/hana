@@ -11,6 +11,17 @@ struct dict;
 struct array_obj;
 struct string_header;
 
+#define TYPE_NIL        0
+#define TYPE_INT        1
+#define TYPE_FLOAT      2
+#define TYPE_NATIVE_FN  3
+#define TYPE_FN         4
+#define TYPE_STR        5
+#define TYPE_DICT       6
+#define TYPE_ARRAY      7
+#define TYPE_NATIVE_OBJ 8
+#define VALUE_TYPE_IS_GC(x) (x==TYPE_STR||x==TYPE_DICT||x==TYPE_ARRAY||x==TYPE_NATIVE_OBJ)
+
 typedef void (*value_fn)(struct vm *vm, int nargs);
 struct value {
     union {
@@ -24,12 +35,7 @@ struct value {
         struct native_obj *native;
         void *ptr;
     } as;
-    enum value_type {
-        TYPE_NIL, TYPE_INT, TYPE_FLOAT,
-        TYPE_NATIVE_FN, TYPE_FN,
-        TYPE_STR, TYPE_DICT, TYPE_ARRAY,
-        TYPE_NATIVE_OBJ
-    } type;
+    uint8_t type;
 };
 
 void value_int(struct value*, int64_t);

@@ -10,26 +10,26 @@
 
 // helpers
 char *hanayo::_to_string(struct value &val) {
-    if(val.type == value::TYPE_STR)
+    if(val.type == TYPE_STR)
         return strdup(string_data(val.as.str));
-    else if(val.type == value::TYPE_INT) {
+    else if(val.type == TYPE_INT) {
         char dummy[1];
         const size_t siz = snprintf(dummy, 1, "%ld", val.as.integer);
         char *s = (char*)malloc(siz+1);
         sprintf(s, "%ld", val.as.integer);
         return s;
-    } else if(val.type == value::TYPE_FLOAT) {
+    } else if(val.type == TYPE_FLOAT) {
         char dummy[1];
         const size_t siz = snprintf(dummy, 1, "%f", val.as.floatp);
         char *s = (char*)malloc(siz+1);
         sprintf(s, "%f", val.as.floatp);
         return s;
     }
-    else if(val.type == value::TYPE_NATIVE_FN || val.type == value::TYPE_FN)
+    else if(val.type == TYPE_NATIVE_FN || val.type == TYPE_FN)
         return strdup("(function)");
-    else if(val.type == value::TYPE_DICT)
+    else if(val.type == TYPE_DICT)
         return strdup("(record)");
-    else if(val.type == value::TYPE_ARRAY) {
+    else if(val.type == TYPE_ARRAY) {
         const auto joiner = ", ";
         const auto joiner_len = strlen(joiner);
 
@@ -59,7 +59,7 @@ char *hanayo::_to_string(struct value &val) {
 
 // fns
 fn(eval) {
-    auto sval = _arg(vm, value::TYPE_STR);
+    auto sval = _arg(vm, TYPE_STR);
     const auto script = string_data(sval.v.as.str);
     Value retval;
 
@@ -84,7 +84,7 @@ fn(eval) {
 }
 
 fn(exit) {
-    const auto code = _arg(vm, value::TYPE_INT);
+    const auto code = _arg(vm, TYPE_INT);
     ::exit(code.v.as.integer);
 }
 
@@ -202,10 +202,10 @@ hanayo::Value hanayo::_pop(struct vm *vm) {
 }
 void hanayo::_push(struct vm *vm, Value &val) {
     array_push(vm->stack, val);
-    val.v.type = value::value_type::TYPE_NIL;
+    val.v.type = TYPE_NIL;
 }
 
-hanayo::Value hanayo::_arg(struct vm *vm, value::value_type type) {
+hanayo::Value hanayo::_arg(struct vm *vm, uint8_t type) {
     struct value v = array_top(vm->stack);
     assert(v.type == type);
     Value val; val.v = v;

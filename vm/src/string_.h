@@ -1,9 +1,9 @@
 #pragma once
 #include "array.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 struct string_header { // string = [header][data][0]
-    uint32_t refs;
     uint32_t length;
 };
 

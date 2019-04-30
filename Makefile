@@ -58,14 +58,9 @@ CXXFLAGS += -DLREADLINE
 LDDFLAGS += -lreadline
 endif
 
-## jemalloc (enabled by default)
-ifeq ($(shell jemalloc-config --version >/dev/null 2>/dev/null;printf $$?),0)
-ifndef DISABLE_JEMALLOC
-LDDFLAGS += -L`jemalloc-config --libdir` \
-            -Wl,-rpath,`jemalloc-config --libdir` \
-            -ljemalloc `jemalloc-config --libs`
-endif
-endif
+## boehm gc
+LDDFLAGS += -lgc
+#TODO: run conf script
 
 ## ffi
 HANAYOFLAGS += $(shell pkg-config --cflags libffi)

@@ -599,3 +599,16 @@ Otherwise, it will lookup and import the file from the `HANA_PATH` environment v
 The import function returns 1 on once the module has been succesfully evaluated, otherwise it will
 return 0. Modules can only be imported once, subsequent calls to `import` with the same module
 parameter will return 0.
+
+# Virtual machine
+
+Hana is implemented in a stack-based virtual machine written in C. Code passed on to the interpreter will
+be parsed into an abstract syntax tree then translated into bytecodes which the virtual machine can
+understand.
+
+## Memory management
+
+Hana uses garbage collection to manage memory, specifically implemented through the [BoehmGC](https://www.hboehm.info/gc/) library. All values that are not referenced in the value stack will be automatically collected and free'd by the garbage collector.
+
+Note that upon exit the virtual machine is not guaranteed to free out all values, so native objects may
+not be cleaned up at exit.
