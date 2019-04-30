@@ -16,65 +16,50 @@ struct string_header *string_alloc(size_t n) {
 // static
 fn(constructor) {
     assert(nargs == 1);
-    struct value val = array_top(vm->stack);
-    auto s = hanayo::_to_string(val);
-    value_free(&val);
-    array_pop(vm->stack);
-    value_str(&val, s); free(s);
-    array_push(vm->stack, val);
+    auto s = hanayo::_to_string(_pop(vm));
+    Value val;
+    value_str(val, s); free(s);
+    _push(vm, val);
 }
 fn(reserve) {
     assert(nargs == 1);
-    auto len = _arg(vm, value::TYPE_INT).as.integer;
-    struct value val;
-    value_str_reserve(&val, len);
-    array_push(vm->stack, val);
+    const auto len = _arg(vm, value::TYPE_INT).v.as.integer;
+    Value val; value_str_reserve(val, len);
+    _push(vm, val);
 }
 
 // instance
 fn(bytesize) {
     assert(nargs == 1);
-    struct value *val = &array_top(vm->stack);
-    int64_t length = string_len(val->as.str);
-    value_free(val);
-    array_pop(vm->stack);
-    struct value intv;
-    value_int(&intv, length);
-    array_push(vm->stack, intv);
+    Value val = _arg(vm, value::TYPE_STR);
+    Value retval; value_int(retval, string_len(val.v.as.str));
+    _push(vm, retval);
 }
 fn(length) { // TODO unicode char length
     assert(nargs == 1);
-    struct value *val = &array_top(vm->stack);
-    int64_t length = string_len(val->as.str);
-    value_free(val);
-    array_pop(vm->stack);
-    struct value intv;
-    value_int(&intv, length);
-    array_push(vm->stack, intv);
+    Value val = _arg(vm, value::TYPE_STR);
+    Value retval; value_int(retval, string_len(val.v.as.str));
+    _push(vm, retval);
 }
 fn(delete_) {
     assert(nargs == 3);
 
-    struct value val = {0};
-
     // string
-    val = array_top(vm->stack);
+    struct string_header *s = nullptr;
+    char *ss = nullptr;
+    int64_t length;
+    {
+        Value val = _arg(vm, value::TYPE_STR);
 
-    auto length = string_len(val.as.str);
-    struct string_header *s = string_alloc(length);
-    char *ss = string_data(s);
-    strcpy(ss, string_data(val.as.str));
+        length = string_len(val.v.as.str);
+        s = string_alloc(length);
+        ss = string_data(s);
+        strcpy(ss, string_data(val.v.as.str));
+    }
 
-    value_free(&val);
-    array_pop(vm->stack);
-
-    // from pos
-    val = _arg(vm, value::TYPE_INT);
-    int64_t from_pos = val.as.integer;
-
-    // n chars
-    val = _arg(vm, value::TYPE_INT);
-    int64_t nchars = val.as.integer;
+    // arguments
+    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
+    const int64_t nchars = _arg(vm, value::TYPE_INT).v.as.integer;
 
     // checks
     assert(from_pos >= 0 && from_pos < (int64_t)length);
@@ -82,26 +67,20 @@ fn(delete_) {
 
     // do it
     memmove(ss+from_pos, ss+from_pos+nchars, length-from_pos-nchars+1);
-    value_strmov(&val, s);
-    array_push(vm->stack, val);
+    {
+        Value val; value_strmov(val, s);
+        _push(vm, val); // TODO
+    }
 }
 fn(copy) {
     assert(nargs == 3);
 
-    struct value val = {0};
-
     // string
-    auto sval = array_top(vm->stack);
-    auto length = string_len(sval.as.str);
-    array_pop(vm->stack);
+    const auto sval = _arg(vm, value::TYPE_STR);
+    const int64_t length = string_len(sval.v.as.str);
 
-    // from pos
-    val = _arg(vm, value::TYPE_INT);
-    int64_t from_pos = val.as.integer;
-
-    // n chars
-    val = _arg(vm, value::TYPE_INT);
-    int64_t nchars = val.as.integer;
+    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
+    const int64_t nchars = _arg(vm, value::TYPE_INT).v.as.integer;
 
     // checks
     assert(from_pos >= 0 && from_pos < (int64_t)length);
@@ -110,115 +89,106 @@ fn(copy) {
     // do it
     struct string_header *s = string_alloc(nchars);
     char *ss = string_data(s);
-    strncpy(ss, string_data(sval.as.str)+from_pos, nchars);
+    strncpy(ss, string_data(sval.v.as.str)+from_pos, nchars);
     ss[nchars] = 0;
 
-    value_free(&sval);
-    value_strmov(&val, s);
-    array_push(vm->stack, val);
+    {
+        Value retval; value_strmov(retval, s);
+        _push(vm, retval);
+    }
 }
 fn(at) {
     assert(nargs == 2);
-    struct value val = {0};
 
-    // string
-    auto sval = array_top(vm->stack);
-    array_pop(vm->stack);
+    // args
+    const auto sval = _arg(vm, value::TYPE_STR);
+    const int64_t index = _arg(vm, value::TYPE_INT).v.as.integer;
 
-    // from pos
-    val = _arg(vm, value::TYPE_INT);
-    int64_t index = val.as.integer;
-
-    if(index < (int64_t)string_len(sval.as.str) && index >= 0) {
-        char str[2] = { string_at(sval.as.str, index), 0 };
-        value_str(&val, str);
-        array_push(vm->stack, val);
+    if(index < (int64_t)string_len(sval.v.as.str) && index >= 0) {
+        char str[2] = { string_at(sval.v.as.str, index), 0 };
+        Value retval; value_str(retval, str);
+        _push(vm, retval);
     } else {
-        array_push(vm->stack, {0});
+        Value retval;
+        _push(vm, retval);
     }
-    value_free(&sval);
 }
 fn(index) {
     assert(nargs == 2);
 
     // string
-    auto hval = array_top(vm->stack);
-    auto haystack = string_data(hval.as.str);
-    array_pop(vm->stack);
+    const auto hval = _arg(vm, value::TYPE_STR);
+    const char *haystack = string_data(hval.v.as.str);
 
-    // from pos
-    auto nval = _arg(vm, value::TYPE_STR);
-    auto needle = string_data(nval.as.str);
+    // needle
+    const auto nval = _arg(vm, value::TYPE_STR);
+    const char *needle = string_data(nval.v.as.str);
 
-    auto occ = strstr(haystack, needle);
-    struct value val = {0};
+    const auto occ = strstr(haystack, needle);
     if(occ == nullptr) {
-        value_int(&val, -1);
+        Value retval; value_int(retval, -1);
+        _push(vm, retval);
     } else {
-        size_t index = (size_t)occ-(size_t)haystack;
-        value_int(&val, (int64_t)index);
+        const size_t index = (size_t)occ-(size_t)haystack;
+        Value retval; value_int(retval, (int64_t)index);
+        _push(vm, retval);
     }
-    value_free(&hval);
-    value_free(&nval);
-    array_push(vm->stack, val);
 }
 fn(insert) {
     assert(nargs == 3);
 
-    struct value val = {0};
-
     // string
-    auto dval = array_top(vm->stack);
-    auto dst = string_data(dval.as.str);
-    array_pop(vm->stack);
+    const auto dval = _arg(vm, value::TYPE_STR);
+    const char *dst = string_data(dval.v.as.str);
 
     // from pos
-    val = _arg(vm, value::TYPE_INT);
-    int64_t from_pos = val.as.integer;
+    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
 
     // string
-    auto sval = _arg(vm, value::TYPE_STR);
-    auto src = string_data(sval.as.str);
+    const auto sval = _arg(vm, value::TYPE_STR);
+    const char *src = string_data(sval.v.as.str);
 
     // checks
-    assert(from_pos >= 0 && from_pos < (int64_t)string_len(dval.as.str));
+    assert(from_pos >= 0 && from_pos < (int64_t)string_len(dval.v.as.str));
 
     // doit
-    struct string_header *s = string_alloc(string_len(dval.as.str)+string_len(sval.as.str));
+    struct string_header *s = string_alloc(string_len(dval.v.as.str)+string_len(sval.v.as.str));
     char *ss = string_data(s);
     strncpy(ss, dst, from_pos); // dst lower half
     memcpy(ss+from_pos, src, strlen(src)); // src
-    strncpy(ss+from_pos+string_len(sval.as.str),
-            dst+from_pos, string_len(dval.as.str)-from_pos); // dst upper half
-    ss[string_len(dval.as.str)+string_len(sval.as.str)] = 0;
+    strncpy(ss+from_pos+string_len(sval.v.as.str),
+            dst+from_pos, string_len(dval.v.as.str)-from_pos); // dst upper half
+    ss[string_len(dval.v.as.str)+string_len(sval.v.as.str)] = 0;
 
-    value_free(&dval);
-    value_free(&sval);
-    value_strmov(&val, s);
-    array_push(vm->stack, val);
+    {
+        Value retval;
+        value_strmov(retval, s);
+        _push(vm, retval);
+    }
 }
 
 fn(split) {
     assert(nargs == 2);
-
     // string
-    auto sval = array_top(vm->stack);
-    auto str = strdup(string_data(sval.as.str));
-    array_pop(vm->stack);
-    value_free(&sval);
+    char *str = nullptr;
+    size_t sval_len;
+    {
+        const auto sval = _arg(vm, value::TYPE_STR);
+        str = strdup(string_data(sval.v.as.str));
+        sval_len = string_len(sval.v.as.str);
+    }
 
     // delim
-    auto dval = _arg(vm, value::TYPE_STR);
-    auto delim = string_data(dval.as.str);
+    const auto dval = _arg(vm, value::TYPE_STR);
+    const char *delim = string_data(dval.v.as.str);
 
-    struct value val = {0};
-    value_array(&val);
-    if(string_len(dval.as.str) == 0) { // turns string to array of chars if called with ""
-        for(size_t i = 0; i < string_len(sval.as.str); i++) {
-            char ch[2] = { string_at(sval.as.str, i), 0 };
+    Value retval; value_array(retval);
+    if(sval_len == 0) { // turns string to array of chars if called with ""
+        for(size_t i = 0; i < sval_len; i++) {
+            const char ch[2] = { string_at(str, i), 0 };
             struct value vtoken;
             value_str(&vtoken, ch);
-            array_push(val.as.array->data, vtoken);
+            array_push(retval.v.as.array->data, vtoken);
         }
     } else {
         char *saveptr = nullptr;
@@ -227,63 +197,53 @@ fn(split) {
             tok != nullptr; tok = strtok_r(nullptr, delim, &saveptr)) {
             struct value vtoken;
             value_str(&vtoken, tok);
-            array_push(val.as.array->data, vtoken);
+            array_push(retval.v.as.array->data, vtoken);
         }
     }
 
     free(str);
-    value_free(&dval);
-    array_push(vm->stack, val);
+    _push(vm, retval);
 }
 
 fn(startswith) {
-    auto sval = array_top(vm->stack);
-    auto ls = string_len(sval.as.str);
-    array_pop(vm->stack);
+    const auto sval = _arg(vm, value::TYPE_STR);
+    const size_t ls = string_len(sval.v.as.str);
 
-    auto dval = _arg(vm, value::TYPE_STR);
-    auto lt = string_len(dval.as.str);
-    bool sw = ls >= lt && strncmp(string_data(sval.as.str), string_data(dval.as.str), string_len(dval.as.str)) == 0;
+    const auto dval = _arg(vm, value::TYPE_STR);
+    const size_t lt = string_len(dval.v.as.str);
 
-    value_free(&sval);
-    value_free(&dval);
+    const bool sw = ls >= lt && strncmp(string_data(sval.v.as.str), string_data(dval.v.as.str), string_len(dval.v.as.str)) == 0;
 
-    struct value val = {0};
-    value_int(&val, sw);
-    array_push(vm->stack, val);
+    Value retval; value_int(retval, sw);
+    _push(vm, retval);
 }
 
 fn(endswith) {
-    auto sval = array_top(vm->stack);
-    auto ls = string_len(sval.as.str);
-    array_pop(vm->stack);
+    const auto sval = _arg(vm, value::TYPE_STR);
+    const size_t ls = string_len(sval.v.as.str);
 
-    auto dval = _arg(vm, value::TYPE_STR);
-    auto lt = string_len(dval.as.str);
+    const auto dval = _arg(vm, value::TYPE_STR);
+    const size_t lt = string_len(dval.v.as.str);
 
-    bool sw = ls >= lt && memcmp(string_data(dval.as.str), string_data(sval.as.str)+(ls-lt), lt) == 0;
+    const bool ew = ls >= lt && memcmp(string_data(dval.v.as.str), string_data(sval.v.as.str)+(ls-lt), lt) == 0;
 
-    value_free(&sval);
-    value_free(&dval);
-
-    struct value val = {0};
-    value_int(&val, sw);
-    array_push(vm->stack, val);
+    Value retval; value_int(retval, ew);
+    _push(vm, retval);
 }
 
 fn(shrink_) {
     if(nargs == 1) {
         auto sval = _arg(vm, value::TYPE_STR);
-        auto len = strlen(string_data(sval.as.str));
-        sval.as.str->length = len;
-        array_push(vm->stack, sval);
+        const auto len = strlen(string_data(sval.v.as.str));
+        sval.v.as.str->length = len;
+        _push(vm, sval);
     } else if(nargs == 2) {
         auto sval = _arg(vm, value::TYPE_STR);
-        auto len = _arg(vm, value::TYPE_INT).as.integer;
-        if(sval.as.str->length < len) return;
-        sval.as.str->length = len;
-        char *s = string_data(sval.as.str);
+        const auto len = _arg(vm, value::TYPE_INT).v.as.integer;
+        if(sval.v.as.str->length < len) return;
+        sval.v.as.str->length = len;
+        char *s = string_data(sval.v.as.str);
         s[len] = 0;
-        array_push(vm->stack, sval);
+        _push(vm, sval);
     } else assert(0);
 }

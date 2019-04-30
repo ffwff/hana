@@ -6,223 +6,147 @@
 #define fn_(name) void hanayo::array::name(struct vm *vm, int nargs)
 
 fn_(constructor) {
-    struct value aval;
-    if(nargs == 0) value_array(&aval);
+    Value aval;
+    if(nargs == 0)
+        value_array(aval);
     else {
-        value_array_n(&aval, nargs);
-        aval.as.array->data.length = nargs;
+        value_array_n(aval, nargs);
+        aval.v.as.array->data.length = nargs;
         for(size_t i = 0; i < (size_t)nargs; i++) {
-            struct value val = array_top(vm->stack);
-            value_copy(&aval.as.array->data.data[i], &val);
-            array_pop(vm->stack);
-            value_free(&val);
+            Value val = _pop(vm);
+            value_copy(&aval.v.as.array->data.data[i], val);
         }
     }
-    array_push(vm->stack, aval);
+    _push(vm, aval);
 }
 
 fn_(length) {
     assert(nargs == 1);
-    struct value *val = &array_top(vm->stack);
-    int64_t length = val->as.array->data.length;
-    value_free(val);
-    value_int(val, length);
+    const Value val = _arg(vm, value::value_type::TYPE_ARRAY);
+    Value retval; value_int(retval, val.v.as.array->data.length);
+    _push(vm, retval);
 }
 fn_(delete_) {
     assert(nargs == 3);
 
-    struct value val = {0};
+    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    const size_t from_pos = (size_t)_arg(vm, value::TYPE_INT).v.as.integer;
+    const size_t nelems = (size_t)_arg(vm, value::TYPE_INT).v.as.integer;
 
-    // array
-    val = array_top(vm->stack);
-    struct value aval;
-    value_copy(&aval, &val);
-    value_free(&val);
-    array_pop(vm->stack);
-
-    // from pos
-    val = _arg(vm, value::TYPE_INT);
-    size_t from_pos = (size_t)val.as.integer;
-
-    // n chars
-    val = _arg(vm, value::TYPE_INT);
-    size_t nchars = (size_t)val.as.integer;
-
-    assert(from_pos >= 0 && from_pos+nchars < aval.as.array->data.length);
-    for(size_t i = from_pos; i < (from_pos+nchars); i++) {
-        value_free(&aval.as.array->data.data[i]);
+    assert(from_pos >= 0 && from_pos+nelems < aval.v.as.array->data.length);
+    for(size_t i = from_pos; i < (from_pos+nelems); i++) {
+        value_free(&aval.v.as.array->data.data[i]);
     }
-    size_t remaining = (aval.as.array->data.length-from_pos-nchars)*sizeof(struct value);
-    memmove(&aval.as.array->data.data[from_pos],
-            &aval.as.array->data.data[from_pos+nchars], remaining);
-    aval.as.array->data.length -= nchars;
-    array_push(vm->stack, aval);
+    size_t remaining = (aval.v.as.array->data.length-from_pos-nelems)*sizeof(struct value);
+    memmove(&aval.v.as.array->data.data[from_pos],
+            &aval.v.as.array->data.data[from_pos+nelems], remaining);
+    aval.v.as.array->data.length -= nelems;
+    _push(vm, aval);
 }
 fn_(copy) {
     if(nargs == 1) {
-        struct value val = array_top(vm->stack);
-        array_pop(vm->stack);
+        const Value val = _arg(vm, value::value_type::TYPE_ARRAY);
 
-        struct value aval;
-        value_array_n(&aval, val.as.array->data.length);
-        for(size_t i = 0; i < val.as.array->data.length; i++)
-            value_copy(&aval.as.array->data.data[i], &val.as.array->data.data[i]);
+        Value aval; value_array_n(aval, val.v.as.array->data.length);
+        for(size_t i = 0; i < val.v.as.array->data.length; i++)
+            value_copy(&aval.v.as.array->data.data[i], &val.v.as.array->data.data[i]);
 
-        value_free(&val);
-        array_push(vm->stack, aval);
+        _push(vm, aval);
         return;
     }
 
     assert(nargs == 3);
 
-    struct value val = {0};
+    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
+    const int64_t nelems = _arg(vm, value::TYPE_INT).v.as.integer;
 
-    // string
-    val = array_top(vm->stack);
-    struct value aval;
-    value_copy(&aval, &val);
-    value_free(&val);
-    array_pop(vm->stack);
-
-    // from pos
-    val = _arg(vm, value::TYPE_INT);
-    int64_t from_pos = val.as.integer;
-
-    // n chars
-    val = _arg(vm, value::TYPE_INT);
-    int64_t nchars = val.as.integer;
-
-    if(nchars == 0) {
-        value_free(&aval);
-        value_array(&aval);
-        array_push(vm->stack, val);
+    if(nelems == 0) {
+        _push(vm, aval);
     } else {
-        struct value newval;
-        value_array_n(&newval, nchars);
-        for(size_t i = (size_t)from_pos, j = 0; i < (size_t)(from_pos+nchars); i++, j++) {
-            value_copy(&newval.as.array->data.data[j], &aval.as.array->data.data[i]);
+        Value newval; value_array_n(newval, nelems);
+        for(int64_t i = from_pos, j = 0; i < (from_pos+nelems); i++, j++) {
+            value_copy(&newval.v.as.array->data.data[j], &aval.v.as.array->data.data[i]);
         }
-        newval.as.array->data.length = nchars;
-        value_free(&aval);
-        array_push(vm->stack, newval);
+        newval.v.as.array->data.length = nelems;
+        _push(vm, newval);
     }
 }
 fn_(at) {
     assert(nargs == 2);
-    struct value val = {0};
 
-    // string
-    val = array_top(vm->stack);
-    struct value aval;
-    value_copy(&aval, &val);
-    value_free(&val);
-    array_pop(vm->stack);
+    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    const int64_t index = _arg(vm, value::TYPE_INT).v.as.integer;
 
-    // from pos
-    val = _arg(vm, value::TYPE_INT);
-    int64_t index = val.as.integer;
-
-    if(index < (int64_t)(aval.as.array->data.length) && index >= 0) {
-        struct value val;
-        value_copy(&val, &aval.as.array->data.data[index]);
-        value_free(&aval);
-        array_push(vm->stack, val);
+    if(index < (int64_t)(aval.v.as.array->data.length) && index >= 0) {
+        Value val = Value::copy(aval.v.as.array->data.data[index]);
+        _push(vm, val);
     } else {
-        value_free(&aval);
-        array_push(vm->stack, {0});
+        Value val;
+        _push(vm, val);
     }
 }
 fn_(index) {
     assert(nargs == 2);
-    struct value val = {0};
 
-    // string
-    val = array_top(vm->stack);
-    struct value aval = val;
-    array_pop(vm->stack);
+    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    Value needle = _pop(vm);
 
-    // from pos
-    val = array_top(vm->stack);
-    struct value needle;
-    value_copy(&needle, &val);
-    value_free(&val);
-    array_pop(vm->stack);
-
-    array_push(vm->stack, {0});
-    for(size_t i = 0; i < aval.as.array->data.length; i++) {
+    for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
         struct value result;
-        value_eq(&result, &needle, &aval.as.array->data.data[i]);
+        value_eq(&result, needle, &aval.v.as.array->data.data[i]);
         if(result.as.integer == 1) {
-            value_free(&needle);
-            value_free(&aval);
-            value_int(&array_top(vm->stack), (int64_t)i);
+            Value retval; value_int(retval, (int64_t)i);
+            _push(vm, retval);
             return;
         }
     }
-    value_free(&needle);
-    value_free(&aval);
-    value_int(&array_top(vm->stack), 0);
+    Value retval; value_int(retval, 0);
+    _push(vm, retval);
 }
 fn_(insert) {
     assert(nargs == 3);
 
-    struct value val = {0};
-
-    // string
-    struct value aval;
-    value_copy(&aval, &array_top(vm->stack));
-    value_free(&array_top(vm->stack));
-    array_pop(vm->stack);
-
-    // from pos
-    val = _arg(vm, value::TYPE_INT);
-    int64_t from_pos = val.as.integer;
-
-    // new val
-    val = array_top(vm->stack);
+    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    const int64_t from_pos = _arg(vm, value::TYPE_INT).v.as.integer;
+    Value newval = _pop(vm);
 
     if(from_pos < 0) {
-        value_free(&aval);
-        array_push(vm->stack, {0});
+        _push(vm, aval);
         return;
-    } else if(from_pos >= (int64_t)aval.as.array->data.length) {
-        for(int64_t i = aval.as.array->data.length; i < from_pos+1; i++)
-            array_push(aval.as.array->data, {0});
+    } else if(from_pos >= (int64_t)aval.v.as.array->data.length) {
+        for(int64_t i = aval.v.as.array->data.length; i < from_pos+1; i++)
+            array_push(aval.v.as.array->data, {0});
     } else {
-        array_push(aval.as.array->data, {0}); // reserve space
+        array_push(aval.v.as.array->data, {0}); // reserve space
     }
-    size_t n = (aval.as.array->data.length-from_pos)*sizeof(struct value);
-    memmove(&aval.as.array->data.data[from_pos+1],
-            &aval.as.array->data.data[from_pos],
+    size_t n = (aval.v.as.array->data.length-from_pos)*sizeof(struct value);
+    memmove(&aval.v.as.array->data.data[from_pos+1],
+            &aval.v.as.array->data.data[from_pos],
             n
     );
-    value_copy(&aval.as.array->data.data[from_pos], &val);
-    value_free(&aval);
+    aval.v.as.array->data.data[from_pos] = newval.deref();
+    _push(vm, aval);
 
 }
 fn_(push) {
     assert(nargs == 2);
 
-    struct value aval;
-    value_copy(&aval, &array_top(vm->stack));
-    value_free(&array_top(vm->stack));
-    array_pop(vm->stack);
-
-    array_push(aval.as.array->data, array_top(vm->stack));
-    value_free(&array_top(vm->stack));
-    value_copy(&array_top(vm->stack), &aval);
-    value_free(&aval);
+    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    Value newval = _pop(vm);
+    array_push(aval.v.as.array->data, newval.deref());
+    _push(vm, aval);
 }
 fn_(pop) {
     assert(nargs == 1);
-    struct value *aval = &array_top(vm->stack);
-    if(aval->as.array->data.length == 0) {
-        value_free(&array_top(vm->stack));
+    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    if(aval.v.as.array->data.length == 0) {
+        Value retval; _push(vm, retval);
         return;
     }
-    value_free(&aval->as.array->data.data[aval->as.array->data.length-1]);
-    aval->as.array->data.length--;
-    value_free(&array_top(vm->stack));
+    Value retval = Value::move(aval.v.as.array->data.data[aval.v.as.array->data.length-1]);
+    aval.v.as.array->data.length--;
+    _push(vm, retval);
 }
 
 #define SORT_ARRAY(x) \
@@ -238,17 +162,13 @@ qsort(x->data.data, x->data.length, sizeof(struct value), [](const void *a, cons
 });
 fn_(sort) {
     assert(nargs == 1);
-    //array_pop(vm->stack);
-    struct value *aval = &array_top(vm->stack);
-    struct value val;
-    value_array_n(&val, aval->as.array->data.length);
-    for(size_t i = 0; i < aval->as.array->data.length; i++)
-        value_copy(&val.as.array->data.data[i], &aval->as.array->data.data[i]);
-    val.as.array->data.length = aval->as.array->data.length;
-    SORT_ARRAY(val.as.array)
-    value_free(aval);
-    array_pop(vm->stack);
-    array_push(vm->stack, val);
+    Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    Value retval; value_array_n(retval, aval.v.as.array->data.length);
+    for(size_t i = 0; i < aval.v.as.array->data.length; i++)
+        value_copy(&retval.v.as.array->data.data[i], &aval.v.as.array->data.data[i]);
+    retval.v.as.array->data.length = aval.v.as.array->data.length;
+    SORT_ARRAY(retval.v.as.array)
+    _push(vm, retval);
 }
 fn_(sort_) {
     assert(nargs == 1);
@@ -259,44 +179,39 @@ fn_(sort_) {
 fn_(map) {
     assert(nargs == 2);
 
-    // string
-    struct value aval = array_top(vm->stack);
-    array_pop(vm->stack);
+    const Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
 
     // cb (should be function)
-    struct value fn = array_top(vm->stack);
-    assert(fn.type == value::TYPE_FN || fn.type == value::TYPE_DICT || fn.type == value::TYPE_NATIVE_FN);
-    array_pop(vm->stack);
+    Value fn = _pop(vm);
+    assert(fn.v.type == value::TYPE_FN || // TODO move this somewhere else
+        fn.v.type == value::TYPE_DICT  ||
+        fn.v.type == value::TYPE_NATIVE_FN);
 
-    if(aval.as.array->data.length == 0) {
-        array_push(vm->stack, aval);
+    if(aval.v.as.array->data.length == 0) {
+        Value retval; _push(vm, retval);
         return;
     }
 
     // init array with same length
-    struct value new_val;
-    value_array_n(&new_val, aval.as.array->data.length);
+    Value newval; value_array_n(newval, aval.v.as.array->data.length);
 
-    if(fn.type == value::TYPE_FN || fn.type == value::TYPE_DICT) {
-        for(size_t i = 0; i < aval.as.array->data.length; i++) {
+    if(fn.v.type != value::TYPE_NATIVE_FN) {
+        for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // setup arguments
             a_arguments args = {
                 .data = (struct value*)calloc(1, sizeof(struct value)),
                 .length = 1,
                 .capacity = 1
             };
-            value_copy(&args.data[0], &aval.as.array->data.data[i]);
+            value_copy(&args.data[0], &aval.v.as.array->data.data[i]);
             // return
-            struct value *ret = vm_call(vm, &fn, args);
+            struct value *ret = vm_call(vm, &fn.v, args);
             if(ret == (struct value*)-1) {
                 value_free(&args.data[0]);
                 array_free(args);
-                value_free(&aval);
-                value_free(&fn);
-                value_free(&new_val);
                 return;
             }
-            value_copy(&new_val.as.array->data.data[i], ret);
+            value_copy(&newval.v.as.array->data.data[i], ret);
             // cleanup
             value_free(&args.data[0]);
             array_free(args);
@@ -304,68 +219,61 @@ fn_(map) {
             array_pop(vm->stack);
         }
     } else {
-        for(size_t i = 0; i < aval.as.array->data.length; i++) {
+        for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // arguments
             array_push(vm->stack, (struct value){0});
-            value_copy(&array_top(vm->stack), &aval.as.array->data.data[i]);
+            value_copy(&array_top(vm->stack), &aval.v.as.array->data.data[i]);
             // call function
-            fn.as.fn(vm, 1);
-            new_val.as.array->data.data[i] = array_top(vm->stack);
+            fn.v.as.fn(vm, 1);
+            newval.v.as.array->data.data[i] = array_top(vm->stack);
             // cleanup
             value_free(&array_top(vm->stack));
             array_pop(vm->stack);
         }
     }
 
-    value_free(&aval);
-    value_free(&fn);
-    array_push(vm->stack, new_val);
+    _push(vm, newval);
 
 }
 fn_(filter) {
     assert(nargs == 2);
 
-    // string
-    struct value aval = array_top(vm->stack);
-    array_pop(vm->stack);
+    const Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
 
     // cb (should be function)
-    struct value fn = array_top(vm->stack);
-    assert(fn.type == value::TYPE_FN || fn.type == value::TYPE_NATIVE_FN);
-    array_pop(vm->stack);
+    Value fn = _pop(vm);
+    assert(fn.v.type == value::TYPE_FN ||
+        fn.v.type == value::TYPE_DICT  ||
+        fn.v.type == value::TYPE_NATIVE_FN);
 
-    if(aval.as.array->data.length == 0) {
-        array_push(vm->stack, aval);
+    if(aval.v.as.array->data.length == 0) {
+        Value retval; _push(vm, retval);
         return;
     }
 
     // init array with same length
-    struct value new_val;
-    value_array(&new_val);
+    Value newval; value_array(newval);
 
-    if(fn.type == value::TYPE_FN) {
-        for(size_t i = 0; i < aval.as.array->data.length; i++) {
+    if(fn.v.type != value::TYPE_NATIVE_FN) {
+        for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // setup arguments
             a_arguments args = {
                 .data = (struct value*)calloc(1, sizeof(struct value)),
                 .length = 1,
                 .capacity = 1
             };
-            value_copy(&args.data[0], &aval.as.array->data.data[i]);
+            value_copy(&args.data[0], &aval.v.as.array->data.data[i]);
             // return
-            struct value *ret = vm_call(vm, &fn, args);
+            struct value *ret = vm_call(vm, fn, args);
             if(ret == (struct value*)-1) {
                 value_free(&args.data[0]);
                 array_free(args);
-                value_free(&aval);
-                value_free(&fn);
-                value_free(&new_val);
                 return;
             }
             if(value_is_true(ret)) {
                 struct value val;
-                value_copy(&val, &aval.as.array->data.data[i]);
-                array_push(new_val.as.array->data, val);
+                value_copy(&val, &aval.v.as.array->data.data[i]);
+                array_push(newval.v.as.array->data, val);
             }
             // cleanup
             value_free(&args.data[0]);
@@ -374,16 +282,16 @@ fn_(filter) {
             array_pop(vm->stack);
         }
     } else {
-        for(size_t i = 0; i < aval.as.array->data.length; i++) {
+        for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // arguments
             array_push(vm->stack, (struct value){0});
-            value_copy(&array_top(vm->stack), &aval.as.array->data.data[i]);
+            value_copy(&array_top(vm->stack), &aval.v.as.array->data.data[i]);
             // call function
-            fn.as.fn(vm, 1);
+            fn.v.as.fn(vm, 1);
             if(value_is_true(&array_top(vm->stack))) {
                 struct value val;
-                value_copy(&val, &aval.as.array->data.data[i]);
-                array_push(new_val.as.array->data, val);
+                value_copy(&val, &aval.v.as.array->data.data[i]);
+                array_push(newval.v.as.array->data, val);
             }
             // cleanup
             value_free(&array_top(vm->stack));
@@ -391,115 +299,97 @@ fn_(filter) {
         }
     }
 
-    value_free(&aval);
-    array_push(vm->stack, new_val);
+    _push(vm, newval);
 }
 fn_(reduce) {
     assert(nargs == 3);
 
-    // string
-    struct value aval = array_top(vm->stack);
-    array_pop(vm->stack);
+    const Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
 
     // cb (should be function)
-    struct value fn = array_top(vm->stack);
-    assert(fn.type == value::TYPE_FN || fn.type == value::TYPE_NATIVE_FN);
-    array_pop(vm->stack);
+    Value fn = _pop(vm);
+    assert(fn.v.type == value::TYPE_FN ||
+        fn.v.type == value::TYPE_DICT  ||
+        fn.v.type == value::TYPE_NATIVE_FN);
 
-    if(aval.as.array->data.length == 0) {
-        array_push(vm->stack, (struct value){0});
+    if(aval.v.as.array->data.length == 0) {
+        Value retval; _push(vm, retval);
         return;
     }
 
     // accumulator
-    struct value acc;
-    value_copy(&acc,&array_top(vm->stack));
-    value_free(&array_top(vm->stack));
-    array_pop(vm->stack);
+    Value acc = _pop(vm);
 
-    if(fn.type == value::TYPE_FN) {
-        for(size_t i = 0; i < aval.as.array->data.length; i++) {
+    if(fn.v.type != value::TYPE_NATIVE_FN) {
+        for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // setup arguments
             a_arguments args = {
                 .data = (struct value*)calloc(2, sizeof(struct value)),
                 .length = 2,
                 .capacity = 2
             };
-            value_copy(&args.data[0], &acc);
-            value_copy(&args.data[1], &aval.as.array->data.data[i]);
+            value_copy(&args.data[0], &acc.v);
+            value_copy(&args.data[1], &aval.v.as.array->data.data[i]);
             // return
-            struct value *ret = vm_call(vm, &fn, args);
+            struct value *ret = vm_call(vm, fn, args);
             if(ret == (struct value*)-1) {
                 value_free(&args.data[0]);
                 value_free(&args.data[1]);
                 array_free(args);
-                value_free(&aval);
-                value_free(&fn);
-                value_free(&acc);
                 return;
             }
-            value_free(&acc);
-            value_copy(&acc, ret);
+            Value newval = _pop(vm);
+            Value::move(acc, newval);
             // cleanup
             value_free(&args.data[0]);
             value_free(&args.data[1]);
             array_free(args);
-            value_free(ret);
-            array_pop(vm->stack);
         }
     } else {
-        for(size_t i = 0; i < aval.as.array->data.length; i++) {
+        for(size_t i = 0; i < aval.v.as.array->data.length; i++) {
             // arguments
             array_push(vm->stack, (struct value){0});
-            value_copy(&array_top(vm->stack), &aval.as.array->data.data[i]);
+            value_copy(&array_top(vm->stack), &aval.v.as.array->data.data[i]);
             array_push(vm->stack, (struct value){0});
-            value_copy(&array_top(vm->stack), &acc);
+            value_copy(&array_top(vm->stack), &acc.v);
             // call function
-            fn.as.fn(vm, 2);
-            value_free(&acc);
-            value_copy(&acc, &array_top(vm->stack));
-            // cleanup
-            value_free(&array_top(vm->stack));
-            array_pop(vm->stack);
+            fn.v.as.fn(vm, 2);
+            Value newval = _pop(vm);
+            Value::move(acc, newval);
         }
     }
 
-    value_free(&aval);
-    array_push(vm->stack, acc);
+    _push(vm, acc);
 }
 
 fn_(join) {
     assert(nargs == 2);
 
     // array
-    struct value aval = array_top(vm->stack);
-    array_pop(vm->stack);
-
-    // joiner
-    struct value sval = _arg(vm, value::TYPE_STR);
-    auto joiner = string_data(sval.as.str);
-    auto joiner_len = string_len(sval.as.str);
+    const Value aval = _arg(vm, value::value_type::TYPE_ARRAY);
+    const Value jval = _arg(vm, value::value_type::TYPE_STR);
+    const auto joiner = string_data(jval.v.as.str);
+    const auto joiner_len = string_len(jval.v.as.str);
 
     size_t len = 0;
     char *s = (char*)malloc(len+1);
     s[0] = 0;
-    if(aval.as.array->data.length) {
-        assert(aval.as.array->data.data[0].type == value::TYPE_STR);
-        auto ss = aval.as.array->data.data[0].as.str;
+    if(aval.v.as.array->data.length) {
+        assert(aval.v.as.array->data.data[0].type == value::TYPE_STR);
+        const auto ss = aval.v.as.array->data.data[0].as.str;
         len += string_len(ss); s = (char*)realloc(s, len+1);
         strcat(s, string_data(ss));
     }
-    for(size_t i = 1; i < aval.as.array->data.length; i++) {
-        assert(aval.as.array->data.data[i].type == value::TYPE_STR);
-        auto ss = aval.as.array->data.data[i].as.str;
+    for(size_t i = 1; i < aval.v.as.array->data.length; i++) {
+        assert(aval.v.as.array->data.data[i].type == value::TYPE_STR);
+        const auto ss = aval.v.as.array->data.data[i].as.str;
         len += joiner_len + string_len(ss); s = (char*)realloc(s, len+1);
         strcat(s, joiner);
         strcat(s, string_data(ss));
     }
     s[len] = 0;
 
-    value_free(&sval);
-    value_free(&aval);
-    value_str(&sval, s); free(s);
-    array_push(vm->stack, sval);
+    Value retval;
+    value_str(retval, s); free(s);
+    _push(vm, retval);
 }

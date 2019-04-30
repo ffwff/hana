@@ -12,7 +12,11 @@ git clone --recursive https://github.com/ffwff/hana
 
 ## Building
 
-(building is tested with gcc-7 on Linux, mileage may vary on other architectures)
+(building was tested by using gcc-7 on an x64 with Linux, mileage may vary on other architectures)
+
+You'll need to install **libffi**. For faster memory allocations, it is recommended that jemalloc be
+installed. By default, the build script will enable linking to **jemalloc** unless `DISABLE_JEMALLOC`
+is set.
 
 For release builds, just do:
 
@@ -39,9 +43,6 @@ For debug:
 ```
 make DEBUG=1
 ```
-
-For faster memory allocations, it is recommended that jemalloc be installed. By default, the build
-script will enable linking to jemalloc unless `DISABLE_JEMALLOC` is set.
 
 ## Running
 

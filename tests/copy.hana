@@ -5,9 +5,9 @@ end
 
 b = Record::copy(a)
 a.b = 10
-b.b
+print(b.b, "\n")
 
 a = [1,2,3]
 b = Array::copy(a)
 b[0] = 10
-a[0]
+print(a[0], "\n")

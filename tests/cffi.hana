@@ -1,10 +1,9 @@
-/*
-fn = Cffi::function("abs", [Cffi.Int64], Cffi.Int64)
-Cffi::call(abs, -10)
+abs = Cffi::Function("abs", [Cffi.Int64], Cffi.Int64)
+print(Cffi::call(abs, -10), "\n")
 
-fn = Cffi::function("sin", [Cffi.Float64], Cffi.Float64)
-Cffi::call(fn, 1.5)
-*/
+sin = Cffi::Function("sin", [Cffi.Float64], Cffi.Float64)
+print(Cffi::call(sin, 1.5), "\n")
+
 //fn = Cffi::function("getenv", [Cffi.String], Cffi.String)
 //Cffi::call(fn, "PWD")
 

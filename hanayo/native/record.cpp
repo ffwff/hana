@@ -6,31 +6,25 @@
 
 fn(constructor) {
     assert(nargs == 0);
-    struct value val; value_dict(&val);
-    array_push(vm->stack, val);
+    Value val; value_dict(val);
+    _push(vm, val);
 }
 
 fn(keys) {
     assert(nargs == 1);
-    struct value val = _arg(vm, value::TYPE_DICT);
-    struct value aval;
-    value_array_n(&aval, val.as.dict->data.keys.length);
-    for(size_t i = 0; i < val.as.dict->data.keys.length; i++) {
-        value_str(&aval.as.array->data.data[i], val.as.dict->data.keys.data[i]);
-    }
-    value_free(&val);
-    array_push(vm->stack, aval);
+    const Value val = _arg(vm, value::TYPE_DICT);
+    Value retval; value_array_n(retval, val.v.as.dict->data.keys.length);
+    val.v.as.array->data.length = val.v.as.dict->data.keys.length;
+    for(size_t i = 0; i < val.v.as.dict->data.keys.length; i++)
+        value_str(&retval.v.as.array->data.data[i], val.v.as.dict->data.keys.data[i]);
+    _push(vm, retval);
 }
 
 fn(is_record) {
     assert(nargs == 1);
-    struct value val = array_top(vm->stack);
-    int is_record = val.type == value::TYPE_DICT;
-    array_pop(vm->stack);
-    value_free(&val);
-    struct value ret;
-    value_int(&ret, is_record);
-    array_push(vm->stack, ret);
+    const Value val = _pop(vm);
+    Value retval; value_int(retval, val.v.type == value::value_type::TYPE_DICT);
+    _push(vm, retval);
 }
 
 fn(copy) {

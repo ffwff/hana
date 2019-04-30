@@ -8,16 +8,16 @@
 fn(print) {
     int written = 0;
     while(nargs--) {
-        struct value val = array_top(vm->stack);
+        auto val = _pop(vm);
         const auto s = hanayo::_to_string(val);
         written += fputs(s, stdout);
         free(s);
-        value_free(&val);
-        array_pop(vm->stack);
     }
-    struct value val;
-    value_int(&val, written);
-    array_push(vm->stack, val);
+    {
+        Value retval;
+        value_int(retval, written);
+        _push(vm, retval);
+    }
 }
 
 fn(input) {
@@ -25,7 +25,8 @@ fn(input) {
     char *line = nullptr;
     size_t n = 0;
     getline(&line, &n, stdin);
-    struct value val;
-    value_str(&val, line); free(line);
+    Value val;
+    value_str(val, line);
+    free(line);
     array_push(vm->stack, val);
 }

@@ -60,13 +60,13 @@ char *hanayo::_to_string(struct value &val) {
 // fns
 fn(eval) {
     auto sval = _arg(vm, value::TYPE_STR);
-    auto script = sval.as.str;
-    struct value retval = {0};
+    const auto script = string_data(sval.v.as.str);
+    Value retval;
 
     // generate ast & emit
-    auto ast = hana_parse(string_data(script));
+    auto ast = hana_parse(script);
     if(ast == nullptr) {
-        value_int(&retval, 0);
+        value_int(retval, 0);
     } else {
         const auto target_ip = vm->code.length;
         hana_ast_emit(ast, vm);
@@ -77,17 +77,15 @@ fn(eval) {
         vm->ip = target_ip;
         vm_execute(vm);
         vm->ip = ip;
-        value_int(&retval, 1);
+        value_int(retval, 1);
     }
 
-    // cleanup
-    value_free(&sval);
-    array_push(vm->stack, retval);
+    _push(vm, retval);
 }
 
 fn(exit) {
-    auto code = _arg(vm, value::TYPE_INT);
-    ::exit(code.as.integer);
+    const auto code = _arg(vm, value::TYPE_INT);
+    ::exit(code.v.as.integer);
 }
 
 void hanayo::_init(struct vm *m) {
@@ -201,9 +199,22 @@ void hanayo::_init(struct vm *m) {
     value_free(&val);
 }
 
-struct value hanayo::_arg(struct vm *vm, value::value_type type) {
-    struct value val = array_top(vm->stack);
-    assert(val.type == type);
+// helpers
+hanayo::Value hanayo::_top(struct vm *vm) { return Value::move(array_top(vm->stack)); }
+hanayo::Value hanayo::_pop(struct vm *vm) {
+    auto v = Value::move(array_top(vm->stack));
+    array_pop(vm->stack);
+    return v;
+}
+void hanayo::_push(struct vm *vm, Value &val) {
+    array_push(vm->stack, val);
+    val.v.type = value::value_type::TYPE_NIL;
+}
+
+hanayo::Value hanayo::_arg(struct vm *vm, value::value_type type) {
+    struct value v = array_top(vm->stack);
+    assert(v.type == type);
+    Value val = Value::move(v);
     array_pop(vm->stack);
     return val;
 }
