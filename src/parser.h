@@ -99,9 +99,8 @@ protected:
     }
     void nexteq(const std::string &s) {
         const Token t = next();
-        assert(t.type == Token::STRING);
-        LOG(t.strv);
-        assert(t.strv == s);
+        if(t.type != Token::STRING && t.strv != s)
+            throw LexerError("Expected keyword ", s);
     }
     int nexti() {
         const Token t = next();
