@@ -702,8 +702,8 @@ f.error?()
 
 ## Optional libraries
 
-In addition to the standard library, Hana also comes included with some optional libraries that
-must be imported.
+In addition to the standard library, Hana also comes included
+with some optional libraries that must be imported to use.
 
 ### JSON
 
