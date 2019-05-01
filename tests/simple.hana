@@ -21,14 +21,15 @@ function X(abc) begin
     end
     print("not nested")
 end
+f(x) = 10
 
 record A
     function X(abc) begin
-
+        print("Hello World")
     end
     a = "10"
     record B
-
+        print('Hello World')
     end
 end
 
@@ -44,5 +45,6 @@ else begin
     print("no")
 end
 
-/* leading
- */
+// abc
+/* a
+ test */

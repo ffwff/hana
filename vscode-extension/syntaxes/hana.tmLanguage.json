@@ -1,0 +1,102 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Hana",
+	"patterns": [
+		{ "include": "#keywords" },
+		{ "include": "#comments" },
+		{ "include": "#operators" },
+		{ "include": "#numerics" },
+		{ "include": "#booleans" },
+		{ "include": "#strings" },
+		{ "include": "#strings-single" },
+		{ "include": "#variables" }
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.hana",
+				"match": "\\b(if|else|while|for|to|function|record|continue|break|return|begin|end)\\b"
+			}]
+		},
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.line.hana",
+					"match": "//.*"
+				},
+				{
+					"name": "comment.block.hana",
+					"begin": "/\\*",
+					"end": "\\*/"
+				}
+			]
+		},
+		"variables": {
+			"patterns": [
+				{
+					"name": "variable.language.hana",
+					"match": "\\b(self|print|input)\\b"
+				},
+				{
+					"name": "variable.other.hana",
+					"match": "\\b[a-zA-Z][a-zA-Z\\?\\!]*\\b"
+				}
+			]
+		},
+		"operators": {
+			"patterns": [
+				{
+					"name": "keyword.operator.assignment.compound.hana",
+					"match": "\\*\\=|\\/\\=|\\+\\=|\\-\\="
+				},
+				{
+					"name": "keyword.operator.comparison.hana",
+					"match": "\\<\\=|\\>\\=|\\<|\\>"
+				},
+				{
+					"name": "keyword.operator.logical.hana",
+					"match": "\\b(and|or)\\b"
+				},
+				{
+					"name": "keyword.operator.assignment.hana",
+					"match": "\\="
+				}
+			]
+		},
+		"numerics": {
+			"patterns": [{
+				"name": "constant.numeric.decimal.hana",
+				"match": "\\b[0-9_]+(\\.[0-9]+)?"
+			}]
+		},
+		"booleans": {
+			"patterns": [{
+				"name": "constant.boolean.hana",
+				"match": "\\b(true|false)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.hana",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.hana",
+					"match": "\\\\."
+				}
+			]
+		},
+		"strings-single": {
+			"name": "string.quoted.single.hana",
+			"begin": "'",
+			"end": "'",
+			"patterns": [
+				{
+					"name": "constant.character.escape.hana",
+					"match": "\\\\."
+				}
+			]
+		}
+	},
+	"scopeName": "source.hana.scope"
+}

@@ -1,0 +1,25 @@
+{
+    "name": "hana",
+    "displayName": "hana",
+    "description": "VSCode support for Hana",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.33.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "hana",
+            "aliases": ["Hana", "hana"],
+            "extensions": [".hana"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "hana",
+            "scopeName": "source.hana.scope",
+            "path": "./syntaxes/hana.tmLanguage.json"
+        }]
+    }
+}
