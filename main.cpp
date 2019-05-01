@@ -15,7 +15,7 @@ INCBIN(InitBytecode, "build/init.bin");
 
 static void help(char *program) {
 printf(
-"usage: %s [-c cmd | file | -]\n\
+"usage: %s [options] [-c cmd | file | -]\n\
 options: \n\
  -c cmd : execute program passed in as string\n\
  -d/--dump-vmcode: dumps vm bytecode to stdout\n\

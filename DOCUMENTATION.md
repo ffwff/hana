@@ -308,16 +308,16 @@ Test::constructor("Hello") // => Hello
 All tokens that don't contain quotes, operators (except for `?`) and don't start with a digit
 is an identifier.
 
-Identifiers starting with `^` denotes an identifier in the global scope:
+Identifiers starting with `$` denotes an identifier in the global scope:
 
 ```
 a = 1
-f() = ^a = 20
+f() = $a = 20
 f() // sets the global variable a to 20
 a // => 20
 ```
 
-Note that the `^` identifier will just refer to the local `^` identifier.
+Note that the `$` identifier will just refer to the local `$` identifier.
 
 ## Statements
 
