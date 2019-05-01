@@ -31,7 +31,7 @@ static AST::AST *_wrap_block(ScriptParser *p, AST::AST *ast) {
 #endif
 
 // tokeniser
-Parser::Token ScriptParser::next() {
+Hana::Parser::Token Hana::ScriptParser::next() {
     char c;
     const auto skip_un = [&]() {
         while((c = peek()) != EOF) {
@@ -105,7 +105,7 @@ Parser::Token ScriptParser::next() {
             token += getc();
             while((c = peek()) != EOF && isdigit(c))
                 token += getc();
-            return Token(std::stof(token));
+            return Token(strtod(token.data(), nullptr));
         }
         return Token(std::stoi(token));
     }

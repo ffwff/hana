@@ -20,9 +20,9 @@ char *hanayo::_to_string(struct value &val) {
         return s;
     } else if(val.type == TYPE_FLOAT) {
         char dummy[1];
-        const size_t siz = snprintf(dummy, 1, "%f", val.as.floatp);
+        const size_t siz = snprintf(dummy, 1, "%g", val.as.floatp);
         char *s = (char*)malloc(siz+1);
-        sprintf(s, "%f", val.as.floatp);
+        sprintf(s, "%g", val.as.floatp);
         return s;
     }
     else if(val.type == TYPE_NATIVE_FN || val.type == TYPE_FN)

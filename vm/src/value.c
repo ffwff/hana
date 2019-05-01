@@ -110,16 +110,16 @@ void value_ ## name (struct value *result, const struct value *left, const struc
     switch(left->type) { \
     case TYPE_INT: { \
         if(right->type == TYPE_FLOAT) \
-            value_float(result, (float)left->as.integer op right->as.floatp); \
+            value_float(result, (double)left->as.integer op right->as.floatp); \
         else if(right->type == TYPE_INT) \
             value_int(result, left->as.integer op right->as.integer); \
         break; \
     } \
     case TYPE_FLOAT: { \
         if(right->type == TYPE_INT) \
-            value_float(result, left->as.floatp op (float)right->as.integer); \
+            value_float(result, left->as.floatp op (double)right->as.integer); \
         else if(right->type == TYPE_FLOAT) \
-            value_int(result, left->as.floatp op right->as.floatp); \
+            value_float(result, left->as.floatp op right->as.floatp); \
         break; \
     } custom \
     default: value_int(result, 0); }\

@@ -29,7 +29,6 @@ record A
     end
     a = "10"
     record B
-        print('Hello World')
     end
 end
 

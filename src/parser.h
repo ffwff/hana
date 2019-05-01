@@ -77,7 +77,7 @@ protected:
         std::string strv;
         union {
             int intv;
-            float floatv;
+            double floatv;
         };
         enum Type {
             NONE, NEWLINE, STRING, STRLITERAL, INTEGER, FLOAT, OPERATOR
@@ -87,7 +87,7 @@ protected:
         Token(std::string str) : strv(str), type(STRING) {};
         Token(std::string str, const enum Type type) : strv(str), type(type) {};
         Token(int intv) : intv(intv), type(INTEGER) {};
-        Token(float floatv) : floatv(floatv), type(FLOAT) {};
+        Token(double floatv) : floatv(floatv), type(FLOAT) {};
     };
 
     virtual Token next()=0;

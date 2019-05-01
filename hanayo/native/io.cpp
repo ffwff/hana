@@ -10,7 +10,7 @@ fn(print) {
     while(nargs--) {
         auto val = _pop(vm);
         const auto s = hanayo::_to_string(val);
-        written += fputs(s, stdout);
+        written += printf("%s", s);
         free(s);
     }
     {
@@ -25,7 +25,7 @@ fn(println) {
     while(nargs--) {
         auto val = _pop(vm);
         const auto s = hanayo::_to_string(val);
-        written += fputs(s, stdout);
+        written += printf("%s", s);
         free(s);
     }
     written += printf("\n");

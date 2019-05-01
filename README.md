@@ -22,11 +22,7 @@ For release builds, just do:
 make RELEASE=1
 ```
 
-It is recommended that you build the interpreter with libreadline for a better REPL:
-
-```
-make RELEASE=1 READLINE=1
-```
+It is recommended that you build the interpreter with libreadline and the `ENABLE_READLINE` flag set for a better REPL.
 
 To bootstrap the init bytecode, compile it using a debug/release build, then remake the interpreter:
 
