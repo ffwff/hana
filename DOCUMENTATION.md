@@ -429,7 +429,9 @@ a()
 
 Local variables inside of scopes can be used inside of functions that escapes the scope
 (through returns, global variables or through dictionary/array keys). These are called
-[closures](https://en.wikipedia.org/wiki/Closure_(computer_programming)):
+[closures](https://en.wikipedia.org/wiki/Closure_(computer_programming)). Hana implements
+this by copying the current scope's local variable (whenever the function is declared)
+into the function's bound variable field.
 
 ```
 function adder(n) begin
