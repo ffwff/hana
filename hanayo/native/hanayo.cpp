@@ -207,9 +207,8 @@ void hanayo::_push(struct vm *vm, Value &val) {
 }
 
 hanayo::Value hanayo::_arg(struct vm *vm, uint8_t type) {
-    struct value v = array_top(vm->stack);
-    assert(v.type == type);
-    Value val; val.v = v;
+    Value val(array_top(vm->stack));
+    assert(val.v.type == type);
     array_pop(vm->stack);
     return val;
 }

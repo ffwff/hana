@@ -234,23 +234,20 @@ AST::AST *ScriptParser::parse_call() {
                     } else
                         throw ParserError("Expected operator");
                 }
-            } else if(op.strv == ".") {
+            } else if(op.strv == "." || op.strv == "::") {
                 fpop();
                 auto id = nexts();
+                if(expr->type() == AST::Type::MEMBER_EXPR && static_cast<AST::MemberExpression*>(expr)->is_namespace)
+                    goto ns_operator_error;
                 expr = new AST::MemberExpression(expr, new AST::Identifier(id));
-            } else if(op.strv == "::") {
-                fpop();
-                auto id = nexts();
-                expr = new AST::MemberExpression(expr, new AST::Identifier(id));
-                static_cast<AST::MemberExpression*>(expr)->is_namespace = true;
+                if(op.strv == "::") static_cast<AST::MemberExpression*>(expr)->is_namespace = true;
             } else if(op.strv == "[") {
                 fpop();
                 expr = new AST::MemberExpression(expr, parse_expression());
                 static_cast<AST::MemberExpression*>(expr)->is_expr = true;
                 nextop("]");
             } else {
-                fload();
-                return expr;
+                goto ret;
             }
 
         next:
@@ -258,13 +255,18 @@ AST::AST *ScriptParser::parse_call() {
             op = next();
 
         } while(!eof());
-
+    ret:
         fload();
+        if(expr->type() == AST::Type::MEMBER_EXPR && static_cast<AST::MemberExpression*>(expr)->is_namespace)
+            goto ns_operator_error;
         return expr;
     } else {
         fload();
         return factor;
     }
+
+ns_operator_error:
+    throw ParserError("You should only use the :: operator at the end of a member expression chain in a call expression");
 }
 
 AST::AST *ScriptParser::parse_unary() {

@@ -1,0 +1,8 @@
+// A::a::b // => illegal
+// A.a::b // => illegal
+// A.a.b // => illegal
+// A.a.b() // => legal
+// A.a::b() // => legal
+begin
+    JSON::true // => illegal
+end

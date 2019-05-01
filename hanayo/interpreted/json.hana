@@ -57,7 +57,7 @@ record JSON
                 next("r")
                 next("u")
                 next("e")
-                return JSON::true
+                return JSON.true
             end
             else if c == "f" begin
                 next("f")
@@ -65,7 +65,7 @@ record JSON
                 next("l")
                 next("s")
                 next("e")
-                return JSON::false
+                return JSON.false
             end
             else if c == "n" begin
                 next("n")
@@ -149,7 +149,7 @@ record JSON
         end
         else if prototype == Array begin
             s = "["
-            s += obj.map(JSON::stringify).join(", ")
+            s += obj.map(JSON.stringify).join(", ")
             s += "]"
             return s
         end

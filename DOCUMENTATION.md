@@ -2,7 +2,7 @@ Welcome to *hana*! Hana is a dynamically-typed interpreted language, built upon 
 philosophy, it's inspired by Pascal, Ruby and Javascript, and it's fairly fast and lightweight.
 Enjoy your stay in Hana!
 
-**This is alpha software! Things may break at any moment, please send bug report and stack trace to issues!**
+**This is alpha software! Things may break at any moment, please send bug report and stack trace to Issues!**
 
 # Examples
 
@@ -118,7 +118,7 @@ Binary operators include (comma separated):
 
 ```
 +, -, *, /, mod, ==, !=, >, <, >=, <=,
-and, or, =
+and, or, =, +=, -=, *=, /=
 ```
 
 Unary operators include:
@@ -126,6 +126,121 @@ Unary operators include:
 ```
 not, -
 ```
+
+#### Arithmetic operators
+
+##### Addition (+)
+
+Adds 2 values together.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+| String     | String      | String (concatenation) |
+
+##### Subtraction (-)
+
+Subtracts right value from left value.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+
+##### Division (/)
+
+Divides right value from left value.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Float                  |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+
+##### Multiplication (*)
+
+Multiplies 2 values together.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+| String     | Integer     | String (repeats string |
+|            |             | by n times)            |
+| Array      | Integer     | Array (repeats array   |
+|            |             | by n times)            |
+
+##### Modulo (mod)
+
+Gets the modulo or the remainder when the left value is divided by the right value.
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+
+#### Assignment operators
+
+Assignment operators assign the value of its right operand to its left operand.
+The left operand may be a function call (for function definitions), a variable
+or a member expression.
+
+List of assignment operators:
+
+| Shorthand operator | Meaning                        |
+|--------------------|--------------------------------|
+| `x = 10`           | Sets variable `x` to `10`.     |
+| `x += 10`          | Sets variable `x` to `x + 10`. |
+| `x -= 10`          | Sets variable `x` to `x - 10`. |
+| `x *= 10`          | Sets variable `x` to `x * 10`. |
+| `x /= 10`          | Sets variable `x` to `x / 10`. |
+
+#### Equality operators
+
+Compares 2 values to see if they are the same (`==`) or not the same (`!=`).
+
+Integer-integer and float-float pairs will be compared value-wise.
+
+If an integer is compared with a float, the float will be compared to a float-casted
+value of the integer.
+
+If a string is compared with another string, the byte values of the two strings will be
+compared.
+
+If an array is compared with another array, or a record is compared with another record,
+they will **only be the same** when they are of the same memory address.
+
+Otherwise, the two values will not be the same.
+
+#### Comparison operators
+
+Compares 2 values to see if they are greater than (`>`), greater than or equal to (`>=`),
+lesser than (`<`), lesser than or equal to (`<=`).
+
+Numeric values will be compared value-wise.
+
+String values will be compared based on their ASCII values (for all intents and purposes
+this works like `strcmp` in C).
+
+Otherwise comparison will always evaluate to `false`.
+
+#### Logical operators
+
+`and`, `or`: Casts the two values into booleans then does the boolean arithmetic.
+
+`not` casts the value into a boolean then does a boolean NOT (`true` becomes `false` and
+vice-versa).
 
 ### conditions
 
@@ -137,14 +252,35 @@ condition ? then : otherwise
 
 ### call expressions
 
+Call expressions are used to call functions or records:
+
 ```
 a() // calls function a with no arguments
 a(1,2) // calls function a with 2 arguments
 ```
 
+When a record is called, its `constructor` function is invoked, and depending on
+the member expression's operator it will also pass a new dictionary in:
+
+```
+record Namespace
+    record Example
+        function constructor(self, num) begin
+            self.num = num
+            return self
+        end
+    end
+end
+
+Namespace.Example(10) // => calls constructor with arguments
+                      // containing a new record and 10
+Namespace::Example() // => calls constructor with arguments
+                     // containing the Namespace record
+```
+
 ### member expressions
 
-Access a key of a record like this:
+Member expressions are used to access a key of a record, an array or a string:
 
 ```
 a.b // => access "b" key of record "a"
@@ -610,5 +746,5 @@ understand.
 
 Hana uses garbage collection to manage memory, specifically implemented through the [BoehmGC](https://www.hboehm.info/gc/) library. All values that are not referenced in the value stack will be automatically collected and free'd by the garbage collector.
 
-Note that upon exit the virtual machine is not guaranteed to free out all values, so native objects may
-not be cleaned up at exit.
+Note that upon exit the virtual machine is not guaranteed to free out all values, so
+native objects are not guaranteed to be cleaned up at exit.
