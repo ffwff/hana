@@ -1,8 +1,8 @@
+#include <cstdio>
 #include "ast.h"
 #include "error.h"
 #include "vm/src/vm.h"
 #include "vm/src/xxhash.h"
-#include <stdio.h>
 
 using namespace Hana;
 

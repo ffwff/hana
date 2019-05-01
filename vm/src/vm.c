@@ -12,9 +12,9 @@
 #ifdef NOLOG
 #define LOG(...)
 #else
-#define LOG(fmt, ...) do { printf(fmt __VA_OPT__(,) __VA_ARGS__); } while(0)
+#define LOG(...) printf(__VA_ARGS__)
 #endif
-#define FATAL(fmt, ...) fprintf(stderr, fmt __VA_OPT__(,) __VA_ARGS__)
+#define FATAL(...) fprintf(stderr, __VA_ARGS__)
 
 void debug(){}
 
