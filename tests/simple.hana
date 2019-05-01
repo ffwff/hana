@@ -11,6 +11,10 @@ while i < 5 begin
     print("?")
 end
 
+begin
+    print("Test")
+end
+
 function X(abc) begin
     function Y(abc) begin
         print("nested")
@@ -39,3 +43,6 @@ end
 else begin
     print("no")
 end
+
+/* leading
+ */

@@ -26,7 +26,6 @@ struct value *exception_frame_get_handler_for_error(struct exception_frame *fram
 
 void exception_frame_unwind(struct exception_frame *frame, struct vm *vm) {
     // unwind stack
-    //printf("UNWIND! %d\n", frame->unwind_stack_size);
     vm->stack.length = frame->unwind_stack_size;
     // env
     while(vm->localenv != frame->unwind_env) {

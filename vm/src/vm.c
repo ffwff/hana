@@ -1,5 +1,4 @@
 #include <stdio.h>
-//#include <assert.h>
 #include <string.h>
 #include "vm.h"
 #include "string_.h"
@@ -576,8 +575,6 @@ do { \
         if(result != NULL)
             value_copy(&array_top(vm->stack), result);
 
-        if(op == OP_MEMBER_GET) {
-        }
         dispatch();
     }
     doop(OP_MEMBER_SET): {
@@ -625,10 +622,10 @@ do { \
         vm->ip++;
         LOG("INDEX_GET\n");
 
-        struct value index = array_top(vm->stack);
+        const struct value index = array_top(vm->stack);
         array_pop(vm->stack);
 
-        struct value dval = array_top(vm->stack);
+        const struct value dval = array_top(vm->stack);
         array_pop(vm->stack);
 
         if(dval.type == TYPE_ARRAY) {
@@ -653,7 +650,7 @@ do { \
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, len);
                 ERROR();
             }
-            char c[2] = { string_at(dval.as.str, i), 0 };
+            const char c[2] = { string_at(dval.as.str, i), 0 };
             array_push(vm->stack, (struct value){});
             value_str(&array_top(vm->stack), c);
         } else if(dval.type == TYPE_DICT) {

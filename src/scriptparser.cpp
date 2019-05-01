@@ -17,7 +17,7 @@ static AST::AST *_wrap_line(AST::AST *ast, size_t start_line, size_t end_line) {
 static size_t _start_lines = 0;
 static AST::AST *_wrap_block(ScriptParser *p, AST::AST *ast) {
     ast->start_line = _start_lines;
-    ast->end_line = p->lines;
+    ast->end_line = p->lines+1;
     return ast;
 }
 #define WRAP_RET2(ast) (_start_lines = _START_GMR, _wrap_block(this, ast))
@@ -457,6 +457,7 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
     }
     LOG("is expr");
     auto stmt = new AST::StructStatement(id);
+    stmt->start_line = _START_GMR;
     stmt->is_expr = is_expr;
     fsave();
     const auto token = next();
@@ -470,6 +471,7 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
         auto token = next();
         if(token.type == Token::Type::STRING) {
             if(token.strv == "end") {
+                stmt->end_line = lines+1;
                 fpop();
                 break;
             } else if(token.strv == "function") {
@@ -495,16 +497,16 @@ AST::AST *ScriptParser::parse_record(bool is_expr) {
                     throw ParserError("expected member expression or identifier");
                 nextop("=");
                 auto right = parse_expression();
-                nextnl();
                 stmt->statements.emplace_back(WRAP_RET2(new AST::ExpressionStatement(
                     new AST::BinaryExpression(left, right, AST::BinaryExpression::OpType::SET)
                 )));
+                nextnl();
             }
             continue;
         }
         throw ParserError("expected end or struct statement");
     }
-    return WRAP_RET2(stmt);
+    return stmt;
 }
 
 AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
@@ -531,19 +533,20 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
     AST::AST *fstmt = nullptr;
     if(type == EXPR) {
         fsave();
-        START_GMR
         token = next();
         if(token.strv == "begin") {
             // this is here because blocks in function expressions behave like
             // expressions than statements: we don't require that it ends with a newline
             fpop();
-            nextnl();
             auto blk = new AST::BlockStatement();
+            blk->start_line = _START_GMR;
+            nextnl();
             while(!eof()) {
                 fsave();
                 const auto token = next();
                 if(token.type == Token::Type::STRING && token.strv == "end") {
                     fpop();
+                    blk->end_line = lines+1;
                     break;
                 } else {
                     fload();
@@ -552,7 +555,7 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
                         blk->statements.emplace_back(stmt);
                 }
             }
-            fstmt = WRAP_RET2(blk);
+            fstmt = blk;
         } else {
             fload();
             fstmt = parse_statement();
@@ -565,10 +568,10 @@ AST::AST *ScriptParser::parse_function(const ScriptParser::fn_parse_type type) {
     else
         throw ParserError("expected function statement");
     if(type == EXPR || type == RECORD)
-        stmt->is_expr = true;/*
-    LOG(next().strv);
-    assert(0);*/
-    return WRAP_RET2(stmt);
+        stmt->is_expr = true;
+    stmt->start_line = _START_GMR;
+    stmt->end_line = fstmt->end_line;
+    return stmt;
 }
 
 AST::AST *ScriptParser::parse_statement() {
@@ -588,26 +591,24 @@ AST::AST *ScriptParser::parse_statement() {
             fpop();
             START_GMR
             fsave();
+            const auto stmt = WRAP_RET2(new AST::ReturnStatement());
             const auto token = next();
             if(token.type == Token::Type::NEWLINE) {
                 fpop();
-                return WRAP_RET2(new AST::ReturnStatement());
+                return stmt;
             } else {
                 fload();
-                return WRAP_RET2(new AST::ReturnStatement(parse_expression()));
+                static_cast<AST::ReturnStatement*>(stmt)->expression = std::unique_ptr<AST::AST>(parse_expression());
+                return stmt;
             }
         } else if(token.strv == "function") {
             fpop();
-            START_GMR
-            auto ast = parse_function(STATEMENT);
-            return WRAP_RET2(ast);
+            return parse_function(STATEMENT);
         } else if(token.strv == "record") {
             fpop();
             START_GMR
             auto record = parse_record(false);
-            LOG("end of record stmt: ", record);
             if(record == nullptr) {
-                LOG("not record");
                 fload();
                 goto expression_stmt;
             } else
@@ -617,7 +618,7 @@ AST::AST *ScriptParser::parse_statement() {
             START_GMR
             auto expr = parse_expression();
             auto stmt = expect_statement();
-            auto ifstmt = new AST::IfStatement(expr, stmt);
+            auto ifstmt = WRAP_LINE(new AST::IfStatement(expr, stmt));
             fsave();
             auto token = next();
             if(token.type == Token::Type::NEWLINE) {
@@ -625,11 +626,13 @@ AST::AST *ScriptParser::parse_statement() {
             }
             if(token.type == Token::Type::STRING && token.strv == "else") {
                 fpop();
-                ifstmt->alt = std::unique_ptr<AST::AST>(parse_statement());
+                auto stmt = parse_statement();
+                static_cast<AST::IfStatement*>(ifstmt)->alt = std::unique_ptr<AST::AST>(stmt);
+                ifstmt->end_line = stmt->end_line;
             } else {
                 fload();
             }
-            return WRAP_LINE(ifstmt);
+            return ifstmt;
         } else if(token.strv == "while") {
             fpop();
 
@@ -637,7 +640,11 @@ AST::AST *ScriptParser::parse_statement() {
 
             auto expr = parse_expression();
             auto stmt = expect_statement();
-            return WRAP_RET2(new AST::WhileStatement(expr, stmt));
+
+            auto wstmt = new AST::WhileStatement(expr, stmt);
+            wstmt->start_line = _START_GMR;
+            wstmt->end_line = stmt->end_line;
+            return wstmt;
         } else if(token.strv == "for") {
             fpop();
 
@@ -654,24 +661,29 @@ AST::AST *ScriptParser::parse_statement() {
             fsave();
             auto token = next();
             const int stepN = dir == "to" ? 1 : -1;
+            AST::ForStatement *fstmt = nullptr;
             if(token.type == Token::Type::STRING && token.strv == "step") {
                 fpop();
-                return WRAP_RET2(new AST::ForStatement(id, from, to, parse_expression(), stepN, expect_statement()));
+                fstmt = new AST::ForStatement(id, from, to, parse_expression(), stepN, expect_statement());
             } else {
                 fload();
-                return WRAP_RET2(new AST::ForStatement(id, from, to, stepN, expect_statement()));
+                fstmt = new AST::ForStatement(id, from, to, stepN, expect_statement());
             }
-
+            fstmt->start_line = _START_GMR;
+            fstmt->end_line = fstmt->statement->end_line;
+            return fstmt;
         } else if(token.strv == "continue") {
             fpop();
             START_GMR
+            const auto stmt = WRAP_RET2(new AST::ContinueStatement());
             nextnl();
-            return WRAP_RET2(new AST::ContinueStatement());
+            return stmt;
         } else if(token.strv == "break") {
             fpop();
             START_GMR
+            const auto stmt = WRAP_RET2(new AST::BreakStatement());
             nextnl();
-            return WRAP_RET2(new AST::BreakStatement());
+            return stmt;
         } else if(token.strv == "try") {
             fpop();
             START_GMR
@@ -735,14 +747,16 @@ AST::AST *ScriptParser::parse_statement() {
         } else if(token.strv == "raise") {
             fpop();
             START_GMR
+            auto stmt = WRAP_RET2(new AST::RaiseStatement());
             fsave();
             const auto token = next();
             if(token.type == Token::Type::NEWLINE) {
                 fpop();
-                return WRAP_RET2(new AST::RaiseStatement());
+                return stmt;
             } else {
                 fload();
-                return WRAP_RET2(new AST::RaiseStatement(parse_expression()));
+                static_cast<AST::RaiseStatement*>(stmt)->expression = std::unique_ptr<AST::AST>(parse_expression());
+                return stmt;
             }
         } else if(token.strv == "begin") {
             fpop();
@@ -774,8 +788,10 @@ AST::AST *ScriptParser::parse_statement() {
         fload();
         START_GMR
         auto stmt = new AST::ExpressionStatement(parse_expression());
+        stmt->start_line = _START_GMR;
+        stmt->end_line = lines+1;
         nextnl();
-        return WRAP_RET2(stmt);
+        return stmt;
     }
 }
 
