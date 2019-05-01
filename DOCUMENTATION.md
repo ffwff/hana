@@ -305,7 +305,7 @@ Test::constructor("Hello") // => Hello
 
 ### Identifiers
 
-All tokens that don't contain quotes, operators (except for `?`) and don't start with a digit
+All tokens that don't contain quotes, operators (except for `?` and `!`) and don't start with a digit
 is an identifier.
 
 Identifiers starting with `$` denotes an identifier in the global scope:
