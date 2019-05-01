@@ -1,0 +1,5 @@
+a = record
+    key = "value"
+    float = 1.5
+end
+print(a["float"])

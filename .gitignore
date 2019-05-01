@@ -1,4 +1,5 @@
 *.so
 main
-old
 build
+*.txt
+.vscode

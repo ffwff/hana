@@ -1,0 +1,31 @@
+// while 1 "abc" + "bcd"
+/*
+while 1 begin
+    x = [1]
+    x.push(1)
+end
+*/
+/*
+while 1 begin
+    x = ["bcd"]
+    x.push("abc")
+end
+*/
+/*
+while 1 begin
+    x = record
+        a = "b"
+    end
+end
+*/
+
+function a() begin
+    b = record
+        function c() begin
+            print(a)
+        end
+    end
+    return b
+end
+
+while 1 a()::c()

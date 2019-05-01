@@ -1,0 +1,6 @@
+function a() begin
+    return true
+    print("no")
+end
+
+a()
