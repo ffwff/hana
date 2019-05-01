@@ -20,6 +20,7 @@ struct string_header;
 #define TYPE_DICT       6
 #define TYPE_ARRAY      7
 #define TYPE_NATIVE_OBJ 8
+#define TYPE_INTERPRETER_ERROR 127
 #define VALUE_TYPE_IS_GC(x) (x==TYPE_STR||x==TYPE_DICT||x==TYPE_ARRAY||x==TYPE_NATIVE_OBJ)
 
 typedef void (*value_fn)(struct vm *vm, int nargs);

@@ -250,6 +250,8 @@ void vm_execute(struct vm *vm) {
         array_push(vm->stack, (struct value){}); \
         struct value *result = &array_top(vm->stack); \
         fn(result, &left, &right); \
+        if(result->type == TYPE_INTERPRETER_ERROR) { \
+            FATAL("Invalid arguments for binary operator " #optype "\n"); ERROR(); } \
         dispatch(); \
     }
     binop(OP_ADD, value_add)
@@ -372,7 +374,7 @@ void vm_execute(struct vm *vm) {
         array_push(vm->stack, (struct value){});
         struct value *val = hmap_get(&vm->globalenv, key);
         if(val == NULL) {
-            FATAL("no key named %s!\n", key);
+            FATAL("no global variable named %s!\n", key);
             ERROR();
         } else
             value_copy(&array_top(vm->stack), val);

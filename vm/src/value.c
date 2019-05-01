@@ -113,6 +113,8 @@ void value_ ## name (struct value *result, const struct value *left, const struc
             value_float(result, (double)left->as.integer op right->as.floatp); \
         else if(right->type == TYPE_INT) \
             value_int(result, left->as.integer op right->as.integer); \
+        else \
+            result->type = TYPE_INTERPRETER_ERROR; \
         break; \
     } \
     case TYPE_FLOAT: { \
@@ -120,13 +122,18 @@ void value_ ## name (struct value *result, const struct value *left, const struc
             value_float(result, left->as.floatp op (double)right->as.integer); \
         else if(right->type == TYPE_FLOAT) \
             value_float(result, left->as.floatp op right->as.floatp); \
+        else \
+            result->type = TYPE_INTERPRETER_ERROR; \
         break; \
     } custom \
-    default: value_int(result, 0); }\
+    default: result->type = TYPE_INTERPRETER_ERROR; }\
 }
 arith_op(add, +,
     case TYPE_STR: {
-        assert(right->type == TYPE_STR);
+        if(right->type != TYPE_STR) {
+            result->type = TYPE_INTERPRETER_ERROR;
+            return;
+        }
         struct string_header *s = string_alloc(string_len(left->as.str)+string_len(right->as.str));
         char *ss = string_data(s); ss[0] = 0;
         strcpy(ss, string_data(left->as.str));
@@ -151,6 +158,8 @@ arith_op(mul, *,
                 result->as.str = s;
             }
         }
+        else
+            result->type = TYPE_INTERPRETER_ERROR;
         break; }
     case TYPE_ARRAY: {
         if(right->type == TYPE_INT) {
@@ -163,6 +172,8 @@ arith_op(mul, *,
                 }
             }
         }
+        else
+            result->type = TYPE_INTERPRETER_ERROR;
         break; }
 )
 void value_div(struct value *result, const struct value *left, const struct value *right) {
@@ -175,13 +186,14 @@ void value_div(struct value *result, const struct value *left, const struct valu
         value_float(result, (double)left->as.integer / (double)right->as.integer);
     } else if(left->type == TYPE_FLOAT && right->type == TYPE_FLOAT) {
         value_float(result, left->as.floatp / right->as.floatp);
-    }
+    } else
+        result->type = TYPE_INTERPRETER_ERROR;
 }
 void value_mod(struct value *result, const struct value *left, const struct value *right) {
-    assert(left->type == right->type);
-    if(left->type == TYPE_INT) {
+    if(left->type == TYPE_INT && right->type == TYPE_INT) {
         value_int(result, left->as.integer % right->as.integer);
-    }
+    } else
+        result->type = TYPE_INTERPRETER_ERROR;
 }
 
 // logic
