@@ -744,7 +744,7 @@ understand.
 
 ## Memory management
 
-Hana uses garbage collection to manage memory, specifically implemented through the [BoehmGC](https://www.hboehm.info/gc/) library. All values that are not referenced in the value stack will be automatically collected and free'd by the garbage collector.
+Hana uses garbage collection to manage memory, specifically implemented through the [BoehmGC](https://www.hboehm.info/gc/) library. All values that are not referenced in the value stack or are not referenced by any of the global objects will be automatically collected and free'd by the garbage collector.
 
 Note that upon exit the virtual machine is not guaranteed to free out all values, so
 native objects are not guaranteed to be cleaned up at exit.
