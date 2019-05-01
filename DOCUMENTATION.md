@@ -177,10 +177,8 @@ Type table:
 | Integer    | Integer     | Integer                |
 | Integer    | Float       | Float                  |
 | Float      | Integer     | Float                  |
-| String     | Integer     | String (repeats string |
-|            |             | by n times)            |
-| Array      | Integer     | Array (repeats array   |
-|            |             | by n times)            |
+| String     | Integer     | String (repeats string  by n times) |
+| Array      | Integer     | Array (repeats array by n times) |
 
 ##### Modulo (mod)
 
