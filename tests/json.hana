@@ -11,7 +11,6 @@ end), "\n")
 s = '{"key": "value", "float": 1.500000, "num": 1, "nested": {"another": "key"}}'
 f(x) = print(JSON::stringify(JSON::parse(x)), "\n")
 JSON::parse("{}")
-/*
 f('{"a" : "b"}')
 print("--\n")
 f('{"a" : 10}')
@@ -26,4 +25,4 @@ try
     f('{?}')
 case JSON::ParserError as e
     print(e.what?, "\n")
-end*/
+end

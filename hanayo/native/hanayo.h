@@ -31,6 +31,7 @@ Value _arg(struct vm *vm, uint8_t type);
 
 // io
 fn(print);
+fn(println);
 fn(input);
 fn(eval);
 fn(exit);

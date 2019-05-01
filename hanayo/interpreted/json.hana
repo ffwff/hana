@@ -5,9 +5,7 @@ record JSON
 
     function parse(str) begin
         slen = str.length()
-        r = record // this one
-            // def this one then
-        end
+        r = Record()
         r.i = 0
         ws = function() begin
             while r.i < slen and (str[r.i] == ' ' or str[r.i] == '\t') begin

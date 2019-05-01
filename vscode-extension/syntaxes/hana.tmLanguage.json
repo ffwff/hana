@@ -15,7 +15,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.hana",
-				"match": "\\b(if|else|while|for|to|function|record|continue|break|return|raise|begin|end)\\b"
+				"match": "\\b(if|else|while|for|to|function|record|continue|break|return|try|case|as|raise|begin|end)\\b"
 			}]
 		},
 		"comments": {
@@ -39,7 +39,7 @@
 				},
 				{
 					"name": "variable.other.hana",
-					"match": "\\b[a-zA-Z][a-zA-Z\\?\\!]*\\b"
+					"match": "\\b[\\_$a-zA-Z][\\_$a-zA-Z0-9\\?\\!]*\\b"
 				}
 			]
 		},

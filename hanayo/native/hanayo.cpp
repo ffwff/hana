@@ -109,6 +109,7 @@ void hanayo::_init(struct vm *m) {
 
     // ## io
     native_function(print)
+    native_function(println)
     native_function(input)
     native_function(eval)
     native_function(exit)
