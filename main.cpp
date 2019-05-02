@@ -3,6 +3,7 @@
 #include <getopt.h>
 #include <limits.h>
 #include "src/scriptparser.h"
+#include "src/compiler.h"
 #include "hanayo/native/hanayo.h"
 #ifdef LREADLINE
 #include <readline/readline.h>
@@ -48,7 +49,10 @@ Hana::AST::AST *ast = nullptr;
 static bool opt_print_ast = false;
 static bool emit_ast(struct vm *m, std::string s, const bool load_file) {
     Hana::ScriptParser p;
-    if(load_file) p.loadf(s);
+    if(load_file)  {
+        Hana::Files.emplace_back(s);
+        p.loadf(s);
+    }
     else p.loads(s);
     ast = p.parse();
     if(ast == nullptr) return false;
@@ -64,20 +68,21 @@ static void execute_gracefully(struct vm *m) {
     vm_execute(m);
     if(m->error) {
         auto map = compiler.find_src_map(m->ip);
-        fprintf(stderr, "error at bytecode index %d", m->ip);
+        fprintf(stderr, "error at ");
         if(map.start_line == (size_t)-1)
-            fprintf(stderr, ", from native\n");
+            fprintf(stderr, "[native]\n");
         else
-            fprintf(stderr, ", line: %ld\n", map.start_line);
+            fprintf(stderr, "%s:%ld\n", Hana::Files.at(map.fileno).data(), map.start_line);
         if(m->localenv != nullptr)
             fprintf(stderr, "stack trace:\n");
         for(struct env *env = m->localenv; env != nullptr; env = env->parent) {
-            fprintf(stderr, " at bytecode index %d", env->retip);
+            //fprintf(stderr, " from bci %d", env->retip);
+            fprintf(stderr, " from ");
             auto map = compiler.find_src_map(env->retip);
             if(map.start_line == (size_t)-1)
-                fprintf(stderr, ", from native\n");
+                fprintf(stderr, "[native]\n");
             else
-                fprintf(stderr, ", line: %ld\n", map.start_line);
+                fprintf(stderr, "%s:%ld\n", Hana::Files.at(map.fileno).data(), map.start_line);
         }
     }
 }
@@ -159,6 +164,11 @@ int main(int argc, char **argv) {
 
     // command
     if(command_optiond != -1) {
+        struct value val;
+        value_str(&val, "[cmdline]");
+        hmap_set(&m.globalenv, "__file__", &val);
+
+        Hana::Files.push_back("[cmdline]");
         if(!emit_ast_from_string(&m, argv[last_optiond-1]))
             goto cleanup;
         array_push(m.code, OP_HALT);
@@ -175,6 +185,10 @@ int main(int argc, char **argv) {
         execute_gracefully(&m);
         m.ip++;
         #endif
+        struct value val;
+        value_str(&val, "[repl]");
+        hmap_set(&m.globalenv, "__file__", &val);
+        Hana::Files.push_back("[repl]");
         while(1) {
             #ifdef LREADLINE
             int nread = 0;
@@ -240,9 +254,9 @@ int main(int argc, char **argv) {
         // set up __file__
         struct value val;
         char actualpath[PATH_MAX+1];
-        char *ptr = ::realpath(argv[last_optiond], actualpath);
-        if(ptr != nullptr) {
-            value_str(&val, ptr);
+        char *pathptr = ::realpath(argv[last_optiond], actualpath);
+        if(pathptr != nullptr) {
+            value_str(&val, pathptr);
             hmap_set(&m.globalenv, "__file__", &val);
         }
 

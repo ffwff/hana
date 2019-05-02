@@ -123,6 +123,8 @@ protected:
 public:
     void loadf(std::string &file) {
         std::ifstream f(file);
+        if(f.fail())
+            throw ParserError("Unable to open file ", file);
         f.seekg(0, std::ios::end);
         size_t size = f.tellg();
         s = std::string(size, ' ');

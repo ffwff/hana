@@ -2,6 +2,8 @@
 #include "error.h"
 #include <algorithm>
 
+std::vector<std::string> Hana::Files;
+
 // scoping
 void Hana::Compiler::set_local(const std::string &id) {
     if(scopes.empty()) return;

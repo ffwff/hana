@@ -32,8 +32,7 @@ function import(x) begin
     // save __file__ and import!
     old_file = $__file__
     $__file__ = x
-    f = File(x, "r")
-    if eval(f.readall()) begin // success
+    if eval_file(x) begin // success
         $__modules[x] = true
         $__file__ = old_file
         return true

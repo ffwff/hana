@@ -34,6 +34,7 @@ fn(print);
 fn(println);
 fn(input);
 fn(eval);
+fn(eval_file);
 fn(exit);
 
 // ffi
