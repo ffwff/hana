@@ -6,7 +6,7 @@
 
 struct env { // function's stack frame
     struct value *slots;
-    size_t nslots;
+    uint16_t nslots, nargs;
     struct env *parent;
 
     struct env *lexical_parent;

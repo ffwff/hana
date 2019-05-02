@@ -397,10 +397,8 @@ void AST::BinaryExpression::emit(struct vm *vm, Hana::Compiler *compiler) {
             uint32_t env_length = vm->code.length;
             vm_code_push16(vm, 0xFFFF);
             for(auto &arg : expr->arguments) {
-                assert(arg->type() == IDENTIFIER);
-                auto s = static_cast<Identifier*>(arg.get())->id;
-                emit_set_var(vm, compiler, s);
-                array_push(vm->code, OP_POP);
+                // NOTE: we will have already set the arguments in OP_ENV_NEW
+                compiler->set_local(static_cast<Identifier*>(arg.get())->id);
             }
             if(right->type() == CALL_EXPR) {
                 emit_tail_call(static_cast<CallExpression*>(right.get()), vm, compiler);
@@ -631,15 +629,15 @@ void AST::FunctionStatement::emit(struct vm *vm, Hana::Compiler *compiler) {
     vm_code_push16(vm, 0xFFFF);
     // body
     for(auto &arg : arguments) {
-        emit_set_var(vm, compiler, arg);
-        array_push(vm->code, OP_POP);
+        // NOTE: we will have already set the arguments in OP_ENV_NEW
+        compiler->set_local(arg);
     }
     statement->emit(vm, compiler);
     auto scope_size = compiler->unscope();
     fill_hole16(vm, env_length, scope_size);
     // default return
     if( vm->code.data[vm->code.length-1] != OP_RET &&
-        vm->code.data[vm->code.length-1] != OP_RETCALL) {
+        vm->code.data[vm->code.length-1] != OP_RETCALL ) {
         array_push(vm->code, OP_PUSH_NIL);
         array_push(vm->code, OP_RET); // pops env for us
     }

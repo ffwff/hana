@@ -273,7 +273,7 @@ void vm_execute(struct vm *vm) {
     binop(OP_NEQ, value_neq)
 
     // variables
-    // scoping: defines a new environment whenever a function is called
+    // creates a new environment whenever a function is called
     // the environment is initialized with a copy of the current environment's variables
     doop(OP_ENV_NEW): {
         vm->ip++;
@@ -281,8 +281,12 @@ void vm_execute(struct vm *vm) {
             vm->code.data[vm->ip+0] << 4 |
             vm->code.data[vm->ip+1];
         vm->ip += sizeof(n);
-        LOG("RESERVE %d\n", n);
+        LOG("RESERVE %d %d\n", n, vm->localenv->nargs);
         env_init(vm->localenv, n);
+        for(uint16_t i = 0; i < vm->localenv->nargs; i++) {
+            vm->localenv->slots[i] = array_top(vm->stack);
+            array_pop(vm->stack);
+        }
         dispatch();
     }
 
@@ -496,8 +500,8 @@ do { \
             vm->localenv = calloc(1, sizeof(struct env)); // why this not free?
             vm->localenv->parent = oldenv;
             vm->localenv->retip = vm->ip;
-
             vm->localenv->lexical_parent = &ifn->bound;
+            vm->localenv->nargs = ifn->nargs;
             vm->ip = ifn->ip;
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
@@ -850,6 +854,7 @@ do { \
                 dispatch();
             } while(0));
             vm->localenv->lexical_parent = &ifn->bound;
+            vm->localenv->nargs = ifn->nargs;
             vm->ip = ifn->ip;
         } else {
             FATAL("calling a value that's not a record constructor or a function\n");
@@ -900,6 +905,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     struct env *curenv = vm->localenv = calloc(1, sizeof(struct env));
     vm->localenv->parent = oldenv;
     vm->localenv->retip = (uint32_t)-1;
+    vm->localenv->nargs = ifn->nargs;
     vm->localenv->lexical_parent = &ifn->bound;
     // setup stack/ip
     for(int64_t i = args.length-1; i >= 0; i--) {
