@@ -1,5 +1,5 @@
 [package]
-name = "rusty"
+name = "haru"
 version = "0.1.0"
 authors = ["ffwff <mogamiriver@tuta.io>"]
 edition = "2018"
