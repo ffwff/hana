@@ -1,14 +1,14 @@
 use super::ast;
 
 pub start -> Vec<std::boxed::Box<ast::AST>>
-    = statement*
+    = __ s:(statement*) __ { s }
 
 // tokens
 int_literal -> String
-    = n:$([0-9]+) { n.to_string() }
+    = n:$(#quiet<[0-9]+>) { n.to_string() }
     / #expected("integer literal")
 float_literal -> String
-    = n:$([0-9]+ "." [0-9]+) { n.to_string() }
+    = n:$(#quiet<[0-9]+ "." [0-9]+>) { n.to_string() }
     / #expected("float literal")
 
 string_literal_escape -> String
@@ -28,29 +28,31 @@ string_literal -> String
     / #expected("string literal")
 
 id_start -> String
-    = c:$([a-zA-Z$_]) { c.to_string() }
+    = c:$(#quiet<[a-zA-Z$_]>) { c.to_string() }
 id_chars -> String
-    = c:$(id_start / [0-9\?\!]) { c.to_string() }
+    = c:$(#quiet<id_start / [0-9\?\!]>) { c.to_string() }
 word -> String
     = start:id_start next:$(id_chars*) { start + next }
 keyword
     = "and" / "or" / "begin" / "end" / "if" / "else" / "while" /
       "for" / "to" / "downto" / "step" /
-      "try" / "case" / "function" / "return"
+      "try" / "case" / "as" / "in" / "function" / "return"
 identifier -> String
     = !keyword w:$(word) { w.to_string() }
+    / #expected("identifier")
 
 _ = #quiet<[ \t]*> // whitespace
+__ = #quiet<[ \t\r\n]*>
 newline
-    = _ "\r\n" / _ "\n" / !.
+    = #quiet<(_ "\r\n")+ / (_ "\n")+ / !.>
     / #expected("newline")
 eos = _ newline
 
 // values
 value -> std::boxed::Box<ast::AST>
     = s:identifier      { Box::new(ast::Identifier   { val: s }) }
-    / s:int_literal     { Box::new(ast::IntLiteral   { val: s.parse::<i64>().unwrap() }) }
     / s:float_literal   { Box::new(ast::FloatLiteral { val: s.parse::<f64>().unwrap() }) }
+    / s:int_literal     { Box::new(ast::IntLiteral   { val: s.parse::<i64>().unwrap() }) }
     / s:string_literal  { Box::new(ast::StrLiteral   { val: s }) }
     / "(" _ e:expr _ ")" { e }
 
@@ -135,11 +137,13 @@ memexpr_arm -> std::boxed::Box<ast::AST>
 
 // statements
 statement -> std::boxed::Box<ast::AST>
-    = block_stmt
-    / if_stmt
-    / while_stmt
-    / for_stmt
-    / expr_stmt
+    = _ s:(block_stmt
+         / if_stmt
+         / while_stmt
+         / for_stmt
+         / function_stmt
+         / expr_stmt)
+    { s }
 
 // block
 block_stmt -> std::boxed::Box<ast::AST>
@@ -148,10 +152,8 @@ block_stmt -> std::boxed::Box<ast::AST>
 
 // control flows
 if_stmt -> std::boxed::Box<ast::AST>
-    = "if" _ e:expr _ s:statement
-    { Box::new(ast::IfStatement{ expr: e, then: s, alt: None }) }
-    / "if" _ e:expr _ s:statement _ "else" _ a:statement
-    { Box::new(ast::IfStatement{ expr: e, then: s, alt: Some(a) }) }
+    = "if" _ e:expr _ s:statement a:(_ "else" _ s:statement { s })?
+    { Box::new(ast::IfStatement{ expr: e, then: s, alt: a }) }
 
 while_stmt -> std::boxed::Box<ast::AST>
     = "while" _ e:expr _ s:statement
@@ -175,8 +177,17 @@ for_stmt -> std::boxed::Box<ast::AST>
         })
     }
 
-try_stmt
-    = "try"
+case_stmt -> std::boxed::Box<ast::AST>
+    = "case" _ id:expr tt:(_ "as" _ t:expr { t })? eos stmt:statement
+    {
+        unimplemented!()
+    }
+
+try_stmt -> std::boxed::Box<ast::AST>
+    = "try" eos s:(statement*) c:(case_stmt*) "end" eos
+    {
+        unimplemented!()
+    }
 
 // functions
 function_arguments -> Vec<String>
