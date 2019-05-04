@@ -150,15 +150,16 @@ memexpr_arm -> std::boxed::Box<ast::AST>
 
 // statements
 statement -> std::boxed::Box<ast::AST>
-    = _ s:(block_stmt
+    = _ s:(#quiet<block_stmt
          / if_stmt
          / while_stmt
          / for_stmt
          / function_stmt
          / record_stmt
          / try_stmt
-         / expr_stmt)
+         / expr_stmt>)
     { s }
+    / #expected("statement")
 
 // block
 block_stmt -> std::boxed::Box<ast::AST>

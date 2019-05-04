@@ -12,8 +12,8 @@ fn main() {
         Err(e) => { panic!("Error reading file: {}", e); }
         Ok(_) => { }
     };
-    match ast::grammar::start(&s) {
-        Ok(r) => println!("{:?}", r),
-        Err(e) => println!("Parsed error: {}", e)
-    };
+    let prog = ast::grammar::start(&s).unwrap();
+    for stmt in prog {
+        stmt.emit();
+    }
 }

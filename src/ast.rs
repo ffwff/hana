@@ -3,12 +3,14 @@ pub mod ast {
     use std::fmt;
     use std::any::Any;
 
+
     macro_rules! as_any {
         () => (fn as_any(&self) -> &dyn Any { self });
     }
 
     pub trait AST : fmt::Debug {
         fn as_any(&self) -> &dyn Any;
+        fn emit(&self);
     }
 
     // # values
@@ -23,6 +25,9 @@ pub mod ast {
     }
     impl AST for Identifier {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
     // ## strings
     pub struct StrLiteral {
@@ -35,6 +40,9 @@ pub mod ast {
     }
     impl AST for StrLiteral {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
     // ## ints
     pub struct IntLiteral {
@@ -47,6 +55,9 @@ pub mod ast {
     }
     impl AST for IntLiteral {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
     // ## floats
     pub struct FloatLiteral {
@@ -59,10 +70,13 @@ pub mod ast {
     }
     impl AST for FloatLiteral {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // # expressions
-    // ## binexpr
+    // ## cond expr
     pub struct CondExpr {
         pub cond : std::boxed::Box<AST>,
         pub then : std::boxed::Box<AST>,
@@ -76,6 +90,9 @@ pub mod ast {
     }
     impl AST for CondExpr {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
     // ## binexpr
     #[derive(Debug, PartialEq)]
@@ -107,6 +124,9 @@ pub mod ast {
     }
     impl AST for BinExpr {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // ## member expr
@@ -122,6 +142,9 @@ pub mod ast {
     }
     impl AST for MemExpr {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // ## call expr
@@ -137,9 +160,12 @@ pub mod ast {
     }
     impl AST for CallExpr {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
-    // # statement
+    // #region statement
     // ## control flows
     // ### if
     pub struct IfStatement {
@@ -162,6 +188,9 @@ pub mod ast {
     }
     impl AST for IfStatement {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // ### while
@@ -177,6 +206,9 @@ pub mod ast {
     }
     impl AST for WhileStatement {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // ### for
@@ -203,6 +235,9 @@ pub mod ast {
     }
     impl AST for ForStatement {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // ## other
@@ -228,6 +263,9 @@ pub mod ast {
     }
     impl AST for FunctionStatement {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // ### try
@@ -242,6 +280,9 @@ pub mod ast {
     }
     impl AST for TryStatement {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
     // #### case
     pub struct CaseStatement {
@@ -256,6 +297,9 @@ pub mod ast {
     }
     impl AST for CaseStatement {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // ### expr
@@ -270,6 +314,9 @@ pub mod ast {
     }
     impl AST for ExprStatement {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
 
     // ### block
@@ -284,7 +331,11 @@ pub mod ast {
     }
     impl AST for BlockStatement {
         as_any!();
+        fn emit(&self) {
+            unimplemented!()
+        }
     }
+    // #endregion
 
 }
 
