@@ -639,8 +639,8 @@ do { \
                 FATAL("index type for array must be integer!\n");
                 return;
             }
-            const int64_t i = index.as.integer;
-            if(!(i >= 0 && i < dval.as.array->data.length)) {
+            const int64_t i = (int64_t)index.as.integer;
+            if(!(i >= 0 && i < (int64_t)dval.as.array->data.length)) {
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
                 ERROR();
             }
@@ -693,7 +693,8 @@ do { \
                 ERROR();
             }
             const int64_t i = index.as.integer;
-            if(!(i >= 0 && i < dval.as.array->data.length)) {
+            if (!(i >= 0 && i < (int64_t)dval.as.array->data.length))
+            {
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
                 ERROR();
             }

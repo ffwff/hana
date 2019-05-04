@@ -152,7 +152,7 @@ arith_op(mul, *,
                 size_t n = string_len(left->as.str)*right->as.integer;
                 struct string_header *s = string_alloc(n);
                 char *ss = string_data(s); ss[0] = 0;
-                for(size_t i = 0; i < right->as.integer; i++)
+                for(size_t i = 0; i < (size_t)right->as.integer; i++)
                     strcat(ss, string_data(left->as.str));
                 result->type = TYPE_STR;
                 result->as.str = s;
@@ -165,7 +165,8 @@ arith_op(mul, *,
         if(right->type == TYPE_INT) {
             size_t length = left->as.array->data.length*(size_t)right->as.integer;
             value_array_n(result, length);
-            for(size_t i = 0; i < right->as.integer; i++) {
+            for (size_t i = 0; i < (size_t)right->as.integer; i++)
+            {
                 for(size_t j = 0; j < left->as.array->data.length; j++) {
                     size_t index = left->as.array->data.length*i+j;
                     value_copy(&result->as.array->data.data[index], &left->as.array->data.data[j]);

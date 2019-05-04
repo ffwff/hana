@@ -7,3 +7,4 @@ build = "build.rs"
 
 [build-dependencies]
 peg = "0.5"
+cc = "1.0"

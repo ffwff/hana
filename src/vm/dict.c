@@ -7,7 +7,8 @@ void dict_init(struct dict *dict) {
     hmap_init(&dict->data);
     dict->prototypev = NULL;
 }
-void dict_free(struct dict *dict, void *p) {
+void dict_free(struct dict *dict, __attribute__((unused)) void *p)
+{
     hmap_free(&dict->data);
 }
 
