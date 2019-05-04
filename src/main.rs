@@ -1,5 +1,6 @@
 pub mod compiler;
 pub mod ast;
+pub mod vm;
 use std::io::Read;
 
 fn main() {
@@ -18,4 +19,5 @@ fn main() {
     for stmt in prog {
         stmt.emit(&mut comp);
     }
+    let vm = vm::Vm::new();
 }
