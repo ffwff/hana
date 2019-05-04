@@ -19,5 +19,5 @@ fn main() {
     for stmt in prog {
         stmt.emit(&mut comp);
     }
-    let vm = vm::Vm::new();
+    let _vm = vm::Vm::new();
 }

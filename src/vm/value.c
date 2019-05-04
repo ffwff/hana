@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <gc.h>
 #include "string_.h"
 #include "value.h"
 #include "vm.h"
@@ -20,12 +19,12 @@ void value_float(struct value *val, double data) {
 // non-primitives
 void value_str(struct value *val, const char *data) {
     val->type = TYPE_STR;
-    val->as.str = GC_malloc_atomic(string_size(data));
+    val->as.str = malloc(string_size(data));
     string_init(val->as.str, data);
 }
 void value_str_reserve(struct value *val, const size_t size) {
     val->type = TYPE_STR;
-    val->as.str = GC_malloc_atomic(sizeof(struct string_header)+size+1);
+    val->as.str = malloc(sizeof(struct string_header)+size+1);
     val->as.str->length = size;
 }
 void value_strmov(struct value *val, struct string_header *str) {
@@ -38,43 +37,35 @@ void value_native(struct value *val, value_fn fn) {
 }
 void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *env) {
     val->type = TYPE_FN;
-    val->as.ifn = GC_malloc(sizeof(struct function));
+    val->as.ifn = malloc(sizeof(struct function));
     function_init(val->as.ifn, ip, nargs, env);
-    GC_register_finalizer(val->as.ifn, (GC_finalization_proc)function_free, NULL, NULL, NULL);
+    //GC_register_finalizer(val->as.ifn, (GC_finalization_proc)function_free, NULL, NULL, NULL);
 }
+/*
 void value_dict(struct value *val) {
     val->type = TYPE_DICT;
-    val->as.dict = GC_malloc(sizeof(struct dict));
+    val->as.dict = malloc(sizeof(struct dict));
     dict_init(val->as.dict);
     GC_register_finalizer(val->as.dict, (GC_finalization_proc)dict_free, NULL, NULL, NULL);
 }
-void value_dict_copy(struct value *val, struct dict *dict) {
-    val->type = TYPE_DICT;
-    val->as.dict = dict;
-}
-void value_dict_copy_noref(struct value *val, const struct dict *dict) {
-    val->type = TYPE_DICT;
-    val->as.dict = GC_malloc(sizeof(struct dict));
-    dict_copy(val->as.dict, dict);
-    GC_register_finalizer(val->as.dict, (GC_finalization_proc)dict_free, NULL, NULL, NULL);
-}
+*/
 void value_array(struct value *val) {
     val->type = TYPE_ARRAY;
-    val->as.array = GC_malloc(sizeof(struct array_obj));
+    val->as.array = malloc(sizeof(struct array_obj));
     array_obj_init(val->as.array);
-    GC_register_finalizer(val->as.array, (GC_finalization_proc)array_obj_free, NULL, NULL, NULL);
+    //GC_register_finalizer(val->as.array, (GC_finalization_proc)array_obj_free, NULL, NULL, NULL);
 }
 void value_array_n(struct value *val, size_t n) {
     val->type = TYPE_ARRAY;
-    val->as.array = GC_malloc(sizeof(struct array_obj));
+    val->as.array = malloc(sizeof(struct array_obj));
     array_obj_init_n(val->as.array, n);
-    GC_register_finalizer(val->as.array, (GC_finalization_proc)array_obj_free, NULL, NULL, NULL);
+    //GC_register_finalizer(val->as.array, (GC_finalization_proc)array_obj_free, NULL, NULL, NULL);
 }
 void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
     val->type = TYPE_NATIVE_OBJ;
-    val->as.native = GC_malloc(sizeof(struct native_obj));
+    val->as.native = malloc(sizeof(struct native_obj));
     native_obj_init(val->as.native, data, free);
-    GC_register_finalizer(val->as.native, (GC_finalization_proc)native_obj_free, NULL, NULL, NULL);
+    //GC_register_finalizer(val->as.native, (GC_finalization_proc)native_obj_free, NULL, NULL, NULL);
 }
 
 void value_print(struct value *val) {
@@ -265,7 +256,7 @@ struct dict *value_get_prototype(const struct vm *vm, const struct value *val) {
     } else if(val->type == TYPE_ARRAY) {
         return vm->darray;
     } else if(val->type == TYPE_DICT) {
-        return val->as.dict->prototypev;
+        return dict_get_prototype(val->as.dict);
     }
     return NULL;
 }

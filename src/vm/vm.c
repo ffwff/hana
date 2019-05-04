@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "vm.h"
 #include "string_.h"
 #include "dict.h"
@@ -7,7 +8,6 @@
 #include "function.h"
 #include "exception_frame.h"
 
-#define assert(...)
 #ifdef NOLOG
 #define LOG(...)
 #else
@@ -20,7 +20,7 @@
 // notes: architecture is big endian!
 
 void vm_init(struct vm *vm) {
-    hmap_init(&vm->globalenv);
+    //hmap_init(&vm->globalenv);
     vm->error = 0;
     vm->localenv = NULL;
     vm->eframe = NULL;
@@ -35,7 +35,7 @@ void vm_init(struct vm *vm) {
 }
 
 void vm_free(struct vm *vm) {
-    hmap_free(&vm->globalenv);
+    //hmap_free(&vm->globalenv);
     while(vm->localenv != NULL) {
         struct env *localenv = vm->localenv->parent;
         env_free(vm->localenv);
@@ -362,15 +362,18 @@ void vm_execute(struct vm *vm) {
 
     // sets the value of the global variable to the top of the stack
     doop(OP_SET_GLOBAL): {
-        vm->ip++;
+        assert(0);
+        /* vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
         LOG("SET GLOBAL %s\n", key);
         hmap_set(&vm->globalenv, key, &array_top(vm->stack));
-        dispatch();
+        dispatch(); */
     }
     // pushes a copy of the value of the global variable
     doop(OP_GET_GLOBAL): {
+        assert(0);
+        /*
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
@@ -383,6 +386,7 @@ void vm_execute(struct vm *vm) {
         } else
             value_copy(&array_top(vm->stack), val);
         dispatch();
+        */
     }
 
     // pushes a function with [name], that begins at the next instruction pointer
@@ -536,6 +540,8 @@ do { \
     }
     doop(OP_MEMBER_GET):
     doop(OP_MEMBER_GET_NO_POP): {
+        assert(0);
+        /*
         const enum vm_opcode op = vm->code.data[vm->ip];
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
@@ -564,7 +570,7 @@ do { \
                 }
             }
             if(strcmp(key, "prototype") == 0) {
-                value_dict_copy(&array_top(vm->stack), dict);
+                value_copy(&array_top(vm->stack), dict);
                 dispatch();
             }
         } else {
@@ -582,6 +588,7 @@ do { \
             value_copy(&array_top(vm->stack), result);
 
         dispatch();
+        */
     }
     doop(OP_MEMBER_SET): {
         // stack: [value][dict]

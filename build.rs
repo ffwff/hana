@@ -14,5 +14,8 @@ fn main() {
             }
         }
     }
-    build.compile("hana");
+    build
+        .flag("-Wall")
+        .flag("-Werror")
+        .compile("hana");
 }

@@ -7,7 +7,6 @@ extern "C" {
 #include <stdbool.h>
 #include "array.h"
 #include "value.h"
-#include "hmap.h"
 #include "env.h"
 
 enum vm_opcode {
@@ -50,7 +49,6 @@ struct exception_frame;
 struct vm {
     uint32_t ip;
     struct env *localenv;
-    struct hmap globalenv;
     struct exception_frame *eframe;
     a_uint8 code;
     a_value stack;
