@@ -36,7 +36,8 @@ word -> String
 keyword
     = "and" / "or" / "begin" / "end" / "if" / "else" / "while" /
       "for" / "to" / "downto" / "step" /
-      "try" / "case" / "as" / "in" / "function" / "return"
+      "try" / "case" / "as" / "in" /
+      "function" / "return" / "record"
 identifier -> String
     = !keyword w:$(word) { w.to_string() }
     / #expected("identifier")
@@ -54,8 +55,20 @@ value -> std::boxed::Box<ast::AST>
     / s:float_literal   { Box::new(ast::FloatLiteral { val: s.parse::<f64>().unwrap() }) }
     / s:int_literal     { Box::new(ast::IntLiteral   { val: s.parse::<i64>().unwrap() }) }
     / s:string_literal  { Box::new(ast::StrLiteral   { val: s }) }
+    / record_expr / function_expr
     / "(" _ e:expr _ ")" { e }
 
+record_expr -> std::boxed::Box<ast::AST>
+    = "record" eos s:(statement*) "end" eos
+    {
+        unimplemented!()
+    }
+
+function_expr -> std::boxed::Box<ast::AST>
+    = "function" _ args:function_arguments eos s:(statement*) "end" eos
+    {
+        unimplemented!()
+    }
 
 // expressions
 expr -> std::boxed::Box<ast::AST> = condexpr
@@ -142,6 +155,8 @@ statement -> std::boxed::Box<ast::AST>
          / while_stmt
          / for_stmt
          / function_stmt
+         / record_stmt
+         / try_stmt
          / expr_stmt)
     { s }
 
@@ -177,16 +192,23 @@ for_stmt -> std::boxed::Box<ast::AST>
         })
     }
 
-case_stmt -> std::boxed::Box<ast::AST>
-    = "case" _ id:expr tt:(_ "as" _ t:expr { t })? eos stmt:statement
+try_stmt -> std::boxed::Box<ast::AST>
+    = "try" eos stmts:(statement*) cases:(case_stmt*) "end" eos
     {
-        unimplemented!()
+        Box::new(ast::TryStatement {
+            stmts: stmts,
+            cases: cases
+        })
     }
 
-try_stmt -> std::boxed::Box<ast::AST>
-    = "try" eos s:(statement*) c:(case_stmt*) "end" eos
+case_stmt -> std::boxed::Box<ast::CaseStatement>
+    = "case" _ etype:expr id:(_ "as" _ t:expr { t })? eos stmts:statement*
     {
-        unimplemented!()
+        Box::new(ast::CaseStatement {
+            etype: etype,
+            id: id,
+            stmts: stmts
+        })
     }
 
 // functions
@@ -207,6 +229,14 @@ function_stmt -> std::boxed::Box<ast::AST>
             stmt: s
         })
     }
+
+// record statements
+record_stmt -> std::boxed::Box<ast::AST>
+    = "record" _ id:identifier eos s:(statement*) "end" eos
+    {
+        unimplemented!()
+    }
+
 
 // expressions
 expr_stmt -> std::boxed::Box<ast::AST>
