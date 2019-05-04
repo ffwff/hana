@@ -155,6 +155,7 @@ statement -> std::boxed::Box<ast::AST>
          / while_stmt
          / for_stmt
          / function_stmt
+         / return_stmt
          / record_stmt
          / try_stmt
          / expr_stmt>)
@@ -228,6 +229,14 @@ function_stmt -> std::boxed::Box<ast::AST>
             id: id,
             args: args,
             stmt: s
+        })
+    }
+
+return_stmt -> std::boxed::Box<ast::AST>
+    = "return" _ e:expr
+    {
+        Box::new(ast::ReturnStatement {
+            expr: e
         })
     }
 

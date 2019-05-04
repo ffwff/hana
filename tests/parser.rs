@@ -1,7 +1,6 @@
 extern crate haru;
 
 // unit testing
-#[cfg(test)]
 pub mod parser_tests {
 
     use haru::ast::ast;

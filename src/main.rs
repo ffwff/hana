@@ -1,4 +1,5 @@
-mod ast;
+pub mod compiler;
+pub mod ast;
 use std::io::Read;
 
 fn main() {
@@ -13,7 +14,8 @@ fn main() {
         Ok(_) => { }
     };
     let prog = ast::grammar::start(&s).unwrap();
+    let mut comp = compiler::Compiler::new();
     for stmt in prog {
-        stmt.emit();
+        stmt.emit(&mut comp);
     }
 }

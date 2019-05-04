@@ -1,8 +1,11 @@
+use crate::compiler;
+
 // ast
+#[allow(unused_variables)]
 pub mod ast {
     use std::fmt;
     use std::any::Any;
-
+    use super::compiler;
 
     macro_rules! as_any {
         () => (fn as_any(&self) -> &dyn Any { self });
@@ -10,7 +13,7 @@ pub mod ast {
 
     pub trait AST : fmt::Debug {
         fn as_any(&self) -> &dyn Any;
-        fn emit(&self);
+        fn emit(&self, c : &mut compiler::Compiler);
     }
 
     // # values
@@ -25,7 +28,7 @@ pub mod ast {
     }
     impl AST for Identifier {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -40,7 +43,7 @@ pub mod ast {
     }
     impl AST for StrLiteral {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -55,7 +58,7 @@ pub mod ast {
     }
     impl AST for IntLiteral {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -70,7 +73,7 @@ pub mod ast {
     }
     impl AST for FloatLiteral {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -90,7 +93,7 @@ pub mod ast {
     }
     impl AST for CondExpr {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -124,7 +127,7 @@ pub mod ast {
     }
     impl AST for BinExpr {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -142,7 +145,7 @@ pub mod ast {
     }
     impl AST for MemExpr {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -160,7 +163,7 @@ pub mod ast {
     }
     impl AST for CallExpr {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -188,7 +191,7 @@ pub mod ast {
     }
     impl AST for IfStatement {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -206,7 +209,7 @@ pub mod ast {
     }
     impl AST for WhileStatement {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -235,7 +238,7 @@ pub mod ast {
     }
     impl AST for ForStatement {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -263,7 +266,22 @@ pub mod ast {
     }
     impl AST for FunctionStatement {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
+            unimplemented!()
+        }
+    }
+    // #### return
+    pub struct ReturnStatement {
+        pub expr : std::boxed::Box<AST>,
+    }
+    impl fmt::Debug for ReturnStatement {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            unimplemented!()
+        }
+    }
+    impl AST for ReturnStatement {
+        as_any!();
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -280,7 +298,7 @@ pub mod ast {
     }
     impl AST for TryStatement {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -297,7 +315,7 @@ pub mod ast {
     }
     impl AST for CaseStatement {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -314,7 +332,7 @@ pub mod ast {
     }
     impl AST for ExprStatement {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
@@ -331,7 +349,7 @@ pub mod ast {
     }
     impl AST for BlockStatement {
         as_any!();
-        fn emit(&self) {
+        fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
