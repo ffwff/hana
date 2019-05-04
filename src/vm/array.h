@@ -1,7 +1,4 @@
 #pragma once
-#ifdef __cplusplus
-extern "C" {
-#endif
 #include <stdlib.h>
 #include <string.h>
 
@@ -30,16 +27,11 @@ extern "C" {
         free(array.data);   \
     } while (0)
 
-#ifdef __cplusplus
-#define VOID_CAST(data,x) (decltype(data))(x)
-#else
-#define VOID_CAST(data,x) x
-#endif
 #define array_push(array, element)                   \
     do {                                             \
         if(array.length == array.capacity) { \
             array.capacity *= 2; \
-            array.data = VOID_CAST(array.data, realloc(array.data, sizeof(*array.data)*array.capacity)); \
+            array.data = realloc(array.data, sizeof(*array.data)*array.capacity); \
         } \
         array.data[array.length] = element; \
         array.length++; \
@@ -48,28 +40,28 @@ extern "C" {
     do {                                             \
         if(array->length == array->capacity) { \
             array->capacity *= 2; \
-            array->data = VOID_CAST(array->data, realloc(array->data, sizeof(*array->data)*array->capacity)); \
+            array->data = realloc(array->data, sizeof(*array->data)*array->capacity); \
         } \
         array->data[array->length] = element; \
         array->length++; \
     } while (0)
 
 #define array_append(array, src) \
-do { \
-    if(array.length+src.length > array.capacity) { \
-        array.capacity = array.length+src.length; \
-        array.data = VOID_CAST(array.data, realloc(array.data, sizeof(*array.data)*array.capacity)); \
-    } \
-    memcpy(array.data[array.length], src.data, sizeof(*src.data)*src.length); \
-} while (0)
+    do { \
+        if(array.length+src.length > array.capacity) { \
+            array.capacity = array.length+src.length; \
+            array.data = array.data, realloc(array.data, sizeof(*array.data)*array.capacity); \
+        } \
+        memcpy(array.data[array.length], src.data, sizeof(*src.data)*src.length); \
+    } while (0)
 
 #define array_grow_by(array, n) \
-do { \
-    if(array.length+n > array.capacity) { \
-        array.capacity = array.length+n; \
-        array.data = VOID_CAST(array.data, realloc(array.data, sizeof(*array.data)*array.capacity)); \
-    } \
-} while (0)
+    do { \
+        if(array.length+n > array.capacity) { \
+            array.capacity = array.length+n; \
+            array.data = realloc(array.data, sizeof(*array.data)*array.capacity); \
+        } \
+    } while (0)
 
 #define array_pop(array) \
     do {                 \
@@ -77,7 +69,3 @@ do { \
     } while(0)
 
 #define array_top(array) array.data[array.length-1]
-
-#ifdef __cplusplus
-}
-#endif

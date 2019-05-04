@@ -3,7 +3,8 @@ extern crate libc;
 
 #[repr(C)]
 pub struct CArray<T> {
-    data: *mut T,
+    data: *mut T, // NOTE: I don't free this because hopefully the
+                  // VM should automatically call array_free
     _len: usize,
     capacity: usize,
 }
@@ -33,13 +34,68 @@ impl<T> CArray<T> {
     pub fn len(&self) -> usize {
         self._len
     }
+
+    pub fn top(&self) -> &T {
+        use std::mem::size_of;
+        unsafe {
+            &(*self.data.add((self._len-1)*size_of::<T>()))
+        }
+    }
 }
 
 //
+#[repr(u8)]
+#[allow(non_camel_case_types, dead_code)]
+#[derive(PartialEq)]
+enum _valueType {
+    TYPE_NIL        = 0,
+    TYPE_INT        = 1,
+    TYPE_FLOAT      = 2,
+    TYPE_NATIVE_FN  = 3,
+    TYPE_FN         = 4,
+    TYPE_STR        = 5,
+    TYPE_DICT       = 6,
+    TYPE_ARRAY      = 7,
+    TYPE_NATIVE_OBJ = 8,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum Value {
+    Nil,
+    Int(i64),
+    Float(f64),
+    NativeFn,
+    Fn,
+    Str(String),
+    Dict,
+    Array,
+    NativeObj
+}
+
 #[repr(C)]
-pub struct Value {
-    reserved : u64,
-    r#type : u8
+pub struct NativeValue {
+    data : u64,
+    r#type : _valueType
+}
+
+impl NativeValue {
+
+    pub fn unwrap(&self) -> Value {
+        use std::mem::transmute;
+        #[allow(non_camel_case_types)]
+        match &self.r#type {
+_valueType::TYPE_NIL        => Value::Nil,
+_valueType::TYPE_INT        => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
+_valueType::TYPE_FLOAT      => unsafe { Value::Float(transmute::<u64, f64>(self.data)) },
+_valueType::TYPE_NATIVE_FN  => Value::NativeFn,
+_valueType::TYPE_FN         => Value::Fn,
+_valueType::TYPE_STR        => Value::Str("".to_string()),
+_valueType::TYPE_DICT       => Value::Dict,
+_valueType::TYPE_ARRAY      => Value::Array,
+_valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
+        }
+    }
+
 }
 
 //
@@ -85,7 +141,7 @@ pub struct Vm {
     pub localenv : *mut i32,
     pub eframe : *mut i32,
     pub code : CArray<VmOpcode>,
-    pub stack : CArray<Value>,
+    pub stack : CArray<NativeValue>,
     pub dstr: *mut i32,
     pub dint: *mut i32,
     pub dfloat: *mut i32,
@@ -157,6 +213,9 @@ impl std::ops::Drop for Vm {
     }
 }
 
+#[allow(unused_attributes)]
+pub mod foreignc {
+
 // values
 // dicts
 #[no_mangle]
@@ -165,6 +224,7 @@ pub extern "C" fn value_dict() {
 }
 
 #[no_mangle]
+
 pub extern "C" fn dict_set() {
     unimplemented!()
 }
@@ -183,4 +243,6 @@ pub extern "C" fn dict_get_prototype() {
 #[no_mangle]
 pub extern "C" fn string_alloc() {
     unimplemented!()
+}
+
 }
