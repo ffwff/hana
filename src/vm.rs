@@ -8,7 +8,7 @@ struct CArray<T> {
 }
 
 impl<T> CArray<T> {
-    fn new_empty() -> CArray<T> {
+    fn new_nil() -> CArray<T> {
         CArray::<T> {
             data: null_mut(),
             len: 0,
@@ -53,8 +53,8 @@ impl Vm {
             localenv: null_mut(),
             globalenv: null_mut(),
             eframe: null_mut(),
-            code: CArray::new_empty(),
-            stack: CArray::new_empty(),
+            code: CArray::new_nil(),
+            stack: CArray::new_nil(),
             dstr: null_mut(),
             dint: null_mut(),
             dfloat: null_mut(),

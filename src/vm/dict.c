@@ -33,7 +33,7 @@ void dict_set(struct dict *dict, const char *key, struct value *val) {
         if(strcmp(key, "prototype") == 0)
             dict->prototypev = NULL;
     } else {
-        struct value *dval = _hmap_set(&dict->data, key, val, 0);
+        struct value *dval = hmap_set(&dict->data, key, val);
         if(strcmp(key, "prototype") == 0 && val->type == TYPE_DICT)
             dict->prototypev = dval->as.dict;
     }
