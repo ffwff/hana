@@ -1,9 +1,0 @@
-[submodule "extern/incbin"]
-	path = extern/incbin
-	url = https://github.com/graphitemaster/incbin
-[submodule "extern/xxHash"]
-	path = extern/xxHash
-	url = https://github.com/Cyan4973/xxHash
-[submodule "extern/BitArray"]
-	path = extern/BitArray
-	url = https://github.com/noporpoise/BitArray.git

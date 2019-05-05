@@ -1,0 +1,267 @@
+use super::ast;
+
+pub start -> Vec<std::boxed::Box<ast::AST>>
+    = __ s:(statement*) __ { s }
+
+// tokens
+int_literal -> String
+    = n:$(#quiet<[0-9]+>) { n.to_string() }
+    / #expected("integer literal")
+float_literal -> String
+    = n:$(#quiet<[0-9]+ "." [0-9]+>) { n.to_string() }
+    / #expected("float literal")
+
+string_literal_escape -> String
+    = "\\r"  { "\r".to_string() }
+    / "\\n"  { "\n".to_string() }
+    / "\\\"" { "\"".to_string() }
+    / "\\'"  { "'".to_string() }
+string_literal_char -> String
+    = s:$([^\"]) { s.to_owned() }
+    / string_literal_escape
+string_literal_char_single -> String
+    = s:$([^']) { s.to_owned() }
+    / string_literal_escape
+string_literal -> String
+    = "\"" s:$(string_literal_char*) "\"" { s.to_owned() }
+    / "'" s:$(string_literal_char_single*) "'" { s.to_owned() }
+    / #expected("string literal")
+
+id_start -> String
+    = c:$(#quiet<[a-zA-Z$_]>) { c.to_string() }
+id_chars -> String
+    = c:$(#quiet<id_start / [0-9\?\!]>) { c.to_string() }
+word -> String
+    = start:id_start next:$(id_chars*) { start + next }
+keyword
+    = "and" / "or" / "begin" / "end" / "if" / "else" / "while" /
+      "for" / "to" / "downto" / "step" /
+      "try" / "case" / "as" / "in" /
+      "function" / "return" / "record" / "not"
+identifier -> String
+    = !keyword w:$(word) { w.to_string() }
+    / #expected("identifier")
+
+_ = #quiet<[ \t]*> // whitespace
+__ = #quiet<[ \t\r\n]*>
+newline
+    = #quiet<(_ "\r\n")+ / (_ "\n")+ / !.>
+    / #expected("newline")
+eos = _ newline
+
+// values
+value -> std::boxed::Box<ast::AST>
+    = s:identifier      { Box::new(ast::Identifier   { val: s }) }
+    / s:float_literal   { Box::new(ast::FloatLiteral { val: s.parse::<f64>().unwrap() }) }
+    / s:int_literal     { Box::new(ast::IntLiteral   { val: s.parse::<i64>().unwrap() }) }
+    / s:string_literal  { Box::new(ast::StrLiteral   { val: s }) }
+    / record_expr / function_expr
+    / "(" _ e:expr _ ")" { e }
+
+unary_expr -> std::boxed::Box<ast::AST>
+    = op:$("not" / "-") __ val:value
+    {
+        Box::new(ast::UnaryExpr {
+            op: match op {
+                "not" => ast::UnaryOp::Not,
+                "-" => ast::UnaryOp::Neg,
+                &_ => unreachable!()
+            },
+            val: val
+        })
+    }
+    / value
+
+record_expr -> std::boxed::Box<ast::AST>
+    = "record" eos s:(statement*) "end" eos
+    {
+        unimplemented!()
+    }
+
+function_expr -> std::boxed::Box<ast::AST>
+    = "function" _ args:function_arguments eos s:(statement*) "end" eos
+    {
+        unimplemented!()
+    }
+
+// expressions
+expr -> std::boxed::Box<ast::AST> = condexpr
+condexpr -> std::boxed::Box<ast::AST>
+    = cond:binexpr _ "?" _ then:binexpr _ ":" _ alt:binexpr
+    {
+        Box::new(ast::CondExpr {
+            cond: cond,
+            then: then,
+            alt: alt
+        })
+    }
+    / binexpr
+
+binexpr -> std::boxed::Box<ast::AST>
+    = #infix<callexpr> {
+        #L x (_ "="  _) y  { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Assign }) }
+           x (_ "+=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Adds }) }
+           x (_ "-=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Subs }) }
+           x (_ "*=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Muls }) }
+           x (_ "/=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Divs }) }
+           x (_ "%=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mods }) }
+
+        #L x (_ "==" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Eq }) }
+           x (_ "!=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Neq }) }
+           x (_ ">" _)  y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Gt }) }
+           x (_ "<" _)  y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Lt }) }
+           x (_ ">=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Geq }) }
+           x (_ "<=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Leq }) }
+
+        #L x (_ "and" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::And }) }
+           x (_ "or"  _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Or }) }
+
+        #L x (_ "+" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Add }) }
+           x (_ "-" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Sub }) }
+
+        #L x (_ "*" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mul }) }
+           x (_ "/" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Div }) }
+           x (_ "%" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mod }) }
+      }
+    / callexpr
+
+callexpr -> std::boxed::Box<ast::AST>
+    = left:memexpr _ "(" _ farg:memexpr larg:(_ "," _ e:memexpr { e })* _ ")"
+    {
+        let mut args = vec![farg];
+        for arg in larg {
+            args.push(arg);
+        }
+        Box::new(ast::CallExpr {
+            callee: left,
+            args: args
+        })
+    }
+    / left:memexpr _ "(" _ ")"
+    {
+        Box::new(ast::CallExpr {
+            callee: left,
+            args: Vec::new()
+        })
+    }
+    / memexpr
+
+memexpr -> std::boxed::Box<ast::AST>
+    = _left:value _right:memexpr_arm+
+    {
+        let mut left = _left;
+        for right in _right {
+            left = Box::new(ast::MemExpr {
+                left: left,
+                right: right });
+        }
+        left
+    }
+    / value
+memexpr_arm -> std::boxed::Box<ast::AST>
+    = _ "." _ id:identifier { Box::new(ast::Identifier   { val: id }) }
+    / _ "[" _ e:expr _ "]" { e }
+
+// statements
+statement -> std::boxed::Box<ast::AST>
+    = _ s:(#quiet<block_stmt
+         / if_stmt
+         / while_stmt
+         / for_stmt
+         / function_stmt
+         / return_stmt
+         / record_stmt
+         / try_stmt
+         / expr_stmt>)
+    { s }
+    / #expected("statement")
+
+// block
+block_stmt -> std::boxed::Box<ast::AST>
+    = "begin" eos s:(statement*) "end" eos
+    { Box::new(ast::BlockStatement{ stmts: s }) }
+
+// control flows
+if_stmt -> std::boxed::Box<ast::AST>
+    = "if" _ e:expr _ s:statement a:(_ "else" _ s:statement { s })?
+    { Box::new(ast::IfStatement{ expr: e, then: s, alt: a }) }
+
+while_stmt -> std::boxed::Box<ast::AST>
+    = "while" _ e:expr _ s:statement
+    { Box::new(ast::WhileStatement{ expr: e, then: s }) }
+
+for_stmt -> std::boxed::Box<ast::AST>
+    = "for" _ id:memexpr _ "=" _ from:expr  _
+       dir:("to" { 1 }/"downto" {-1}) _ to:expr step:(_ "step" _ e:expr {e})? _
+       s:statement
+    {
+        Box::new(ast::ForStatement {
+            id: id,
+            from: from,
+            to: to,
+            step: match step {
+                Some(e) => e,
+                None => Box::new(ast::IntLiteral { val: dir })
+            },
+            is_down: dir == -1,
+            stmt: s
+        })
+    }
+
+try_stmt -> std::boxed::Box<ast::AST>
+    = "try" eos stmts:(statement*) cases:(case_stmt*) "end" eos
+    {
+        Box::new(ast::TryStatement {
+            stmts: stmts,
+            cases: cases
+        })
+    }
+
+case_stmt -> std::boxed::Box<ast::CaseStatement>
+    = "case" _ etype:expr id:(_ "as" _ t:expr { t })? eos stmts:statement*
+    {
+        Box::new(ast::CaseStatement {
+            etype: etype,
+            id: id,
+            stmts: stmts
+        })
+    }
+
+// functions
+function_arguments -> Vec<String>
+    = "(" _ fid:identifier lid:(_ "," _ id:identifier { id })* _ ")"
+    {
+        let mut v = vec![fid.to_string()];
+        for id in lid { v.push(id.to_string()); }
+        v
+    }
+
+function_stmt -> std::boxed::Box<ast::AST>
+    = "function" _ id:identifier _ args:function_arguments _ s:statement
+    {
+        Box::new(ast::FunctionStatement{
+            id: id,
+            args: args,
+            stmt: s
+        })
+    }
+
+return_stmt -> std::boxed::Box<ast::AST>
+    = "return" _ e:expr
+    {
+        Box::new(ast::ReturnStatement {
+            expr: e
+        })
+    }
+
+// record statements
+record_stmt -> std::boxed::Box<ast::AST>
+    = "record" _ id:identifier eos s:(statement*) "end" eos
+    {
+        unimplemented!()
+    }
+
+
+// expressions
+expr_stmt -> std::boxed::Box<ast::AST>
+    = s:expr eos { Box::new(ast::ExprStatement{ expr: s }) }

@@ -1,0 +1,13 @@
+[package]
+name = "haru"
+version = "0.1.0"
+authors = ["ffwff <mogamiriver@tuta.io>"]
+edition = "2018"
+build = "build.rs"
+
+[dependencies]
+libc = "0.2.0"
+
+[build-dependencies]
+peg = "0.5"
+cc = "1.0"

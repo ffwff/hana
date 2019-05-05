@@ -1,5 +1,5 @@
-*.so
-main
-build
 *.txt
+experiment
+target
 .vscode
+*.lock
