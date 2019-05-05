@@ -157,7 +157,7 @@ for i=0 to 100 begin
 end
 ");
         let stmt = cast_box!(progast[0], ast::ForStatement);
-        assert_eq!(cast_box!(stmt.id, ast::Identifier).val, "i");
+        assert_eq!(stmt.id, "i");
         assert_eq!(cast_box!(stmt.from, ast::IntLiteral).val, 0);
         assert_eq!(cast_box!(stmt.to, ast::IntLiteral).val, 100);
     }

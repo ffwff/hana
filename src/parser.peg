@@ -191,8 +191,8 @@ while_stmt -> std::boxed::Box<ast::AST>
     { Box::new(ast::WhileStatement{ expr: e, then: s }) }
 
 for_stmt -> std::boxed::Box<ast::AST>
-    = "for" _ id:memexpr _ "=" _ from:expr  _
-       dir:("to" { 1 }/"downto" {-1}) _ to:expr step:(_ "step" _ e:expr {e})? _
+    = "for" _ id:identifier _ "=" _ from:expr  _
+       dir:("to" { true }/"downto" { false }) _ to:expr step:(_ "step" _ e:expr {e})? _
        s:statement
     {
         Box::new(ast::ForStatement {
@@ -201,9 +201,9 @@ for_stmt -> std::boxed::Box<ast::AST>
             to: to,
             step: match step {
                 Some(e) => e,
-                None => Box::new(ast::IntLiteral { val: dir })
+                None => Box::new(ast::IntLiteral { val: 1 })
             },
-            is_down: dir == -1,
+            is_up: dir,
             stmt: s
         })
     }
