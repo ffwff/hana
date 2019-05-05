@@ -1,4 +1,7 @@
-pub mod foreignc;
+pub mod cnativeval;
+pub mod value;
+pub mod chmap;
 pub mod carray;
-pub mod stringheader;
+pub mod cstring;
+pub mod foreignc;
 pub mod vm;

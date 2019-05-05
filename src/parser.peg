@@ -37,7 +37,7 @@ keyword
     = "and" / "or" / "begin" / "end" / "if" / "else" / "while" /
       "for" / "to" / "downto" / "step" /
       "try" / "case" / "as" / "in" /
-      "function" / "return" / "record"
+      "function" / "return" / "record" / "not"
 identifier -> String
     = !keyword w:$(word) { w.to_string() }
     / #expected("identifier")
@@ -57,6 +57,20 @@ value -> std::boxed::Box<ast::AST>
     / s:string_literal  { Box::new(ast::StrLiteral   { val: s }) }
     / record_expr / function_expr
     / "(" _ e:expr _ ")" { e }
+
+unary_expr -> std::boxed::Box<ast::AST>
+    = op:$("not" / "-") __ val:value
+    {
+        Box::new(ast::UnaryExpr {
+            op: match op {
+                "not" => ast::UnaryOp::Not,
+                "-" => ast::UnaryOp::Neg,
+                &_ => unreachable!()
+            },
+            val: val
+        })
+    }
+    / value
 
 record_expr -> std::boxed::Box<ast::AST>
     = "record" eos s:(statement*) "end" eos

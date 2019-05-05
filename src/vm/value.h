@@ -54,7 +54,7 @@ void value_native_obj(struct value*, void *data, native_obj_free_fn free);
 
 void value_print(struct value*);
 
-void value_copy(struct value *dst, struct value *src);
+void value_copy(struct value *dst, const struct value *src);
 
 void value_add(struct value *result, const struct value *left, const struct value *right);
 void value_sub(struct value *result, const struct value *left, const struct value *right);

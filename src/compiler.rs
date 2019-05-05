@@ -1,4 +1,5 @@
 use crate::vm::Vm;
+use crate::vm::VmOpcode;
 
 // private
 struct Scope {
@@ -11,10 +12,6 @@ impl Scope {
 }
 
 // public
-pub struct Identifier {
-    pub slot : u8,
-    pub relascope : u8
-}
 pub struct Compiler {
     scopes : Vec<Scope>,
     pub vm : Vm
@@ -27,21 +24,31 @@ impl Compiler {
         }
     }
 
-    pub fn get_local(&self, var : String) -> Identifier {
+    // local
+    fn get_local(&self, var : String) -> Option<(u8, u8)> {
         let mut relascope : u8 = 0;
         for scope in self.scopes.iter().rev() {
             if let Some(slot) = scope.vars.iter().position(|x| *x == var) {
-                return Identifier{ slot: slot as u8, relascope: relascope };
+                return Some((slot as u8, relascope));
             }
             relascope += 1;
         }
-        panic!("can't get local")
+        None
     }
 
-    pub fn set_local(&mut self, var : String) {
+    fn set_local(&mut self, var : String) -> Option<(u8, u8)> {
         if let Some(last) = self.scopes.last_mut() {
             last.vars.push(var);
+            let idx = self.scopes.len()-1;
+            return Some((idx as u8, 0));
         }
-        panic!("scope is empty");
+        None
+    }
+
+    // emit set var
+    pub fn emit_set_var(&mut self, var : String) {
+        // TODO: set locals
+        self.vm.code.push(VmOpcode::OP_SET_GLOBAL);
+        self.vm.cpushs(var);
     }
 }

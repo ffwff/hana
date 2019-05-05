@@ -67,4 +67,21 @@ pub mod vm_tests {
     }
     // #endregion
 
+    // #region vars
+    #[test]
+    fn global_var() {
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSH8);
+        vm.cpush8(42);
+        vm.code.push(VmOpcode::OP_SET_GLOBAL);
+        vm.cpushs("abc");
+        vm.code.push(VmOpcode::OP_POP);
+        vm.code.push(VmOpcode::OP_GET_GLOBAL);
+        vm.cpushs("abc");
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Int(42));
+    }
+    // #endregion
+
 }

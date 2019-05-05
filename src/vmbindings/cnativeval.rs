@@ -1,0 +1,51 @@
+use super::value::Value;
+
+//
+#[repr(u8)]
+#[allow(non_camel_case_types, dead_code)]
+#[derive(PartialEq, Clone)]
+enum _valueType {
+    TYPE_NIL        = 0,
+    TYPE_INT        = 1,
+    TYPE_FLOAT      = 2,
+    TYPE_NATIVE_FN  = 3,
+    TYPE_FN         = 4,
+    TYPE_STR        = 5,
+    TYPE_DICT       = 6,
+    TYPE_ARRAY      = 7,
+    TYPE_NATIVE_OBJ = 8,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct NativeValue {
+    data : u64,
+    r#type : _valueType
+}
+
+impl NativeValue {
+
+    pub fn unwrap(&self) -> Value {
+        use std::mem::transmute;
+        #[allow(non_camel_case_types)]
+        match &self.r#type {
+_valueType::TYPE_NIL        => Value::Nil,
+_valueType::TYPE_INT        => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
+_valueType::TYPE_FLOAT      => unsafe { Value::Float(transmute::<u64, f64>(self.data)) },
+_valueType::TYPE_NATIVE_FN  => Value::NativeFn,
+_valueType::TYPE_FN         => Value::Fn,
+_valueType::TYPE_STR        => unsafe {
+        use std::mem::size_of;
+        use super::cstring::StringHeader;
+        use std::ffi::CStr;
+
+        let cstr = CStr::from_ptr(transmute::<u64,*const libc::c_char>(self.data).add(size_of::<StringHeader>()));
+        Value::Str(cstr.to_str().unwrap())
+    },
+_valueType::TYPE_DICT       => Value::Dict,
+_valueType::TYPE_ARRAY      => Value::Array,
+_valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
+        }
+    }
+
+}

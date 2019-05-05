@@ -63,7 +63,9 @@ pub mod ast {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
             c.vm.code.push(VmOpcode::OP_PUSH64);
-            c.vm.cpush64(self.val);
+            unsafe {
+                c.vm.cpush64(std::mem::transmute::<i64, u64>(self.val));
+            }
         }
     }
     // ## floats
@@ -84,6 +86,25 @@ pub mod ast {
     }
 
     // # expressions
+    // ## unary expr
+    pub enum UnaryOp {
+        Not, Neg
+    }
+    pub struct UnaryExpr {
+        pub op : UnaryOp,
+        pub val : std::boxed::Box<AST>,
+    }
+    impl fmt::Debug for UnaryExpr {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            unimplemented!()
+        }
+    }
+    impl AST for UnaryExpr {
+        as_any!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            unimplemented!()
+        }
+    }
     // ## cond expr
     pub struct CondExpr {
         pub cond : std::boxed::Box<AST>,
@@ -133,10 +154,36 @@ pub mod ast {
     impl AST for BinExpr {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
+            macro_rules! arithop_do {
+                ($x:expr) => {{
+                    self.left.emit(c);
+                    c.vm.code.push($x);
+                }};
+            }
             self.right.emit(c);
-            self.left.emit(c);
-            match &self.op {
-                BinOp::Add => c.vm.code.push(VmOpcode::OP_ADD),
+            match self.op {
+                // assignment
+                BinOp::Assign => {
+                    let any = self.left.as_any();
+                    if let Some(left) = any.downcast_ref::<Identifier>() {
+                        c.emit_set_var(left.val.clone());
+                    } else if let Some(left) = any.downcast_ref::<MemExpr>() {
+                        unimplemented!()
+                    }
+                },
+                // basic manip operators
+                BinOp::Add => arithop_do!(VmOpcode::OP_ADD),
+                BinOp::Sub => arithop_do!(VmOpcode::OP_SUB),
+                BinOp::Mul => arithop_do!(VmOpcode::OP_MUL),
+                BinOp::Div => arithop_do!(VmOpcode::OP_DIV),
+                BinOp::And => arithop_do!(VmOpcode::OP_AND),
+                BinOp::Or  => arithop_do!(VmOpcode::OP_OR ),
+                BinOp::Eq  => arithop_do!(VmOpcode::OP_EQ ),
+                BinOp::Neq => arithop_do!(VmOpcode::OP_NEQ),
+                BinOp::Gt  => arithop_do!(VmOpcode::OP_GT ),
+                BinOp::Lt  => arithop_do!(VmOpcode::OP_LT ),
+                BinOp::Geq => arithop_do!(VmOpcode::OP_GEQ),
+                BinOp::Leq => arithop_do!(VmOpcode::OP_LEQ),
                 _ => unimplemented!()
             }
         }

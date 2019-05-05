@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "vm.h"
 #include "string_.h"
+#include "hmap.h"
 #include "dict.h"
 #include "array_obj.h"
 #include "function.h"
@@ -23,6 +24,7 @@ void vm_init(struct vm *vm) {
     //hmap_init(&vm->globalenv);
     vm->error = 0;
     vm->localenv = NULL;
+    vm->globalenv = hmap_malloc();
     vm->eframe = NULL;
     vm->code = (a_uint8)array_init(uint8_t);
     vm->stack = (a_value){
@@ -35,13 +37,13 @@ void vm_init(struct vm *vm) {
 }
 
 void vm_free(struct vm *vm) {
-    //hmap_free(&vm->globalenv);
     while(vm->localenv != NULL) {
         struct env *localenv = vm->localenv->parent;
         env_free(vm->localenv);
         free(vm->localenv);
         vm->localenv = localenv;
     }
+    hmap_free(vm->globalenv);
     while(vm->eframe != NULL) {
         struct exception_frame *eframe = vm->eframe->prev;
         exception_frame_free(vm->eframe);
@@ -362,31 +364,27 @@ void vm_execute(struct vm *vm) {
 
     // sets the value of the global variable to the top of the stack
     doop(OP_SET_GLOBAL): {
-        assert(0);
-        /* vm->ip++;
+        vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
-        LOG("SET GLOBAL %s\n", key);
-        hmap_set(&vm->globalenv, key, &array_top(vm->stack));
-        dispatch(); */
+        LOG("SET GLOBAL %s %p\n", key, vm->globalenv);
+        hmap_set(vm->globalenv, key, &array_top(vm->stack));
+        dispatch();
     }
     // pushes a copy of the value of the global variable
     doop(OP_GET_GLOBAL): {
-        assert(0);
-        /*
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
         LOG("GET GLOBAL %s\n", key);
         array_push(vm->stack, (struct value){});
-        struct value *val = hmap_get(&vm->globalenv, key);
+        const struct value *val = hmap_get(vm->globalenv, key);
         if(val == NULL) {
             FATAL("no global variable named %s!\n", key);
             ERROR();
         } else
             value_copy(&array_top(vm->stack), val);
         dispatch();
-        */
     }
 
     // pushes a function with [name], that begins at the next instruction pointer

@@ -90,7 +90,7 @@ void value_print(struct value *val) {
     }
 }
 
-void value_copy(struct value *dst, struct value *src) {
+void value_copy(struct value *dst, const struct value *src) {
     dst->type = src->type;
     dst->as = src->as;
 }

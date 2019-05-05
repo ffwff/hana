@@ -1,68 +1,9 @@
 use std::ptr::null_mut;
 use std::ffi::CString;
-use std::ffi::CStr;
 extern crate libc;
 use super::carray::CArray;
-use super::stringheader::StringHeader;
-
-//
-#[repr(u8)]
-#[allow(non_camel_case_types, dead_code)]
-#[derive(PartialEq)]
-enum _valueType {
-    TYPE_NIL        = 0,
-    TYPE_INT        = 1,
-    TYPE_FLOAT      = 2,
-    TYPE_NATIVE_FN  = 3,
-    TYPE_FN         = 4,
-    TYPE_STR        = 5,
-    TYPE_DICT       = 6,
-    TYPE_ARRAY      = 7,
-    TYPE_NATIVE_OBJ = 8,
-}
-
-#[derive(PartialEq, Debug)]
-pub enum Value {
-    Nil,
-    Int(i64),
-    Float(f64),
-    NativeFn,
-    Fn,
-    Str(&'static str),
-    Dict,
-    Array,
-    NativeObj
-}
-
-#[repr(C)]
-pub struct NativeValue {
-    data : u64,
-    r#type : _valueType
-}
-
-impl NativeValue {
-
-    pub fn unwrap(&self) -> Value {
-        use std::mem::transmute;
-        #[allow(non_camel_case_types)]
-        match &self.r#type {
-_valueType::TYPE_NIL        => Value::Nil,
-_valueType::TYPE_INT        => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
-_valueType::TYPE_FLOAT      => unsafe { Value::Float(transmute::<u64, f64>(self.data)) },
-_valueType::TYPE_NATIVE_FN  => Value::NativeFn,
-_valueType::TYPE_FN         => Value::Fn,
-_valueType::TYPE_STR        => unsafe {
-        use std::mem::size_of;
-        let cstr = CStr::from_ptr(transmute::<u64,*const libc::c_char>(self.data).add(size_of::<StringHeader>()));
-        Value::Str(cstr.to_str().unwrap())
-    },
-_valueType::TYPE_DICT       => Value::Dict,
-_valueType::TYPE_ARRAY      => Value::Array,
-_valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
-        }
-    }
-
-}
+use super::cnativeval::NativeValue;
+pub use super::value::Value;
 
 //
 #[repr(u8)]
@@ -104,8 +45,9 @@ pub enum VmOpcode {
 pub struct Vm {
     // TODO: fill in all these *mut i32
     pub ip : u32,
-    pub localenv : *mut i32,
-    pub eframe : *mut i32,
+    localenv : *mut i32,
+    globalenv : *mut i32,
+    eframe : *mut i32,
     pub code : CArray<VmOpcode>,
     pub stack : CArray<NativeValue>,
     pub dstr: *mut i32,
@@ -136,6 +78,7 @@ impl Vm {
         let mut vm = Vm{
             ip: 0,
             localenv: null_mut(),
+            globalenv: null_mut(),
             eframe: null_mut(),
             code: CArray::new_nil(),
             stack: CArray::new_nil(),
