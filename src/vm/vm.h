@@ -74,6 +74,7 @@ void vm_code_pushstr(struct vm *vm, const char *);
 void vm_code_pushf32(struct vm *vm, float f);
 void vm_code_pushf64(struct vm *vm, double f);
 void vm_code_fill(struct vm *vm, uint32_t, uint32_t);
+void vm_code_fill16(struct vm *vm, uint32_t, uint16_t);
 
 #ifdef __cplusplus
 }

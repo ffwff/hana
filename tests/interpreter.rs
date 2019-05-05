@@ -95,4 +95,18 @@ end
     }
     // #endregion
 
+    // #region function statement
+    #[test]
+    fn function_stmt() {
+        let mut vm : Vm = eval!(vm, "
+function A() begin
+end
+");
+        assert!(match vm.global().get("A").unwrap().unwrap() {
+            Value::Fn => true,
+            _ => false
+        });
+    }
+    // #endregion
+
 }

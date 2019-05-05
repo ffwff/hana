@@ -73,6 +73,7 @@ extern "C" {
     fn vm_code_pushf32(vm: *mut Vm, n : f32);
     fn vm_code_pushf64(vm: *mut Vm, n : f64);
     fn vm_code_fill(vm: *mut Vm, pos : u32, len : u32);
+    fn vm_code_fill16(vm: *mut Vm, pos : u32, len : u16);
 }
 
 impl Vm {
@@ -112,6 +113,9 @@ impl Vm {
 
     pub fn cfill_label(&mut self, pos: usize, label: usize) {
         unsafe{ vm_code_fill(self, pos as u32, label as u32); }
+    }
+    pub fn cfill_label16(&mut self, pos: usize, label: u16) {
+        unsafe{ vm_code_fill16(self, pos as u32, label); }
     }
 
     // globals

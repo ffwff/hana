@@ -410,7 +410,38 @@ pub mod ast {
     impl AST for FunctionStatement {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            // definition
+            c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
+            c.vm.cpush16(self.args.len() as u16);
+            let function_end = c.reserve_label();
+            c.set_local(self.id.clone());
+
+            // body
+            c.scope();
+            c.vm.code.push(VmOpcode::OP_ENV_NEW);
+            let nslot_label = c.reserve_label16();
+            for arg in &self.args {
+                c.set_local(arg.clone());
+            }
+            self.stmt.emit(c);
+
+            // default return
+            match c.vm.code.top() {
+                VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {
+                    c.vm.code.push(VmOpcode::OP_PUSH_NIL);
+                    c.vm.code.push(VmOpcode::OP_RET);
+                },
+                _ => {}
+            };
+
+            // end
+            let nslots = c.unscope();
+            c.fill_label16(nslot_label, nslots);
+
+            // set var
+            c.fill_label(function_end, c.vm.code.len());
+            c.emit_set_var(self.id.clone());
+            c.vm.code.push(VmOpcode::OP_POP);
         }
     }
     // #### return

@@ -7,7 +7,7 @@ struct Scope {
 }
 impl Scope {
     fn new() -> Scope {
-        Scope { vars: Vec::with_capacity(std::u8::MAX as usize) }
+        Scope { vars: Vec::with_capacity(std::u16::MAX as usize) }
     }
 }
 
@@ -36,7 +36,7 @@ impl Compiler {
         None
     }
 
-    fn set_local(&mut self, var : String) -> Option<(u16, u16)> {
+    pub fn set_local(&mut self, var : String) -> Option<(u16, u16)> {
         if let Some(last) = self.scopes.last_mut() {
             last.vars.push(var);
             let idx = self.scopes.len()-1;
@@ -95,11 +95,30 @@ impl Compiler {
     // labels
     pub fn reserve_label(&mut self) -> usize {
         let pos = self.vm.code.len();
-        self.vm.cpush64(0xdeadbeef);
+        self.vm.cpush32(0xdeadbeef);
         pos
     }
 
     pub fn fill_label(&mut self, pos: usize, label: usize) {
         self.vm.cfill_label(pos, label);
+    }
+
+    pub fn reserve_label16(&mut self) -> usize {
+        let pos = self.vm.code.len();
+        self.vm.cpush16(0);
+        pos
+    }
+    pub fn fill_label16(&mut self, pos: usize, label: u16) {
+        self.vm.cfill_label16(pos, label);
+    }
+
+    // scopes
+    pub fn scope(&mut self) {
+        self.scopes.push(Scope::new());
+    }
+    pub fn unscope(&mut self) -> u16 {
+        let size = self.scopes.pop().unwrap().vars.len();
+        self.scopes.pop();
+        size as u16
     }
 }

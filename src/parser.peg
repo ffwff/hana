@@ -235,6 +235,7 @@ function_arguments -> Vec<String>
         for id in lid { v.push(id.to_string()); }
         v
     }
+    / "(" _ ")" { Vec::new() }
 
 function_stmt -> std::boxed::Box<ast::AST>
     = "function" _ id:identifier _ args:function_arguments _ s:statement
@@ -247,7 +248,7 @@ function_stmt -> std::boxed::Box<ast::AST>
     }
 
 return_stmt -> std::boxed::Box<ast::AST>
-    = "return" _ e:expr
+    = "return" _ e:expr eos
     {
         Box::new(ast::ReturnStatement {
             expr: e

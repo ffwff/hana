@@ -1018,3 +1018,7 @@ void vm_code_fill(struct vm *vm, const uint32_t pos, const uint32_t label) {
     vm->code.data[pos + 2] = (label >> 4) & 0xff;
     vm->code.data[pos + 3] = (label >> 0) & 0xff;
 }
+void vm_code_fill16(struct vm *vm, const uint32_t pos, const uint16_t label) {
+    vm->code.data[pos + 0] = (label >> 4) & 0xff;
+    vm->code.data[pos + 1] = (label >> 0) & 0xff;
+}
