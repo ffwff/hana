@@ -64,6 +64,7 @@ struct value *vm_call(struct vm*, struct value *, a_arguments);
 void vm_print_stack(const struct vm*);
 
 void vm_code_reserve(struct vm*, size_t);
+void vm_code_push8(struct vm *vm, uint8_t);
 void vm_code_push16(struct vm *vm, uint16_t);
 void vm_code_push32(struct vm *vm, uint32_t);
 void vm_code_push64(struct vm *vm, uint64_t);

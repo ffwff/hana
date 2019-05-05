@@ -948,6 +948,10 @@ void vm_print_stack(const struct vm *vm) {
 }
 
 // push bits
+void vm_code_push8(struct vm *vm, uint8_t n) {
+    array_push(vm->code, n);
+}
+
 void vm_code_push16(struct vm *vm, uint16_t n) {
     array_push(vm->code, (n >> 4) & 0xff);
     array_push(vm->code, (n >> 0) & 0xff);

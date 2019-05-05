@@ -1,47 +1,9 @@
 use std::ptr::null_mut;
+use std::ffi::CString;
+use std::ffi::CStr;
 extern crate libc;
-
-#[repr(C)]
-pub struct CArray<T> {
-    data: *mut T, // NOTE: I don't free this because hopefully the
-                  // VM should automatically call array_free
-    _len: usize,
-    capacity: usize,
-}
-
-impl<T> CArray<T> {
-    pub fn new_nil() -> CArray<T> {
-        CArray::<T> {
-            data: null_mut(),
-            _len: 0,
-            capacity: 0
-        }
-    }
-
-    pub fn push(&mut self, val : T) {
-        use std::mem::size_of;
-        unsafe {
-            if self._len == self.capacity {
-                self.capacity *= 2;
-                self.data = libc::realloc(self.data as *mut libc::c_void,
-                    size_of::<T>()*self.capacity) as *mut T;
-            }
-            std::ptr::write(self.data.add(self._len*size_of::<T>()), val);
-            self._len += 1;
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        self._len
-    }
-
-    pub fn top(&self) -> &T {
-        use std::mem::size_of;
-        unsafe {
-            &(*self.data.add((self._len-1)*size_of::<T>()))
-        }
-    }
-}
+use super::carray::CArray;
+use super::stringheader::StringHeader;
 
 //
 #[repr(u8)]
@@ -66,7 +28,7 @@ pub enum Value {
     Float(f64),
     NativeFn,
     Fn,
-    Str(String),
+    Str(&'static str),
     Dict,
     Array,
     NativeObj
@@ -89,7 +51,11 @@ _valueType::TYPE_INT        => unsafe { Value::Int(transmute::<u64, i64>(self.da
 _valueType::TYPE_FLOAT      => unsafe { Value::Float(transmute::<u64, f64>(self.data)) },
 _valueType::TYPE_NATIVE_FN  => Value::NativeFn,
 _valueType::TYPE_FN         => Value::Fn,
-_valueType::TYPE_STR        => Value::Str("".to_string()),
+_valueType::TYPE_STR        => unsafe {
+        use std::mem::size_of;
+        let cstr = CStr::from_ptr(transmute::<u64,*const libc::c_char>(self.data).add(size_of::<StringHeader>()));
+        Value::Str(cstr.to_str().unwrap())
+    },
 _valueType::TYPE_DICT       => Value::Dict,
 _valueType::TYPE_ARRAY      => Value::Array,
 _valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
@@ -156,6 +122,7 @@ extern "C" {
     fn vm_execute(vm: *mut Vm);
 
     fn vm_code_reserve(vm: *mut Vm, sz: usize);
+    fn vm_code_push8  (vm: *mut Vm, n : u8);
     fn vm_code_push16 (vm: *mut Vm, n : u16);
     fn vm_code_push32 (vm: *mut Vm, n : u32);
     fn vm_code_push64 (vm: *mut Vm, n : u64);
@@ -187,62 +154,20 @@ impl Vm {
     }
 
     // pushes
-    pub fn cpush8(&mut self, n : u8) {
-        use std::mem::size_of;
-        unsafe {
-            let code = &mut self.code;
-            if code._len == code.capacity {
-                code.capacity *= 2;
-                code.data = libc::realloc(code.data as *mut libc::c_void,
-                    size_of::<VmOpcode>()*code.capacity) as *mut VmOpcode;
-            }
-            std::ptr::write_bytes(code.data.add(code._len*size_of::<u8>()), n, 1);
-            code._len += 1;
-        }
-    }
+    pub fn cpush8(&mut self, n : u8) { unsafe { vm_code_push8(self, n); } }
     pub fn cpush16(&mut self, n : u16) { unsafe { vm_code_push16(self, n); } }
     pub fn cpush32(&mut self, n : u32) { unsafe { vm_code_push32(self, n); } }
     pub fn cpush64(&mut self, n : u64) { unsafe { vm_code_push64(self, n); } }
     pub fn cpushf32(&mut self, n : f32) { unsafe { vm_code_pushf32(self, n); } }
     pub fn cpushf64(&mut self, n : f64) { unsafe { vm_code_pushf64(self, n); } }
+    pub fn cpushs<T : Into<Vec<u8>>>(&mut self, s : T) {
+        let cstr = CString::new(s).expect("can't turn to cstring");
+        unsafe { vm_code_pushstr(self, cstr.as_ptr()); }
+    }
 }
 
 impl std::ops::Drop for Vm {
     fn drop(&mut self) {
         unsafe { vm_free(self); }
     }
-}
-
-#[allow(unused_attributes)]
-pub mod foreignc {
-
-// values
-// dicts
-#[no_mangle]
-pub extern "C" fn value_dict() {
-    unimplemented!()
-}
-
-#[no_mangle]
-
-pub extern "C" fn dict_set() {
-    unimplemented!()
-}
-
-#[no_mangle]
-pub extern "C" fn dict_get() {
-    unimplemented!()
-}
-
-#[no_mangle]
-pub extern "C" fn dict_get_prototype() {
-    unimplemented!()
-}
-
-// strings
-#[no_mangle]
-pub extern "C" fn string_alloc() {
-    unimplemented!()
-}
-
 }

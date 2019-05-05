@@ -17,5 +17,6 @@ fn main() {
     build
         .flag("-Wall")
         .flag("-Werror")
+        .define("NOLOG", None)
         .compile("hana");
 }

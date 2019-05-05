@@ -1,3 +1,4 @@
 pub mod compiler;
 pub mod ast;
-pub mod vm;
+mod vmbindings;
+pub use vmbindings::vm;
