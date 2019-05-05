@@ -72,6 +72,7 @@ extern "C" {
     fn vm_code_pushstr(vm: *mut Vm, s : *const libc::c_char);
     fn vm_code_pushf32(vm: *mut Vm, n : f32);
     fn vm_code_pushf64(vm: *mut Vm, n : f64);
+    fn vm_code_fill(vm: *mut Vm, pos : u32, len : u32);
 }
 
 impl Vm {
@@ -107,6 +108,10 @@ impl Vm {
     pub fn cpushs<T : Into<Vec<u8>>>(&mut self, s : T) {
         let cstr = CString::new(s).expect("can't turn to cstring");
         unsafe { vm_code_pushstr(self, cstr.as_ptr()); }
+    }
+
+    pub fn cfill_label(&mut self, pos: usize, label: usize) {
+        unsafe{ vm_code_fill(self, pos as u32, label as u32); }
     }
 
     // globals

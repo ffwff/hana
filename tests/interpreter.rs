@@ -38,4 +38,23 @@ pub mod interpreter_tests {
     }
     // #endregion
 
+    // #region if statement
+    #[test]
+    fn if_stmt() {
+        let mut vm : Vm = eval!(vm, "
+if 0 y = 1
+");
+        assert!(vm.global().get("y").is_none());
+    }
+
+    #[test]
+    fn if_else_stmt() {
+        let mut vm : Vm = eval!(vm, "
+if 0 y = 1
+else y = 2
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(2));
+    }
+    // #endregion
+
 }

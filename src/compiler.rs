@@ -91,4 +91,15 @@ impl Compiler {
             }
         }
     }
+
+    // labels
+    pub fn reserve_label(&mut self) -> usize {
+        let pos = self.vm.code.len();
+        self.vm.cpush64(0xdeadbeef);
+        pos
+    }
+
+    pub fn fill_label(&mut self, pos: usize, label: usize) {
+        self.vm.cfill_label(pos, label);
+    }
 }
