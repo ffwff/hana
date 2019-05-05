@@ -108,6 +108,11 @@ impl Vm {
         let cstr = CString::new(s).expect("can't turn to cstring");
         unsafe { vm_code_pushstr(self, cstr.as_ptr()); }
     }
+
+    // globals
+    pub fn global(&mut self) -> &mut CHashMap {
+        unsafe{ &mut *self.globalenv }
+    }
 }
 
 impl std::ops::Drop for Vm {

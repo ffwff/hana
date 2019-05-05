@@ -25,30 +25,70 @@ impl Compiler {
     }
 
     // local
-    fn get_local(&self, var : String) -> Option<(u8, u8)> {
-        let mut relascope : u8 = 0;
+    fn get_local(&self, var : &String) -> Option<(u16, u16)> {
+        let mut relascope : u16 = 0;
         for scope in self.scopes.iter().rev() {
-            if let Some(slot) = scope.vars.iter().position(|x| *x == var) {
-                return Some((slot as u8, relascope));
+            if let Some(slot) = scope.vars.iter().position(|x| *x == *var) {
+                return Some((slot as u16, relascope));
             }
             relascope += 1;
         }
         None
     }
 
-    fn set_local(&mut self, var : String) -> Option<(u8, u8)> {
+    fn set_local(&mut self, var : String) -> Option<(u16, u16)> {
         if let Some(last) = self.scopes.last_mut() {
             last.vars.push(var);
             let idx = self.scopes.len()-1;
-            return Some((idx as u8, 0));
+            return Some((idx as u16, 0));
         }
         None
     }
 
     // emit set var
     pub fn emit_set_var(&mut self, var : String) {
-        // TODO: set locals
-        self.vm.code.push(VmOpcode::OP_SET_GLOBAL);
-        self.vm.cpushs(var);
+        if var.starts_with("$") || self.scopes.len() == 0 {
+            // set global
+            self.vm.code.push(VmOpcode::OP_SET_GLOBAL);
+            self.vm.cpushs(if var.starts_with("$") { &var[1..] }
+                           else { var.as_str() });
+        } else if let Some(local) = self.get_local(&var) {
+            // set existing local
+            let mut slot = local.0;
+            let relascope = local.1;
+            if relascope != 0 {
+                let local = self.set_local(var.clone()).unwrap();
+                slot = local.0;
+            }
+            self.vm.code.push(VmOpcode::OP_SET_LOCAL);
+            self.vm.cpush16(slot);
+        } else {
+            let local = self.set_local(var.clone()).unwrap();
+            let slot = local.0;
+            self.vm.code.push(VmOpcode::OP_SET_LOCAL);
+            self.vm.cpush16(slot);
+        }
+    }
+
+    pub fn emit_get_var(&mut self, var : String) {
+        let local = self.get_local(&var);
+        if var.starts_with("$") || !local.is_some() {
+            // set global
+            self.vm.code.push(VmOpcode::OP_GET_GLOBAL);
+            self.vm.cpushs(if var.starts_with("$") { &var[1..] }
+                           else { var.as_str() });
+        } else {
+            let local = local.unwrap();
+            let slot = local.0;
+            let relascope = local.1;
+            if relascope == 0 {
+                self.vm.code.push(VmOpcode::OP_GET_LOCAL);
+                self.vm.cpush16(slot);
+            } else {
+                self.vm.code.push(VmOpcode::OP_GET_LOCAL_UP);
+                self.vm.cpush16(slot);
+                self.vm.cpush16(relascope);
+            }
+        }
     }
 }

@@ -1,17 +1,15 @@
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
-use super::value::Value;
 
 #[allow(unused_attributes)]
 pub mod foreignc {
 
 use std::ptr::null;
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr};
 use super::CHashMap;
 use super::NativeValue;
-use super::Value;
 
-// hmap
+// #region hmap
 #[no_mangle]
 pub extern "C" fn hmap_malloc() -> *mut CHashMap {
     Box::into_raw(Box::new(CHashMap::new()))
@@ -42,7 +40,9 @@ pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *mut libc::c_char, c
     hm.insert(key, val);
 }
 
-// dict
+// #endregion
+
+// #region dict
 #[no_mangle]
 pub extern "C" fn dict_init() {
     unimplemented!()
@@ -69,10 +69,11 @@ pub extern "C" fn dict_get_prototype() {
 }
 
 // values
-// dicts
 #[no_mangle]
 pub extern "C" fn value_dict() {
     unimplemented!()
 }
+
+// #endregion
 
 }
