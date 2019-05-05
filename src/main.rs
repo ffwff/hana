@@ -2,6 +2,7 @@ pub mod compiler;
 pub mod ast;
 mod vmbindings;
 pub use vmbindings::vm;
+pub use vmbindings::vm::VmOpcode;
 use std::io::Read;
 
 fn main() {
@@ -16,9 +17,11 @@ fn main() {
         Ok(_) => { }
     };
     let prog = ast::grammar::start(&s).unwrap();
-    let mut comp = compiler::Compiler::new();
+    println!("{:?}", prog);
+    let mut c = compiler::Compiler::new();
     for stmt in prog {
-        stmt.emit(&mut comp);
+        stmt.emit(&mut c);
     }
-    let _vm = vm::Vm::new();
+    c.vm.code.push(VmOpcode::OP_HALT);
+    c.vm.execute();
 }

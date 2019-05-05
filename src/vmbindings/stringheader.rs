@@ -1,3 +1,3 @@
 pub struct StringHeader {
-    len : u32
+    _len : u32
 }

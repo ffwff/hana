@@ -1,4 +1,4 @@
-#[allow(dead_code)]
+use crate::vm::Vm;
 
 // private
 struct Scope {
@@ -16,12 +16,14 @@ pub struct Identifier {
     pub relascope : u8
 }
 pub struct Compiler {
-    scopes : Vec<Scope>
+    scopes : Vec<Scope>,
+    pub vm : Vm
 }
 impl Compiler {
     pub fn new() -> Compiler {
         Compiler{
-            scopes: Vec::new()
+            scopes: Vec::new(),
+            vm: Vm::new()
         }
     }
 

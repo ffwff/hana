@@ -1,4 +1,5 @@
 use crate::compiler;
+use crate::vmbindings::vm::VmOpcode;
 
 // ast
 #[allow(unused_variables)]
@@ -6,6 +7,7 @@ pub mod ast {
     use std::fmt;
     use std::any::Any;
     use super::compiler;
+    use super::VmOpcode;
 
     macro_rules! as_any {
         () => (fn as_any(&self) -> &dyn Any { self });
@@ -44,7 +46,8 @@ pub mod ast {
     impl AST for StrLiteral {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            c.vm.code.push(VmOpcode::OP_PUSHSTR);
+            c.vm.cpushs(self.val.clone());
         }
     }
     // ## ints
@@ -59,7 +62,8 @@ pub mod ast {
     impl AST for IntLiteral {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            c.vm.code.push(VmOpcode::OP_PUSH64);
+            c.vm.cpush64(self.val);
         }
     }
     // ## floats
@@ -74,7 +78,8 @@ pub mod ast {
     impl AST for FloatLiteral {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            c.vm.code.push(VmOpcode::OP_PUSH64);
+            c.vm.cpushf64(self.val);
         }
     }
 
@@ -128,7 +133,12 @@ pub mod ast {
     impl AST for BinExpr {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            self.right.emit(c);
+            self.left.emit(c);
+            match &self.op {
+                BinOp::Add => c.vm.code.push(VmOpcode::OP_ADD),
+                _ => unimplemented!()
+            }
         }
     }
 
@@ -333,7 +343,8 @@ pub mod ast {
     impl AST for ExprStatement {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            self.expr.emit(c);
+            c.vm.code.push(VmOpcode::OP_POP);
         }
     }
 
