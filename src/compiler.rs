@@ -11,15 +11,23 @@ impl Scope {
     }
 }
 
+//
+struct LoopStatement {
+    pub fill_continue: Vec<usize>,
+    pub fill_break: Vec<usize>
+}
+
 // public
 pub struct Compiler {
     scopes : Vec<Scope>,
+    loop_stmts : Vec<LoopStatement>,
     pub vm : Vm
 }
 impl Compiler {
     pub fn new() -> Compiler {
         Compiler{
             scopes: Vec::new(),
+            loop_stmts: Vec::new(),
             vm: Vm::new()
         }
     }
@@ -120,5 +128,32 @@ impl Compiler {
         let size = self.scopes.pop().unwrap().vars.len();
         self.scopes.pop();
         size as u16
+    }
+
+    // loops
+    pub fn loop_start(&mut self) {
+        self.loop_stmts.push(LoopStatement{
+            fill_continue: Vec::new(),
+            fill_break: Vec::new(),
+        });
+    }
+    pub fn loop_continue(&mut self) {
+        let label = self.reserve_label();
+        let ls = self.loop_stmts.last_mut().unwrap();
+        ls.fill_continue.push(label);
+    }
+    pub fn loop_break(&mut self) {
+        let label = self.reserve_label();
+        let ls = self.loop_stmts.last_mut().unwrap();
+        ls.fill_break.push(label);
+    }
+    pub fn loop_end(&mut self, next_it_pos : usize, end_pos : usize) {
+        let ls = self.loop_stmts.pop().unwrap();
+        for label in ls.fill_continue {
+            self.fill_label(label, next_it_pos);
+        }
+        for label in ls.fill_break {
+            self.fill_label(label, end_pos);
+        }
     }
 }

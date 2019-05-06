@@ -234,7 +234,10 @@ pub mod ast {
     impl AST for CallExpr {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            for arg in self.args.iter().rev() { arg.emit(c); }
+            self.callee.emit(c);
+            c.vm.code.push(VmOpcode::OP_CALL);
+            c.vm.cpush16(self.args.len() as u16);
         }
     }
 
@@ -308,13 +311,17 @@ pub mod ast {
             let begin_label = c.reserve_label();
 
             let then_label = c.vm.code.len() as u32;
+            c.loop_start();
             self.then.emit(c);
 
             c.fill_label(begin_label, c.vm.code.len());
+
+            let next_it_pos = c.vm.code.len();
             self.expr.emit(c);
             c.vm.code.push(VmOpcode::OP_JCOND);
             c.vm.cpush32(then_label);
-            // TODO: continue/break
+
+            c.loop_end(next_it_pos, c.vm.code.len());
         }
     }
 
@@ -363,6 +370,7 @@ pub mod ast {
             let begin_label = c.reserve_label();
 
             let then_label = c.vm.code.len() as u32;
+            c.loop_start();
             self.stmt.emit(c);
 
             // step
@@ -373,8 +381,10 @@ pub mod ast {
             c.emit_set_var(self.id.clone());
             c.vm.code.push(VmOpcode::OP_POP);
 
-            // condition
             c.fill_label(begin_label, c.vm.code.len());
+
+            // condition
+            let next_it_pos = c.vm.code.len();
             c.emit_get_var(self.id.clone());
             self.to.emit(c);
             c.vm.code.push(if self.is_up { VmOpcode::OP_LT }
@@ -382,7 +392,37 @@ pub mod ast {
             c.vm.code.push(VmOpcode::OP_JCOND);
             c.vm.cpush32(then_label);
 
-            // TODO break/continue
+            c.loop_end(next_it_pos, c.vm.code.len());
+        }
+    }
+    // ### continue statement
+    pub struct ContinueStatement {
+    }
+    impl fmt::Debug for ContinueStatement {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            unimplemented!()
+        }
+    }
+    impl AST for ContinueStatement {
+        as_any!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            c.vm.code.push(VmOpcode::OP_JMP);
+            c.loop_continue();
+        }
+    }
+    // ### break
+    pub struct BreakStatement {
+    }
+    impl fmt::Debug for BreakStatement {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            unimplemented!()
+        }
+    }
+    impl AST for BreakStatement {
+        as_any!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            c.vm.code.push(VmOpcode::OP_JMP);
+            c.loop_break();
         }
     }
 
@@ -446,7 +486,7 @@ pub mod ast {
     }
     // #### return
     pub struct ReturnStatement {
-        pub expr : std::boxed::Box<AST>,
+        pub expr : Option<std::boxed::Box<AST>>,
     }
     impl fmt::Debug for ReturnStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -456,7 +496,11 @@ pub mod ast {
     impl AST for ReturnStatement {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            match &self.expr {
+                Some(expr) => expr.emit(c),
+                None => c.vm.code.push(VmOpcode::OP_PUSH_NIL)
+            }
+            c.vm.code.push(VmOpcode::OP_RET);
         }
     }
 

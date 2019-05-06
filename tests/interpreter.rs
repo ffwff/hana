@@ -67,11 +67,11 @@ else y = 2
     fn while_stmt() {
         let mut vm : Vm = eval!(vm, "
 i = 0
-while i < 100 begin
+while i < 10 begin
 i = i + 1
 end
 ");
-        assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(100));
+        assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(10));
     }
     // #endregion
 
@@ -79,23 +79,35 @@ end
     #[test]
     fn for_stmt() {
         let mut vm : Vm = eval!(vm, "
-for i=0 to 100 begin
+for i=0 to 10 begin
 end
 ");
-        assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(100));
+        assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(10));
     }
 
     #[test]
     fn for_downto_stmt() {
         let mut vm : Vm = eval!(vm, "
-for i=100 downto 0 begin
+for i=10 downto 0 begin
 end
 ");
         assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(0));
     }
     // #endregion
 
-    // #region function statement
+    // #region continue/break
+    #[test]
+    fn break_stmt() {
+        let mut vm : Vm = eval!(vm, "
+for i=0 to 10 begin
+if i == 5 break
+end
+");
+        assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(5));
+    }
+    // #endregion
+
+    // #region functions
     #[test]
     fn function_stmt() {
         let mut vm : Vm = eval!(vm, "
@@ -106,6 +118,26 @@ end
             Value::Fn => true,
             _ => false
         });
+    }
+    #[test]
+    fn function_stmt_call() {
+        let mut vm : Vm = eval!(vm, "
+function A() begin
+return 10
+end
+y = A()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
+    }
+    #[test]
+    fn function_stmt_call_args() {
+        let mut vm : Vm = eval!(vm, "
+function A(x) begin
+return 10+x
+end
+y = A(10)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(20));
     }
     // #endregion
 

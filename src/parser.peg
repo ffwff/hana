@@ -35,7 +35,7 @@ word -> String
     = start:id_start next:$(id_chars*) { start + next }
 keyword
     = "and" / "or" / "begin" / "end" / "if" / "else" / "while" /
-      "for" / "to" / "downto" / "step" /
+      "for" / "to" / "downto" / "step" / "continue" / "break" /
       "try" / "case" / "as" / "in" /
       "function" / "return" / "record" / "not"
 identifier -> String
@@ -171,6 +171,8 @@ statement -> std::boxed::Box<ast::AST>
          / function_stmt
          / return_stmt
          / record_stmt
+         / continue_stmt
+         / break_stmt
          / try_stmt
          / expr_stmt>)
     { s }
@@ -208,6 +210,19 @@ for_stmt -> std::boxed::Box<ast::AST>
         })
     }
 
+continue_stmt -> std::boxed::Box<ast::AST>
+    = "continue" eos
+    {
+        Box::new(ast::ContinueStatement {})
+    }
+
+break_stmt -> std::boxed::Box<ast::AST>
+    = "break" eos
+    {
+        Box::new(ast::BreakStatement {})
+    }
+
+// exceptions
 try_stmt -> std::boxed::Box<ast::AST>
     = "try" eos stmts:(statement*) cases:(case_stmt*) "end" eos
     {
@@ -248,7 +263,7 @@ function_stmt -> std::boxed::Box<ast::AST>
     }
 
 return_stmt -> std::boxed::Box<ast::AST>
-    = "return" _ e:expr eos
+    = "return" e:(_ e:expr {e})? eos
     {
         Box::new(ast::ReturnStatement {
             expr: e
