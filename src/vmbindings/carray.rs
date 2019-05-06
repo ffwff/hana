@@ -2,8 +2,8 @@ use std::ptr::null_mut;
 
 #[repr(C)]
 pub struct CArray<T> {
-    data: *mut T, // NOTE: I don't free this because hopefully the
-                  // VM should automatically call array_free
+    data: *mut T, // NOTE: this won't be freed inside rust because
+                  // the VM should automatically call array_free
     _len: usize,
     capacity: usize,
 }

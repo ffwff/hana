@@ -4,7 +4,7 @@
 #include "string_.h"
 #include "value.h"
 #include "vm.h"
-#include "dict.h"
+#include "hmap.h"
 #include "array_obj.h"
 #include "function.h"
 
@@ -31,14 +31,11 @@ void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *
     function_init(val->as.ifn, ip, nargs, env);
     //GC_register_finalizer(val->as.ifn, (GC_finalization_proc)function_free, NULL, NULL, NULL);
 }
-/*
 void value_dict(struct value *val) {
     val->type = TYPE_DICT;
-    val->as.dict = malloc(sizeof(struct dict));
-    dict_init(val->as.dict);
-    GC_register_finalizer(val->as.dict, (GC_finalization_proc)dict_free, NULL, NULL, NULL);
+    val->as.dict = hmap_malloc();
+    //GC_register_finalizer(val->as.dict, (GC_finalization_proc)dict_free, NULL, NULL, NULL);
 }
-*/
 void value_array(struct value *val) {
     val->type = TYPE_ARRAY;
     val->as.array = malloc(sizeof(struct array_obj));
@@ -227,7 +224,7 @@ bool value_is_true(const struct value *val) {
     }
 }
 
-struct dict *value_get_prototype(const struct vm *vm, const struct value *val) {
+struct hmap *value_get_prototype(const struct vm *vm, const struct value *val) {
     if(val->type == TYPE_STR) {
         return vm->dstr;
     } else if(val->type == TYPE_INT) {
@@ -237,7 +234,7 @@ struct dict *value_get_prototype(const struct vm *vm, const struct value *val) {
     } else if(val->type == TYPE_ARRAY) {
         return vm->darray;
     } else if(val->type == TYPE_DICT) {
-        return dict_get_cptr(val->as.dict, "prototype")->as.dict;
+        return hmap_get(val->as.dict, "prototype")->as.dict;
     }
     return NULL;
 }

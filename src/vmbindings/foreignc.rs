@@ -6,8 +6,7 @@ pub mod foreignc {
 
 use std::ptr::null;
 use std::ffi::CStr;
-use super::CHashMap;
-use super::NativeValue;
+use super::*;
 
 // #region hmap
 #[no_mangle]
@@ -22,7 +21,7 @@ pub unsafe extern "C" fn hmap_free(hm: *mut CHashMap) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn hmap_get(chm: *mut CHashMap, ckey: *mut libc::c_char) -> *const NativeValue {
+pub unsafe extern "C" fn hmap_get(chm: *const CHashMap, ckey: *const libc::c_char) -> *const NativeValue {
     let key = String::from(CStr::from_ptr(ckey).to_str().clone().unwrap());
     let hm = &*chm;
     if let Some(val) = hm.get(&key) {
@@ -31,50 +30,30 @@ pub unsafe extern "C" fn hmap_get(chm: *mut CHashMap, ckey: *mut libc::c_char) -
         null()
     }
 }
+#[no_mangle]
+pub unsafe extern "C" fn hmap_get_str(chm: *const CHashMap, ckey: *const String) -> *const NativeValue {
+    let key = &*ckey;
+    let hm = &*chm;
+    if let Some(val) = hm.get(key) {
+        val
+    } else {
+        null()
+    }
+}
 
 #[no_mangle]
-pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *mut libc::c_char, cval: *const NativeValue) {
+pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char, cval: *const NativeValue) {
     let key = String::from(CStr::from_ptr(ckey).to_str().clone().unwrap());
     let val = (*cval).clone();
     let hm = &mut *chm;
     hm.insert(key, val);
 }
-
-// #endregion
-
-// #region dict
 #[no_mangle]
-pub extern "C" fn dict_init() {
-    unimplemented!()
-}
-
-#[no_mangle]
-pub extern "C" fn dict_free() {
-    unimplemented!()
-}
-
-#[no_mangle]
-pub extern "C" fn dict_set() {
-    unimplemented!()
-}
-#[no_mangle]
-pub extern "C" fn dict_set_cptr() {
-    unimplemented!()
-}
-
-#[no_mangle]
-pub extern "C" fn dict_get() {
-    unimplemented!()
-}
-#[no_mangle]
-pub extern "C" fn dict_get_cptr() {
-    unimplemented!()
-}
-
-// values
-#[no_mangle]
-pub extern "C" fn value_dict() {
-    unimplemented!()
+pub unsafe extern "C" fn hmap_set_str(chm: *mut CHashMap, ckey: *const  String, cval: *const NativeValue) {
+    let key = (&*ckey).clone();
+    let val = (*cval).clone();
+    let hm = &mut *chm;
+    hm.insert(key, val);
 }
 
 // #endregion
@@ -102,13 +81,19 @@ pub unsafe extern "C" fn string_repeat(cleft: *const String, n : i64) -> *mut St
 }
 
 #[no_mangle]
-pub extern "C" fn string_cmp() {
-    unimplemented!()
+pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String) -> i64 {
+    let left : &'static String = &*cleft;
+    let right : &'static String = &*cright;
+    if left == right     {  0 }
+    else if left < right { -1 }
+    else                 {  1 }
 }
 
 #[no_mangle]
-pub extern "C" fn string_at() {
-    unimplemented!()
+pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut String {
+    let left : &'static String = &*cleft;
+    let to = idx as usize;
+    Box::into_raw(Box::new(left[to..to+1].to_string()))
 }
 
 #[no_mangle]

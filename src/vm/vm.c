@@ -4,7 +4,6 @@
 #include "vm.h"
 #include "string_.h"
 #include "hmap.h"
-#include "dict.h"
 #include "array_obj.h"
 #include "function.h"
 #include "exception_frame.h"
@@ -451,7 +450,7 @@ void vm_execute(struct vm *vm) {
 do { \
     if(val.type == TYPE_DICT) { \
         array_pop(vm->stack); \
-        struct value *ctor = dict_get_cptr(val.as.dict, "constructor"); \
+        const struct value *ctor = hmap_get(val.as.dict, "constructor"); \
         if(ctor == NULL) { \
             FATAL("expected record to have constructor\n"); \
             ERROR(); \
@@ -471,7 +470,7 @@ do { \
         } \
         struct value new_val; \
         value_dict(&new_val); \
-        dict_set_cptr(new_val.as.dict, "prototype", &val); \
+        hmap_set(new_val.as.dict, "prototype", &val); \
         array_push(vm->stack, new_val); \
     } else { \
         ifn = val.as.ifn; \
@@ -603,7 +602,7 @@ do { \
 
         struct value val = array_top(vm->stack);
         assert(val.type == TYPE_STR);
-        dict_set(dval.as.dict, val.as.str, &val);
+        hmap_set_str(dval.as.dict, val.as.str, &val);
         // NOTE: val should not be free'd.
         dispatch();
     }
@@ -622,8 +621,7 @@ do { \
             // val
             struct value val = array_top(vm->stack);
             array_pop(vm->stack);
-            dict_set(dval.as.dict, key.as.str, &val);
-            // pop key
+            hmap_set_str(dval.as.dict, key.as.str, &val);
         }
         array_pop(vm->stack); // pop nil
         array_push(vm->stack, dval);
@@ -670,7 +668,7 @@ do { \
                 ERROR();
             }
             array_push(vm->stack, (struct value){});
-            struct value *val = dict_get(dval.as.dict, index.as.str);
+            const struct value *val = hmap_get_str(dval.as.dict, index.as.str);
             LOG("%p\n", val);
             if(val != NULL) value_copy(&array_top(vm->stack), val);
         } else {
@@ -708,7 +706,7 @@ do { \
                 FATAL("index type of record must be string!\n");
                 ERROR();
             }
-            dict_set(dval.as.dict, index.as.str, val);
+            hmap_set_str(dval.as.dict, index.as.str, val);
         } else {
             FATAL("can only set keys of record or array\n");
             ERROR();
@@ -877,7 +875,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     struct function *ifn;
 
     if(fn->type == TYPE_DICT) {
-        struct value *ctor = dict_get_cptr(fn->as.dict, "constructor");
+        const struct value *ctor = hmap_get(fn->as.dict, "constructor");
         if(ctor == NULL) {
             FATAL("expected record to have constructor\n");
             return NULL;

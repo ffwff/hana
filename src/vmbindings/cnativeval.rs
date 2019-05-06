@@ -1,3 +1,4 @@
+use super::chmap::CHashMap;
 use super::value::Value;
 
 //
@@ -37,7 +38,9 @@ _valueType::TYPE_FN         => Value::Fn,
 _valueType::TYPE_STR        => unsafe {
         Value::Str(&*transmute::<u64, *const String>(self.data))
     },
-_valueType::TYPE_DICT       => Value::Dict,
+_valueType::TYPE_DICT       => unsafe {
+        Value::Dict(&*transmute::<u64, *const CHashMap>(self.data))
+    },
 _valueType::TYPE_ARRAY      => Value::Array,
 _valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
         }

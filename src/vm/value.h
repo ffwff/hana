@@ -7,7 +7,7 @@ extern "C" {
 #include "native_obj.h"
 
 struct vm;
-struct dict;
+struct hmap;
 struct array_obj;
 struct string;
 
@@ -21,7 +21,6 @@ struct string;
 #define TYPE_ARRAY      7
 #define TYPE_NATIVE_OBJ 8
 #define TYPE_INTERPRETER_ERROR 127
-#define VALUE_TYPE_IS_GC(x) (x==TYPE_STR||x==TYPE_DICT||x==TYPE_ARRAY||x==TYPE_NATIVE_OBJ)
 
 typedef void (*value_fn)(struct vm *vm, int nargs);
 struct value {
@@ -31,7 +30,7 @@ struct value {
         struct string *str;
         value_fn fn;
         struct function *ifn;
-        struct dict *dict;
+        struct hmap *dict;
         struct array_obj *array;
         struct native_obj *native;
         void *ptr;
@@ -71,7 +70,7 @@ void value_eq(struct value *result, const struct value *left, const struct value
 void value_neq(struct value *result, const struct value *left, const struct value *right);
 
 bool value_is_true(const struct value *);
-struct dict *value_get_prototype(const struct vm *vm, const struct value *val);
+struct hmap *value_get_prototype(const struct vm *vm, const struct value *val);
 
 #ifdef __cplusplus
 }
