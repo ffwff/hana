@@ -2,6 +2,8 @@
 
 **hana**, a small object oriented programming language.
 
+**NOTE:** hana's interpreter is under a rewrite in Rust!
+
 ## Cloning
 
 You'll have to clone it recursively:
