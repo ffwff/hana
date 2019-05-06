@@ -451,7 +451,7 @@ void vm_execute(struct vm *vm) {
 do { \
     if(val.type == TYPE_DICT) { \
         array_pop(vm->stack); \
-        struct value *ctor = dict_get(val.as.dict, "constructor"); \
+        struct value *ctor = dict_get_cptr(val.as.dict, "constructor"); \
         if(ctor == NULL) { \
             FATAL("expected record to have constructor\n"); \
             ERROR(); \
@@ -471,7 +471,7 @@ do { \
         } \
         struct value new_val; \
         value_dict(&new_val); \
-        dict_set(new_val.as.dict, "prototype", &val); \
+        dict_set_cptr(new_val.as.dict, "prototype", &val); \
         array_push(vm->stack, new_val); \
     } else { \
         ifn = val.as.ifn; \
@@ -602,7 +602,8 @@ do { \
         array_pop(vm->stack);
 
         struct value val = array_top(vm->stack);
-        dict_set(dval.as.dict, key, &val);
+        assert(val.type == TYPE_STR);
+        dict_set(dval.as.dict, val.as.str, &val);
         // NOTE: val should not be free'd.
         dispatch();
     }
@@ -621,7 +622,7 @@ do { \
             // val
             struct value val = array_top(vm->stack);
             array_pop(vm->stack);
-            dict_set(dval.as.dict, string_data(key.as.str), &val);
+            dict_set(dval.as.dict, key.as.str, &val);
             // pop key
         }
         array_pop(vm->stack); // pop nil
@@ -656,22 +657,20 @@ do { \
                 FATAL("index type for string must be integer!\n");
                 ERROR();
             }
-            const int64_t i = index.as.integer, len = string_len(dval.as.str);
-            if(!(i >= 0 && i < len)) {
-                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, len);
-                ERROR();
-            }
-            const char c[2] = { string_at(dval.as.str, i), 0 };
-            array_push(vm->stack, (struct value){});
-            value_str(&array_top(vm->stack), c);
+            const int64_t i = index.as.integer;
+            struct value val;
+            val.type = TYPE_STR;
+            val.as.str = string_at(dval.as.str, i);
+            // TODO bounds check
+            array_push(vm->stack, val);
         } else if(dval.type == TYPE_DICT) {
-            LOG("GET DICT %p %s\n", dval.as.dict, string_data(index.as.str));
+            //LOG("GET DICT %p %s\n", dval.as.dict, string_data(index.as.str));
             if(index.type != TYPE_STR) {
                 FATAL("index type for record must be string!\n");
                 ERROR();
             }
             array_push(vm->stack, (struct value){});
-            struct value *val = dict_get(dval.as.dict, string_data(index.as.str));
+            struct value *val = dict_get(dval.as.dict, index.as.str);
             LOG("%p\n", val);
             if(val != NULL) value_copy(&array_top(vm->stack), val);
         } else {
@@ -709,7 +708,7 @@ do { \
                 FATAL("index type of record must be string!\n");
                 ERROR();
             }
-            dict_set(dval.as.dict, string_data(index.as.str), val);
+            dict_set(dval.as.dict, index.as.str, val);
         } else {
             FATAL("can only set keys of record or array\n");
             ERROR();
@@ -795,12 +794,12 @@ do { \
         }
 
         FATAL("unhandled exception!");
-        if(raiseval.type == TYPE_DICT) {
-            struct value *val = dict_get(raiseval.as.dict, "what?");
+        /* if(raiseval.type == TYPE_DICT) {
+            struct value *val = dict_get_cptr(raiseval.as.dict, "what?");
             if(val != NULL)
                 FATAL(" (what? => %s)\n",
                     val->type == TYPE_STR ? string_data(val->as.str) : "[non-string]");
-        }
+        } */
         ERROR();
     }
     doop(OP_EXFRAME_RET): {
@@ -878,7 +877,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     struct function *ifn;
 
     if(fn->type == TYPE_DICT) {
-        struct value *ctor = dict_get(fn->as.dict, "constructor");
+        struct value *ctor = dict_get_cptr(fn->as.dict, "constructor");
         if(ctor == NULL) {
             FATAL("expected record to have constructor\n");
             return NULL;

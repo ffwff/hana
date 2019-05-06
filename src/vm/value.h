@@ -9,7 +9,7 @@ extern "C" {
 struct vm;
 struct dict;
 struct array_obj;
-struct string_header;
+struct string;
 
 #define TYPE_NIL        0
 #define TYPE_INT        1
@@ -28,7 +28,7 @@ struct value {
     union {
         int64_t integer;
         double floatp;
-        struct string_header *str;
+        struct string *str;
         value_fn fn;
         struct function *ifn;
         struct dict *dict;
@@ -42,8 +42,6 @@ struct value {
 void value_int(struct value*, int64_t);
 void value_float(struct value*, double);
 void value_str(struct value*, const char*);
-void value_str_reserve(struct value*, size_t);
-void value_strmov(struct value*, struct string_header*);
 void value_native(struct value*, value_fn);
 struct env;
 void value_function(struct value*, uint32_t ip, uint16_t nargs, struct env *env);

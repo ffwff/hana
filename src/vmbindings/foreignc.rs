@@ -5,7 +5,7 @@ use super::cnativeval::NativeValue;
 pub mod foreignc {
 
 use std::ptr::null;
-use std::ffi::{CStr};
+use std::ffi::CStr;
 use super::CHashMap;
 use super::NativeValue;
 
@@ -57,14 +57,17 @@ pub extern "C" fn dict_free() {
 pub extern "C" fn dict_set() {
     unimplemented!()
 }
+#[no_mangle]
+pub extern "C" fn dict_set_cptr() {
+    unimplemented!()
+}
 
 #[no_mangle]
 pub extern "C" fn dict_get() {
     unimplemented!()
 }
-
 #[no_mangle]
-pub extern "C" fn dict_get_prototype() {
+pub extern "C" fn dict_get_cptr() {
     unimplemented!()
 }
 
@@ -74,6 +77,45 @@ pub extern "C" fn value_dict() {
     unimplemented!()
 }
 
+// #endregion
+
+// #region string
+#[no_mangle]
+pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char) -> *mut String {
+    let s = CStr::from_ptr(cstr).to_str().unwrap();
+    Box::into_raw(Box::new(String::from(s)))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const String) -> *mut String {
+    let left : &'static String = &*cleft;
+    let right : &'static String = &*cright;
+    let mut newleft = left.clone();
+    newleft += right;
+    Box::into_raw(Box::new(newleft))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn string_repeat(cleft: *const String, n : i64) -> *mut String {
+    let left : &'static String = &*cleft;
+    Box::into_raw(Box::new(left.repeat(n as usize)))
+}
+
+#[no_mangle]
+pub extern "C" fn string_cmp() {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub extern "C" fn string_at() {
+    unimplemented!()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
+    let left : &'static String = &*s;
+    left.len() == 0
+}
 // #endregion
 
 }

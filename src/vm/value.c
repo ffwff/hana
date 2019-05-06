@@ -19,17 +19,7 @@ void value_float(struct value *val, double data) {
 // non-primitives
 void value_str(struct value *val, const char *data) {
     val->type = TYPE_STR;
-    val->as.str = malloc(string_size(data));
-    string_init(val->as.str, data);
-}
-void value_str_reserve(struct value *val, const size_t size) {
-    val->type = TYPE_STR;
-    val->as.str = malloc(sizeof(struct string_header)+size+1);
-    val->as.str->length = size;
-}
-void value_strmov(struct value *val, struct string_header *str) {
-    val->type = TYPE_STR;
-    val->as.str = str;
+    val->as.str = string_malloc(data);
 }
 void value_native(struct value *val, value_fn fn) {
     val->type = TYPE_NATIVE_FN;
@@ -74,7 +64,7 @@ void value_print(struct value *val) {
     else if(val->type == TYPE_FLOAT)
         printf("%f", val->as.floatp);
     else if(val->type == TYPE_STR)
-        printf("\"%s\"", string_data(val->as.str));
+        printf("[string]");
     else if(val->type == TYPE_NATIVE_FN)
         printf("[native fn %lx]", (intptr_t)val->as.fn);
     else if(val->type == TYPE_FN)
@@ -125,12 +115,8 @@ arith_op(add, +,
             result->type = TYPE_INTERPRETER_ERROR;
             return;
         }
-        struct string_header *s = string_alloc(string_len(left->as.str)+string_len(right->as.str));
-        char *ss = string_data(s); ss[0] = 0;
-        strcpy(ss, string_data(left->as.str));
-        strcpy(ss+string_len(left->as.str), string_data(right->as.str));
         result->type = TYPE_STR;
-        result->as.str = s;
+        result->as.str = string_append(left->as.str, right->as.str);
         break; }
 )
 arith_op(sub, -,)
@@ -140,13 +126,8 @@ arith_op(mul, *,
             if(right->as.integer == 0) {
                 value_str(result, "");
             } else {
-                size_t n = string_len(left->as.str)*right->as.integer;
-                struct string_header *s = string_alloc(n);
-                char *ss = string_data(s); ss[0] = 0;
-                for(size_t i = 0; i < (size_t)right->as.integer; i++)
-                    strcat(ss, string_data(left->as.str));
                 result->type = TYPE_STR;
-                result->as.str = s;
+                result->as.str = string_repeat(left->as.str, right->as.integer);
             }
         }
         else
@@ -241,7 +222,7 @@ bool value_is_true(const struct value *val) {
     switch(val->type) {
     case TYPE_INT: return val->as.integer > 0;
     case TYPE_FLOAT: return val->as.floatp > 0;
-    case TYPE_STR: return string_len(val->as.str) > 0;
+    case TYPE_STR: return !string_is_empty(val->as.str);
     default: return 0;
     }
 }
@@ -256,7 +237,7 @@ struct dict *value_get_prototype(const struct vm *vm, const struct value *val) {
     } else if(val->type == TYPE_ARRAY) {
         return vm->darray;
     } else if(val->type == TYPE_DICT) {
-        return dict_get_prototype(val->as.dict);
+        return dict_get_cptr(val->as.dict, "prototype")->as.dict;
     }
     return NULL;
 }

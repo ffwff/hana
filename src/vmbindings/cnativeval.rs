@@ -35,12 +35,7 @@ _valueType::TYPE_FLOAT      => unsafe { Value::Float(transmute::<u64, f64>(self.
 _valueType::TYPE_NATIVE_FN  => Value::NativeFn,
 _valueType::TYPE_FN         => Value::Fn,
 _valueType::TYPE_STR        => unsafe {
-        use std::mem::size_of;
-        use super::cstring::StringHeader;
-        use std::ffi::CStr;
-
-        let cstr = CStr::from_ptr(transmute::<u64,*const libc::c_char>(self.data).add(size_of::<StringHeader>()));
-        Value::Str(cstr.to_str().unwrap())
+        Value::Str(&*transmute::<u64, *const String>(self.data))
     },
 _valueType::TYPE_DICT       => Value::Dict,
 _valueType::TYPE_ARRAY      => Value::Array,

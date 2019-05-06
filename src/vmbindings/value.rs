@@ -5,8 +5,19 @@ pub enum Value {
     Float(f64),
     NativeFn,
     Fn,
-    Str(&'static str),
+    Str(&'static String),
     Dict,
     Array,
     NativeObj
+}
+
+impl Value {
+
+    pub fn string(&self) -> &'static String {
+        match self {
+            Value::Str(s) => s,
+            _ => { panic!("Expected string"); }
+        }
+    }
+
 }
