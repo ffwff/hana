@@ -532,22 +532,14 @@ do { \
     }
     doop(OP_MEMBER_GET):
     doop(OP_MEMBER_GET_NO_POP): {
-        assert(0);
-        /*
         const enum vm_opcode op = vm->code.data[vm->ip];
         vm->ip++;
-        char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        const char *key = (const char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
-        const uint32_t hash =
-                            vm->code.data[vm->ip+0] << 12 |
-                            vm->code.data[vm->ip+1] << 8  |
-                            vm->code.data[vm->ip+2] << 4  |
-                            vm->code.data[vm->ip+3];
-        vm->ip+=sizeof(hash);
         LOG(op == OP_MEMBER_GET ? "MEMBER_GET %s\n" : "MEMBER_GET_NO_POP %s\n", key);
 
         struct value val = array_top(vm->stack);
-        struct dict *dict = NULL;
+        struct hmap *dict = NULL;
         if(val.type != TYPE_DICT) {
             if((dict = value_get_prototype(vm, &val)) == NULL) {
                 if(val.type == TYPE_NIL) {
@@ -562,7 +554,9 @@ do { \
                 }
             }
             if(strcmp(key, "prototype") == 0) {
-                value_copy(&array_top(vm->stack), dict);
+                struct value *val = &array_top(vm->stack);
+                val->type = TYPE_DICT;
+                val->as.dict = dict;
                 dispatch();
             }
         } else {
@@ -575,12 +569,10 @@ do { \
         }
 
         array_push(vm->stack, (struct value){});
-        struct value *result = dict_get_hash(dict, key, hash);
-        if(result != NULL)
-            value_copy(&array_top(vm->stack), result);
+        const struct value *result = hmap_get(dict, key);
+        if(result != NULL) value_copy(&array_top(vm->stack), result);
 
         dispatch();
-        */
     }
     doop(OP_MEMBER_SET): {
         // stack: [value][dict]
@@ -639,12 +631,12 @@ do { \
                 return;
             }
             const int64_t i = (int64_t)index.as.integer;
-            if(!(i >= 0 && i < (int64_t)dval.as.array->data.length)) {
-                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
+            if(!(i >= 0 && i < (int64_t)dval.as.array->length)) {
+                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->length);
                 ERROR();
             }
             array_push(vm->stack, (struct value){});
-            value_copy(&array_top(vm->stack), &dval.as.array->data.data[i]);
+            value_copy(&array_top(vm->stack), &dval.as.array->data[i]);
         } else if(dval.type == TYPE_STR) {
             if(index.type != TYPE_INT) {
                 FATAL("index type for string must be integer!\n");
@@ -690,12 +682,12 @@ do { \
                 ERROR();
             }
             const int64_t i = index.as.integer;
-            if (!(i >= 0 && i < (int64_t)dval.as.array->data.length))
+            if (!(i >= 0 && i < (int64_t)dval.as.array->length))
             {
-                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->data.length);
+                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->length);
                 ERROR();
             }
-            value_copy(&dval.as.array->data.data[i], val);
+            value_copy(&dval.as.array->data[i], val);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
                 FATAL("index type of record must be string!\n");
@@ -722,10 +714,10 @@ do { \
             value_array(&aval);
         } else {
             value_array_n(&aval, length);
-            aval.as.array->data.length = length;
+            aval.as.array->length = length;
             while(length--) {
                 struct value val = array_top(vm->stack);
-                value_copy(&aval.as.array->data.data[length], &val);
+                value_copy(&aval.as.array->data[length], &val);
                 array_pop(vm->stack);
             }
         }

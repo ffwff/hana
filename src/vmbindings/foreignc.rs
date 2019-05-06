@@ -1,4 +1,5 @@
 use super::chmap::CHashMap;
+use super::carray::CArray;
 use super::cfunction::{Env, Function};
 use super::cnativeval::NativeValue;
 
@@ -118,6 +119,21 @@ pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env)
 #[no_mangle]
 pub unsafe extern "C" fn function_free(fun: *mut Function) {
     Box::from_raw(fun);
+}
+// #endregion
+
+// #region array
+#[no_mangle]
+pub unsafe extern "C" fn array_obj_malloc() -> *mut CArray<NativeValue> {
+    Box::into_raw(Box::new(CArray::new(2)))
+}
+#[no_mangle]
+pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue> {
+    Box::into_raw(Box::new(CArray::new(n)))
+}
+#[no_mangle]
+pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {
+    Box::from_raw(carray);
 }
 // #endregion
 

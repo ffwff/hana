@@ -28,30 +28,23 @@ void value_native(struct value *val, value_fn fn) {
 void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *env) {
     val->type = TYPE_FN;
     val->as.ifn = function_malloc(ip, nargs, env);
-    //GC_register_finalizer(val->as.ifn, (GC_finalization_proc)function_free, NULL, NULL, NULL);
 }
 void value_dict(struct value *val) {
     val->type = TYPE_DICT;
     val->as.dict = hmap_malloc();
-    //GC_register_finalizer(val->as.dict, (GC_finalization_proc)dict_free, NULL, NULL, NULL);
 }
 void value_array(struct value *val) {
     val->type = TYPE_ARRAY;
-    val->as.array = malloc(sizeof(struct array_obj));
-    array_obj_init(val->as.array);
-    //GC_register_finalizer(val->as.array, (GC_finalization_proc)array_obj_free, NULL, NULL, NULL);
+    val->as.array = array_obj_malloc();
 }
 void value_array_n(struct value *val, size_t n) {
     val->type = TYPE_ARRAY;
-    val->as.array = malloc(sizeof(struct array_obj));
-    array_obj_init_n(val->as.array, n);
-    //GC_register_finalizer(val->as.array, (GC_finalization_proc)array_obj_free, NULL, NULL, NULL);
+    val->as.array = array_obj_malloc(n);
 }
 void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
     val->type = TYPE_NATIVE_OBJ;
     val->as.native = malloc(sizeof(struct native_obj));
     native_obj_init(val->as.native, data, free);
-    //GC_register_finalizer(val->as.native, (GC_finalization_proc)native_obj_free, NULL, NULL, NULL);
 }
 
 void value_print(struct value *val) {
@@ -151,13 +144,12 @@ arith_op(mul, *,
         break; }
     case TYPE_ARRAY: {
         if(right->type == TYPE_INT) {
-            size_t length = left->as.array->data.length*(size_t)right->as.integer;
+            size_t length = left->as.array->length*(size_t)right->as.integer;
             value_array_n(result, length);
-            for (size_t i = 0; i < (size_t)right->as.integer; i++)
-            {
-                for(size_t j = 0; j < left->as.array->data.length; j++) {
-                    size_t index = left->as.array->data.length*i+j;
-                    value_copy(&result->as.array->data.data[index], &left->as.array->data.data[j]);
+            for (size_t i = 0; i < (size_t)right->as.integer; i++) {
+                for(size_t j = 0; j < left->as.array->length; j++) {
+                    size_t index = left->as.array->length*i+j;
+                    value_copy(&result->as.array->data[index], &left->as.array->data[j]);
                 }
             }
         }

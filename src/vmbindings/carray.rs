@@ -17,6 +17,15 @@ impl<T> CArray<T> {
         }
     }
 
+    pub fn new(n : usize) -> CArray<T> {
+        use std::mem::size_of;
+        CArray::<T> {
+            data: unsafe{ libc::malloc(size_of::<T>()*n) as *mut T },
+            _len: n,
+            capacity: n
+        }
+    }
+
     pub fn push(&mut self, val : T) {
         use std::mem::size_of;
         unsafe {

@@ -5,6 +5,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "native_obj.h"
+#include "array_obj.h"
 
 struct vm;
 struct hmap;
@@ -31,7 +32,7 @@ struct value {
         value_fn fn;
         struct function *ifn;
         struct hmap *dict;
-        struct array_obj *array;
+        array_obj *array;
         struct native_obj *native;
         void *ptr;
     } as;
