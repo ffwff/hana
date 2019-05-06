@@ -16,7 +16,7 @@ struct function {
     // We use this to implement closures
 };
 
-void function_init(struct function *, uint32_t addr, uint16_t nargs, struct env *env);
+struct function *function_malloc(uint32_t addr, uint16_t nargs, struct env *env);
 void function_free(struct function *);
 
 #ifdef __cplusplus

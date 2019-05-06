@@ -121,7 +121,7 @@ function A() begin
 end
 ");
         assert!(match vm.global().get("A").unwrap().unwrap() {
-            Value::Fn => true,
+            Value::Fn(_) => true,
             _ => false
         });
     }

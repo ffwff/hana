@@ -1,4 +1,5 @@
 use super::chmap::CHashMap;
+use super::cfunction::{Env, Function};
 use super::cnativeval::NativeValue;
 
 #[allow(unused_attributes)]
@@ -105,6 +106,18 @@ pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut Stri
 pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
     let left : &'static String = &*s;
     left.len() == 0
+}
+// #endregion
+
+// #region function
+#[no_mangle]
+pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env) -> *mut Function {
+    Box::into_raw(Box::new(Function::new(addr, nargs, env)))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn function_free(fun: *mut Function) {
+    Box::from_raw(fun);
 }
 // #endregion
 

@@ -27,8 +27,7 @@ void value_native(struct value *val, value_fn fn) {
 }
 void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *env) {
     val->type = TYPE_FN;
-    val->as.ifn = malloc(sizeof(struct function));
-    function_init(val->as.ifn, ip, nargs, env);
+    val->as.ifn = function_malloc(ip, nargs, env);
     //GC_register_finalizer(val->as.ifn, (GC_finalization_proc)function_free, NULL, NULL, NULL);
 }
 void value_dict(struct value *val) {

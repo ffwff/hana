@@ -1,4 +1,5 @@
 use super::chmap::CHashMap;
+use super::cfunction::Function;
 use super::value::Value;
 
 #[repr(u8)]
@@ -33,7 +34,9 @@ _valueType::TYPE_NIL        => Value::Nil,
 _valueType::TYPE_INT        => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
 _valueType::TYPE_FLOAT      => unsafe { Value::Float(transmute::<u64, f64>(self.data)) },
 _valueType::TYPE_NATIVE_FN  => Value::NativeFn,
-_valueType::TYPE_FN         => Value::Fn,
+_valueType::TYPE_FN         => unsafe {
+        Value::Fn(&*transmute::<u64, *const Function>(self.data))
+    },
 _valueType::TYPE_STR        => unsafe {
         Value::Str(&*transmute::<u64, *const String>(self.data))
     },

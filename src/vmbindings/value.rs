@@ -1,4 +1,5 @@
 use super::chmap::CHashMap;
+use super::cfunction::Function;
 
 #[derive(Clone)]
 pub enum Value {
@@ -6,7 +7,7 @@ pub enum Value {
     Int(i64),
     Float(f64),
     NativeFn,
-    Fn,
+    Fn(&'static Function),
     Str(&'static String),
     Dict(&'static CHashMap),
     Array,
@@ -35,7 +36,7 @@ impl PartialEq for Value {
             (Value::Int(x),    Value::Int(y))    => x == y,
             (Value::Float(x),  Value::Float(y))  => x == y,
             (Value::NativeFn,  Value::NativeFn)  => false,
-            (Value::Fn,        Value::Fn)        => false,
+            (Value::Fn(x),     Value::Fn(y))     => std::ptr::eq(x, y),
             (Value::Str(x),    Value::Str(y))    => x == y,
             (Value::Dict(_),   Value::Dict(_))   => false,
             (Value::Array,     Value::Array)     => false,
@@ -53,7 +54,7 @@ impl fmt::Debug for Value {
             Value::Int(n)    => write!(f, "[int] {}", n),
             Value::Float(n)  => write!(f, "[float] {}", n),
             Value::NativeFn  => write!(f, "[native fn]"),
-            Value::Fn        => write!(f, "[fn]"),
+            Value::Fn(_)     => write!(f, "[fn]"),
             Value::Str(s)    => write!(f, "[str] {}", s),
             Value::Dict(_)   => write!(f, "[dict]"),
             Value::Array     => write!(f, "[array]"),

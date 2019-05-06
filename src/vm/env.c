@@ -30,13 +30,12 @@ struct value *env_get(struct env *env, size_t n) {
 }
 
 void env_set(struct env *env, size_t n, struct value *val) {
-    //value_free(&env->slots[n]);
     value_copy(&env->slots[n], val);
 }
 
 void env_free(struct env *env) {
     if(env->slots == NULL) return;
-    //for(int i = 0; i < env->nslots; i++)
-        //value_free(&env->slots[i]);
+    for(int i = 0; i < env->nslots; i++)
+        value_free(&env->slots[i]);
     free(env->slots);
 }
