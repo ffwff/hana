@@ -15,8 +15,6 @@
 #endif
 #define FATAL(...) fprintf(stderr, __VA_ARGS__)
 
-#define DEFAULT_STACK_SIZE 16
-
 // notes: architecture is big endian!
 
 void vm_init(struct vm *vm) {
@@ -26,11 +24,7 @@ void vm_init(struct vm *vm) {
     vm->globalenv = hmap_malloc();
     vm->eframe = NULL;
     vm->code = (a_uint8)array_init(uint8_t);
-    vm->stack = (a_value){
-        .data = calloc(DEFAULT_STACK_SIZE, sizeof(struct value)),
-        .length = 0,
-        .capacity = DEFAULT_STACK_SIZE
-    };
+    vm->stack = (a_value)array_init(struct value);
     vm->ip = 0;
     vm->dstr = vm->dint = vm->dfloat = vm->darray = 0;
 }
@@ -51,6 +45,7 @@ void vm_free(struct vm *vm) {
     }
     array_free(vm->code);
     for(size_t i = 0; i < vm->stack.length; i++)
+        value_free(&vm->stack.data[i]);
     array_free(vm->stack);
 }
 

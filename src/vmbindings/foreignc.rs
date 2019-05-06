@@ -66,6 +66,11 @@ pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char) -> *mut String {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn string_free(cstr: *mut String) {
+    Box::from_raw(cstr);
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const String) -> *mut String {
     let left : &'static String = &*cleft;
     let right : &'static String = &*cright;

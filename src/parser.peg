@@ -1,7 +1,7 @@
 use super::ast;
 
 pub start -> Vec<std::boxed::Box<ast::AST>>
-    = __ s:(statement*) __ { s }
+    = s:(statement*) { s }
 
 // tokens
 int_literal -> String
@@ -30,15 +30,15 @@ string_literal -> String
 id_start -> String
     = c:$([a-zA-Z$_]) { c.to_string() }
 id_chars -> String
-    = c:$(id_start / [0-9\?\!]) { c.to_string() }
+    = c:$([a-zA-Z$_0-9\?\!]) { c.to_string() }
 word -> String
     = w:$(id_start id_chars*) { w.to_string() }
     / #expected("word")
 keyword
-    = "and" / "or" / "not" / "mod" / "begin" / "end" / "if" / "else" /
+    = ("and" / "or" / "not" / "mod" / "begin" / "end" / "if" / "else" /
       "while" / "for" / "to" / "downto" / "step" / "continue" / "break" /
       "try" / "case" / "as" / "in" /
-      "function" / "return" / "record" / "not"
+      "function" / "return" / "record" / "not") !id_chars
 identifier -> String
     = !keyword w:$(word) { w.to_string() }
 
@@ -79,13 +79,17 @@ record_expr -> std::boxed::Box<ast::AST>
     }
 
 function_expr -> std::boxed::Box<ast::AST>
-    = "function" _ args:function_arguments eos s:(statement*) "end" eos
+    = "function" id:(_ i:identifier {i})? _ args:function_arguments _ s:statement_no_eos
     {
-        unimplemented!()
+        Box::new(ast::FunctionDefinition {
+            id: id.unwrap_or("".to_string()),
+            args: args,
+            stmt: s
+        })
     }
 
 // expressions
-expr -> std::boxed::Box<ast::AST> = condexpr
+expr -> std::boxed::Box<ast::AST> = condexpr / #expected("expression")
 condexpr -> std::boxed::Box<ast::AST>
     = cond:binexpr _ "?" _ then:binexpr _ ":" _ alt:binexpr
     {
@@ -163,20 +167,21 @@ memexpr_arm -> std::boxed::Box<ast::AST>
     / _ "[" _ e:expr _ "]" { e }
 
 // statements
+statement_no_eos -> std::boxed::Box<ast::AST>
+    = block_stmt
+    / if_stmt
+    / while_stmt
+    / for_stmt
+    / function_stmt
+    / return_stmt
+    / record_stmt
+    / continue_stmt
+    / break_stmt
+    / try_stmt
+    / expr_stmt
+
 statement -> std::boxed::Box<ast::AST>
-    = __ s:(#quiet<
-           block_stmt
-         / if_stmt
-         / while_stmt
-         / for_stmt
-         / function_stmt
-         / return_stmt
-         / record_stmt
-         / continue_stmt
-         / break_stmt
-         / try_stmt
-         / expr_stmt>)
-    { s }
+    = __ s:statement_no_eos __ { s }
     / #expected("statement")
 
 // block

@@ -84,8 +84,7 @@ pub mod ast {
             c.vm.cpushf64(self.val);
         }
     }
-
-    // ### fn
+    // ### fn def
     pub struct FunctionDefinition {
         pub id : String,
         pub args : Vec<String>,
@@ -113,7 +112,7 @@ pub mod ast {
             c.vm.cpush16(self.args.len() as u16);
             let function_end = c.reserve_label();
 
-            c.set_local(self.id.clone());
+            if self.id.len() > 0 { c.set_local(self.id.clone()); }
             c.scope();
 
             // body
@@ -237,6 +236,30 @@ pub mod ast {
                             memexpr.right.emit(c);
                             c.vm.code.push(VmOpcode::OP_INDEX_SET);
                         }
+                    } else if let Some(callexpr) = any.downcast_ref::<CallExpr>() {
+                        // definition
+                        c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
+                        c.vm.cpush16(callexpr.args.len() as u16);
+                        let function_end = c.reserve_label();
+
+                        c.set_local(callexpr.callee.as_any().downcast_ref::<Identifier>().unwrap().val.clone());
+                        c.scope();
+
+                        // body
+                        c.vm.code.push(VmOpcode::OP_ENV_NEW);
+                        let nslot_label = c.reserve_label16();
+                        for arg in &callexpr.args {
+                            c.set_local(arg.as_any().downcast_ref::<Identifier>().unwrap().val.clone());
+                        }
+                        self.right.emit(c);
+                        c.vm.code.push(VmOpcode::OP_RET);
+
+                        // end
+                        let nslots = c.unscope();
+                        c.fill_label16(nslot_label, nslots);
+                        c.fill_label(function_end, c.vm.code.len());
+                    } else {
+                        panic!("Invalid left hand side expression!");
                     }
                 },
                 // basic manip operators
@@ -245,6 +268,7 @@ pub mod ast {
                 BinOp::Mul => arithop_do!(VmOpcode::OP_MUL),
                 BinOp::Div => arithop_do!(VmOpcode::OP_DIV),
                 BinOp::And => arithop_do!(VmOpcode::OP_AND),
+                BinOp::Mod => arithop_do!(VmOpcode::OP_MOD),
                 BinOp::Or  => arithop_do!(VmOpcode::OP_OR ),
                 BinOp::Eq  => arithop_do!(VmOpcode::OP_EQ ),
                 BinOp::Neq => arithop_do!(VmOpcode::OP_NEQ),
@@ -252,7 +276,7 @@ pub mod ast {
                 BinOp::Lt  => arithop_do!(VmOpcode::OP_LT ),
                 BinOp::Geq => arithop_do!(VmOpcode::OP_GEQ),
                 BinOp::Leq => arithop_do!(VmOpcode::OP_LEQ),
-                _ => unimplemented!()
+                _ => panic!("not implemented: {:?}", self.op)
             }
         }
     }
@@ -482,7 +506,7 @@ pub mod ast {
     }
 
     // ## other
-    // #### return
+    // #### fn
     pub struct FunctionStatement(FunctionDefinition);
     impl FunctionStatement {
         pub fn new(def : FunctionDefinition) -> FunctionStatement {
@@ -504,7 +528,7 @@ pub mod ast {
             self.0.emit(c);
 
             // set var
-            c.emit_set_var_fn(self.id.clone());
+            c.emit_set_var_fn(self.0.id.clone());
             c.vm.code.push(VmOpcode::OP_POP);
         }
     }

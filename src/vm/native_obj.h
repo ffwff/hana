@@ -8,4 +8,4 @@ struct native_obj {
 };
 
 void native_obj_init(struct native_obj*, void *data, native_obj_free_fn free);
-void native_obj_free(struct native_obj*, void *);
+void native_obj_free(struct native_obj*);

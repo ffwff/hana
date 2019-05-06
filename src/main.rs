@@ -17,7 +17,6 @@ fn main() {
         Ok(_) => { }
     };
     let prog = ast::grammar::start(&s).unwrap();
-    println!("{:?}", prog);
     let mut c = compiler::Compiler::new();
     for stmt in prog {
         stmt.emit(&mut c);

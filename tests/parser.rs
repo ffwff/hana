@@ -245,19 +245,14 @@ end
 
     #[test]
     fn nested_fn() {
-        let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("
-$x = 1
+        parse_ast_statement!("
 function outer() begin
-    x = 2
     function inner() begin
-        x = 3
-        $z = x
     end
-    $y = x
+    inner()
 end
 outer()
 ");
-        assert_eq!(progast.len(), 3);
     }
     // #endregion
 

@@ -11,8 +11,7 @@ void function_init(struct function *fn, uint32_t ip, uint16_t nargs, struct env 
     }
 }
 
-void function_free(struct function *fn, __attribute__((unused)) void *p)
-{
+void function_free(struct function *fn) {
     if(fn->bound.nslots)
         env_free(&fn->bound);
 }

@@ -47,7 +47,7 @@ impl Compiler {
     pub fn set_local(&mut self, var : String) -> Option<(u16, u16)> {
         if let Some(last) = self.scopes.last_mut() {
             last.vars.push(var);
-            let idx = self.scopes.len()-1;
+            let idx = last.vars.len()-1;
             return Some((idx as u16, 0));
         }
         None

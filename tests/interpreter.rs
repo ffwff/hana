@@ -155,13 +155,14 @@ function outer() begin
         x = 3
         $z = x
     end
+    inner()
     $y = x
 end
 outer()
 ");
-        //assert_eq!(vm.global().get("x").unwrap().unwrap(), Value::Int(1));
-        //assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(2));
-        //assert_eq!(vm.global().get("z").unwrap().unwrap(), Value::Int(3));
+        assert_eq!(vm.global().get("x").unwrap().unwrap(), Value::Int(1));
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(2));
+        assert_eq!(vm.global().get("z").unwrap().unwrap(), Value::Int(3));
     }
     // #endregion
 

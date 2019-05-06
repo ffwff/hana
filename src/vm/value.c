@@ -82,6 +82,26 @@ void value_copy(struct value *dst, const struct value *src) {
     dst->as = src->as;
 }
 
+void value_free(struct value *val) {
+    switch(val->type) {
+    case TYPE_FN:
+        function_free(val->as.ifn);
+        break;
+    case TYPE_STR:
+        string_free(val->as.str);
+        break;
+    case TYPE_DICT:
+        hmap_free(val->as.dict);
+        break;
+    case TYPE_ARRAY:
+        array_obj_free(val->as.array);
+        break;
+    case TYPE_NATIVE_OBJ:
+        native_obj_free(val->as.native);
+        break;
+    }
+}
+
 // arith
 #define arith_op(name, op, custom) \
 void value_ ## name (struct value *result, const struct value *left, const struct value *right) { \

@@ -89,6 +89,7 @@ pub mod vm_tests {
         vm.code.push(VmOpcode::OP_POP);
         vm.code.push(VmOpcode::OP_GET_GLOBAL);
         vm.cpushs("abc");
+        vm.code.push(VmOpcode::OP_HALT);
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
         assert_eq!(vm.stack.top().unwrap(), Value::Int(42));
