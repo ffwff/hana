@@ -456,8 +456,9 @@ pub mod ast {
             let function_end = c.reserve_label();
             c.set_local(self.id.clone());
 
-            // body
             c.scope();
+
+            // body
             c.vm.code.push(VmOpcode::OP_ENV_NEW);
             let nslot_label = c.reserve_label16();
             for arg in &self.args {
@@ -467,11 +468,11 @@ pub mod ast {
 
             // default return
             match c.vm.code.top() {
-                VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {
+                VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {},
+                _ => {
                     c.vm.code.push(VmOpcode::OP_PUSH_NIL);
                     c.vm.code.push(VmOpcode::OP_RET);
-                },
-                _ => {}
+                }
             };
 
             // end
@@ -480,7 +481,7 @@ pub mod ast {
 
             // set var
             c.fill_label(function_end, c.vm.code.len());
-            c.emit_set_var(self.id.clone());
+            c.emit_set_var_fn(self.id.clone());
             c.vm.code.push(VmOpcode::OP_POP);
         }
     }

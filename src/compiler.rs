@@ -77,6 +77,29 @@ impl Compiler {
             self.vm.cpush16(slot);
         }
     }
+    pub fn emit_set_var_fn(&mut self, var : String) {
+        if var.starts_with("$") || self.scopes.len() == 0 {
+            // set global
+            self.vm.code.push(VmOpcode::OP_SET_GLOBAL);
+            self.vm.cpushs(if var.starts_with("$") { &var[1..] }
+                           else { var.as_str() });
+        } else if let Some(local) = self.get_local(&var) {
+            // set existing local
+            let mut slot = local.0;
+            let relascope = local.1;
+            if relascope != 0 {
+                let local = self.set_local(var.clone()).unwrap();
+                slot = local.0;
+            }
+            self.vm.code.push(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            self.vm.cpush16(slot);
+        } else {
+            let local = self.set_local(var.clone()).unwrap();
+            let slot = local.0;
+            self.vm.code.push(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            self.vm.cpush16(slot);
+        }
+    }
 
     pub fn emit_get_var(&mut self, var : String) {
         let local = self.get_local(&var);
@@ -126,7 +149,6 @@ impl Compiler {
     }
     pub fn unscope(&mut self) -> u16 {
         let size = self.scopes.pop().unwrap().vars.len();
-        self.scopes.pop();
         size as u16
     }
 

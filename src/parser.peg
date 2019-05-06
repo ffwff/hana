@@ -28,11 +28,12 @@ string_literal -> String
     / #expected("string literal")
 
 id_start -> String
-    = c:$(#quiet<[a-zA-Z$_]>) { c.to_string() }
+    = c:$([a-zA-Z$_]) { c.to_string() }
 id_chars -> String
-    = c:$(#quiet<id_start / [0-9\?\!]>) { c.to_string() }
+    = c:$(id_start / [0-9\?\!]) { c.to_string() }
 word -> String
-    = start:id_start next:$(id_chars*) { start + next }
+    = w:$(id_start id_chars*) { w.to_string() }
+    / #expected("word")
 keyword
     = "and" / "or" / "begin" / "end" / "if" / "else" / "while" /
       "for" / "to" / "downto" / "step" / "continue" / "break" /
@@ -40,12 +41,11 @@ keyword
       "function" / "return" / "record" / "not"
 identifier -> String
     = !keyword w:$(word) { w.to_string() }
-    / #expected("identifier")
 
 _ = #quiet<[ \t]*> // whitespace
 __ = #quiet<[ \t\r\n]*>
 newline
-    = #quiet<(_ "\r\n")+ / (_ "\n")+ / !.>
+    = _ #quiet<("\r\n")+ / ("\n")+ / !.>
     / #expected("newline")
 eos = _ newline
 
@@ -164,7 +164,8 @@ memexpr_arm -> std::boxed::Box<ast::AST>
 
 // statements
 statement -> std::boxed::Box<ast::AST>
-    = _ s:(#quiet<block_stmt
+    = __ s:(#quiet<
+           block_stmt
          / if_stmt
          / while_stmt
          / for_stmt
@@ -180,7 +181,7 @@ statement -> std::boxed::Box<ast::AST>
 
 // block
 block_stmt -> std::boxed::Box<ast::AST>
-    = "begin" eos s:(statement*) "end" eos
+    = "begin" eos s:(statement*) _ "end" eos
     { Box::new(ast::BlockStatement{ stmts: s }) }
 
 // control flows
@@ -244,16 +245,17 @@ case_stmt -> std::boxed::Box<ast::CaseStatement>
 
 // functions
 function_arguments -> Vec<String>
-    = "(" _ fid:identifier lid:(_ "," _ id:identifier { id })* _ ")"
+    = "(" _ ")" { Vec::new() }
+    / "(" _ fid:identifier lid:(_ "," _ id:identifier { id })* _ ")"
     {
         let mut v = vec![fid.to_string()];
         for id in lid { v.push(id.to_string()); }
         v
     }
-    / "(" _ ")" { Vec::new() }
+    / #expected("function arguments")
 
 function_stmt -> std::boxed::Box<ast::AST>
-    = "function" _ id:identifier _ args:function_arguments _ s:statement
+    = "function" _ id:word _ args:function_arguments _ s:statement
     {
         Box::new(ast::FunctionStatement{
             id: id,

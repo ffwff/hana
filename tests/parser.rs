@@ -208,4 +208,45 @@ end
     }
     // #endregion
 
+    // #region nested
+    #[test]
+    fn nested_stmt() {
+        parse_ast_statement!("
+function X(y) begin
+    if x == 0 begin
+
+    end
+end
+");
+    }
+
+    #[test]
+    fn nested_stmt_2() {
+        parse_ast_statement!("
+function X(y) begin
+    if x == 0 begin
+        if x == 0 1
+    end
+end
+");
+    }
+
+    #[test]
+    fn nested_fn() {
+        let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("
+$x = 1
+function outer() begin
+    x = 2
+    function inner() begin
+        x = 3
+        $z = x
+    end
+    $y = x
+end
+outer()
+");
+        assert_eq!(progast.len(), 3);
+    }
+    // #endregion
+
 }
