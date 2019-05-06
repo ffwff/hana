@@ -1,7 +1,6 @@
 use super::chmap::CHashMap;
 use super::value::Value;
 
-//
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
 #[derive(PartialEq, Clone)]

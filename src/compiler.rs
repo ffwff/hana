@@ -7,7 +7,7 @@ struct Scope {
 }
 impl Scope {
     fn new() -> Scope {
-        Scope { vars: Vec::with_capacity(std::u16::MAX as usize) }
+        Scope { vars: Vec::new() }
     }
 }
 

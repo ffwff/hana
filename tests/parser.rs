@@ -161,6 +161,18 @@ end
         assert_eq!(cast_box!(stmt.from, ast::IntLiteral).val, 0);
         assert_eq!(cast_box!(stmt.to, ast::IntLiteral).val, 100);
     }
+    #[test]
+    fn for_stmt_with_if() {
+        let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!(r#"
+for i=0 to 100 begin
+    if i mod 3 == 0 and i mod 5 == 0 print("Fizzbuzz\n")
+    else if i mod 3 == 0 print("Fizz\n")
+    else if i mod 5 == 0 print("Buzz\n")
+    else print(i, "\n")
+end
+"#);
+        cast_box!(progast[0], ast::ForStatement);
+    }
     // #endregion
 
     // #region try statement
@@ -202,9 +214,9 @@ function X(y) begin
 end
 ");
         let stmt = cast_box!(progast[0], ast::FunctionStatement);
-        assert_eq!(stmt.id, "X");
-        assert_eq!(stmt.args.len(), 1);
-        assert_eq!(stmt.args[0], "y");
+        assert_eq!(stmt.def().id, "X");
+        assert_eq!(stmt.def().args.len(), 1);
+        assert_eq!(stmt.def().args[0], "y");
     }
     // #endregion
 

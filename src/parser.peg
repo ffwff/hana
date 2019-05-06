@@ -35,8 +35,8 @@ word -> String
     = w:$(id_start id_chars*) { w.to_string() }
     / #expected("word")
 keyword
-    = "and" / "or" / "begin" / "end" / "if" / "else" / "while" /
-      "for" / "to" / "downto" / "step" / "continue" / "break" /
+    = "and" / "or" / "not" / "mod" / "begin" / "end" / "if" / "else" /
+      "while" / "for" / "to" / "downto" / "step" / "continue" / "break" /
       "try" / "case" / "as" / "in" /
       "function" / "return" / "record" / "not"
 identifier -> String
@@ -119,9 +119,9 @@ binexpr -> std::boxed::Box<ast::AST>
         #L x (_ "+" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Add }) }
            x (_ "-" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Sub }) }
 
-        #L x (_ "*" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mul }) }
-           x (_ "/" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Div }) }
-           x (_ "%" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mod }) }
+        #L x (_ "*"   _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mul }) }
+           x (_ "/"   _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Div }) }
+           x (_ "mod" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mod }) }
       }
     / callexpr
 
@@ -257,11 +257,11 @@ function_arguments -> Vec<String>
 function_stmt -> std::boxed::Box<ast::AST>
     = "function" _ id:word _ args:function_arguments _ s:statement
     {
-        Box::new(ast::FunctionStatement{
+        Box::new(ast::FunctionStatement::new(ast::FunctionDefinition {
             id: id,
             args: args,
             stmt: s
-        })
+        }))
     }
 
 return_stmt -> std::boxed::Box<ast::AST>

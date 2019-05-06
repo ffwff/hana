@@ -48,6 +48,16 @@ impl PartialEq for Value {
 use std::fmt;
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[Value]")
+        match self {
+            Value::Nil       => write!(f, "[nil]"),
+            Value::Int(n)    => write!(f, "[int] {}", n),
+            Value::Float(n)  => write!(f, "[float] {}", n),
+            Value::NativeFn  => write!(f, "[native fn]"),
+            Value::Fn        => write!(f, "[fn]"),
+            Value::Str(s)    => write!(f, "[str] {}", s),
+            Value::Dict(_)   => write!(f, "[dict]"),
+            Value::Array     => write!(f, "[array]"),
+            Value::NativeObj => write!(f, "[native obj]")
+        }
     }
 }

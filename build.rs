@@ -1,4 +1,3 @@
-#![feature(rustc_private)]
 extern crate cc;
 extern crate peg;
 

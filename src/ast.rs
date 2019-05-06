@@ -85,6 +85,65 @@ pub mod ast {
         }
     }
 
+    // ### fn
+    pub struct FunctionDefinition {
+        pub id : String,
+        pub args : Vec<String>,
+        pub stmt : std::boxed::Box<AST>,
+    }
+    impl fmt::Debug for FunctionDefinition {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            let mut args : String = "[".to_string();
+            let argsv : Vec<String> = self.args.iter().map(|x| format!("\"{}\"", x)).collect();
+            args += &argsv.join(",");
+            args += "]";
+            write!(f, "{{
+                \"id\": \"{}\",
+                \"args\": {},
+                \"stmt\": {:?},
+                \"type\": \"fnstmt\"}}",
+                    self.id, args, self.stmt)
+        }
+    }
+    impl AST for FunctionDefinition {
+        as_any!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            // definition
+            c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
+            c.vm.cpush16(self.args.len() as u16);
+            let function_end = c.reserve_label();
+
+            c.set_local(self.id.clone());
+            c.scope();
+
+            // body
+            c.vm.code.push(VmOpcode::OP_ENV_NEW);
+            let nslot_label = c.reserve_label16();
+            for arg in &self.args {
+                c.set_local(arg.clone());
+            }
+            self.stmt.emit(c);
+
+            // default return
+            match c.vm.code.top() {
+                VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {},
+                _ => {
+                    c.vm.code.push(VmOpcode::OP_PUSH_NIL);
+                    c.vm.code.push(VmOpcode::OP_RET);
+                }
+            };
+
+            // end
+            let nslots = c.unscope();
+            c.fill_label16(nslot_label, nslots);
+
+            // set var
+            c.fill_label(function_end, c.vm.code.len());
+            c.emit_set_var_fn(self.id.clone());
+            c.vm.code.push(VmOpcode::OP_POP);
+        }
+    }
+
     // # expressions
     // ## unary expr
     pub enum UnaryOp {
@@ -427,62 +486,26 @@ pub mod ast {
     }
 
     // ## other
-    // ### fn
-    pub struct FunctionStatement {
-        pub id : String,
-        pub args : Vec<String>,
-        pub stmt : std::boxed::Box<AST>,
+    // #### return
+    pub struct FunctionStatement(FunctionDefinition);
+    impl FunctionStatement {
+        pub fn new(def : FunctionDefinition) -> FunctionStatement {
+            FunctionStatement(def)
+        }
+
+        pub fn def(&self) -> &FunctionDefinition {
+            &self.0
+        }
     }
     impl fmt::Debug for FunctionStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            let mut args : String = "[".to_string();
-            let argsv : Vec<String> = self.args.iter().map(|x| format!("\"{}\"", x)).collect();
-            args += &argsv.join(",");
-            args += "]";
-            write!(f, "{{
-                \"id\": \"{}\",
-                \"args\": {},
-                \"stmt\": {:?},
-                \"type\": \"fnstmt\"}}",
-                    self.id, args, self.stmt)
+            unimplemented!()
         }
     }
     impl AST for FunctionStatement {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            // definition
-            c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
-            c.vm.cpush16(self.args.len() as u16);
-            let function_end = c.reserve_label();
-            c.set_local(self.id.clone());
-
-            c.scope();
-
-            // body
-            c.vm.code.push(VmOpcode::OP_ENV_NEW);
-            let nslot_label = c.reserve_label16();
-            for arg in &self.args {
-                c.set_local(arg.clone());
-            }
-            self.stmt.emit(c);
-
-            // default return
-            match c.vm.code.top() {
-                VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {},
-                _ => {
-                    c.vm.code.push(VmOpcode::OP_PUSH_NIL);
-                    c.vm.code.push(VmOpcode::OP_RET);
-                }
-            };
-
-            // end
-            let nslots = c.unscope();
-            c.fill_label16(nslot_label, nslots);
-
-            // set var
-            c.fill_label(function_end, c.vm.code.len());
-            c.emit_set_var_fn(self.id.clone());
-            c.vm.code.push(VmOpcode::OP_POP);
+            self.0.emit(c);
         }
     }
     // #### return
