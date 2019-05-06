@@ -136,11 +136,7 @@ pub mod ast {
             // end
             let nslots = c.unscope();
             c.fill_label16(nslot_label, nslots);
-
-            // set var
             c.fill_label(function_end, c.vm.code.len());
-            c.emit_set_var_fn(self.id.clone());
-            c.vm.code.push(VmOpcode::OP_POP);
         }
     }
 
@@ -506,6 +502,10 @@ pub mod ast {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
             self.0.emit(c);
+
+            // set var
+            c.emit_set_var_fn(self.id.clone());
+            c.vm.code.push(VmOpcode::OP_POP);
         }
     }
     // #### return
