@@ -2,13 +2,14 @@
 
 **hana**, a small object oriented programming language.
 
-**NOTE:** hana's interpreter is under a rewrite in Rust!
+**NOTE:** hana's interpreter is under a rewrite in Rust! Please checkout the [master branch](https://github.com/ffwff/hana/tree/master)
 
 ## Cloning
 
 You'll have to clone it recursively:
 
 ```
+git checkout master
 git clone --recursive https://github.com/ffwff/hana
 ```
 
