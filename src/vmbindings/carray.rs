@@ -45,9 +45,11 @@ impl<T> CArray<T> {
 
     pub fn top(&self) -> &T {
         use std::mem::size_of;
-        unsafe {
-            &(*self.data.add((self._len-1)*size_of::<T>()))
-        }
+        if self._len == 0 { panic!("accessing unbounded!"); }
+        unsafe { &(*self.data.add((self._len-1)*size_of::<T>())) }
+    }
+    pub fn pop(&mut self) {
+        self._len -= 1;
     }
 }
 

@@ -1,0 +1,14 @@
+[package]
+name = "decorator"
+version = "0.1.0"
+authors = ["ffwff <mogamiriver@tuta.io>"]
+edition = "2018"
+
+[lib]
+name = "decorator"
+crate_type = ["proc-macro"]
+
+[dependencies]
+proc-macro2 = "0.4"
+syn = { version = "0.15", features = ["full", "extra-traits"] }
+quote = "0.6"

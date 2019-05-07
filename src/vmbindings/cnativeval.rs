@@ -1,11 +1,11 @@
 use super::chmap::CHashMap;
 use super::cfunction::Function;
-use super::value::Value;
+use super::value::{Value, NativeFnData};
 
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
 #[derive(PartialEq, Clone)]
-enum _valueType {
+pub enum _valueType {
     TYPE_NIL        = 0,
     TYPE_INT        = 1,
     TYPE_FLOAT      = 2,
@@ -20,8 +20,8 @@ enum _valueType {
 #[repr(C)]
 #[derive(Clone)]
 pub struct NativeValue {
-    data : u64,
-    r#type : _valueType
+    pub data : u64,
+    pub r#type : _valueType
 }
 
 impl NativeValue {
@@ -33,7 +33,9 @@ impl NativeValue {
 _valueType::TYPE_NIL        => Value::Nil,
 _valueType::TYPE_INT        => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
 _valueType::TYPE_FLOAT      => unsafe { Value::Float(transmute::<u64, f64>(self.data)) },
-_valueType::TYPE_NATIVE_FN  => Value::NativeFn,
+_valueType::TYPE_NATIVE_FN  => unsafe {
+        Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
+    },
 _valueType::TYPE_FN         => unsafe {
         Value::Fn(&*transmute::<u64, *const Function>(self.data))
     },

@@ -4,6 +4,8 @@ mod vmbindings;
 pub use vmbindings::vm;
 pub use vmbindings::vm::VmOpcode;
 use std::io::Read;
+mod hanayo;
+//#[macro_use] extern crate decorator;
 
 fn main() {
     let args : Vec<String> = std::env::args().collect();
@@ -21,6 +23,7 @@ fn main() {
     for stmt in prog {
         stmt.emit(&mut c);
     }
+    hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();
 }

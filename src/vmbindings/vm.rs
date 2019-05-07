@@ -45,17 +45,17 @@ pub enum VmOpcode {
 #[repr(C)]
 pub struct Vm {
     // TODO: fill in all these *mut i32
-    pub ip     : u32,
-    localenv   : *mut i32,
-    globalenv  : *mut CHashMap,
-    eframe     : *mut i32,
-    pub code   : CArray<VmOpcode>,
-    pub stack  : CArray<NativeValue>,
-    pub dstr   : *mut CHashMap,
-    pub dint   : *mut CHashMap,
-    pub dfloat : *mut CHashMap,
-    pub darray : *mut CHashMap,
-    pub error  : bool
+    pub ip        : u32,
+    localenv      : *mut i32,
+    pub globalenv : *mut CHashMap,
+    eframe        : *mut i32,
+    pub code      : CArray<VmOpcode>,
+    pub stack     : CArray<NativeValue>,
+    pub dstr      : *mut CHashMap,
+    pub dint      : *mut CHashMap,
+    pub dfloat    : *mut CHashMap,
+    pub darray    : *mut CHashMap,
+    pub error     : bool
 }
 
 #[link(name="hana", kind="static")]
