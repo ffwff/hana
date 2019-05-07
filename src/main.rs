@@ -4,8 +4,8 @@ mod vmbindings;
 pub use vmbindings::vm;
 pub use vmbindings::vm::VmOpcode;
 use std::io::Read;
+#[macro_use] extern crate decorator;
 mod hanayo;
-//#[macro_use] extern crate decorator;
 
 fn main() {
     let args : Vec<String> = std::env::args().collect();

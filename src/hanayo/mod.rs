@@ -5,4 +5,5 @@ use crate::vmbindings::value::*;
 pub fn init(vm : &mut Vm) {
     let globalenv = unsafe { &mut *vm.globalenv };
     globalenv.insert("print".to_string(), Value::NativeFn(io::print).wrap());
+    globalenv.insert("input".to_string(), Value::NativeFn(io::input).wrap());
 }

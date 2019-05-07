@@ -6,7 +6,7 @@ edition = "2018"
 build = "build.rs"
 
 [dependencies]
-# decorator = { path = "./src/decorator/" }
+decorator = { path = "./src/decorator/" }
 libc = "0.2.0"
 
 [build-dependencies]
