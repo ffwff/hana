@@ -47,6 +47,21 @@ pub mod parser_tests {
     }
     // #endregion
 
+    // #region simple comments
+    #[test]
+    fn single_line_comment() {
+        let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("// Test");
+        assert_eq!(progast.len(), 0);
+    }
+    #[test]
+    fn multiline_comment() {
+        let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("/*
+multiline
+*/");
+        assert_eq!(progast.len(), 0);
+    }
+    // #endregion
+
     // #region member expr
     #[test]
     fn member_expr_dot() {

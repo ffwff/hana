@@ -1,7 +1,7 @@
 use super::ast;
 
 pub start -> Vec<std::boxed::Box<ast::AST>>
-    = s:(statement*) { s }
+    = __ s:(statement*) __ { s }
 
 // tokens
 int_literal -> String
@@ -40,8 +40,12 @@ keyword
 identifier -> String
     = !keyword w:$(word) { w.to_string() }
 
-_ = #quiet<[ \t]*> // whitespace
-__ = #quiet<[ \t\r\n]*>
+single_line_comment = "//" [^\n]*
+multiline_comment = "/*" (!"*/" .)* "*/"
+comment = single_line_comment / multiline_comment
+
+_ = #quiet<(comment / [ \t])*>
+__ = #quiet<(comment / [ \t\r\n])*>
 newline
     = _ #quiet<("\r\n")+ / ("\n")+ / !.>
     / #expected("newline")
