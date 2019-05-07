@@ -79,7 +79,7 @@ impl fmt::Debug for Value {
             Value::Nil         => write!(f, "[nil]"),
             Value::Int(n)      => write!(f, "{}", n),
             Value::Float(n)    => write!(f, "{}", n),
-            Value::NativeFn(n) => write!(f, "[native fn]"),
+            Value::NativeFn(_) => write!(f, "[native fn]"),
             Value::Fn(_)       => write!(f, "[fn]"),
             Value::Str(s)      => write!(f, "{}", s),
             Value::Dict(_)     => write!(f, "[dict]"),

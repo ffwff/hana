@@ -38,7 +38,7 @@ void value_array(struct value *val) {
 }
 void value_array_n(struct value *val, size_t n) {
     val->type = TYPE_ARRAY;
-    val->as.array = array_obj_malloc(n);
+    val->as.array = array_obj_malloc_n(n);
 }
 void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
     val->type = TYPE_NATIVE_OBJ;
@@ -148,6 +148,7 @@ arith_op(mul, *,
             for (size_t i = 0; i < (size_t)right->as.integer; i++) {
                 for(size_t j = 0; j < left->as.array->length; j++) {
                     size_t index = left->as.array->length*i+j;
+                    fprintf(stderr, "%ld -> %ld\n", j, index);
                     value_copy(&result->as.array->data[index], &left->as.array->data[j]);
                 }
             }

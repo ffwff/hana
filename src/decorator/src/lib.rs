@@ -1,10 +1,10 @@
 extern crate proc_macro;
 #[macro_use] extern crate quote;
-use proc_macro::{TokenStream, Span};
+use proc_macro::TokenStream;
 use syn;
 
 #[proc_macro_attribute]
-pub fn hana_function(args: TokenStream, item: TokenStream) -> TokenStream {
+pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
     /*
     #[hana_function()]
     fn fopen(path: Value::String, mode: Value::String) {

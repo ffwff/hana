@@ -57,8 +57,24 @@ value -> std::boxed::Box<ast::AST>
     / s:float_literal   { Box::new(ast::FloatLiteral { val: s.parse::<f64>().unwrap() }) }
     / s:int_literal     { Box::new(ast::IntLiteral   { val: s.parse::<i64>().unwrap() }) }
     / s:string_literal  { Box::new(ast::StrLiteral::new(&s)) }
-    / record_expr / function_expr
+    / array_expr / record_expr / function_expr
     / "(" _ e:expr _ ")" { e }
+
+array_expr -> std::boxed::Box<ast::AST>
+    = "[" _ "]"
+    {
+        Box::new(ast::ArrayExpr {
+            exprs: vec![]
+        })
+    }
+    / "[" _ fexpr:expr lexpr:(_ "," _ e:expr { e })* _ "]"
+    {
+        let mut exprs = vec![fexpr];
+        for expr in lexpr { exprs.push(expr); }
+        Box::new(ast::ArrayExpr {
+            exprs: exprs
+        })
+    }
 
 unary_expr -> std::boxed::Box<ast::AST>
     = op:$("not" / "-") __ val:value
@@ -140,9 +156,7 @@ callexpr -> std::boxed::Box<ast::AST>
     = left:memexpr _ "(" _ farg:expr larg:(_ "," _ e:expr { e })* _ ")"
     {
         let mut args = vec![farg];
-        for arg in larg {
-            args.push(arg);
-        }
+        for arg in larg { args.push(arg); }
         Box::new(ast::CallExpr {
             callee: left,
             args: args
@@ -164,14 +178,20 @@ memexpr -> std::boxed::Box<ast::AST>
         for right in _right {
             left = Box::new(ast::MemExpr {
                 left: left,
-                right: right });
+                right: right.0,
+                is_expr: right.1 });
         }
         left
     }
     / value
-memexpr_arm -> std::boxed::Box<ast::AST>
-    = _ "." _ id:identifier { Box::new(ast::Identifier   { val: id }) }
-    / _ "[" _ e:expr _ "]" { e }
+memexpr_arm -> (std::boxed::Box<ast::AST>, bool)
+    = _ "." _ id:identifier {
+        (Box::new(ast::Identifier   { val: id }) as std::boxed::Box<ast::AST>,
+         false) }
+    / _ "[" _ e:expr _ "]" {
+        let is_expr = e.as_any().downcast_ref::<ast::StrLiteral>().is_none();
+        ( e, is_expr )
+    }
 
 // statements
 statement_no_eos -> std::boxed::Box<ast::AST>

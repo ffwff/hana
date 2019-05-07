@@ -104,6 +104,24 @@ pub mod ast {
             c.vm.cpushf64(self.val);
         }
     }
+    // ## arrays
+    pub struct ArrayExpr {
+        pub exprs : Vec<std::boxed::Box<AST>>
+    }
+    impl fmt::Debug for ArrayExpr {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            unimplemented!()
+        }
+    }
+    impl AST for ArrayExpr {
+        as_any!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            for expr in &self.exprs { expr.emit(c); }
+            c.vm.code.push(VmOpcode::OP_PUSH64);
+            c.vm.cpush64(self.exprs.len() as u64);
+            c.vm.code.push(VmOpcode::OP_ARRAY_LOAD);
+        }
+    }
     // ### fn def
     pub struct FunctionDefinition {
         pub id : String,
@@ -262,12 +280,17 @@ pub mod ast {
                         memexpr.left.emit(c);
                         let any = memexpr.right.as_any();
                         // optimize static member vars
-                        if let Some(id) = any.downcast_ref::<Identifier>() {
+                        let val = {
+                            if let Some(id) = any.downcast_ref::<Identifier>()
+                            { Some(&id.val) }
+                            else if let Some(str) = any.downcast_ref::<StrLiteral>()
+                            { Some(&str.val) }
+                            else { None }
+                        };
+                        if val.is_some() && !memexpr.is_expr {
+                            let val = val.unwrap();
                             c.vm.code.push(VmOpcode::OP_MEMBER_SET);
-                            c.vm.cpushs(id.val.clone());
-                        } else if let Some(str) = any.downcast_ref::<StrLiteral>() {
-                            c.vm.code.push(VmOpcode::OP_MEMBER_SET);
-                            c.vm.cpushs(str.val.clone());
+                            c.vm.cpushs(val.clone());
                         } else { // otherwise, do OP_INDEX_SET as normal
                             memexpr.right.emit(c);
                             c.vm.code.push(VmOpcode::OP_INDEX_SET);
@@ -300,6 +323,50 @@ pub mod ast {
                         panic!("Invalid left hand side expression!");
                     }
                 },
+                BinOp::Adds | BinOp::Subs | BinOp::Muls | BinOp::Divs | BinOp::Mods => {
+                    let opcode = match self.op {
+                        BinOp::Adds => VmOpcode::OP_ADD,
+                        BinOp::Subs => VmOpcode::OP_SUB,
+                        BinOp::Muls => VmOpcode::OP_MUL,
+                        BinOp::Divs => VmOpcode::OP_DIV,
+                        BinOp::Mods => VmOpcode::OP_MOD,
+                        _ => unreachable!()
+                    };
+                    let any = self.left.as_any();
+                    if let Some(id) = any.downcast_ref::<Identifier>() {
+                        self.right.emit(c);
+                        c.emit_get_var(id.val.clone());
+                        c.vm.code.push(opcode);
+                        c.emit_set_var(id.val.clone());
+                    } else if let Some(memexpr) = any.downcast_ref::<MemExpr>() {
+                        self.right.emit(c);
+                        memexpr.left.emit(c);
+                        // optimize static member vars
+                        let val = {
+                            if let Some(id) = any.downcast_ref::<Identifier>()
+                            { Some(&id.val) }
+                            else if let Some(str) = any.downcast_ref::<StrLiteral>()
+                            { Some(&str.val) }
+                            else { None }
+                        };
+                        if val.is_some() && !memexpr.is_expr {
+                            let val = val.unwrap();
+                            c.vm.code.push(VmOpcode::OP_MEMBER_GET_NO_POP);
+                            c.vm.cpushs(val.clone());
+                            c.vm.code.push(opcode);
+                            c.vm.code.push(VmOpcode::OP_MEMBER_SET);
+                            c.vm.cpushs(val.clone());
+                        } else { // otherwise, do OP_INDEX_SET as normal
+                            memexpr.right.emit(c);
+                            c.vm.code.push(VmOpcode::OP_INDEX_GET);
+                            memexpr.left.emit(c);
+                            memexpr.right.emit(c);
+                            c.vm.code.push(VmOpcode::OP_INDEX_SET);
+                        }
+                    } else {
+                        panic!("Invalid left hand side expression!");
+                    }
+                },
                 // basic manip operators
                 BinOp::Add => arithop_do!(VmOpcode::OP_ADD),
                 BinOp::Sub => arithop_do!(VmOpcode::OP_SUB),
@@ -314,7 +381,7 @@ pub mod ast {
                 BinOp::Lt  => arithop_do!(VmOpcode::OP_LT ),
                 BinOp::Geq => arithop_do!(VmOpcode::OP_GEQ),
                 BinOp::Leq => arithop_do!(VmOpcode::OP_LEQ),
-                _ => panic!("not implemented: {:?}", self.op)
+                //_ => panic!("not implemented: {:?}", self.op)
             }
         }
     }
@@ -323,6 +390,30 @@ pub mod ast {
     pub struct MemExpr {
         pub left : std::boxed::Box<AST>,
         pub right : std::boxed::Box<AST>,
+        pub is_expr: bool,
+    }
+    impl MemExpr {
+        fn _emit(&self, c : &mut compiler::Compiler, is_method_call : bool) {
+            self.left.emit(c);
+            let get_op = if !is_method_call { VmOpcode::OP_MEMBER_GET }
+                         else { VmOpcode::OP_MEMBER_GET_NO_POP };
+            let any = self.right.as_any();
+            // optimize static keys
+            let val = {
+                if let Some(id) = any.downcast_ref::<Identifier>()
+                { Some(&id.val) }
+                else if let Some(str) = any.downcast_ref::<StrLiteral>()
+                { Some(&str.val) }
+                else { None }
+            };
+            if val.is_some() && !self.is_expr {
+                c.vm.code.push(get_op);
+                c.vm.cpushs(val.unwrap().clone());
+            } else {
+                self.right.emit(c);
+                c.vm.code.push(VmOpcode::OP_INDEX_GET);
+            }
+        }
     }
     impl fmt::Debug for MemExpr {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -333,7 +424,7 @@ pub mod ast {
     impl AST for MemExpr {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            self._emit(c, false)
         }
     }
 
@@ -352,7 +443,11 @@ pub mod ast {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
             for arg in self.args.iter().rev() { arg.emit(c); }
-            self.callee.emit(c);
+            if let Some(memexpr) = self.callee.as_any().downcast_ref::<MemExpr>() {
+                memexpr._emit(c, true);
+            } else {
+                self.callee.emit(c);
+            }
             c.vm.code.push(VmOpcode::OP_CALL);
             c.vm.cpush16(self.args.len() as u16);
         }

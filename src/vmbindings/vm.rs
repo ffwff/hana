@@ -59,6 +59,7 @@ pub struct Vm {
 }
 
 #[link(name="hana", kind="static")]
+#[allow(improper_ctypes)]
 extern "C" {
     fn vm_init(vm: *mut Vm);
     fn vm_free(vm: *mut Vm);
