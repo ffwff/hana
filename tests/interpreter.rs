@@ -144,6 +144,7 @@ end
 y = A(10)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(20));
+        assert!(vm.global().get("x").is_none());
     }
     #[test]
     fn function_stmt_scope() {
@@ -163,6 +164,25 @@ outer()
         assert_eq!(vm.global().get("x").unwrap().unwrap(), Value::Int(1));
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(2));
         assert_eq!(vm.global().get("z").unwrap().unwrap(), Value::Int(3));
+    }
+    #[test]
+    fn function_stmt_iife() {
+        let mut vm : Vm = eval!("
+(function() begin
+$y = 0
+end)()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(0));
+    }
+    #[test]
+    fn function_expr() {
+        let mut vm : Vm = eval!("
+fib(n) = n <= 1 ? 1 : fib(n-1) + fib(n-2)
+");
+        assert!(match vm.global().get("fib").unwrap().unwrap() {
+            Value::Fn(_) => true,
+            _ => false
+        });
     }
     // #endregion
 

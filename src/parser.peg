@@ -87,7 +87,19 @@ function_expr -> std::boxed::Box<ast::AST>
     }
 
 // expressions
-expr -> std::boxed::Box<ast::AST> = condexpr / #expected("expression")
+expr -> std::boxed::Box<ast::AST> = assignmentexpr / #expected("expression")
+
+assignmentexpr -> std::boxed::Box<ast::AST>
+    = #infix<condexpr> {
+        #L x (_ "="  _) y  { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Assign }) }
+           x (_ "+=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Adds }) }
+           x (_ "-=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Subs }) }
+           x (_ "*=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Muls }) }
+           x (_ "/=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Divs }) }
+           x (_ "%=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mods }) }
+      }
+    / condexpr
+
 condexpr -> std::boxed::Box<ast::AST>
     = cond:binexpr _ "?" _ then:binexpr _ ":" _ alt:binexpr
     {
@@ -101,13 +113,6 @@ condexpr -> std::boxed::Box<ast::AST>
 
 binexpr -> std::boxed::Box<ast::AST>
     = #infix<callexpr> {
-        #L x (_ "="  _) y  { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Assign }) }
-           x (_ "+=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Adds }) }
-           x (_ "-=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Subs }) }
-           x (_ "*=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Muls }) }
-           x (_ "/=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Divs }) }
-           x (_ "%=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mods }) }
-
         #L x (_ "and" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::And }) }
            x (_ "or"  _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Or }) }
 
@@ -128,7 +133,7 @@ binexpr -> std::boxed::Box<ast::AST>
     / callexpr
 
 callexpr -> std::boxed::Box<ast::AST>
-    = left:memexpr _ "(" _ farg:memexpr larg:(_ "," _ e:memexpr { e })* _ ")"
+    = left:memexpr _ "(" _ farg:expr larg:(_ "," _ e:expr { e })* _ ")"
     {
         let mut args = vec![farg];
         for arg in larg {
@@ -184,7 +189,7 @@ statement -> std::boxed::Box<ast::AST>
 
 // block
 block_stmt -> std::boxed::Box<ast::AST>
-    = "begin" eos s:(statement*) _ "end" eos
+    = "begin" eos s:(statement*) _ "end"
     { Box::new(ast::BlockStatement{ stmts: s }) }
 
 // control flows
