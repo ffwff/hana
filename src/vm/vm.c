@@ -1,12 +1,18 @@
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 #include "vm.h"
 #include "string_.h"
 #include "hmap.h"
 #include "array_obj.h"
 #include "function.h"
 #include "exception_frame.h"
+
+#ifdef DEBUG
+#include <assert.h>
+#define debug_assert assert
+#else
+#define debug_assert(...)
+#endif
 
 #ifdef NOLOG
 #define LOG(...)
@@ -235,7 +241,7 @@ void vm_execute(struct vm *vm) {
 #define binop(optype, fn) \
     doop(optype): { \
         LOG("" #optype "\n"); \
-        assert(vm->stack.length >= 2); \
+        debug_assert(vm->stack.length >= 2); \
         vm->ip++; \
 \
         struct value right = array_top(vm->stack); \
@@ -482,7 +488,7 @@ do { \
         struct value val = array_top(vm->stack);
         const uint16_t nargs = vm->code.data[vm->ip+0] << 4 | vm->code.data[vm->ip+1];
         vm->ip += sizeof(nargs);
-        assert(vm->stack.length >= nargs);
+        debug_assert(vm->stack.length >= nargs);
         LOG("call %d\n", nargs);
         if(val.type == TYPE_NATIVE_FN) {
             array_pop(vm->stack);
@@ -588,7 +594,10 @@ do { \
         array_pop(vm->stack);
 
         struct value val = array_top(vm->stack);
-        assert(val.type == TYPE_STR);
+        if(val.type != TYPE_STR) {
+            FATAL("expected key of record to be string\n");
+            ERROR();
+        }
         hmap_set_str(dval.as.dict, val.as.str, &val);
         // NOTE: val should not be free'd.
         dispatch();
@@ -602,7 +611,7 @@ do { \
 
         struct value key = {0};
         while((key = array_top(vm->stack)).type != TYPE_NIL) {
-            assert(key.type == TYPE_STR);
+            debug_assert(key.type == TYPE_STR);
             // key
             array_pop(vm->stack);
             // val
@@ -706,7 +715,7 @@ do { \
         struct value val = array_top(vm->stack);
         int64_t length = val.as.integer;
         array_pop(vm->stack);
-        assert(val.type == TYPE_INT);
+        debug_assert(val.type == TYPE_INT);
         LOG("ARRAY_LOAD %ld\n", length);
 
         struct value aval;
@@ -769,7 +778,7 @@ do { \
             eframe != NULL; eframe = eframe->prev) {
             struct value *val = exception_frame_get_handler_for_error(eframe, vm, &raiseval);
             if(val != NULL) {
-                assert(val->type == TYPE_FN);
+                debug_assert(val->type == TYPE_FN);
                 // unwind & jump to exception handler
                 exception_frame_unwind(eframe, vm);
                 array_push(vm->stack, raiseval);
@@ -811,7 +820,6 @@ do { \
         struct value val = array_top(vm->stack);
         const uint16_t nargs = vm->code.data[vm->ip+0] << 4 | vm->code.data[vm->ip+1];
         vm->ip += sizeof(nargs);
-        assert(vm->stack.length >= nargs);
         LOG("TAIL RET %d\n", nargs);
         if(val.type == TYPE_NATIVE_FN) {
 
@@ -857,7 +865,7 @@ do { \
 }
 
 struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
-    assert(fn->type == TYPE_FN || fn->type == TYPE_DICT);
+    debug_assert(fn->type == TYPE_FN || fn->type == TYPE_DICT);
 
     struct function *ifn;
 
