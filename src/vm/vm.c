@@ -67,7 +67,6 @@ void vm_execute(struct vm *vm) {
 #else
 #define dispatch() do { \
         vm_print_stack(vm); \
-        /*getchar();*/ \
         goto *dispatch_table[vm->code.data[vm->ip]]; \
     } while(0)
 #endif
@@ -490,10 +489,13 @@ do { \
         vm->ip += sizeof(nargs);
         debug_assert(vm->stack.length >= nargs);
         LOG("call %d\n", nargs);
-        if(val.type == TYPE_NATIVE_FN) {
+        switch(val.type) {
+        case TYPE_NATIVE_FN: {
             array_pop(vm->stack);
             val.as.fn(vm, nargs);
-        } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
+            break; }
+        case TYPE_FN:
+        case TYPE_DICT: {
             struct function *ifn;
             JMP_INTERPRETED_FN(dispatch());
 
@@ -505,9 +507,10 @@ do { \
             vm->localenv->lexical_parent = &ifn->bound;
             vm->localenv->nargs = ifn->nargs;
             vm->ip = ifn->ip;
-        } else {
+            break; }
+        default: {
             FATAL("calling a value that's not a record constructor or a function\n");
-            ERROR();
+            ERROR(); }
         }
         dispatch();
     }

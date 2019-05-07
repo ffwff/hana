@@ -27,4 +27,5 @@ fn main() {
     hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();
+    std::process::exit(if c.vm.error { 1 } else { 0 });
 }
