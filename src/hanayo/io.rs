@@ -1,6 +1,6 @@
 use crate::vmbindings::vm::Vm;
 use crate::vm::Value;
-use std::io::Write;
+use std::io::{Read, Write};
 
 pub extern fn print(cvm : *mut Vm, nargs : u16) {
     let vm = unsafe { &mut *cvm };
@@ -15,6 +15,8 @@ pub extern fn print(cvm : *mut Vm, nargs : u16) {
 
 #[hana_function()]
 fn input() -> Value {
-    // TODO
-    Value::Nil
+    let mut buffer = String::new();
+    std::io::stdin().read_line(&mut buffer).unwrap();
+    buffer.pop(); // remove newline
+    unsafe { Value::Str(&*Box::into_raw(Box::new(buffer))) }
 }
