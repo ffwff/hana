@@ -63,6 +63,7 @@ extern "C" {
     fn vm_init(vm: *mut Vm);
     fn vm_free(vm: *mut Vm);
     fn vm_execute(vm: *mut Vm);
+    fn vm_print_stack(vm: *const Vm);
 
     fn vm_code_reserve(vm: *mut Vm, sz: usize);
     fn vm_code_push8  (vm: *mut Vm, n : u8);
@@ -93,6 +94,10 @@ impl Vm {
         };
         unsafe { vm_init(&mut vm); }
         vm
+    }
+
+    pub fn print_stack(&self) {
+        unsafe { vm_print_stack(self); }
     }
 
     pub fn execute(&mut self) {

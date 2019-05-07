@@ -30,23 +30,27 @@ impl NativeValue {
         use std::mem::transmute;
         #[allow(non_camel_case_types)]
         match &self.r#type {
-_valueType::TYPE_NIL        => Value::Nil,
-_valueType::TYPE_INT        => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
-_valueType::TYPE_FLOAT      => unsafe { Value::Float(transmute::<u64, f64>(self.data)) },
-_valueType::TYPE_NATIVE_FN  => unsafe {
-        Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
-    },
-_valueType::TYPE_FN         => unsafe {
-        Value::Fn(&*transmute::<u64, *const Function>(self.data))
-    },
-_valueType::TYPE_STR        => unsafe {
-        Value::Str(&*transmute::<u64, *const String>(self.data))
-    },
-_valueType::TYPE_DICT       => unsafe {
-        Value::Dict(&*transmute::<u64, *const CHashMap>(self.data))
-    },
-_valueType::TYPE_ARRAY      => Value::Array,
-_valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
+        _valueType::TYPE_NIL        => Value::Nil,
+        _valueType::TYPE_INT        => unsafe {
+                Value::Int(transmute::<u64, i64>(self.data))
+            },
+        _valueType::TYPE_FLOAT      => unsafe {
+                Value::Float(transmute::<u64, f64>(self.data))
+            },
+        _valueType::TYPE_NATIVE_FN  => unsafe {
+                Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
+            },
+        _valueType::TYPE_FN         => unsafe {
+                Value::Fn(&*transmute::<u64, *const Function>(self.data))
+            },
+        _valueType::TYPE_STR        => unsafe {
+                Value::Str(&*transmute::<u64, *const String>(self.data))
+            },
+        _valueType::TYPE_DICT       => unsafe {
+                Value::Dict(&*transmute::<u64, *const CHashMap>(self.data))
+            },
+        _valueType::TYPE_ARRAY      => Value::Array,
+        _valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
         }
     }
 

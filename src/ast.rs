@@ -36,11 +36,31 @@ pub mod ast {
     }
     // ## strings
     pub struct StrLiteral {
-        pub val : String
+        pub val : String,
+        rawval : String
+    }
+    impl StrLiteral {
+        pub fn new(str : &String) -> StrLiteral {
+            let mut s = "".to_string();
+            let mut chars = str.chars();
+            while let Some(c) = chars.next() {
+                if c == '\\' {
+                    let next = chars.next();
+                    match next {
+                        Some('n') => s += "\n",
+                        Some('r') => s += "\r",
+                        _ => panic!("expected character")
+                    }
+                } else {
+                    s += &c.to_string();
+                }
+            }
+            StrLiteral { val: s, rawval: str.clone() }
+        }
     }
     impl fmt::Debug for StrLiteral {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{{\"string\": \"{}\"}}", self.val)
+            write!(f, "{{\"string\": \"{}\"}}", self.rawval)
         }
     }
     impl AST for StrLiteral {

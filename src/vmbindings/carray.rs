@@ -4,7 +4,7 @@ use std::ptr::null_mut;
 pub struct CArray<T> {
     data: *mut T, // NOTE: this won't be freed inside rust because
                   // the VM should automatically call array_free
-    _len: usize,
+    len: usize,
     capacity: usize,
 }
 
@@ -12,7 +12,7 @@ impl<T> CArray<T> {
     pub fn new_nil() -> CArray<T> {
         CArray::<T> {
             data: null_mut(),
-            _len: 0,
+            len: 0,
             capacity: 0
         }
     }
@@ -21,7 +21,7 @@ impl<T> CArray<T> {
         use std::mem::size_of;
         CArray::<T> {
             data: unsafe{ libc::malloc(size_of::<T>()*n) as *mut T },
-            _len: n,
+            len: n,
             capacity: n
         }
     }
@@ -29,27 +29,27 @@ impl<T> CArray<T> {
     pub fn push(&mut self, val : T) {
         use std::mem::size_of;
         unsafe {
-            if self._len == self.capacity {
+            if self.len == self.capacity {
                 self.capacity *= 2;
                 self.data = libc::realloc(self.data as *mut libc::c_void,
                     size_of::<T>()*self.capacity) as *mut T;
             }
-            std::ptr::write(self.data.add(self._len*size_of::<T>()), val);
-            self._len += 1;
+            std::ptr::write(self.data.add(self.len*size_of::<T>()), val);
+            self.len += 1;
         }
     }
 
     pub fn len(&self) -> usize {
-        self._len
+        self.len
     }
 
     pub fn top(&self) -> &T {
-        use std::mem::size_of;
-        if self._len == 0 { panic!("accessing unbounded!"); }
-        unsafe { &(*self.data.add((self._len-1)*size_of::<T>())) }
+        if self.len == 0 { panic!("accessing unbounded!"); }
+        unsafe { &(*self.data.add(self.len-1)) }
     }
     pub fn pop(&mut self) {
-        self._len -= 1;
+        if self.len == 0 { panic!("popping unbounded!"); }
+        self.len -= 1;
     }
 }
 
@@ -57,12 +57,9 @@ impl<T> std::ops::Index<usize> for CArray<T> {
     type Output = T;
 
     fn index(&self, idx : usize) -> &T {
-        if idx >= self._len {
+        if idx >= self.len {
             panic!("accessing outside of index!");
         }
-        use std::mem::size_of;
-        unsafe {
-            &(*self.data.add((self._len-1)*size_of::<T>()))
-        }
+        unsafe { &(*self.data.add(idx)) }
     }
 }

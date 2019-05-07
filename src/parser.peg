@@ -12,10 +12,8 @@ float_literal -> String
     / #expected("float literal")
 
 string_literal_escape -> String
-    = "\\r"  { "\r".to_string() }
-    / "\\n"  { "\n".to_string() }
-    / "\\\"" { "\"".to_string() }
-    / "\\'"  { "'".to_string() }
+    = s:$(#quiet<"\\" .>)
+    { s.to_string() }
 string_literal_char -> String
     = s:$([^\"]) { s.to_owned() }
     / string_literal_escape
@@ -23,8 +21,8 @@ string_literal_char_single -> String
     = s:$([^']) { s.to_owned() }
     / string_literal_escape
 string_literal -> String
-    = "\"" s:$(string_literal_char*) "\"" { s.to_owned() }
-    / "'" s:$(string_literal_char_single*) "'" { s.to_owned() }
+    = "\"" s:string_literal_char* "\"" { s.join("") }
+    / "'" s:string_literal_char_single* "'" { s.join("") }
     / #expected("string literal")
 
 id_start -> String
@@ -54,7 +52,7 @@ value -> std::boxed::Box<ast::AST>
     = s:identifier      { Box::new(ast::Identifier   { val: s }) }
     / s:float_literal   { Box::new(ast::FloatLiteral { val: s.parse::<f64>().unwrap() }) }
     / s:int_literal     { Box::new(ast::IntLiteral   { val: s.parse::<i64>().unwrap() }) }
-    / s:string_literal  { Box::new(ast::StrLiteral   { val: s }) }
+    / s:string_literal  { Box::new(ast::StrLiteral::new(&s)) }
     / record_expr / function_expr
     / "(" _ e:expr _ ")" { e }
 
@@ -110,15 +108,15 @@ binexpr -> std::boxed::Box<ast::AST>
            x (_ "/=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Divs }) }
            x (_ "%=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Mods }) }
 
+        #L x (_ "and" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::And }) }
+           x (_ "or"  _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Or }) }
+
         #L x (_ "==" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Eq }) }
            x (_ "!=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Neq }) }
            x (_ ">" _)  y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Gt }) }
            x (_ "<" _)  y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Lt }) }
            x (_ ">=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Geq }) }
            x (_ "<=" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Leq }) }
-
-        #L x (_ "and" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::And }) }
-           x (_ "or"  _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Or }) }
 
         #L x (_ "+" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Add }) }
            x (_ "-" _) y { Box::new(ast::BinExpr{ left: x, right:y, op: ast::BinOp::Sub }) }
