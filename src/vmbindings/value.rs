@@ -54,32 +54,18 @@ impl Value {
 
     // gc
     pub fn mark(&self) {
-        fn mark_val(val: &NativeValue) {
-            use std::mem::transmute;
-            match val.r#type {
-                _valueType::TYPE_FN   |
-                _valueType::TYPE_STR  |
-                _valueType::TYPE_DICT |
-                _valueType::TYPE_ARRAY  => unsafe {
-                    let data = transmute::<u64, *mut u8>(val.data);
-                    mark_reachable(data);
-                    val.unwrap().mark();
-                },
-                _ => {}
-            }
-        }
         match &self {
             Value::Fn(f)       => {
                 unimplemented!()
             },
             Value::Dict(d)     => {
                 for (_, val) in d.iter() {
-                    mark_val(&val);
+                    val.mark();
                 }
             },
             Value::Array(a)    => {
                 for val in a.iter() {
-                    mark_val(&val);
+                    val.mark();
                 }
             },
             _ => {}

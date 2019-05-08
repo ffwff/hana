@@ -79,7 +79,9 @@ pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const Stri
     let right : &'static String = &*cright;
     let mut newleft = left.clone();
     newleft += right;
-    malloc(newleft, |ptr| drop::<String>(ptr))
+    // TODO this not work
+    unimplemented!()
+    //malloc(newleft, |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
@@ -101,7 +103,7 @@ pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String)
 pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut String {
     let left : &'static String = &*cleft;
     let to = idx as usize;
-    Box::into_raw(Box::new(left[to..to+1].to_string()))
+    malloc(left[to..to+1].to_string(), |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
@@ -114,27 +116,27 @@ pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
 // #region function
 #[no_mangle]
 pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env) -> *mut Function {
-    Box::into_raw(Box::new(Function::new(addr, nargs, env)))
+    malloc(Function::new(addr, nargs, env), |ptr| drop::<Function>(ptr))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn function_free(fun: *mut Function) {
-    Box::from_raw(fun);
+    //Box::from_raw(fun);
 }
 // #endregion
 
 // #region array
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc() -> *mut CArray<NativeValue> {
-    Box::into_raw(Box::new(CArray::new()))
+    malloc(CArray::new(), |ptr| drop::<CArray<NativeValue>>(ptr))
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue> {
-    Box::into_raw(Box::new(CArray::reserve(n)))
+    malloc(CArray::reserve(n), |ptr| drop::<CArray<NativeValue>>(ptr))
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {
-    Box::from_raw(carray);
+    //Box::from_raw(carray);
 }
 // #endregion
 

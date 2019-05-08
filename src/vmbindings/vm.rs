@@ -135,33 +135,23 @@ impl Vm {
 
     // gc
     pub fn mark(&mut self) {
-        fn mark_val(val: &NativeValue) {
-            use std::mem::transmute;
-            match val.r#type {
-                _valueType::TYPE_STR => unsafe {
-                    let data = transmute::<u64, *mut u8>(val.data);
-                    mark_reachable(data);
-                    val.unwrap().mark();
-                },
-                _ => {}
-            }
-        }
         // globalenv
         let globalenv = self.global();
         for (_, val) in globalenv.iter() {
-            mark_val(&val);
+            val.mark();
         }
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
-            mark_val(&val);
+            val.mark();
         }
         // call stack
         unsafe {
             let mut env = self.localenv;
             while env != null_mut() {
                 for i in 0..((*env).nslots as usize) {
-                    mark_val(&*(*env).slots.add(i));
+                    let val = (&*(*env).slots.add(i));
+                    val.mark();
                 }
                 env = (*env).parent;
             }
