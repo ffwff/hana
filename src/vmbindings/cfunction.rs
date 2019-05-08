@@ -3,10 +3,10 @@ use std::ptr::{null, null_mut};
 
 #[repr(C)]
 pub struct Env {
-    slots: *mut NativeValue,
-    nslots : u16,
+    pub slots: *mut NativeValue,
+    pub nslots : u16,
     nargs : u16,
-    parent : *mut Env,
+    pub parent : *mut Env,
     lexical_parent : *mut Env,
     retip : u32,
 }
@@ -31,7 +31,7 @@ impl Env {
 pub struct Function {
     ip: u32,
     nargs : u16,
-    bound: Env
+    pub bound: Env
 }
 
 extern "C" {

@@ -2,6 +2,7 @@ use super::chmap::CHashMap;
 use super::carray::CArray;
 use super::cfunction::{Env, Function};
 use super::cnativeval::NativeValue;
+use super::gc::{malloc, free, drop};
 
 #[allow(unused_attributes)]
 pub mod foreignc {
@@ -64,12 +65,12 @@ pub unsafe extern "C" fn hmap_set_str(chm: *mut CHashMap, ckey: *const  String, 
 #[no_mangle]
 pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char) -> *mut String {
     let s = CStr::from_ptr(cstr).to_str().unwrap();
-    Box::into_raw(Box::new(String::from(s)))
+    malloc(String::from(s), |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn string_free(cstr: *mut String) {
-    Box::from_raw(cstr);
+    //free(cstr);
 }
 
 #[no_mangle]
@@ -78,13 +79,13 @@ pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const Stri
     let right : &'static String = &*cright;
     let mut newleft = left.clone();
     newleft += right;
-    Box::into_raw(Box::new(newleft))
+    malloc(newleft, |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn string_repeat(cleft: *const String, n : i64) -> *mut String {
     let left : &'static String = &*cleft;
-    Box::into_raw(Box::new(left.repeat(n as usize)))
+    malloc(left.repeat(n as usize), |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]

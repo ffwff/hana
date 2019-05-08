@@ -4,6 +4,7 @@ extern crate libc;
 
 use super::carray::CArray;
 use super::chmap::CHashMap;
+use super::cfunction::Env;
 use super::cnativeval::{_valueType, NativeValue};
 use super::gc::*;
 pub use super::value::Value;
@@ -48,7 +49,7 @@ pub enum VmOpcode {
 pub struct Vm {
     // TODO: fill in all these *mut i32
     pub ip        : u32,
-    localenv      : *mut i32,
+    localenv      : *mut Env,
     pub globalenv : *mut CHashMap,
     eframe        : *mut i32,
     pub code      : CArray<VmOpcode>,
@@ -129,6 +130,7 @@ impl Vm {
 
     // globals
     pub fn global(&mut self) -> &mut CHashMap {
+        if self.globalenv == null_mut() { panic!("accessing nil ptr"); }
         unsafe{ &mut *self.globalenv }
     }
 
@@ -143,19 +145,30 @@ impl Vm {
                 _valueType::TYPE_ARRAY  => unsafe {
                     let data = transmute::<u64, *mut u8>(val.data);
                     mark_reachable(data);
+                    val.unwrap().mark();
                 },
                 _ => {}
             }
         }
         // globalenv
         let globalenv = self.global();
-        for (key, val) in globalenv.iter() {
+        for (_, val) in globalenv.iter() {
             mark_val(&val);
         }
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
             mark_val(&val);
+        }
+        // call stack
+        unsafe {
+            let mut env = self.localenv;
+            while env != null_mut() {
+                for i in 0..((*env).nslots as usize) {
+                    mark_val(&*(*env).slots.add(i));
+                }
+                env = (*env).parent;
+            }
         }
     }
 }
