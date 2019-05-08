@@ -125,11 +125,11 @@ pub unsafe extern "C" fn function_free(fun: *mut Function) {
 // #region array
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc() -> *mut CArray<NativeValue> {
-    Box::into_raw(Box::new(CArray::new(2)))
+    Box::into_raw(Box::new(CArray::new()))
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue> {
-    Box::into_raw(Box::new(CArray::new(n)))
+    Box::into_raw(Box::new(CArray::reserve(n)))
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {

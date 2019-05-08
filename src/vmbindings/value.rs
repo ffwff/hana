@@ -1,4 +1,5 @@
 use super::chmap::CHashMap;
+use super::carray::CArray;
 use super::cfunction::Function;
 use super::vm::Vm;
 use super::cnativeval::{NativeValue, _valueType};
@@ -15,7 +16,7 @@ pub enum Value {
     Fn(&'static Function),
     Str(&'static String),
     Dict(&'static CHashMap),
-    Array,
+    Array(&'static CArray<NativeValue>),
     NativeObj
 }
 
@@ -44,7 +45,8 @@ impl Value {
             Value::Str(s)      => NativeValue { r#type: _valueType::TYPE_STR,
                                                 data: transmute::<*const String, u64>(*s) },
             Value::Dict(_)     => NativeValue { r#type: _valueType::TYPE_DICT , data: 0     },
-            Value::Array       => NativeValue { r#type: _valueType::TYPE_ARRAY, data: 0     },
+            Value::Array(a)    => NativeValue { r#type: _valueType::TYPE_ARRAY,
+                                                data: transmute::<*const CArray<NativeValue>, u64>(*a) },
             Value::NativeObj   => NativeValue { r#type: _valueType::TYPE_NATIVE_OBJ, data: 0},
         } }
     }
@@ -65,7 +67,7 @@ impl PartialEq for Value {
             (Value::Fn(x),     Value::Fn(y))         => std::ptr::eq(x, y),
             (Value::Str(x),    Value::Str(y))        => x == y,
             (Value::Dict(_),   Value::Dict(_))       => false,
-            (Value::Array,     Value::Array)         => false,
+            (Value::Array(_),  Value::Array(_))      => false,
             (Value::NativeObj, Value::NativeObj)     => false,
             _ => false
         }
@@ -83,7 +85,7 @@ impl fmt::Debug for Value {
             Value::Fn(_)       => write!(f, "[fn]"),
             Value::Str(s)      => write!(f, "{}", s),
             Value::Dict(_)     => write!(f, "[dict]"),
-            Value::Array       => write!(f, "[array]"),
+            Value::Array(_)    => write!(f, "[array]"),
             Value::NativeObj   => write!(f, "[native obj]")
         }
     }

@@ -1,5 +1,6 @@
 use super::chmap::CHashMap;
 use super::cfunction::Function;
+use super::carray::CArray;
 use super::value::{Value, NativeFnData};
 
 #[repr(u8)]
@@ -49,7 +50,9 @@ impl NativeValue {
         _valueType::TYPE_DICT       => unsafe {
                 Value::Dict(&*transmute::<u64, *const CHashMap>(self.data))
             },
-        _valueType::TYPE_ARRAY      => Value::Array,
+        _valueType::TYPE_ARRAY      => unsafe {
+                Value::Array(&*transmute::<u64, *const CArray<NativeValue>>(self.data))
+            },
         _valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
         }
     }

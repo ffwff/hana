@@ -184,6 +184,18 @@ fib(n) = n <= 1 ? 1 : fib(n-1) + fib(n-2)
             _ => false
         });
     }
+    #[test]
+    fn function_return() {
+        let mut vm : Vm = eval!("
+function a() begin
+    return 1
+    $y = 0
+end
+
+y = a()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
+    }
     // #endregion
 
 }

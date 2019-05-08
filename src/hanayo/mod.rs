@@ -1,11 +1,29 @@
 mod io;
+mod array;
 use crate::vmbindings::vm::Vm;
+use crate::vmbindings::chmap::CHashMap;
 use crate::vmbindings::value::*;
 
 pub fn init(vm : &mut Vm) {
     let globalenv = unsafe { &mut *vm.globalenv };
-    globalenv.insert("true".to_string(), Value::Int(1).wrap());
-    globalenv.insert("false".to_string(), Value::Int(0).wrap());
-    globalenv.insert("print".to_string(), Value::NativeFn(io::print).wrap());
-    globalenv.insert("input".to_string(), Value::NativeFn(io::input).wrap());
+    macro_rules! set_var {
+        ($x:literal, $y:expr) => (globalenv.insert($x.to_string(), $y.wrap()));
+    }
+    macro_rules! set_obj_var {
+        ($o: expr, $x:literal, $y:expr) => ($o.insert($x.to_string(), $y.wrap()));
+    }
+    // constants
+    set_var!("true", Value::Int(1));
+    set_var!("false", Value::Int(0));
+    set_var!("inf", Value::Float(std::f64::INFINITY));
+    set_var!("nil", Value::Float(std::f64::NAN));
+
+    // builtin functions
+    set_var!("print", Value::NativeFn(io::print));
+    set_var!("input", Value::NativeFn(io::input));
+
+    // builtin objects
+    let mut array : CHashMap = std::collections::HashMap::new();
+    set_obj_var!(array, "constructor", Value::NativeFn(array::constructor));
+    set_var!("Array", Value::Dict(unsafe{ &*Box::into_raw(Box::new(array)) }));
 }

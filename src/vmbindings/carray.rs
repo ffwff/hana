@@ -17,10 +17,19 @@ impl<T> CArray<T> {
         }
     }
 
-    pub fn new(n : usize) -> CArray<T> {
+    pub fn new() -> CArray<T> {
         use std::mem::size_of;
         CArray::<T> {
-            data: unsafe{ libc::malloc(size_of::<T>()*n) as *mut T },
+            data: unsafe{ libc::malloc(size_of::<T>()*2) as *mut T },
+            len: 0,
+            capacity: 2
+        }
+    }
+
+    pub fn reserve(n : usize) -> CArray<T> {
+        use std::mem::size_of;
+        CArray::<T> {
+            data: unsafe{ libc::calloc(n, size_of::<T>()) as *mut T },
             len: n,
             capacity: n
         }
@@ -61,5 +70,14 @@ impl<T> std::ops::Index<usize> for CArray<T> {
             panic!("accessing outside of index!");
         }
         unsafe { &(*self.data.add(idx)) }
+    }
+}
+
+impl<T> std::ops::IndexMut<usize> for CArray<T> {
+    fn index_mut(&mut self, idx : usize) -> &mut T {
+        if idx >= self.len {
+            panic!("accessing outside of index!");
+        }
+        unsafe { &mut (*self.data.add(idx)) }
     }
 }
