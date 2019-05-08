@@ -1,6 +1,9 @@
+#![feature(vec_remove_item)]
+
 pub mod compiler;
 pub mod ast;
 mod vmbindings;
+#[macro_use] extern crate lazy_static;
 pub use vmbindings::vm;
 pub use vmbindings::vm::VmOpcode;
 use std::io::Read;

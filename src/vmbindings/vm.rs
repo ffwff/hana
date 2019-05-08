@@ -1,9 +1,11 @@
 use std::ptr::null_mut;
 use std::ffi::CString;
 extern crate libc;
+
 use super::carray::CArray;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
+use super::gc::*;
 pub use super::value::Value;
 
 //
@@ -94,6 +96,7 @@ impl Vm {
             error: false,
         };
         unsafe { vm_init(&mut vm); }
+        add_root(&mut vm);
         vm
     }
 
@@ -127,6 +130,11 @@ impl Vm {
     // globals
     pub fn global(&mut self) -> &mut CHashMap {
         unsafe{ &mut *self.globalenv }
+    }
+
+    // gc
+    pub fn mark(&mut self) {
+
     }
 }
 
