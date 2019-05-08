@@ -21,8 +21,8 @@ pub enum _valueType {
 #[repr(C)]
 #[derive(Clone)]
 pub struct NativeValue {
+    pub r#type : _valueType,
     pub data : u64,
-    pub r#type : _valueType
 }
 
 impl NativeValue {

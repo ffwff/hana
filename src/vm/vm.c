@@ -1001,12 +1001,6 @@ void vm_code_pushf64(struct vm *vm, double d) {
     array_push(vm->code, u.u[7]);
 }
 
-void vm_code_reserve(struct vm *vm, const size_t s) {
-    vm->code.data = calloc(s, 1);
-    vm->code.length = 0;
-    vm->code.capacity = s;
-}
-
 void vm_code_fill(struct vm *vm, const uint32_t pos, const uint32_t label) {
     vm->code.data[pos + 0] = (label >> 12) & 0xff;
     vm->code.data[pos + 1] = (label >> 8) & 0xff;

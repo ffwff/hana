@@ -4,6 +4,7 @@ extern crate libc;
 use super::carray::CArray;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
+use super::gc::GcManager;
 pub use super::value::Value;
 
 //
@@ -45,17 +46,18 @@ pub enum VmOpcode {
 #[repr(C)]
 pub struct Vm {
     // TODO: fill in all these *mut i32
-    pub ip        : u32,
-    localenv      : *mut i32,
-    pub globalenv : *mut CHashMap,
-    eframe        : *mut i32,
-    pub code      : CArray<VmOpcode>,
-    pub stack     : CArray<NativeValue>,
-    pub dstr      : *mut CHashMap,
-    pub dint      : *mut CHashMap,
-    pub dfloat    : *mut CHashMap,
-    pub darray    : *mut CHashMap,
-    pub error     : bool
+    pub ip         : u32,
+    localenv       : *mut i32,
+    pub globalenv  : *mut CHashMap,
+    eframe         : *mut i32,
+    pub code       : CArray<VmOpcode>,
+    pub stack      : CArray<NativeValue>,
+    pub dstr       : *mut CHashMap,
+    pub dint       : *mut CHashMap,
+    pub dfloat     : *mut CHashMap,
+    pub darray     : *mut CHashMap,
+    pub gc_manager : *mut GcManager,
+    pub error      : bool
 }
 
 #[link(name="hana", kind="static")]
@@ -66,7 +68,6 @@ extern "C" {
     fn vm_execute(vm: *mut Vm);
     fn vm_print_stack(vm: *const Vm);
 
-    fn vm_code_reserve(vm: *mut Vm, sz: usize);
     fn vm_code_push8  (vm: *mut Vm, n : u8);
     fn vm_code_push16 (vm: *mut Vm, n : u16);
     fn vm_code_push32 (vm: *mut Vm, n : u32);
