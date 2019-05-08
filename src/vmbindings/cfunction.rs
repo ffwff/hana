@@ -17,7 +17,7 @@ impl Function {
             ip: ip,
             nargs: nargs,
             bound: Box::into_raw(Box::new(
-                    if env == null_mut() { Env::new(None, 0, None, nargs) }
+                    if env == null_mut() { Env::new(0, None, nargs) }
                     else { Env::copy(&*env) }
                 ))
         };

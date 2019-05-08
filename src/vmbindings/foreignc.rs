@@ -140,11 +140,9 @@ pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {
 // #endregion
 
 // #region env
-/*
 #[no_mangle]
 pub unsafe extern "C" fn env_malloc(parent: *mut Env, retip: u32, lexical_parent : *mut Env, nargs: u16) -> *mut Env {
     Box::into_raw(Box::new(Env::new(
-        if parent == null_mut() {Some(&*parent)} else {None},
         retip, Some(&*lexical_parent), nargs)))
 }
 #[no_mangle]
@@ -185,7 +183,6 @@ pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) {
     let vm = &mut *selfptr;
     vm.leave_env();
 }
-*/
 // #endregion
 
 
