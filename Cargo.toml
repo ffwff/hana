@@ -8,6 +8,7 @@ build = "build.rs"
 [dependencies]
 decorator = { path = "./src/decorator/" }
 libc = "0.2.0"
+lazy_static = "1.3.0"
 
 [build-dependencies]
 peg = "0.5"

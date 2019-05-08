@@ -1,4 +1,5 @@
 #[macro_use] pub extern crate decorator;
+#[macro_use] pub extern crate lazy_static;
 
 pub mod gc;
 pub mod compiler;

@@ -23,7 +23,7 @@ impl GcNode {
 type GenericFinalizer = fn(*mut u8);
 
 // manager
-pub struct GcManager {
+struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
 }
@@ -61,12 +61,6 @@ impl GcManager {
         bytes.add(1) as *mut T
     }
 
-    pub fn malloc_safe<T: Sized>
-        (&mut self, x : T, finalizer: GenericFinalizer) -> &'static T {
-        let mem = unsafe { self.malloc(x, finalizer) };
-        unsafe { &*mem }
-    }
-
     pub unsafe fn free<T: Sized>(&mut self, x: *mut T) {
         // => start byte
         let node : *mut GcNode = (x as *mut GcNode).sub(1);
@@ -85,14 +79,10 @@ impl GcManager {
         dealloc(node as *mut u8, layout);
     }
 
-    // ---
-    pub fn no_finalizer(_ : *mut u8) {}
-
-    pub unsafe fn drop<T>(ptr: *mut u8) {
-        std::ptr::drop_in_place::<T>(ptr as *mut T);
-    }
-
 }
+
+unsafe impl std::marker::Send for GcManager {}
+unsafe impl std::marker::Sync for GcManager {}
 
 impl std::ops::Drop for GcManager {
 
@@ -113,4 +103,25 @@ impl std::ops::Drop for GcManager {
         }
     }
 
+}
+
+// static allocator
+use std::sync::Mutex;
+lazy_static! {
+    static ref GC_MANAGER_MUT : Mutex<GcManager> = Mutex::new(GcManager::new());
+}
+
+pub unsafe fn malloc<T: Sized>(x: T, finalizer: GenericFinalizer) -> *mut T {
+    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
+    gc_manager.malloc(x, finalizer)
+}
+
+pub unsafe fn free<T: Sized>(x: *mut T) {
+    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
+    gc_manager.free(x);
+}
+
+pub fn no_finalizer(_ : *mut u8) {}
+pub unsafe fn drop<T>(ptr: *mut u8) {
+    drop_in_place::<T>(ptr as *mut T);
 }
