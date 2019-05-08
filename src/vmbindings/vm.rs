@@ -4,7 +4,7 @@ extern crate libc;
 
 use super::carray::CArray;
 use super::chmap::CHashMap;
-use super::cnativeval::NativeValue;
+use super::cnativeval::{_valueType, NativeValue};
 use super::gc::*;
 pub use super::value::Value;
 
@@ -134,7 +134,29 @@ impl Vm {
 
     // gc
     pub fn mark(&mut self) {
-
+        fn mark_val(val: &NativeValue) {
+            use std::mem::transmute;
+            match val.r#type {
+                _valueType::TYPE_FN   |
+                _valueType::TYPE_STR  |
+                _valueType::TYPE_DICT |
+                _valueType::TYPE_ARRAY  => unsafe {
+                    let data = transmute::<u64, *mut u8>(val.data);
+                    mark_reachable(data);
+                },
+                _ => {}
+            }
+        }
+        // globalenv
+        let globalenv = self.global();
+        for (key, val) in globalenv.iter() {
+            mark_val(&val);
+        }
+        // stack
+        let stack = &self.stack;
+        for val in stack.iter() {
+            mark_val(&val);
+        }
     }
 }
 
