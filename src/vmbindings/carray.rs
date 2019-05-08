@@ -25,6 +25,12 @@ impl<T> CArray<T> {
             capacity: 2
         }
     }
+    pub fn drop(&mut self) {
+        unsafe{ libc::free(self.data as *mut libc::c_void) };
+        self.data = null_mut();
+        self.len = 0;
+        self.capacity = 0;
+    }
 
     pub fn reserve(n : usize) -> CArray<T> {
         use std::mem::size_of;

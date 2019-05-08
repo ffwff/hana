@@ -8,9 +8,11 @@ pub mod interpreter_tests {
     use haru::vm::Vm;
     use haru::vm::VmOpcode;
     use haru::vm::Value;
+    use haru::gc;
 
     macro_rules! eval {
         ($x:expr) => {{
+            gc::disable();
             let prog = grammar::start($x).unwrap();
             let mut c = compiler::Compiler::new();
             for stmt in prog {

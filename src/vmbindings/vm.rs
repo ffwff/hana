@@ -149,7 +149,7 @@ impl Vm {
         unsafe {
             let mut env = self.localenv;
             while env != null_mut() {
-                for i in 0..((*env).nslots as usize) {
+                for i in 0..(((*env).nslots-1) as usize) {
                     let val = (&*(*env).slots.add(i));
                     val.mark();
                 }

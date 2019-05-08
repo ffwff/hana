@@ -79,9 +79,7 @@ pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const Stri
     let right : &'static String = &*cright;
     let mut newleft = left.clone();
     newleft += right;
-    // TODO this not work
-    unimplemented!()
-    //malloc(newleft, |ptr| drop::<String>(ptr))
+    malloc(newleft, |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
@@ -128,11 +126,17 @@ pub unsafe extern "C" fn function_free(fun: *mut Function) {
 // #region array
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc() -> *mut CArray<NativeValue> {
-    malloc(CArray::new(), |ptr| drop::<CArray<NativeValue>>(ptr))
+    malloc(CArray::new(), |ptr| {
+        let array = &mut *(ptr as *mut CArray<NativeValue>);
+        array.drop();
+    })
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue> {
-    malloc(CArray::reserve(n), |ptr| drop::<CArray<NativeValue>>(ptr))
+    malloc(CArray::reserve(n), |ptr| {
+        let array = &mut *(ptr as *mut CArray<NativeValue>);
+        array.drop();
+    })
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {

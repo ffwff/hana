@@ -31,7 +31,8 @@ type GenericFinalizer = fn(*mut u8);
 struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
-    roots: std::vec::Vec<*mut Vm>
+    roots: std::vec::Vec<*mut Vm>,
+    enabled: bool
 }
 
 impl GcManager {
@@ -40,7 +41,8 @@ impl GcManager {
         GcManager {
             first_node: null_mut(),
             last_node: null_mut(),
-            roots: Vec::new()
+            roots: Vec::new(),
+            enabled: true
         }
     }
 
@@ -94,8 +96,14 @@ impl GcManager {
         self.roots.remove_item(&x);
     }
 
+    // state
+    pub fn enable(&mut self) { self.enabled = true; }
+    pub fn disable(&mut self) { self.enabled = false; }
+
     // gc algorithm
     pub fn collect(&mut self) {
+        if !self.enabled { return; }
+
         // mark phase:
         unsafe { // reset all nodes
             let mut node : *mut GcNode = self.first_node;
@@ -196,6 +204,16 @@ pub fn add_root(vm: *mut Vm) {
 pub fn remove_root(vm: *mut Vm) {
     let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
     gc_manager.remove_root(vm);
+}
+
+// state
+pub fn enable() {
+    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
+    gc_manager.enable();
+}
+pub fn disable() {
+    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
+    gc_manager.disable();
 }
 
 // collect

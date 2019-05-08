@@ -29,8 +29,8 @@ fn main() {
     for stmt in prog {
         stmt.emit(&mut c);
     }
-    //hanayo::init(&mut c.vm);
     add_root(&mut c.vm);
+    hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();
 }
