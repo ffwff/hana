@@ -1,6 +1,6 @@
-"abc" + "bcd"
-/*
+//"abc" + "bcd"
 while 1 "abc" + "bcd"
+/*
 while 1 begin
     x = [1]
     x.push(1)

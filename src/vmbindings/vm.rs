@@ -97,7 +97,6 @@ impl Vm {
             error: false,
         };
         unsafe { vm_init(&mut vm); }
-        add_root(&mut vm);
         vm
     }
 
@@ -139,10 +138,7 @@ impl Vm {
         fn mark_val(val: &NativeValue) {
             use std::mem::transmute;
             match val.r#type {
-                _valueType::TYPE_FN   |
-                _valueType::TYPE_STR  |
-                _valueType::TYPE_DICT |
-                _valueType::TYPE_ARRAY  => unsafe {
+                _valueType::TYPE_STR => unsafe {
                     let data = transmute::<u64, *mut u8>(val.data);
                     mark_reachable(data);
                     val.unwrap().mark();

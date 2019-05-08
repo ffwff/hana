@@ -140,6 +140,7 @@ impl GcManager {
     // ## marking
     pub unsafe fn mark_reachable(ptr: *mut u8) {
         // => start byte
+        if ptr == null_mut() { return; }
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
         (*node).unreachable = false;
     }
