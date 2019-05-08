@@ -7,8 +7,8 @@
 #include "function.h"
 #include "exception_frame.h"
 
-#ifdef DEBUG
 #include <assert.h>
+#ifdef DEBUG
 #define debug_assert assert
 #else
 #define debug_assert(...)
@@ -36,12 +36,13 @@ void vm_init(struct vm *vm) {
 }
 
 void vm_free(struct vm *vm) {
-    while(vm->localenv != NULL) {
+    // TODO free vm->localenv
+    /* while(vm->localenv != NULL) {
         struct env *localenv = vm->localenv->parent;
         env_free(vm->localenv);
         free(vm->localenv);
         vm->localenv = localenv;
-    }
+    } */
     hmap_free(vm->globalenv);
     while(vm->eframe != NULL) {
         struct exception_frame *eframe = vm->eframe->prev;
@@ -282,12 +283,8 @@ void vm_execute(struct vm *vm) {
             vm->code.data[vm->ip+0] << 4 |
             vm->code.data[vm->ip+1];
         vm->ip += sizeof(n);
-        LOG("RESERVE %d %d\n", n, vm->localenv->nargs);
-        env_init(vm->localenv, n);
-        for(uint16_t i = 0; i < vm->localenv->nargs; i++) {
-            vm->localenv->slots[i] = array_top(vm->stack);
-            array_pop(vm->stack);
-        }
+        LOG("RESERVE %d\n", n);
+        env_init(vm->localenv, n, vm);
         dispatch();
     }
 
@@ -313,9 +310,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(relascope);
         LOG("SET LOCAL UP %d %d\n", key, relascope);
 
-        struct env *env = vm->localenv;
-        while(relascope--) env = env->lexical_parent;
-        env_set(env, key, &array_top(vm->stack));
+        env_set_up(vm->localenv, relascope, key, &array_top(vm->stack));
         dispatch();
     }
     // this is for recursive function
@@ -327,7 +322,7 @@ void vm_execute(struct vm *vm) {
         struct value *val = &array_top(vm->stack);
         LOG("SET LOCAL FUNCTION DEF %d %p\n", key, val->as.ifn);
         env_set(vm->localenv, key, val);
-        env_set(&val->as.ifn->bound, key, val);
+        env_set(val->as.ifn->bound, key, val);
         dispatch();
     }
     // pushes a copy of the value of current environment's slot
@@ -352,12 +347,8 @@ void vm_execute(struct vm *vm) {
         LOG("GET LOCAL UP %d %d\n", key, relascope);
 
         struct env *env = vm->localenv;
-        while(relascope--) {
-            env = env->lexical_parent;
-            LOG("UP\n");
-        }
         array_push(vm->stack, (struct value){});
-        value_copy(&array_top(vm->stack), env_get(env, key));
+        value_copy(&array_top(vm->stack), env_get_up(env, relascope, key));
         dispatch();
     }
 
@@ -500,12 +491,7 @@ do { \
             JMP_INTERPRETED_FN(dispatch());
 
             // caller
-            struct env *oldenv = vm->localenv;
-            vm->localenv = calloc(1, sizeof(struct env)); // why this not free?
-            vm->localenv->parent = oldenv;
-            vm->localenv->retip = vm->ip;
-            vm->localenv->lexical_parent = &ifn->bound;
-            vm->localenv->nargs = ifn->nargs;
+            vm->localenv = env_malloc(vm->localenv, vm->ip, ifn->bound, ifn->nargs);
             vm->ip = ifn->ip;
             break; }
         default: {
@@ -518,16 +504,15 @@ do { \
     doop(OP_RET): {
         LOG("RET %p\n", vm->localenv);
 
+        // TODO
+        #if 0
         if(vm->localenv->retip == (uint32_t)-1) {
             LOG("return from vm_call\n");
             return;
-        } else {
-            struct env *parent = vm->localenv->parent;
-            vm->ip = vm->localenv->retip;
-            env_free(vm->localenv);
-            free(vm->localenv);
-            vm->localenv = parent;
         }
+        #endif
+
+        vm_leave_env(vm);
         dispatch();
     }
 
@@ -819,6 +804,8 @@ do { \
 
     // tail calls
     doop(OP_RETCALL): {
+        assert(0);
+        #if 0
         vm->ip++;
         struct value val = array_top(vm->stack);
         const uint16_t nargs = vm->code.data[vm->ip+0] << 4 | vm->code.data[vm->ip+1];
@@ -862,12 +849,16 @@ do { \
             ERROR();
         }
         dispatch();
+        #endif
     }
 
     }
 }
 
-struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
+struct value *vm_call(__attribute__((unused)) struct vm *vm, __attribute__((unused)) struct value *fn, __attribute__((unused)) a_arguments args)
+{
+    assert(0);
+    #if 0
     debug_assert(fn->type == TYPE_FN || fn->type == TYPE_DICT);
 
     struct function *ifn;
@@ -929,6 +920,7 @@ struct value *vm_call(struct vm *vm, struct value *fn, a_arguments args) {
     vm->localenv = oldenv;
     vm->ip = last;
     return &array_top(vm->stack);
+    #endif
 }
 
 void vm_print_stack(const struct vm *vm) {

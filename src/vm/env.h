@@ -4,20 +4,12 @@
 #include <stdbool.h>
 #include "value.h"
 
-struct env { // function's stack frame
-    struct value *slots;
-    uint16_t nslots, nargs;
-    struct env *parent;
-
-    struct env *lexical_parent;
-    // lexical parents are the parent of the function's lexical scopes
-    // this should be set to (struct function*)->bound
-
-    uint32_t retip;
-};
-
-void env_init(struct env*, size_t nslots);
-void env_copy(struct env *dst, struct env *src);
-struct value *env_get(struct env*, size_t n);
-void env_set(struct env *env, size_t n, struct value *val);
+struct env;
+struct env *env_malloc(struct env *old, uint32_t retip, struct env *lexical_parent, uint16_t nargs);
+void env_init(struct env *, uint16_t nslots, struct vm *vm);
+struct env *env_copy(struct env *src);
+struct value *env_get(struct env *, uint16_t n);
+struct value *env_get_up(struct env *, uint16_t up, uint16_t n);
+void env_set(struct env *env, uint16_t n, struct value *val);
+void env_set_up(struct env *, uint16_t up, uint16_t n, struct value *);
 void env_free(struct env*);

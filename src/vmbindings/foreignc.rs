@@ -1,13 +1,15 @@
 use super::chmap::CHashMap;
 use super::carray::CArray;
-use super::cfunction::{Env, Function};
+use super::cfunction::Function;
 use super::cnativeval::NativeValue;
+use super::vm::Vm;
+use super::env::Env;
 
 #[allow(unused_attributes)]
 pub mod foreignc {
 
-use std::ptr::null;
 use std::ffi::CStr;
+use std::ptr::{null, null_mut};
 use super::*;
 
 // #region hmap
@@ -136,5 +138,55 @@ pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {
     Box::from_raw(carray);
 }
 // #endregion
+
+// #region env
+/*
+#[no_mangle]
+pub unsafe extern "C" fn env_malloc(parent: *mut Env, retip: u32, lexical_parent : *mut Env, nargs: u16) -> *mut Env {
+    Box::into_raw(Box::new(Env::new(
+        if parent == null_mut() {Some(&*parent)} else {None},
+        retip, Some(&*lexical_parent), nargs)))
+}
+#[no_mangle]
+pub unsafe extern "C" fn env_init(selfptr: *mut Env, nslots: u16, vm: *mut Vm) {
+    let env = &mut *selfptr;
+    env.reserve(nslots);
+}
+#[no_mangle]
+pub unsafe extern "C" fn env_free(selfptr: *mut Env) {
+    unimplemented!()
+}
+#[no_mangle]
+pub unsafe extern "C" fn env_copy(selfptr: *mut Env) -> *mut Env {
+    unimplemented!()
+}
+
+//
+#[no_mangle]
+pub unsafe extern "C" fn env_get(selfptr: *mut Env, nslots: u16) -> *mut Env {
+    unimplemented!()
+}
+#[no_mangle]
+pub unsafe extern "C" fn env_get_up(selfptr: *mut Env, up: u16, nslots: u16) -> *mut Env {
+    unimplemented!()
+}
+#[no_mangle]
+pub unsafe extern "C" fn env_set(selfptr: *mut Env, nslots: u16) -> *mut Env {
+    unimplemented!()
+}
+#[no_mangle]
+pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, nslots: u16) -> *mut Env {
+    unimplemented!()
+}
+
+//
+#[no_mangle]
+pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) {
+    let vm = &mut *selfptr;
+    vm.leave_env();
+}
+*/
+// #endregion
+
 
 }

@@ -65,6 +65,7 @@ void vm_free(struct vm*);
 void vm_execute(struct vm*);
 typedef array(struct value) a_arguments;
 struct value *vm_call(struct vm*, struct value *, a_arguments);
+void vm_leave_env(struct vm*);
 void vm_print_stack(const struct vm*);
 
 void vm_code_push8(struct vm *vm, uint8_t);

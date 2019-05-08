@@ -1,55 +1,26 @@
 use super::cnativeval::NativeValue;
+use super::env::Env;
 use std::ptr::{null, null_mut};
-
-#[repr(C)]
-pub struct Env {
-    slots: *mut NativeValue,
-    nslots : u16,
-    nargs : u16,
-    parent : *mut Env,
-    lexical_parent : *mut Env,
-    retip : u32,
-}
-
-impl Env {
-
-    pub unsafe fn new() -> Env {
-        Env {
-            slots: null_mut(),
-            nslots: 0,
-            nargs: 0,
-            parent: null_mut(),
-            lexical_parent: null_mut(),
-            retip: 0
-        }
-    }
-
-}
 
 // functions
 #[repr(C)]
 pub struct Function {
     ip: u32,
     nargs : u16,
-    bound: Env
-}
-
-extern "C" {
-    fn env_copy(dst: *mut Env, src: *const Env);
-    fn env_free(env: *mut Env);
+    bound: *mut Env
 }
 
 impl Function {
 
     pub unsafe fn new(ip: u32, nargs: u16, env: *const Env) -> Function {
-        let mut fun = Function {
+        let fun = Function {
             ip: ip,
             nargs: nargs,
-            bound: Env::new()
+            bound: Box::into_raw(Box::new(
+                    if env == null_mut() { Env::new(None, 0, None, nargs) }
+                    else { Env::copy(&*env) }
+                ))
         };
-        if env != null() {
-            env_copy(&mut fun.bound, env);
-        }
         fun
     }
 
@@ -58,11 +29,12 @@ impl Function {
 impl std::ops::Drop for Function {
 
     fn drop(&mut self) {
-        unsafe {
+        unimplemented!()
+        /* unsafe {
             if self.bound.nargs > 0 {
                 env_free(&mut self.bound);
             }
-        }
+        } */
     }
 
 }

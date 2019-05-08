@@ -1,10 +1,13 @@
 use std::ptr::null_mut;
 use std::ffi::CString;
+use std::collections::LinkedList;
 extern crate libc;
+
 use super::carray::CArray;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
 use super::gc::GcManager;
+use super::env::Env;
 pub use super::value::Value;
 
 //
@@ -47,7 +50,7 @@ pub enum VmOpcode {
 pub struct Vm {
     // TODO: fill in all these *mut i32
     pub ip         : u32,
-    localenv       : *mut i32,
+    localenv       : *mut LinkedList<Env>,
     pub globalenv  : *mut CHashMap,
     eframe         : *mut i32,
     pub code       : CArray<VmOpcode>,
@@ -92,6 +95,7 @@ impl Vm {
             dint: null_mut(),
             dfloat: null_mut(),
             darray: null_mut(),
+            gc_manager: null_mut(),
             error: false,
         };
         unsafe { vm_init(&mut vm); }

@@ -1,5 +1,6 @@
 #include "exception_frame.h"
 #include "value.h"
+#include <assert.h>
 
 void exception_frame_init(struct exception_frame *frame, struct exception_frame *prev) {
     frame->prev = prev;
@@ -24,7 +25,10 @@ struct value *exception_frame_get_handler_for_error(struct exception_frame *fram
     return NULL;
 }
 
-void exception_frame_unwind(struct exception_frame *frame, struct vm *vm) {
+void exception_frame_unwind(__attribute__((unused)) struct exception_frame *frame, __attribute__((unused)) struct vm *vm)
+{
+    assert(0);
+    #if 0
     // unwind stack
     vm->stack.length = frame->unwind_stack_size;
     // env
@@ -34,4 +38,5 @@ void exception_frame_unwind(struct exception_frame *frame, struct vm *vm) {
         free(vm->localenv);
         vm->localenv = localenv;
     }
+    #endif
 }
