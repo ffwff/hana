@@ -66,12 +66,12 @@ impl Env {
         }
     }
 
-    pub fn set(&mut self, idx: u16, val: *const NativeValue) {
+    pub fn set(&mut self, idx: u16, val: NativeValue) {
         unsafe {
-            std::ptr::copy(val, self.slots.add(idx as usize), 1);
+            std::ptr::copy(&val, self.slots.add(idx as usize), 1);
         }
     }
-    pub fn set_up(&mut self, up: u16, idx: u16, val: *const NativeValue) {
+    pub fn set_up(&mut self, up: u16, idx: u16, val: NativeValue) {
         unsafe {
             let mut env : *mut Env = self.lexical_parent;
             for i in 1..up {

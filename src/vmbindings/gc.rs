@@ -56,7 +56,7 @@ impl GcManager {
         (&mut self, x: T, finalizer: GenericFinalizer) -> *mut T {
         // free up if over threshold
         if self.bytes_allocated > self.threshold {
-            eprintln!("collect! {}", self.bytes_allocated);
+            //eprintln!("collect! {}", self.bytes_allocated);
             self.collect();
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {

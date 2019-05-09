@@ -68,31 +68,31 @@ void value_print(struct value *val) {
     }
 }
 
-void value_copy(struct value *dst, const struct value *src) {
-    dst->type = src->type;
-    dst->as = src->as;
+void value_copy(struct value *dst, const struct value src) {
+    dst->type = src.type;
+    dst->as = src.as;
 }
 
 // arith
 #define arith_op(name, op, custom) \
-void value_ ## name (struct value *result, const struct value *left, const struct value *right) { \
-    switch(left->type) { \
+void value_ ## name (struct value *result, const struct value left, const struct value right) { \
+    switch(left.type) { \
     case TYPE_INT: { \
-        switch(right->type) { \
+        switch(right.type) { \
         case TYPE_FLOAT: { \
-            value_float(result, (double)left->as.integer op right->as.floatp); break; } \
+            value_float(result, (double)left.as.integer op right.as.floatp); break; } \
         case TYPE_INT: { \
-            value_int(result, left->as.integer op right->as.integer); \
+            value_int(result, left.as.integer op right.as.integer); \
             break; }\
         default: \
             result->type = TYPE_INTERPRETER_ERROR; } \
         break; \
     } \
     case TYPE_FLOAT: { \
-        if(right->type == TYPE_INT) \
-            value_float(result, left->as.floatp op (double)right->as.integer); \
-        else if(right->type == TYPE_FLOAT) \
-            value_float(result, left->as.floatp op right->as.floatp); \
+        if(right.type == TYPE_INT) \
+            value_float(result, left.as.floatp op (double)right.as.integer); \
+        else if(right.type == TYPE_FLOAT) \
+            value_float(result, left.as.floatp op right.as.floatp); \
         else \
             result->type = TYPE_INTERPRETER_ERROR; \
         break; \
@@ -101,60 +101,63 @@ void value_ ## name (struct value *result, const struct value *left, const struc
 }
 arith_op(add, +,
     case TYPE_STR: {
-        if(right->type != TYPE_STR) {
+        if(right.type != TYPE_STR) {
             result->type = TYPE_INTERPRETER_ERROR;
             return;
         }
         result->type = TYPE_STR;
-        result->as.str = string_append(left->as.str, right->as.str);
+        result->as.str = string_append(left.as.str, right.as.str);
         break; }
 )
 arith_op(sub, -,)
 arith_op(mul, *,
     case TYPE_STR: {
-        if(right->type == TYPE_INT) {
-            if(right->as.integer == 0) {
+        if(right.type == TYPE_INT) {
+            if(right.as.integer == 0) {
                 value_str(result, "");
             } else {
                 result->type = TYPE_STR;
-                result->as.str = string_repeat(left->as.str, right->as.integer);
+                result->as.str = string_repeat(left.as.str, right.as.integer);
             }
         }
         else
             result->type = TYPE_INTERPRETER_ERROR;
         break; }
     case TYPE_ARRAY: {
-        if(right->type == TYPE_INT) {
+        if(right.type == TYPE_INT) {
             result->type = TYPE_ARRAY;
-            result->as.array = array_obj_repeat(left->as.array, (size_t)right->as.integer);
+            result->as.array = array_obj_repeat(left.as.array, (size_t)right.as.integer);
         }
         else
             result->type = TYPE_INTERPRETER_ERROR;
         break; }
 )
-void value_div(struct value *result, const struct value *left, const struct value *right) {
-    if( (left->type == TYPE_FLOAT && right->type == TYPE_INT) ||
-        (left->type == TYPE_INT && right->type == TYPE_FLOAT) ) {
-        const struct value *floatv = left->type == TYPE_FLOAT ? left : right;
-        const struct value *intv = left->type == TYPE_INT ? left : right;
+void value_div(struct value *result, __attribute__((unused)) const struct value left, __attribute__((unused)) const struct value right) {
+    result->type = TYPE_INTERPRETER_ERROR;
+    // TODO
+    /*
+    if( (left.type == TYPE_FLOAT && right.type == TYPE_INT) ||
+        (left.type == TYPE_INT && right.type == TYPE_FLOAT) ) {
+        const struct value *floatv = left.type == TYPE_FLOAT ? left : right;
+        const struct value *intv = left.type == TYPE_INT ? left : right;
         value_float(result, floatv->as.floatp / (double)intv->as.integer);
-    } else if(left->type == TYPE_INT && right->type == TYPE_INT) {
-        value_float(result, (double)left->as.integer / (double)right->as.integer);
-    } else if(left->type == TYPE_FLOAT && right->type == TYPE_FLOAT) {
-        value_float(result, left->as.floatp / right->as.floatp);
+    } else if(left.type == TYPE_INT && right.type == TYPE_INT) {
+        value_float(result, (double)left.as.integer / (double)right.as.integer);
+    } else if(left.type == TYPE_FLOAT && right.type == TYPE_FLOAT) {
+        value_float(result, left.as.floatp / right.as.floatp);
     } else
-        result->type = TYPE_INTERPRETER_ERROR;
+        result->type = TYPE_INTERPRETER_ERROR; */
 }
-void value_mod(struct value *result, const struct value *left, const struct value *right) {
-    if(left->type == TYPE_INT && right->type == TYPE_INT) {
-        value_int(result, left->as.integer % right->as.integer);
+void value_mod(struct value *result, const struct value left, const struct value right) {
+    if(left.type == TYPE_INT && right.type == TYPE_INT) {
+        value_int(result, left.as.integer % right.as.integer);
     } else
         result->type = TYPE_INTERPRETER_ERROR;
 }
 
 // logic
 #define logic_op(name, op) \
-void value_ ## name (struct value *result, const struct value *left, const struct value *right) { \
+void value_ ## name (struct value *result, const struct value left, const struct value right) { \
     value_int(result, value_is_true(left) op value_is_true(right)); \
 }
 logic_op(and, &&)
@@ -163,17 +166,17 @@ logic_op(or, ||)
 // comparison
 #define strcmp_op(cond) \
     case TYPE_STR: \
-        value_int(result, right->type == TYPE_STR && string_cmp(left->as.str, right->as.str) cond); \
+        value_int(result, right.type == TYPE_STR && string_cmp(left.as.str, right.as.str) cond); \
         break;
 arith_op(eq, ==,
     strcmp_op(== 0)
     case TYPE_NATIVE_FN:
     case TYPE_FN:
     case TYPE_DICT:
-        value_int(result, left->as.integer == right->as.integer);
+        value_int(result, left.as.integer == right.as.integer);
         break;
     case TYPE_NIL:
-        value_int(result, right->type == TYPE_NIL);
+        value_int(result, right.type == TYPE_NIL);
         break;
 )
 arith_op(neq, !=,
@@ -181,10 +184,10 @@ arith_op(neq, !=,
     case TYPE_NATIVE_FN:
     case TYPE_FN:
     case TYPE_DICT:
-        value_int(result, left->as.integer != right->as.integer);
+        value_int(result, left.as.integer != right.as.integer);
         break;
     case TYPE_NIL:
-        value_int(result, right->type != TYPE_NIL);
+        value_int(result, right.type != TYPE_NIL);
         break;
 )
 arith_op(lt, <,
@@ -201,11 +204,11 @@ arith_op(geq, >=,
 )
 
 // boolean
-bool value_is_true(const struct value *val) {
-    switch(val->type) {
-    case TYPE_INT: return val->as.integer > 0;
-    case TYPE_FLOAT: return val->as.floatp > 0;
-    case TYPE_STR: return !string_is_empty(val->as.str);
+bool value_is_true(const struct value val) {
+    switch(val.type) {
+    case TYPE_INT: return val.as.integer > 0;
+    case TYPE_FLOAT: return val.as.floatp > 0;
+    case TYPE_STR: return !string_is_empty(val.as.str);
     default: return 0;
     }
 }

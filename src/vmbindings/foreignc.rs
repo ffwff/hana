@@ -47,18 +47,16 @@ pub unsafe extern "C" fn hmap_get_str(chm: *const CHashMap, ckey: *const String)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char, cval: *const NativeValue) {
+pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char, val: NativeValue) {
     let key = String::from(CStr::from_ptr(ckey).to_str().clone().unwrap());
-    let val = (*cval).clone();
     let hm = &mut *chm;
-    hm.insert(key, val);
+    hm.insert(key, val.clone());
 }
 #[no_mangle]
-pub unsafe extern "C" fn hmap_set_str(chm: *mut CHashMap, ckey: *const  String, cval: *const NativeValue) {
+pub unsafe extern "C" fn hmap_set_str(chm: *mut CHashMap, ckey: *const  String, val: NativeValue) {
     let key = (&*ckey).clone();
-    let val = (*cval).clone();
     let hm = &mut *chm;
-    hm.insert(key, val);
+    hm.insert(key, val.clone());
 }
 
 // #endregion
@@ -162,7 +160,7 @@ pub unsafe extern "C" fn env_init(selfptr: *mut Env, nslots: u16, cvm: *mut Vm) 
     let vm = &mut *cvm;
     for i in 0..env.nargs {
         let val = vm.stack.top();
-        env.set(i, val);
+        env.set(i, val.clone());
         vm.stack.pop();
     }
 }
@@ -179,12 +177,12 @@ pub unsafe extern "C" fn env_get_up(selfptr: *mut Env, up: u16, slot: u16) -> Na
     env.get_up(up, slot)
 }
 #[no_mangle]
-pub unsafe extern "C" fn env_set(selfptr: *mut Env, slot: u16, val: *const NativeValue) {
+pub unsafe extern "C" fn env_set(selfptr: *mut Env, slot: u16, val: NativeValue) {
     let env = &mut *selfptr;
     env.set(slot, val);
 }
 #[no_mangle]
-pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, slot: u16, val: *const NativeValue) {
+pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, slot: u16, val: NativeValue) {
     let env = &mut *selfptr;
     env.set_up(up, slot, val);
 }
