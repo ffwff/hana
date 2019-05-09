@@ -5,15 +5,9 @@ extern crate libc;
 
 use super::carray::CArray;
 use super::chmap::CHashMap;
-<<<<<<< HEAD
-use super::cnativeval::NativeValue;
-use super::gc::GcManager;
-use super::env::Env;
-=======
-use super::cfunction::Env;
 use super::cnativeval::{_valueType, NativeValue};
+use super::env::Env;
 use super::gc::*;
->>>>>>> origin/haru
 pub use super::value::Value;
 
 //
@@ -55,20 +49,6 @@ pub enum VmOpcode {
 #[repr(C)]
 pub struct Vm {
     // TODO: fill in all these *mut i32
-<<<<<<< HEAD
-    pub ip         : u32,
-    localenv       : *mut LinkedList<Env>,
-    pub globalenv  : *mut CHashMap,
-    eframe         : *mut i32,
-    pub code       : CArray<VmOpcode>,
-    pub stack      : CArray<NativeValue>,
-    pub dstr       : *mut CHashMap,
-    pub dint       : *mut CHashMap,
-    pub dfloat     : *mut CHashMap,
-    pub darray     : *mut CHashMap,
-    pub gc_manager : *mut GcManager,
-    pub error      : bool
-=======
     pub ip        : u32,
     localenv      : *mut Env,
     pub globalenv : *mut CHashMap,
@@ -80,7 +60,6 @@ pub struct Vm {
     pub dfloat    : *mut CHashMap,
     pub darray    : *mut CHashMap,
     pub error     : bool
->>>>>>> origin/haru
 }
 
 #[link(name="hana", kind="static")]
@@ -115,7 +94,6 @@ impl Vm {
             dint: null_mut(),
             dfloat: null_mut(),
             darray: null_mut(),
-            gc_manager: null_mut(),
             error: false,
         };
         unsafe { vm_init(&mut vm); }
@@ -168,6 +146,8 @@ impl Vm {
             val.mark();
         }
         // call stack
+        // TODO
+        /*
         unsafe {
             let mut env = self.localenv;
             while env != null_mut() {
@@ -177,7 +157,7 @@ impl Vm {
                 }
                 env = (*env).parent;
             }
-        }
+        }*/
     }
 }
 

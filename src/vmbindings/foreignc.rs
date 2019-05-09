@@ -2,12 +2,9 @@ use super::chmap::CHashMap;
 use super::carray::CArray;
 use super::cfunction::Function;
 use super::cnativeval::NativeValue;
-<<<<<<< HEAD
+use super::gc::{malloc, free, drop};
 use super::vm::Vm;
 use super::env::Env;
-=======
-use super::gc::{malloc, free, drop};
->>>>>>> origin/haru
 
 #[allow(unused_attributes)]
 pub mod foreignc {
@@ -176,8 +173,8 @@ pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, nslots: u16) -> 
 //
 #[no_mangle]
 pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) {
-    let vm = &mut *selfptr;
-    vm.leave_env();
+    //let vm = &mut *selfptr;
+    //vm.leave_env();
 }
 // #endregion
 

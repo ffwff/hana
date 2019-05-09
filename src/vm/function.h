@@ -4,8 +4,8 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-#include "env.h"
 
+struct env;
 struct function {
     uint32_t ip;
     uint16_t nargs;

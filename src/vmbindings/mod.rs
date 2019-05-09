@@ -8,5 +8,4 @@ pub mod env;
 pub mod gc;
 pub mod cfunction;
 pub mod foreignc;
-pub mod gc;
 pub mod vm;

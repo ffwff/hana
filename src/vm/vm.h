@@ -46,7 +46,6 @@ typedef array(uint8_t) a_uint8;
 typedef array(struct value) a_value;
 struct exception_frame;
 struct hmap;
-struct gc_manager;
 
 struct vm {
     uint32_t ip;
@@ -56,7 +55,6 @@ struct vm {
     a_uint8 code;
     a_value stack;
     struct hmap *dstr, *dint, *dfloat, *darray;
-    struct gc_manager *manager;
     bool error;
 };
 

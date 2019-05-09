@@ -345,17 +345,8 @@ void vm_execute(struct vm *vm) {
         LOG("GET LOCAL UP %d %d\n", key, relascope);
 
         struct env *env = vm->localenv;
-<<<<<<< HEAD
         array_push(vm->stack, (struct value){});
         value_copy(&array_top(vm->stack), env_get_up(env, relascope, key));
-=======
-        while(relascope--) {
-            env = env->lexical_parent;
-            LOG("UP\n");
-        }
-        array_push(vm->stack, (struct value){0});
-        value_copy(&array_top(vm->stack), env_get(env, key));
->>>>>>> origin/haru
         dispatch();
     }
 
