@@ -1,7 +1,6 @@
 #![feature(vec_remove_item)]
 #![feature(alloc_layout_extra)]
 
-#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate decorator;
 use std::io::Read;
 
@@ -10,7 +9,7 @@ pub mod ast;
 mod vmbindings;
 pub use vmbindings::vm;
 pub use vmbindings::vm::VmOpcode;
-pub use vmbindings::gc::add_root;
+pub use vmbindings::gc::set_root;
 mod hanayo;
 
 fn main() {
@@ -30,7 +29,7 @@ fn main() {
     for stmt in prog {
         stmt.emit(&mut c);
     }
-    add_root(&mut c.vm);
+    set_root(&mut c.vm);
     hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();

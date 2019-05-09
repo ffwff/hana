@@ -1,7 +1,6 @@
 use std::ptr::{null_mut, drop_in_place};
 use std::alloc::{alloc_zeroed, dealloc, Layout};
 use super::vm::Vm;
-use super::lazy_static;
 
 // node
 struct GcNode {
@@ -32,7 +31,7 @@ type GenericFinalizer = fn(*mut u8);
 struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
-    roots: std::vec::Vec<*mut Vm>,
+    root: *mut Vm,
     enabled: bool
 }
 
@@ -42,7 +41,7 @@ impl GcManager {
         GcManager {
             first_node: null_mut(),
             last_node: null_mut(),
-            roots: Vec::new(),
+            root: null_mut(),
             enabled: true
         }
     }
@@ -90,11 +89,8 @@ impl GcManager {
     }
 
     // roots
-    pub fn add_root(&mut self, x: *mut Vm) {
-        self.roots.push(x);
-    }
-    pub fn remove_root(&mut self, x: *mut Vm) {
-        self.roots.remove_item(&x);
+    pub fn set_root(&mut self, root: *mut Vm) {
+        self.root = root;
     }
 
     // state
@@ -114,10 +110,8 @@ impl GcManager {
                 node = next;
             }
         }
-        for root in self.roots.iter_mut() {
-            let vm = unsafe { &mut **root };
-            vm.mark();
-        }
+        let vm = unsafe { &mut *self.root };
+        vm.mark();
         // sweep phase:
         unsafe {
             let mut node : *mut GcNode = self.first_node;
@@ -183,46 +177,57 @@ impl std::ops::Drop for GcManager {
 }
 
 // static allocator
-use std::sync::Mutex;
-lazy_static! {
-    static ref GC_MANAGER_MUT : Mutex<GcManager> = Mutex::new(GcManager::new());
+use std::cell::RefCell;
+thread_local! {
+    static GC_MANAGER : RefCell<GcManager> =
+        RefCell::new(GcManager::new());
 }
 
 // general
 pub unsafe fn malloc<T: Sized>(x: T, finalizer: GenericFinalizer) -> *mut T {
-    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
-    gc_manager.collect();
-    gc_manager.malloc(x, finalizer)
+    let mut alloced: *mut T = null_mut();
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        gc_manager.collect();
+        alloced = gc_manager.malloc(x, finalizer);
+    });
+    alloced
 }
 pub unsafe fn free<T: Sized>(x: *mut T) {
-    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
-    gc_manager.free(x);
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        gc_manager.free(x);
+    });
 }
 
 // roots
-pub fn add_root(vm: *mut Vm) {
-    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
-    gc_manager.add_root(vm);
-}
-pub fn remove_root(vm: *mut Vm) {
-    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
-    gc_manager.remove_root(vm);
+pub fn set_root(vm: *mut Vm) {
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        gc_manager.set_root(vm);
+    });
 }
 
 // state
 pub fn enable() {
-    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
-    gc_manager.enable();
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        gc_manager.enable();
+    });
 }
 pub fn disable() {
-    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
-    gc_manager.disable();
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        gc_manager.disable();
+    });
 }
 
 // collect
 pub fn collect(vm: *mut Vm) {
-    let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
-    gc_manager.collect();
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        gc_manager.collect();
+    });
 }
 pub fn mark_reachable(ptr: *mut u8) -> bool {
     unsafe { GcManager::mark_reachable(ptr) }

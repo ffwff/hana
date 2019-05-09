@@ -25,7 +25,6 @@ struct string;
 
 typedef void (*value_fn)(struct vm *vm, int nargs);
 struct value {
-    uint8_t type;
     union {
         int64_t integer;
         double floatp;
@@ -37,6 +36,7 @@ struct value {
         struct native_obj *native;
         void *ptr;
     } as;
+    uint8_t type;
 };
 
 void value_int(struct value*, int64_t);

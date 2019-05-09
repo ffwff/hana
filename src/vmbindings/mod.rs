@@ -1,5 +1,3 @@
-use super::lazy_static;
-
 pub mod cnativeval;
 pub mod value;
 pub mod chmap;
