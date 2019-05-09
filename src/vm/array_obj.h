@@ -10,6 +10,7 @@ extern "C" {
 typedef array(struct value) array_obj;
 array_obj *array_obj_malloc(void);
 array_obj *array_obj_malloc_n(size_t n);
+array_obj *array_obj_repeat(array_obj *array, size_t times);
 
 #ifdef __cplusplus
 }

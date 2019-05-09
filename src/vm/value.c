@@ -78,12 +78,14 @@ void value_copy(struct value *dst, const struct value *src) {
 void value_ ## name (struct value *result, const struct value *left, const struct value *right) { \
     switch(left->type) { \
     case TYPE_INT: { \
-        if(right->type == TYPE_FLOAT) \
-            value_float(result, (double)left->as.integer op right->as.floatp); \
-        else if(right->type == TYPE_INT) \
+        switch(right->type) { \
+        case TYPE_FLOAT: { \
+            value_float(result, (double)left->as.integer op right->as.floatp); break; } \
+        case TYPE_INT: { \
             value_int(result, left->as.integer op right->as.integer); \
-        else \
-            result->type = TYPE_INTERPRETER_ERROR; \
+            break; }\
+        default: \
+            result->type = TYPE_INTERPRETER_ERROR; } \
         break; \
     } \
     case TYPE_FLOAT: { \
@@ -123,15 +125,8 @@ arith_op(mul, *,
         break; }
     case TYPE_ARRAY: {
         if(right->type == TYPE_INT) {
-            size_t length = left->as.array->length*(size_t)right->as.integer;
-            value_array_n(result, length);
-            for (size_t i = 0; i < (size_t)right->as.integer; i++) {
-                for(size_t j = 0; j < left->as.array->length; j++) {
-                    size_t index = left->as.array->length*i+j;
-                    fprintf(stderr, "%ld -> %ld\n", j, index);
-                    value_copy(&result->as.array->data[index], &left->as.array->data[j]);
-                }
-            }
+            result->type = TYPE_ARRAY;
+            result->as.array = array_obj_repeat(left->as.array, (size_t)right->as.integer);
         }
         else
             result->type = TYPE_INTERPRETER_ERROR;

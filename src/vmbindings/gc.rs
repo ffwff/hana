@@ -28,10 +28,14 @@ impl GcNode {
 type GenericFinalizer = fn(*mut u8);
 
 // manager
+const INITIAL_THRESHOLD: usize = 100;
+const USED_SPACE_RATIO: f64 = 0.7;
 struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
     root: *mut Vm,
+    bytes_allocated: usize,
+    threshold: usize,
     enabled: bool
 }
 
@@ -42,12 +46,23 @@ impl GcManager {
             first_node: null_mut(),
             last_node: null_mut(),
             root: null_mut(),
+            bytes_allocated: 0,
+            threshold: INITIAL_THRESHOLD,
             enabled: true
         }
     }
 
     pub unsafe fn malloc<T: Sized>
         (&mut self, x: T, finalizer: GenericFinalizer) -> *mut T {
+        // free up if over threshold
+        if self.bytes_allocated > self.threshold {
+            eprintln!("collect! {}", self.bytes_allocated);
+            self.collect();
+            // we didn't collect enough, grow the ratio
+            if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
+                self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
+            }
+        }
         // tfw no qt malloc function
         let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
         let bytes : *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
@@ -65,6 +80,7 @@ impl GcManager {
         }
         (*bytes).finalizer = finalizer;
         (*bytes).size = GcNode::alloc_size::<T>();
+        self.bytes_allocated += (*bytes).size;
         // return the body aka (start byte + sizeof(GCNode))
         std::mem::replace(&mut *(bytes.add(1) as *mut T), x);
         bytes.add(1) as *mut T
@@ -79,6 +95,8 @@ impl GcManager {
 
         if (*node).next == null_mut() { self.last_node = (*node).prev; }
         else { (*(*node).next).prev = (*node).prev; }
+
+        self.bytes_allocated -= (*node).size;
 
         // call finalizer
         let finalizer = (*node).finalizer;
@@ -126,6 +144,8 @@ impl GcManager {
 
                     if (*node).next == null_mut() { self.last_node = (*node).prev; }
                     else { (*(*node).next).prev = (*node).prev; }
+
+                    self.bytes_allocated -= (*node).size;
 
                     // call finalizer
                     let finalizer = (*node).finalizer;
@@ -188,7 +208,6 @@ pub unsafe fn malloc<T: Sized>(x: T, finalizer: GenericFinalizer) -> *mut T {
     let mut alloced: *mut T = null_mut();
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
-        gc_manager.collect();
         alloced = gc_manager.malloc(x, finalizer);
     });
     alloced

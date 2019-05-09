@@ -133,6 +133,20 @@ pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue
         array.drop();
     })
 }
+#[no_mangle]
+pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n: usize) -> *mut CArray<NativeValue> {
+    let array = &*carray;
+    let mut result : CArray<NativeValue> = CArray::reserve(n);
+    for i in 0..n {
+        for j in 0..array.len() {
+            result[j*array.len() + i] = array[j].clone();
+        }
+    }
+    malloc(result, |ptr| {
+        let array = &mut *(ptr as *mut CArray<NativeValue>);
+        array.drop();
+    })
+}
 // #endregion
 
 // #region env
