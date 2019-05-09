@@ -1,3 +1,5 @@
+use super::lazy_static;
+
 pub mod cnativeval;
 pub mod value;
 pub mod chmap;
@@ -6,4 +8,5 @@ pub mod env;
 pub mod gc;
 pub mod cfunction;
 pub mod foreignc;
+pub mod gc;
 pub mod vm;

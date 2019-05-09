@@ -6,10 +6,12 @@ pub mod vm_tests {
     use haru::vm::Vm;
     use haru::vm::VmOpcode;
     use haru::vm::Value;
+    use haru::gc;
 
     //#region numbers
     #[test]
     fn add_ints() {
+        gc::disable();
         let mut vm = Vm::new();
         vm.code.push(VmOpcode::OP_PUSH8);
         vm.cpush8(10);
@@ -24,6 +26,7 @@ pub mod vm_tests {
 
     #[test]
     fn add_floats() {
+        gc::disable();
         let mut vm = Vm::new();
         vm.code.push(VmOpcode::OP_PUSHF32);
         vm.cpushf32(1.5);
@@ -40,6 +43,7 @@ pub mod vm_tests {
     // #region string
     #[test]
     fn string_basic() {
+        gc::disable();
         let mut vm = Vm::new();
         vm.code.push(VmOpcode::OP_PUSHSTR);
         vm.cpushs("Test");
@@ -51,6 +55,7 @@ pub mod vm_tests {
 
     #[test]
     fn string_append() {
+        gc::disable();
         let mut vm = Vm::new();
         vm.code.push(VmOpcode::OP_PUSHSTR);
         vm.cpushs("Test");
@@ -65,6 +70,7 @@ pub mod vm_tests {
 
     #[test]
     fn string_repeat() {
+        gc::disable();
         let mut vm = Vm::new();
         vm.code.push(VmOpcode::OP_PUSHSTR);
         vm.cpushs("Test");
@@ -81,6 +87,7 @@ pub mod vm_tests {
     // #region vars
     #[test]
     fn global_var() {
+        gc::disable();
         let mut vm = Vm::new();
         vm.code.push(VmOpcode::OP_PUSH8);
         vm.cpush8(42);

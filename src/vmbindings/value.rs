@@ -3,6 +3,7 @@ use super::carray::CArray;
 use super::cfunction::Function;
 use super::vm::Vm;
 use super::cnativeval::{NativeValue, _valueType};
+use super::gc::*;
 extern crate libc;
 
 pub type NativeFnData = extern fn(*mut Vm, u16);
@@ -49,6 +50,26 @@ impl Value {
                                                 data: transmute::<*const CArray<NativeValue>, u64>(*a) },
             Value::NativeObj   => NativeValue { r#type: _valueType::TYPE_NATIVE_OBJ, data: 0},
         } }
+    }
+
+    // gc
+    pub fn mark(&self) {
+        match &self {
+            Value::Fn(f)       => {
+                unimplemented!()
+            },
+            Value::Dict(d)     => {
+                for (_, val) in d.iter() {
+                    val.mark();
+                }
+            },
+            Value::Array(a)    => {
+                for val in a.iter() {
+                    val.mark();
+                }
+            },
+            _ => {}
+        }
     }
 
 }

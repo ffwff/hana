@@ -2,6 +2,7 @@ use super::chmap::CHashMap;
 use super::cfunction::Function;
 use super::carray::CArray;
 use super::value::{Value, NativeFnData};
+use super::gc::mark_reachable;
 
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
@@ -54,6 +55,20 @@ impl NativeValue {
                 Value::Array(&*transmute::<u64, *const CArray<NativeValue>>(self.data))
             },
         _valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
+        }
+    }
+
+    pub fn mark(&self) {
+        use std::mem::transmute;
+        match self.r#type {
+            _valueType::TYPE_FN   |
+            _valueType::TYPE_STR  |
+            //_valueType::TYPE_DICT |
+            _valueType::TYPE_ARRAY  => unsafe {
+                let data = transmute::<u64, *mut u8>(self.data);
+                if mark_reachable(data) { self.unwrap().mark(); }
+            },
+            _ => {}
         }
     }
 

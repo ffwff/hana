@@ -2,8 +2,12 @@ use super::chmap::CHashMap;
 use super::carray::CArray;
 use super::cfunction::Function;
 use super::cnativeval::NativeValue;
+<<<<<<< HEAD
 use super::vm::Vm;
 use super::env::Env;
+=======
+use super::gc::{malloc, free, drop};
+>>>>>>> origin/haru
 
 #[allow(unused_attributes)]
 pub mod foreignc {
@@ -66,12 +70,7 @@ pub unsafe extern "C" fn hmap_set_str(chm: *mut CHashMap, ckey: *const  String, 
 #[no_mangle]
 pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char) -> *mut String {
     let s = CStr::from_ptr(cstr).to_str().unwrap();
-    Box::into_raw(Box::new(String::from(s)))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn string_free(cstr: *mut String) {
-    Box::from_raw(cstr);
+    malloc(String::from(s), |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
@@ -80,13 +79,13 @@ pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const Stri
     let right : &'static String = &*cright;
     let mut newleft = left.clone();
     newleft += right;
-    Box::into_raw(Box::new(newleft))
+    malloc(newleft, |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn string_repeat(cleft: *const String, n : i64) -> *mut String {
     let left : &'static String = &*cleft;
-    Box::into_raw(Box::new(left.repeat(n as usize)))
+    malloc(left.repeat(n as usize), |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
@@ -102,7 +101,7 @@ pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String)
 pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut String {
     let left : &'static String = &*cleft;
     let to = idx as usize;
-    Box::into_raw(Box::new(left[to..to+1].to_string()))
+    malloc(left[to..to+1].to_string(), |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
@@ -115,27 +114,24 @@ pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
 // #region function
 #[no_mangle]
 pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env) -> *mut Function {
-    Box::into_raw(Box::new(Function::new(addr, nargs, env)))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn function_free(fun: *mut Function) {
-    Box::from_raw(fun);
+    malloc(Function::new(addr, nargs, env), |ptr| drop::<Function>(ptr))
 }
 // #endregion
 
 // #region array
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc() -> *mut CArray<NativeValue> {
-    Box::into_raw(Box::new(CArray::new()))
+    malloc(CArray::new(), |ptr| {
+        let array = &mut *(ptr as *mut CArray<NativeValue>);
+        array.drop();
+    })
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue> {
-    Box::into_raw(Box::new(CArray::reserve(n)))
-}
-#[no_mangle]
-pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {
-    Box::from_raw(carray);
+    malloc(CArray::reserve(n), |ptr| {
+        let array = &mut *(ptr as *mut CArray<NativeValue>);
+        array.drop();
+    })
 }
 // #endregion
 

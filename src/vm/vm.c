@@ -51,8 +51,6 @@ void vm_free(struct vm *vm) {
         vm->eframe = eframe;
     }
     array_free(vm->code);
-    for(size_t i = 0; i < vm->stack.length; i++)
-        value_free(&vm->stack.data[i]);
     array_free(vm->stack);
 }
 
@@ -162,7 +160,7 @@ void vm_execute(struct vm *vm) {
         u.u[3] = vm->code.data[vm->ip+3];
         vm->ip += sizeof(u);
         LOG("PUSH_F32 %f\n", u.f);
-        array_push(vm->stack, (struct value){});
+        array_push(vm->stack, (struct value){0});
         value_float(&array_top(vm->stack), u.f);
         dispatch();
     }
@@ -182,7 +180,7 @@ void vm_execute(struct vm *vm) {
         u.u[7] = vm->code.data[vm->ip+7];
         vm->ip += sizeof(u);
         LOG("PUSH_F64 %f\n", u.d);
-        array_push(vm->stack, (struct value){});
+        array_push(vm->stack, (struct value){0});
         value_float(&array_top(vm->stack), u.d);
         dispatch();
     }
@@ -193,7 +191,7 @@ void vm_execute(struct vm *vm) {
         char *str = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(str)+1;
         LOG("PUSH %s\n", str);
-        array_push(vm->stack, (struct value){});
+        array_push(vm->stack, (struct value){0});
         value_str(&array_top(vm->stack), str);
         dispatch();
     }
@@ -202,7 +200,7 @@ void vm_execute(struct vm *vm) {
     doop(OP_PUSH_NIL): {
         vm->ip++;
         LOG("PUSH NIL\n");
-        array_push(vm->stack, (struct value){});
+        array_push(vm->stack, (struct value){0});
         dispatch();
     }
 
@@ -249,7 +247,7 @@ void vm_execute(struct vm *vm) {
         struct value left = array_top(vm->stack); \
         array_pop(vm->stack); \
 \
-        array_push(vm->stack, (struct value){}); \
+        array_push(vm->stack, (struct value){0}); \
         struct value *result = &array_top(vm->stack); \
         fn(result, &left, &right); \
         if(result->type == TYPE_INTERPRETER_ERROR) { \
@@ -332,7 +330,7 @@ void vm_execute(struct vm *vm) {
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(key);
         LOG("GET LOCAL %d\n", key);
-        array_push(vm->stack, (struct value){});
+        array_push(vm->stack, (struct value){0});
         value_copy(&array_top(vm->stack), env_get(vm->localenv, key));
         dispatch();
     }
@@ -347,8 +345,17 @@ void vm_execute(struct vm *vm) {
         LOG("GET LOCAL UP %d %d\n", key, relascope);
 
         struct env *env = vm->localenv;
+<<<<<<< HEAD
         array_push(vm->stack, (struct value){});
         value_copy(&array_top(vm->stack), env_get_up(env, relascope, key));
+=======
+        while(relascope--) {
+            env = env->lexical_parent;
+            LOG("UP\n");
+        }
+        array_push(vm->stack, (struct value){0});
+        value_copy(&array_top(vm->stack), env_get(env, key));
+>>>>>>> origin/haru
         dispatch();
     }
 
@@ -367,7 +374,7 @@ void vm_execute(struct vm *vm) {
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
         LOG("GET GLOBAL %s\n", key);
-        array_push(vm->stack, (struct value){});
+        array_push(vm->stack, (struct value){0});
         const struct value *val = hmap_get(vm->globalenv, key);
         if(val == NULL) {
             FATAL("no global variable named %s!\n", key);
@@ -520,7 +527,7 @@ do { \
     doop(OP_DICT_NEW): {
         vm->ip++;
         LOG("DICT_NEW\n");
-        array_push(vm->stack, (struct value){});
+        array_push(vm->stack, (struct value){0});
         value_dict(&array_top(vm->stack));
         dispatch();
     }
@@ -562,7 +569,7 @@ do { \
             if(op == OP_MEMBER_GET) array_pop(vm->stack);
         }
 
-        array_push(vm->stack, (struct value){});
+        array_push(vm->stack, (struct value){0});
         const struct value *result = hmap_get(dict, key);
         if(result != NULL) value_copy(&array_top(vm->stack), result);
 
@@ -632,7 +639,7 @@ do { \
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->length);
                 ERROR();
             }
-            array_push(vm->stack, (struct value){});
+            array_push(vm->stack, (struct value){0});
             value_copy(&array_top(vm->stack), &dval.as.array->data[i]);
         } else if(dval.type == TYPE_STR) {
             if(index.type != TYPE_INT) {
@@ -651,7 +658,7 @@ do { \
                 FATAL("index type for record must be string!\n");
                 ERROR();
             }
-            array_push(vm->stack, (struct value){});
+            array_push(vm->stack, (struct value){0});
             const struct value *val = hmap_get_str(dval.as.dict, index.as.str);
             LOG("%p\n", val);
             if(val != NULL) value_copy(&array_top(vm->stack), val);

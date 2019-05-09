@@ -25,6 +25,12 @@ impl<T> CArray<T> {
             capacity: 2
         }
     }
+    pub fn drop(&mut self) {
+        unsafe{ libc::free(self.data as *mut libc::c_void) };
+        self.data = null_mut();
+        self.len = 0;
+        self.capacity = 0;
+    }
 
     pub fn reserve(n : usize) -> CArray<T> {
         use std::mem::size_of;
@@ -60,8 +66,16 @@ impl<T> CArray<T> {
         if self.len == 0 { panic!("popping unbounded!"); }
         self.len -= 1;
     }
+
+    pub fn iter(&self) -> ArrayIter<T> {
+        ArrayIter {
+            array: self,
+            idx: 0
+        }
+    }
 }
 
+// index
 impl<T> std::ops::Index<usize> for CArray<T> {
     type Output = T;
 
@@ -79,5 +93,22 @@ impl<T> std::ops::IndexMut<usize> for CArray<T> {
             panic!("accessing outside of index!");
         }
         unsafe { &mut (*self.data.add(idx)) }
+    }
+}
+
+// iter
+pub struct ArrayIter<'a, T> {
+    array: &'a CArray<T>,
+    idx: usize,
+}
+
+impl<'a, T> std::iter::Iterator for ArrayIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<&'a T> {
+        if self.idx >= self.array.len { return None; }
+        let ret = Some(&self.array[self.idx]);
+        self.idx += 1;
+        ret
     }
 }

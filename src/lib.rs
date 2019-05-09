@@ -1,4 +1,7 @@
+#![feature(vec_remove_item)]
+
 #[macro_use] pub extern crate decorator;
+#[macro_use] pub extern crate lazy_static;
 
 pub mod compiler;
 pub mod ast;

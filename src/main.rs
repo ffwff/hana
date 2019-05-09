@@ -1,10 +1,15 @@
+#![feature(vec_remove_item)]
+
+#[macro_use] extern crate lazy_static;
+#[macro_use] extern crate decorator;
+use std::io::Read;
+
 pub mod compiler;
 pub mod ast;
 mod vmbindings;
 pub use vmbindings::vm;
 pub use vmbindings::vm::VmOpcode;
-use std::io::Read;
-#[macro_use] extern crate decorator;
+pub use vmbindings::gc::add_root;
 mod hanayo;
 
 fn main() {
@@ -24,8 +29,8 @@ fn main() {
     for stmt in prog {
         stmt.emit(&mut c);
     }
+    add_root(&mut c.vm);
     hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();
-    std::process::exit(if c.vm.error { 1 } else { 0 });
 }

@@ -17,7 +17,6 @@ struct function {
 };
 
 struct function *function_malloc(uint32_t addr, uint16_t nargs, struct env *env);
-void function_free(struct function *);
 
 #ifdef __cplusplus
 }
