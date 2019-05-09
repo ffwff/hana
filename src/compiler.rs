@@ -11,7 +11,6 @@ impl Scope {
     }
 }
 
-//
 struct LoopStatement {
     pub fill_continue: Vec<usize>,
     pub fill_break: Vec<usize>

@@ -10,6 +10,9 @@ pub type NativeFnData = extern fn(*mut Vm, u16);
 
 #[derive(Clone)]
 pub enum Value {
+    // we don't have control over how rust manages its variant
+    // types, so this is a convenient wrapper for (de)serialising
+    // hana's values
     Nil,
     Int(i64),
     Float(f64),

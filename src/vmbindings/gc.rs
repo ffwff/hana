@@ -24,7 +24,8 @@ impl GcNode {
 }
 
 // finalizer
-// gets called with a pointer (represented as *u8) to itself
+// gets called with a pointer (represented as *u8) to
+// the data that's about to be freed
 type GenericFinalizer = fn(*mut u8);
 
 // manager
@@ -65,7 +66,7 @@ impl GcManager {
         }
         (*bytes).finalizer = finalizer;
         (*bytes).size = GcNode::alloc_size::<T>();
-        // return (start byte+*struct GCNode)
+        // return the body aka (start byte + sizeof(GCNode))
         std::mem::replace(&mut *(bytes.add(1) as *mut T), x);
         bytes.add(1) as *mut T
     }

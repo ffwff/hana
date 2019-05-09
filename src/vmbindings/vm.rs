@@ -48,18 +48,24 @@ pub enum VmOpcode {
 
 #[repr(C)]
 pub struct Vm {
-    // TODO: fill in all these *mut i32
-    pub ip        : u32,
+    pub ip        : u32, // current instruction pointer
     localenv      : *mut Env,
+    // represents a linked list of call frames
     pub globalenv : *mut CHashMap,
-    eframe        : *mut i32,
-    pub code      : CArray<VmOpcode>,
-    pub stack     : CArray<NativeValue>,
+    // global environment, all unscoped variables/variables
+    // starting with '$' should be stored here
+    eframe        : *mut u8, // exception frame (TODO)
+    pub code      : CArray<VmOpcode>, // where all the code is
+    pub stack     : CArray<NativeValue>, // stack
+
+    // prototype types for primitive values
     pub dstr      : *mut CHashMap,
     pub dint      : *mut CHashMap,
     pub dfloat    : *mut CHashMap,
     pub darray    : *mut CHashMap,
+
     pub error     : bool
+    // whether the interpreter raised an unhandled error
 }
 
 #[link(name="hana", kind="static")]

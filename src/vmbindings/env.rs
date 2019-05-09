@@ -7,10 +7,19 @@ use std::alloc::{alloc_zeroed, dealloc, Layout};
 pub struct Env {
     pub slots: *mut NativeValue,
     pub nslots: u16,
+    // raw slots array. rust doesn't have an non bounds-check index
+    // function for arrays so we'll have to use this
+    // slot indexes SHOULD be bounded whenever the script "compiles"
+
     pub nargs : u16,
+    // cached number of args the function was called with
+
     pub lexical_parent : *mut Env,
-    pub parent : *mut Env,
-    pub retip : u32,
+    // lexical parents are the parent of the function's lexical scopes
+    // this should be set to (struct function*)->bound
+    pub parent : *mut Env, // previous of the env chain
+
+    pub retip : u32, // return ip, where to return to on pop
 }
 
 impl Env {

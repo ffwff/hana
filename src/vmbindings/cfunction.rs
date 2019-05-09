@@ -5,9 +5,13 @@ use std::ptr::{null, null_mut};
 // functions
 #[repr(C)]
 pub struct Function {
-    ip: u32,
-    nargs : u16,
-    bound: *mut Env
+    ip: u32, // instruction pointer
+    nargs : u16, // number of args
+    bound: *mut Env,
+    // represents the current local environment
+    // at the time the function is declared, this will be
+    // COPIED into another struct env whenever OP_CALL is issued
+    // (we use this to implement closures)
 }
 
 impl Function {
