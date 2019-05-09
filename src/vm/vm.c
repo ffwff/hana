@@ -50,8 +50,6 @@ void vm_free(struct vm *vm) {
         vm->eframe = eframe;
     }
     array_free(vm->code);
-    for(size_t i = 0; i < vm->stack.length; i++)
-        value_free(&vm->stack.data[i]);
     array_free(vm->stack);
 }
 

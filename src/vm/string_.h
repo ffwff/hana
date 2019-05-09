@@ -5,7 +5,6 @@
 
 struct string;
 struct string *string_malloc(const char *str);
-void string_free(struct string*);
 struct string *string_append(const struct string *left, const struct string *right);
 struct string *string_repeat(const struct string *left, int64_t n);
 bool string_is_empty(const struct string *str);

@@ -69,11 +69,6 @@ pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char) -> *mut String {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn string_free(cstr: *mut String) {
-    free(cstr);
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const String) -> *mut String {
     let left : &'static String = &*cleft;
     let right : &'static String = &*cright;
@@ -116,11 +111,6 @@ pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
 pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env) -> *mut Function {
     malloc(Function::new(addr, nargs, env), |ptr| drop::<Function>(ptr))
 }
-
-#[no_mangle]
-pub unsafe extern "C" fn function_free(fun: *mut Function) {
-    free(fun);
-}
 // #endregion
 
 // #region array
@@ -137,10 +127,6 @@ pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue
         let array = &mut *(ptr as *mut CArray<NativeValue>);
         array.drop();
     })
-}
-#[no_mangle]
-pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {
-    free(carray);
 }
 // #endregion
 
