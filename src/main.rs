@@ -1,4 +1,5 @@
 #![feature(vec_remove_item)]
+#![feature(alloc_layout_extra)]
 
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate decorator;

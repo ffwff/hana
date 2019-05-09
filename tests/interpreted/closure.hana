@@ -1,0 +1,8 @@
+function X() begin
+    x = 1
+    function Y() begin
+        print(x)
+    end
+    Y()
+end
+X()

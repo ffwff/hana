@@ -17,6 +17,7 @@ impl<T> CArray<T> {
         }
     }
 
+    // constructor/destructor
     pub fn new() -> CArray<T> {
         use std::mem::size_of;
         CArray::<T> {
@@ -25,11 +26,17 @@ impl<T> CArray<T> {
             capacity: 2
         }
     }
-    pub fn drop(&mut self) {
+
+    pub fn drop(&mut self) { // must be called manually
         unsafe{ libc::free(self.data as *mut libc::c_void) };
         self.data = null_mut();
         self.len = 0;
         self.capacity = 0;
+    }
+
+    // length
+    pub fn len(&self) -> usize {
+        self.len
     }
 
     pub fn reserve(n : usize) -> CArray<T> {
@@ -41,6 +48,7 @@ impl<T> CArray<T> {
         }
     }
 
+    // stack
     pub fn push(&mut self, val : T) {
         use std::mem::size_of;
         unsafe {
@@ -54,19 +62,17 @@ impl<T> CArray<T> {
         }
     }
 
-    pub fn len(&self) -> usize {
-        self.len
+    pub fn pop(&mut self) {
+        if self.len == 0 { panic!("popping unbounded!"); }
+        self.len -= 1;
     }
 
     pub fn top(&self) -> &T {
         if self.len == 0 { panic!("accessing unbounded!"); }
         unsafe { &(*self.data.add(self.len-1)) }
     }
-    pub fn pop(&mut self) {
-        if self.len == 0 { panic!("popping unbounded!"); }
-        self.len -= 1;
-    }
 
+    // iterator
     pub fn iter(&self) -> ArrayIter<T> {
         ArrayIter {
             array: self,

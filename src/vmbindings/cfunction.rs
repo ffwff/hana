@@ -7,7 +7,7 @@ use std::ptr::{null, null_mut};
 pub struct Function {
     ip: u32,
     nargs : u16,
-    bound: *mut Env
+    bound: std::boxed::Box<Env>
 }
 
 impl Function {
@@ -16,20 +16,19 @@ impl Function {
         Function {
             ip: ip,
             nargs: nargs,
-            bound: Box::into_raw(Box::new(
+            bound: Box::new(
                     if env == null_mut() {
-                        Env::new(null_mut(), 0, None, nargs) }
+                        Env::new(null_mut(), 0, null_mut(), nargs) }
                     else { Env::copy(&*env) }
-                ))
+                )
         }
     }
 
-}
-
-impl std::ops::Drop for Function {
-
-    fn drop(&mut self) {
-        // TODO free bound
+    pub fn mark(&self) {
+        /* if self.bound.nslots == 0 { return; }
+        for i in 0..self.bound.nslots {
+            self.bound.get(i).mark();
+        } */
     }
 
 }

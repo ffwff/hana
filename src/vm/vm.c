@@ -344,9 +344,8 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(relascope);
         LOG("GET LOCAL UP %d %d\n", key, relascope);
 
-        struct env *env = vm->localenv;
-        array_push(vm->stack, (struct value){});
-        value_copy(&array_top(vm->stack), env_get_up(env, relascope, key));
+        array_push(vm->stack, (struct value){0});
+        array_top(vm->stack) = env_get_up(vm->localenv, relascope, key);
         dispatch();
     }
 
@@ -389,10 +388,9 @@ void vm_execute(struct vm *vm) {
                              vm->code.data[vm->ip+3];
         vm->ip += sizeof(pos);
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
-        struct value val;
-        value_function(&val, vm->ip, nargs, vm->localenv);
+        array_push(vm->stack, (struct value){0});
+        value_function(&array_top(vm->stack), vm->ip, nargs, vm->localenv);
         vm->ip = pos;
-        array_push(vm->stack, val);
         dispatch();
     }
 

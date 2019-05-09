@@ -147,23 +147,26 @@ impl Vm {
         }
         // call stack
         // TODO
-        /*
         unsafe {
             let mut env = self.localenv;
             while env != null_mut() {
-                for i in 0..(((*env).nslots-1) as usize) {
-                    let val = (&*(*env).slots.add(i));
+                for i in 0..(*env).nslots {
+                    let val = (*env).get(i);
                     val.mark();
                 }
                 env = (*env).parent;
             }
-        }*/
+        }
     }
 
     // call stack
     pub fn leave_env(&mut self) {
-        // TODO
-        unimplemented!()
+        unsafe {
+            let parent = (*self.localenv).parent;
+            self.ip = (*self.localenv).retip;
+            std::boxed::Box::from_raw(self.localenv);
+            self.localenv = parent;
+        }
     }
 }
 

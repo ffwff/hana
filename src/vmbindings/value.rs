@@ -56,7 +56,7 @@ impl Value {
     pub fn mark(&self) {
         match &self {
             Value::Fn(f)       => {
-                unimplemented!()
+                f.mark();
             },
             Value::Dict(d)     => {
                 for (_, val) in d.iter() {

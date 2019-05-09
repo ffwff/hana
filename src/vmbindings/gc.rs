@@ -190,7 +190,7 @@ lazy_static! {
 // general
 pub unsafe fn malloc<T: Sized>(x: T, finalizer: GenericFinalizer) -> *mut T {
     let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
-    //gc_manager.collect();
+    gc_manager.collect();
     gc_manager.malloc(x, finalizer)
 }
 pub unsafe fn free<T: Sized>(x: *mut T) {
