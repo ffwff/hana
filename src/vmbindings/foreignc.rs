@@ -70,7 +70,7 @@ pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char) -> *mut String {
 
 #[no_mangle]
 pub unsafe extern "C" fn string_free(cstr: *mut String) {
-    //free(cstr);
+    free(cstr);
 }
 
 #[no_mangle]
@@ -119,7 +119,7 @@ pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env)
 
 #[no_mangle]
 pub unsafe extern "C" fn function_free(fun: *mut Function) {
-    //Box::from_raw(fun);
+    free(fun);
 }
 // #endregion
 
@@ -140,7 +140,7 @@ pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_free(carray: *mut CArray<NativeValue>) {
-    //Box::from_raw(carray);
+    free(carray);
 }
 // #endregion
 

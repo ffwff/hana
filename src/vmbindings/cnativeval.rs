@@ -66,8 +66,7 @@ impl NativeValue {
             //_valueType::TYPE_DICT |
             _valueType::TYPE_ARRAY  => unsafe {
                 let data = transmute::<u64, *mut u8>(self.data);
-                mark_reachable(data);
-                self.unwrap().mark();
+                if mark_reachable(data) { self.unwrap().mark(); }
             },
             _ => {}
         }

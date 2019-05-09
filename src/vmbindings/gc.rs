@@ -146,11 +146,13 @@ impl GcManager {
     }
 
     // ## marking
-    pub unsafe fn mark_reachable(ptr: *mut u8) {
+    pub unsafe fn mark_reachable(ptr: *mut u8) -> bool {
         // => start byte
-        if ptr == null_mut() { return; }
+        if ptr == null_mut() { return false; }
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        if !(*node).unreachable { return false; }
         (*node).unreachable = false;
+        return true;
     }
 
 }
@@ -221,8 +223,8 @@ pub fn collect(vm: *mut Vm) {
     let mut gc_manager = GC_MANAGER_MUT.lock().unwrap();
     gc_manager.collect();
 }
-pub fn mark_reachable(ptr: *mut u8) {
-    unsafe { GcManager::mark_reachable(ptr); }
+pub fn mark_reachable(ptr: *mut u8) -> bool {
+    unsafe { GcManager::mark_reachable(ptr) }
 }
 
 // helpers
