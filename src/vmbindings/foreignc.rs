@@ -136,7 +136,7 @@ pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue
 #[no_mangle]
 pub unsafe extern "C" fn env_malloc(parent: *mut Env, retip: u32, lexical_parent : *mut Env, nargs: u16) -> *mut Env {
     Box::into_raw(Box::new(Env::new(
-        retip, Some(&*lexical_parent), nargs)))
+        parent, retip, Some(&*lexical_parent), nargs)))
 }
 #[no_mangle]
 pub unsafe extern "C" fn env_init(selfptr: *mut Env, nslots: u16, vm: *mut Vm) {
@@ -154,27 +154,31 @@ pub unsafe extern "C" fn env_copy(selfptr: *mut Env) -> *mut Env {
 
 //
 #[no_mangle]
-pub unsafe extern "C" fn env_get(selfptr: *mut Env, nslots: u16) -> *mut Env {
+pub unsafe extern "C" fn env_get(selfptr: *mut Env, slot: u16) -> NativeValue {
+    let env = &mut *selfptr;
+    env.slots[slot as usize].clone()
+}
+#[no_mangle]
+pub unsafe extern "C" fn env_get_up(selfptr: *mut Env, up: u16, slot: i16) -> NativeValue {
+    let env = &mut *selfptr;
     unimplemented!()
 }
 #[no_mangle]
-pub unsafe extern "C" fn env_get_up(selfptr: *mut Env, up: u16, nslots: u16) -> *mut Env {
+pub unsafe extern "C" fn env_set(selfptr: *mut Env, slot: u16, val: *mut NativeValue) {
+    let env = &mut *selfptr;
     unimplemented!()
 }
 #[no_mangle]
-pub unsafe extern "C" fn env_set(selfptr: *mut Env, nslots: u16) -> *mut Env {
-    unimplemented!()
-}
-#[no_mangle]
-pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, nslots: u16) -> *mut Env {
+pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, slot: u16, val: *mut NativeValue) {
+    let env = &mut *selfptr;
     unimplemented!()
 }
 
 //
 #[no_mangle]
 pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) {
-    //let vm = &mut *selfptr;
-    //vm.leave_env();
+    let vm = &mut *selfptr;
+    vm.leave_env();
 }
 // #endregion
 

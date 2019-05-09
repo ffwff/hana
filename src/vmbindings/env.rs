@@ -6,18 +6,20 @@ use std::vec;
 pub struct Env {
     pub slots: Vec<NativeValue>,
     pub nargs : u16,
+    pub parent : *mut Env,
     pub lexical_parent : Option<&'static Env>,
     pub retip : u32,
 }
 
 impl Env {
 
-    pub fn new(retip: u32,
+    pub fn new(parent: *mut Env, retip: u32,
               lexical_parent: Option<&'static Env>,
               nargs: u16) -> Env {
         Env {
             slots: Vec::with_capacity(nargs as usize),
             nargs: nargs,
+            parent: parent,
             lexical_parent: lexical_parent,
             retip: retip
         }

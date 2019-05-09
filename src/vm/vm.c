@@ -331,7 +331,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(key);
         LOG("GET LOCAL %d\n", key);
         array_push(vm->stack, (struct value){0});
-        value_copy(&array_top(vm->stack), env_get(vm->localenv, key));
+        array_top(vm->stack) = env_get(vm->localenv, key);
         dispatch();
     }
     doop(OP_GET_LOCAL_UP): {

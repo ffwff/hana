@@ -159,6 +159,12 @@ impl Vm {
             }
         }*/
     }
+
+    // call stack
+    pub fn leave_env(&mut self) {
+        // TODO
+        unimplemented!()
+    }
 }
 
 impl std::ops::Drop for Vm {
