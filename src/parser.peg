@@ -100,7 +100,7 @@ function_expr -> std::boxed::Box<ast::AST>
     = "function" id:(_ i:identifier {i})? _ args:function_arguments _ s:statement_no_eos
     {
         Box::new(ast::FunctionDefinition {
-            id: id.unwrap_or("".to_string()),
+            id: id.unwrap_or_else(|| "".to_string()),
             args: args,
             stmt: s
         })

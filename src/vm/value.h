@@ -34,7 +34,6 @@ struct value {
         struct hmap *dict;
         array_obj *array;
         struct native_obj *native;
-        void *ptr;
     } as;
     uint8_t type;
 };

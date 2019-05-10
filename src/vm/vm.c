@@ -21,8 +21,6 @@
 #endif
 #define FATAL(...) fprintf(stderr, __VA_ARGS__)
 
-// notes: architecture is big endian!
-
 void vm_init(struct vm *vm) {
     //hmap_init(&vm->globalenv);
     vm->error = 0;

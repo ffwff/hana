@@ -135,7 +135,7 @@ impl Vm {
 
     // globals
     pub fn global(&mut self) -> &mut CHashMap {
-        if self.globalenv == null_mut() { panic!("accessing nil ptr"); }
+        if self.globalenv.is_null() { panic!("accessing nil ptr"); }
         unsafe{ &mut *self.globalenv }
     }
 
@@ -152,10 +152,9 @@ impl Vm {
             val.mark();
         }
         // call stack
-        // TODO
         unsafe {
             let mut env = self.localenv;
-            while env != null_mut() {
+            while !env.is_null() {
                 for i in 0..(*env).nslots {
                     let val = (*env).get(i);
                     val.mark();
@@ -167,6 +166,8 @@ impl Vm {
 
     // call stack
     pub fn leave_env(&mut self) {
+        // we don't check for env leaving
+        // this must be non-null
         unsafe {
             let parent = (*self.localenv).parent;
             self.ip = (*self.localenv).retip;

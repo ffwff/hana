@@ -1,5 +1,6 @@
 use std::ptr::{null_mut, drop_in_place};
 use std::alloc::{alloc_zeroed, dealloc, Layout};
+pub use libc::c_void;
 use super::vm::Vm;
 
 // node
@@ -17,7 +18,7 @@ impl GcNode {
     pub fn alloc_size<T: Sized>() -> usize {
         // number of bytes needed to allocate node for <T>
         use std::mem::size_of;
-        return size_of::<GcNode>() + size_of::<T>();
+        size_of::<GcNode>() + size_of::<T>()
     }
 
 }
@@ -25,7 +26,7 @@ impl GcNode {
 // finalizer
 // gets called with a pointer (represented as *u8) to
 // the data that's about to be freed
-type GenericFinalizer = fn(*mut u8);
+type GenericFinalizer = fn(*mut c_void);
 
 // manager
 const INITIAL_THRESHOLD: usize = 100;
@@ -67,7 +68,7 @@ impl GcManager {
         let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
         let bytes : *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
         // append node
-        if self.first_node == null_mut() {
+        if self.first_node.is_null() {
             self.first_node = bytes;
             self.last_node = bytes;
             (*bytes).prev = null_mut();
@@ -90,17 +91,17 @@ impl GcManager {
         // => start byte
         let node : *mut GcNode = (x as *mut GcNode).sub(1);
 
-        if (*node).prev == null_mut() { self.first_node = (*node).next; }
+        if (*node).prev.is_null() { self.first_node = (*node).next; }
         else { (*(*node).prev).next = (*node).next; }
 
-        if (*node).next == null_mut() { self.last_node = (*node).prev; }
+        if (*node).next.is_null() { self.last_node = (*node).prev; }
         else { (*(*node).next).prev = (*node).prev; }
 
         self.bytes_allocated -= (*node).size;
 
         // call finalizer
         let finalizer = (*node).finalizer;
-        finalizer(x as *mut u8);
+        finalizer(x as *mut c_void);
         // free memory
         let layout = Layout::from_size_align((*node).size, 2).unwrap();
         dealloc(node as *mut u8, layout);
@@ -122,7 +123,7 @@ impl GcManager {
         // mark phase:
         unsafe { // reset all nodes
             let mut node : *mut GcNode = self.first_node;
-            while node != null_mut() {
+            while !node.is_null() {
                 let next : *mut GcNode = (*node).next;
                 (*node).unreachable = true;
                 node = next;
@@ -133,23 +134,23 @@ impl GcManager {
         // sweep phase:
         unsafe {
             let mut node : *mut GcNode = self.first_node;
-            while node != null_mut() {
+            while !node.is_null() {
                 let next : *mut GcNode = (*node).next;
                 if (*node).unreachable {
                     let body = node.add(1);
 
                     // remove from ll
-                    if (*node).prev == null_mut() { self.first_node = (*node).next; }
+                    if (*node).prev.is_null() { self.first_node = (*node).next; }
                     else { (*(*node).prev).next = (*node).next; }
 
-                    if (*node).next == null_mut() { self.last_node = (*node).prev; }
+                    if (*node).next.is_null() { self.last_node = (*node).prev; }
                     else { (*(*node).next).prev = (*node).prev; }
 
                     self.bytes_allocated -= (*node).size;
 
                     // call finalizer
                     let finalizer = (*node).finalizer;
-                    finalizer(body as *mut u8);
+                    finalizer(body as *mut c_void);
 
                     // free memory
                     let layout = Layout::from_size_align((*node).size, 2).unwrap();
@@ -161,13 +162,13 @@ impl GcManager {
     }
 
     // ## marking
-    pub unsafe fn mark_reachable(ptr: *mut u8) -> bool {
+    pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
         // => start byte
-        if ptr == null_mut() { return false; }
+        if ptr.is_null() { return false; }
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
         if !(*node).unreachable { return false; }
         (*node).unreachable = false;
-        return true;
+        true
     }
 
 }
@@ -180,12 +181,12 @@ impl std::ops::Drop for GcManager {
     fn drop(&mut self) {
         unsafe {
             let mut node : *mut GcNode = self.first_node;
-            while node != null_mut() {
+            while !node.is_null() {
                 let next : *mut GcNode = (*node).next;
                 let body = node.add(1);
                 // call finalizer
                 let finalizer = (*node).finalizer;
-                finalizer(body as *mut u8);
+                finalizer(body as *mut c_void);
                 // free memory
                 let layout = Layout::from_size_align((*node).size, 2).unwrap();
                 dealloc(node as *mut u8, layout);
@@ -248,12 +249,12 @@ pub fn collect(vm: *mut Vm) {
         gc_manager.collect();
     });
 }
-pub fn mark_reachable(ptr: *mut u8) -> bool {
-    unsafe { GcManager::mark_reachable(ptr) }
+pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
+    GcManager::mark_reachable(ptr)
 }
 
 // helpers
-pub fn no_finalizer(_ : *mut u8) {}
-pub unsafe fn drop<T>(ptr: *mut u8) {
+pub fn no_finalizer(_ : *mut c_void) {}
+pub unsafe fn drop<T>(ptr: *mut c_void) {
     drop_in_place::<T>(ptr as *mut T);
 }

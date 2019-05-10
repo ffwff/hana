@@ -1,3 +1,5 @@
+#[allow(unused_variables)]
+
 use super::cnativeval::{_valueType, NativeValue};
 use super::gc::mark_reachable;
 use std::ptr::{null, null_mut};
@@ -59,7 +61,7 @@ impl Env {
     pub fn get_up(&self, up: u16, idx: u16) -> NativeValue {
         unsafe {
             let mut env : *mut Env = self.lexical_parent;
-            for i in 1..up {
+            for _ in 1..up {
                 env = (*env).lexical_parent;
             }
             (*env).get(idx)
@@ -74,7 +76,7 @@ impl Env {
     pub fn set_up(&mut self, up: u16, idx: u16, val: NativeValue) {
         unsafe {
             let mut env : *mut Env = self.lexical_parent;
-            for i in 1..up {
+            for _ in 1..up {
                 env = (*env).lexical_parent;
             }
             (*env).set(idx, val);

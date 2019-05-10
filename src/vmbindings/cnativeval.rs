@@ -1,3 +1,4 @@
+use libc::c_void;
 use super::chmap::CHashMap;
 use super::cfunction::Function;
 use super::carray::CArray;
@@ -36,23 +37,22 @@ impl NativeValue {
         _valueType::TYPE_INT        => unsafe {
                 Value::Int(transmute::<u64, i64>(self.data))
             },
-        _valueType::TYPE_FLOAT      => unsafe {
-                Value::Float(transmute::<u64, f64>(self.data))
-            },
+        _valueType::TYPE_FLOAT      =>
+                Value::Float(f64::from_bits(self.data)),
         _valueType::TYPE_NATIVE_FN  => unsafe {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
             },
         _valueType::TYPE_FN         => unsafe {
-                Value::Fn(&*transmute::<u64, *const Function>(self.data))
+                Value::Fn(&*(self.data as *const Function))
             },
         _valueType::TYPE_STR        => unsafe {
-                Value::Str(&*transmute::<u64, *const String>(self.data))
+                Value::Str(&*(self.data as *const String))
             },
         _valueType::TYPE_DICT       => unsafe {
-                Value::Dict(&*transmute::<u64, *const CHashMap>(self.data))
+                Value::Dict(&*(self.data as *const CHashMap))
             },
         _valueType::TYPE_ARRAY      => unsafe {
-                Value::Array(&*transmute::<u64, *const CArray<NativeValue>>(self.data))
+                Value::Array(&*(self.data as *const CArray<NativeValue>))
             },
         _valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
         }
@@ -65,8 +65,8 @@ impl NativeValue {
             _valueType::TYPE_STR  |
             //_valueType::TYPE_DICT |
             _valueType::TYPE_ARRAY  => unsafe {
-                let data = transmute::<u64, *mut u8>(self.data);
-                if mark_reachable(data) { self.unwrap().mark(); }
+                if mark_reachable(self.data as *mut c_void) {
+                    self.unwrap().mark(); }
             },
             _ => {}
         }

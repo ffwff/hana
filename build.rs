@@ -20,6 +20,8 @@ fn main() {
     }
     if env::var("NOLOG").is_ok() || is_release {
         build.define("NOLOG", None); }
+    if env::var("PROFILE").is_ok() {
+        build.flag("-pg"); }
     if is_release { build.flag("-flto"); }
     build
         .flag("-Wall").flag("-Werror")

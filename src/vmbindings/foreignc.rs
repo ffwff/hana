@@ -27,7 +27,7 @@ pub unsafe extern "C" fn hmap_free(hm: *mut CHashMap) {
 
 #[no_mangle]
 pub unsafe extern "C" fn hmap_get(chm: *const CHashMap, ckey: *const libc::c_char) -> *const NativeValue {
-    let key = String::from(CStr::from_ptr(ckey).to_str().clone().unwrap());
+    let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
     let hm = &*chm;
     if let Some(val) = hm.get(&key) {
         val
@@ -48,7 +48,7 @@ pub unsafe extern "C" fn hmap_get_str(chm: *const CHashMap, ckey: *const String)
 
 #[no_mangle]
 pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char, val: NativeValue) {
-    let key = String::from(CStr::from_ptr(ckey).to_str().clone().unwrap());
+    let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
     let hm = &mut *chm;
     hm.insert(key, val.clone());
 }
@@ -96,13 +96,13 @@ pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String)
 pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut String {
     let left : &'static String = &*cleft;
     let to = idx as usize;
-    malloc(left[to..to+1].to_string(), |ptr| drop::<String>(ptr))
+    malloc(left[to..=to].to_string(), |ptr| drop::<String>(ptr))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
     let left : &'static String = &*s;
-    left.len() == 0
+    left.is_empty()
 }
 // #endregion
 
