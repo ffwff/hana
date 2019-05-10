@@ -81,6 +81,17 @@ impl<T> CArray<T> {
             idx: 0
         }
     }
+
+    // other
+    pub fn delete(&mut self, from_pos : usize, nelems : usize) {
+        assert!(from_pos + nelems < self.len());
+        let remaining = self.len - from_pos - nelems;
+        unsafe {
+            std::ptr::copy(self.data.add(from_pos+nelems),
+                self.data.add(from_pos), remaining);
+        }
+        self.len = remaining;
+    }
 }
 
 // index

@@ -58,6 +58,27 @@ impl NativeValue {
         }
     }
 
+    pub fn unwrap_mut(&self) -> Value {
+        use std::mem::transmute;
+        #[allow(non_camel_case_types)]
+        match &self.r#type {
+        _valueType::TYPE_NIL        => Value::Nil,
+        _valueType::TYPE_INT        => unsafe {
+                Value::Int(transmute::<u64, i64>(self.data))
+            },
+        _valueType::TYPE_FLOAT      =>
+                Value::Float(f64::from_bits(self.data)),
+        _valueType::TYPE_NATIVE_FN  => unsafe {
+                Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
+            },
+        _valueType::TYPE_FN         => Value::mut_Fn(self.data as *mut Function),
+        _valueType::TYPE_STR        => Value::mut_Str(self.data as *mut String),
+        _valueType::TYPE_DICT       => Value::mut_Dict(self.data as *mut CHashMap),
+        _valueType::TYPE_ARRAY      => Value::mut_Array(self.data as *mut CArray<NativeValue>),
+        _valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
+        }
+    }
+
     pub fn mark(&self) {
         use std::mem::transmute;
         match self.r#type {

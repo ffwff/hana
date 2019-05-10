@@ -50,10 +50,13 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                                     quote::__rt::Span::call_site());
                 let argname = syn::LitStr::new(pattern.ident.to_string().as_str(),
                                     quote::__rt::Span::call_site());
+                let is_mut = atype.starts_with("mut_");
                 let match_arm = match atype.as_str() {
                     "Int" | "Float" | "NativeFn" | "Fn" | "Str" | "Dict" | "Array"
-                        => quote!(#path(x)),
-                    _ => quote!(#path)
+                        => quote!(#path(x) => x),
+                    "mut_Fn" | "mut_Str" | "mut_Dict" | "mut_Array"
+                        => quote!(#path(x) => unsafe { &mut *x }),
+                    _ => quote!(#path => x)
                 };
                 args_setup.push(match atype.as_str() {
                     "Any" => quote!(let #pattern = {
@@ -67,7 +70,7 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                                 let val = vm.stack.top().unwrap();
                                 vm.stack.pop();
                                 match val {
-                                    #match_arm => x,
+                                    #match_arm,
                                     _ => panic!("expected argument {} to be type {}",
                                         #argname,
                                         #atypes)

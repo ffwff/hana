@@ -21,7 +21,13 @@ pub enum Value {
     Str(&'static String),
     Dict(&'static CHashMap),
     Array(&'static CArray<NativeValue>),
-    NativeObj
+    NativeObj,
+
+    // mut wrappers
+    mut_Fn(*mut Function),
+    mut_Str(*mut String),
+    mut_Dict(*mut CHashMap),
+    mut_Array(*mut CArray<NativeValue>),
 }
 
 impl Value {
@@ -29,6 +35,13 @@ impl Value {
     pub fn string(&self) -> &'static String {
         match self {
             Value::Str(s) => s,
+            _ => { panic!("Expected string"); }
+        }
+    }
+
+    pub fn array(&self) -> &'static CArray<NativeValue> {
+        match self {
+            Value::Array(s) => s,
             _ => { panic!("Expected string"); }
         }
     }
@@ -52,6 +65,7 @@ impl Value {
             Value::Array(a)    => NativeValue { r#type: _valueType::TYPE_ARRAY,
                                                 data: transmute::<*const CArray<NativeValue>, u64>(*a) },
             Value::NativeObj   => NativeValue { r#type: _valueType::TYPE_NATIVE_OBJ, data: 0},
+            _ => unimplemented!()
         } }
     }
 
@@ -110,7 +124,8 @@ impl fmt::Debug for Value {
             Value::Str(s)      => write!(f, "{}", s),
             Value::Dict(_)     => write!(f, "[dict]"),
             Value::Array(_)    => write!(f, "[array]"),
-            Value::NativeObj   => write!(f, "[native obj]")
+            Value::NativeObj   => write!(f, "[native obj]"),
+            _ => write!(f, "[unk]")
         }
     }
 }
