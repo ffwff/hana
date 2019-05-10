@@ -141,7 +141,7 @@ pub mod ast {
     }
     // ### fn def
     pub struct FunctionDefinition {
-        pub id : String,
+        pub id : Option<String>,
         pub args : Vec<String>,
         pub stmt : std::boxed::Box<AST>,
     }
@@ -156,7 +156,8 @@ pub mod ast {
                 \"args\": {},
                 \"stmt\": {:?},
                 \"type\": \"fnstmt\"}}",
-                    self.id, args, self.stmt)
+                    self.id.as_ref().map_or("".to_string(), |x| x.clone()),
+                    args, self.stmt)
         }
     }
     impl AST for FunctionDefinition {
@@ -167,7 +168,9 @@ pub mod ast {
             c.vm.cpush16(self.args.len() as u16);
             let function_end = c.reserve_label();
 
-            if self.id.len() > 0 { c.set_local(self.id.clone()); }
+            if self.id.is_some() {
+                c.set_local(self.id.as_ref().unwrap().clone());
+            }
             c.scope();
 
             // body
@@ -191,6 +194,44 @@ pub mod ast {
             let nslots = c.unscope();
             c.fill_label16(nslot_label, nslots);
             c.fill_label(function_end, c.vm.code.len());
+        }
+    }
+    // ### record def
+    pub struct RecordDefinition {
+        pub id : Option<String>,
+        pub stmts : Vec<std::boxed::Box<AST>>,
+    }
+    impl fmt::Debug for RecordDefinition {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            unimplemented!()
+        }
+    }
+    impl AST for RecordDefinition {
+        as_any!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            for stmt in &self.stmts {
+                let any = stmt.as_any();
+                if let Some(stmt) = any.downcast_ref::<FunctionStatement>() {
+                    stmt.def().emit(c);
+                    c.vm.code.push(VmOpcode::OP_PUSHSTR);
+                    c.vm.cpushs(stmt.def().id.as_ref().unwrap().clone());
+                } else if let Some(stmt) = any.downcast_ref::<RecordStatement>() {
+                    stmt.def().emit(c);
+                    c.vm.code.push(VmOpcode::OP_PUSHSTR);
+                    c.vm.cpushs(stmt.def().id.as_ref().unwrap().clone());
+                } else if let Some(stmt) = any.downcast_ref::<ExprStatement>() {
+                    let binexpr = stmt.expr.as_any().downcast_ref::<BinExpr>().unwrap();
+                    let id = match &binexpr.left {
+                        Identifier => binexpr.left.as_any()
+                                    .downcast_ref::<Identifier>().unwrap(),
+                        _ => panic!("expected left hand side to be identifier")
+                    };
+                    binexpr.right.emit(c);
+                    c.vm.code.push(VmOpcode::OP_PUSHSTR);
+                    c.vm.cpushs(id.val.clone());
+                } else { unreachable!(); }
+                c.vm.code.push(VmOpcode::OP_DICT_LOAD);
+            }
         }
     }
 
@@ -678,7 +719,7 @@ pub mod ast {
             self.0.emit(c);
 
             // set var
-            c.emit_set_var_fn(self.0.id.clone());
+            c.emit_set_var_fn(self.0.id.as_ref().unwrap().clone());
             c.vm.code.push(VmOpcode::OP_POP);
         }
     }
@@ -699,6 +740,33 @@ pub mod ast {
                 None => c.vm.code.push(VmOpcode::OP_PUSH_NIL)
             }
             c.vm.code.push(VmOpcode::OP_RET);
+        }
+    }
+
+    // ### record statement
+    pub struct RecordStatement(RecordDefinition);
+    impl RecordStatement {
+        pub fn new(def : RecordDefinition) -> RecordStatement {
+            RecordStatement(def)
+        }
+
+        pub fn def(&self) -> &RecordDefinition {
+            &self.0
+        }
+    }
+    impl fmt::Debug for RecordStatement {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            unimplemented!()
+        }
+    }
+    impl AST for RecordStatement {
+        as_any!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            self.0.emit(c);
+
+            // set var
+            c.emit_set_var(self.0.id.as_ref().unwrap().clone());
+            c.vm.code.push(VmOpcode::OP_POP);
         }
     }
 

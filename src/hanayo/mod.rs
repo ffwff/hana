@@ -4,7 +4,7 @@ mod string;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::chmap::CHashMap;
 use crate::vmbindings::value::*;
-use crate::vmbindings::gc::malloc;
+use crate::vmbindings::gc::*;
 
 pub fn init(vm : &mut Vm) {
     let globalenv = unsafe { &mut *vm.globalenv };

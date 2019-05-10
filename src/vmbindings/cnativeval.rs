@@ -80,7 +80,6 @@ impl NativeValue {
     }
 
     pub fn mark(&self) {
-        use std::mem::transmute;
         match self.r#type {
             _valueType::TYPE_FN   |
             _valueType::TYPE_STR  |

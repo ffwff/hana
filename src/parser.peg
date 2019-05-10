@@ -91,16 +91,19 @@ unary_expr -> std::boxed::Box<ast::AST>
     / value
 
 record_expr -> std::boxed::Box<ast::AST>
-    = "record" eos s:(statement*) "end" eos
+    = "record" eos s:(record_body_stmt*) _ "end"
     {
-        unimplemented!()
+        Box::new(ast::RecordDefinition {
+            id: None,
+            stmts: s
+        })
     }
 
 function_expr -> std::boxed::Box<ast::AST>
     = "function" id:(_ i:identifier {i})? _ args:function_arguments _ s:statement_no_eos
     {
         Box::new(ast::FunctionDefinition {
-            id: id.unwrap_or_else(|| "".to_string()),
+            id: id,
             args: args,
             stmt: s
         })
@@ -290,7 +293,7 @@ function_stmt -> std::boxed::Box<ast::AST>
     = "function" _ id:word _ args:function_arguments _ s:statement
     {
         Box::new(ast::FunctionStatement::new(ast::FunctionDefinition {
-            id: id,
+            id: Some(id),
             args: args,
             stmt: s
         }))
@@ -305,10 +308,20 @@ return_stmt -> std::boxed::Box<ast::AST>
     }
 
 // record statements
+record_body_stmt -> std::boxed::Box<ast::AST>
+    = __ s:(
+      function_stmt
+    / record_stmt
+    / expr_stmt) __ { s }
+    / #expected("statement")
+
 record_stmt -> std::boxed::Box<ast::AST>
-    = "record" _ id:identifier eos s:(statement*) "end" eos
+    = "record" _ id:identifier eos s:(record_body_stmt*) _ "end" eos
     {
-        unimplemented!()
+        Box::new(ast::RecordStatement::new(ast::RecordDefinition {
+            id: Some(id),
+            stmts: s
+        }))
     }
 
 
