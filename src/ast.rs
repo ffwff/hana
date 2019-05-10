@@ -221,11 +221,8 @@ pub mod ast {
                     c.vm.cpushs(stmt.def().id.as_ref().unwrap().clone());
                 } else if let Some(stmt) = any.downcast_ref::<ExprStatement>() {
                     let binexpr = stmt.expr.as_any().downcast_ref::<BinExpr>().unwrap();
-                    let id = match &binexpr.left {
-                        Identifier => binexpr.left.as_any()
-                                    .downcast_ref::<Identifier>().unwrap(),
-                        _ => panic!("expected left hand side to be identifier")
-                    };
+                    let id = binexpr.left.as_any().downcast_ref::<Identifier>()
+                        .unwrap_or_else(|| panic!("left hand side must be identifier"));
                     binexpr.right.emit(c);
                     c.vm.code.push(VmOpcode::OP_PUSHSTR);
                     c.vm.cpushs(id.val.clone());
