@@ -14,6 +14,9 @@ pub enum Value {
     // types, so this is a convenient wrapper for (de)serialising
     // hana's values
     Nil,
+    True,
+    False,
+
     Int(i64),
     Float(f64),
     NativeFn(NativeFnData),
@@ -52,6 +55,8 @@ impl Value {
         #[allow(non_camel_case_types)]
         unsafe { match &self {
             Value::Nil         => NativeValue { r#type: _valueType::TYPE_NIL, data: 0       },
+            Value::True        => NativeValue { r#type: _valueType::TYPE_INT, data: 1       },
+            Value::False       => NativeValue { r#type: _valueType::TYPE_INT, data: 0       },
             Value::Int(n)      => NativeValue { r#type: _valueType::TYPE_INT,
                                                 data: transmute::<i64, u64>(*n)             },
             Value::Float(n)    => NativeValue { r#type: _valueType::TYPE_FLOAT,

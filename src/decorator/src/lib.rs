@@ -93,6 +93,7 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
             if nargs != #arglen {
                 panic!("unmatched arguments length, expected {}!", #arglen);
             }
+            #[inline(always)]
             fn #name(vm: &mut Vm) -> Value {
                 #(#args_setup)*
                 #body

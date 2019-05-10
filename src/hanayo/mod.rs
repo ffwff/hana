@@ -26,7 +26,9 @@ pub fn init(vm : &mut Vm) {
     set_var!("input", Value::NativeFn(io::input));
 
     // builtin objects
-    { // array
+
+    // #region array
+    {
     let mut array : CHashMap = std::collections::HashMap::new();
     set_obj_var!(array, "constructor", Value::NativeFn(array::constructor));
     set_obj_var!(array, "length",      Value::NativeFn(array::length));
@@ -42,11 +44,23 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(array, "join",        Value::NativeFn(array::join));
     set_var!("Array", Value::Dict(unsafe{ &*Box::into_raw(Box::new(array)) }));
     }
+    // #endregion
 
-    { // string
+    // #region string
+    {
     let mut string : CHashMap = std::collections::HashMap::new();
     set_obj_var!(string, "constructor", Value::NativeFn(string::constructor));
-    set_var!("Array", Value::Dict(unsafe{ &*Box::into_raw(Box::new(string)) }));
+    set_obj_var!(string, "length",      Value::NativeFn(string::length));
+    set_obj_var!(string, "bytesize",    Value::NativeFn(string::bytesize));
+    set_obj_var!(string, "startswith",  Value::NativeFn(string::startswith));
+    set_obj_var!(string, "endswith",    Value::NativeFn(string::endswith));
+    set_obj_var!(string, "delete",      Value::NativeFn(string::delete));
+    set_obj_var!(string, "copy",        Value::NativeFn(string::copy));
+    set_obj_var!(string, "insert",      Value::NativeFn(string::insert));
+    set_obj_var!(string, "index",       Value::NativeFn(string::index));
+    set_obj_var!(string, "split",       Value::NativeFn(string::split));
+    set_var!("String", Value::Dict(unsafe{ &*Box::into_raw(Box::new(string)) }));
     }
+    // #endregion
 
 }
