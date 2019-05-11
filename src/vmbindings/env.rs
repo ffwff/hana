@@ -1,8 +1,7 @@
 #[allow(unused_variables)]
 
-use super::cnativeval::{_valueType, NativeValue};
-use super::gc::mark_reachable;
-use std::ptr::{null, null_mut};
+use super::cnativeval::NativeValue;
+use std::ptr::null_mut;
 use std::alloc::{alloc_zeroed, dealloc, Layout};
 
 #[repr(C)]

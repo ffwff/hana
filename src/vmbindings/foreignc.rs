@@ -1,8 +1,9 @@
 use super::chmap::CHashMap;
 use super::carray::CArray;
-use super::cfunction::Function;
+use super::function::Function;
 use super::cnativeval::NativeValue;
-use super::gc::{malloc, free, drop};
+use super::record::Record;
+use super::gc::{malloc, drop};
 use super::vm::Vm;
 use super::env::Env;
 
@@ -10,7 +11,7 @@ use super::env::Env;
 pub mod foreignc {
 
 use std::ffi::CStr;
-use std::ptr::{null, null_mut};
+use std::ptr::null;
 use super::*;
 
 // #region hmap
@@ -35,16 +36,6 @@ pub unsafe extern "C" fn hmap_get(chm: *const CHashMap, ckey: *const libc::c_cha
         null()
     }
 }
-#[no_mangle]
-pub unsafe extern "C" fn hmap_get_str(chm: *const CHashMap, ckey: *const String) -> *const NativeValue {
-    let key = &*ckey;
-    let hm = &*chm;
-    if let Some(val) = hm.get(key) {
-        val
-    } else {
-        null()
-    }
-}
 
 #[no_mangle]
 pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char, val: NativeValue) {
@@ -52,11 +43,46 @@ pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char,
     let hm = &mut *chm;
     hm.insert(key, val.clone());
 }
+// #endregion
+
+// #region dict
 #[no_mangle]
-pub unsafe extern "C" fn hmap_set_str(chm: *mut CHashMap, ckey: *const  String, val: NativeValue) {
+pub unsafe extern "C" fn dict_malloc() -> *mut Record {
+    malloc(Record::new(), |ptr| drop::<Record>(ptr))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn dict_get(cr: *const Record, ckey: *const libc::c_char) -> *const NativeValue {
+    let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
+    let r = &*cr;
+    if let Some(val) = r.get(&key) {
+        val
+    } else {
+        null()
+    }
+}
+#[no_mangle]
+pub unsafe extern "C" fn dict_get_str(cr: *const Record, ckey: *const String) -> *const NativeValue {
+    let key = &*ckey;
+    let r = &*cr;
+    if let Some(val) = r.get(key) {
+        val
+    } else {
+        null()
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn dict_set(cr: *mut Record, ckey: *const libc::c_char, val: NativeValue) {
+    let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
+    let r = &mut *cr;
+    r.insert(key, val.clone());
+}
+#[no_mangle]
+pub unsafe extern "C" fn dict_set_str(cr: *mut Record, ckey: *const  String, val: NativeValue) {
     let key = (&*ckey).clone();
-    let hm = &mut *chm;
-    hm.insert(key, val.clone());
+    let r = &mut *cr;
+    r.insert(key, val.clone());
 }
 
 // #endregion

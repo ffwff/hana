@@ -1,6 +1,6 @@
-use super::chmap::CHashMap;
+use super::record::Record;
 use super::carray::CArray;
-use super::cfunction::Function;
+use super::function::Function;
 use super::vm::Vm;
 use super::cnativeval::{NativeValue, _valueType};
 use super::gc::*;
@@ -22,14 +22,14 @@ pub enum Value {
     NativeFn(NativeFnData),
     Fn(&'static Function),
     Str(&'static String),
-    Dict(&'static CHashMap),
+    Record(&'static Record),
     Array(&'static CArray<NativeValue>),
     NativeObj,
 
     // mut wrappers
     mut_Fn(*mut Function),
     mut_Str(*mut String),
-    mut_Dict(*mut CHashMap),
+    mut_Record(*mut Record),
     mut_Array(*mut CArray<NativeValue>),
 }
 
@@ -66,7 +66,7 @@ impl Value {
             Value::Fn(_)       => NativeValue { r#type: _valueType::TYPE_FN, data: 0        },
             Value::Str(s)      => NativeValue { r#type: _valueType::TYPE_STR,
                                                 data: transmute::<*const String, u64>(*s) },
-            Value::Dict(_)     => NativeValue { r#type: _valueType::TYPE_DICT , data: 0     },
+            Value::Record(_)     => NativeValue { r#type: _valueType::TYPE_DICT , data: 0     },
             Value::Array(a)    => NativeValue { r#type: _valueType::TYPE_ARRAY,
                                                 data: transmute::<*const CArray<NativeValue>, u64>(*a) },
             Value::NativeObj   => NativeValue { r#type: _valueType::TYPE_NATIVE_OBJ, data: 0},
@@ -80,7 +80,7 @@ impl Value {
             Value::Fn(f)       => {
                 f.mark();
             },
-            Value::Dict(d)     => {
+            Value::Record(d)   => {
                 for (_, val) in d.iter() {
                     val.mark();
                 }
@@ -109,7 +109,7 @@ impl PartialEq for Value {
             (Value::NativeFn(x), Value::NativeFn(y)) => std::ptr::eq(x, y),
             (Value::Fn(x),     Value::Fn(y))         => std::ptr::eq(x, y),
             (Value::Str(x),    Value::Str(y))        => x == y,
-            (Value::Dict(_),   Value::Dict(_))       => false,
+            (Value::Record(_), Value::Record(_))     => false,
             (Value::Array(_),  Value::Array(_))      => false,
             (Value::NativeObj, Value::NativeObj)     => false,
             _ => false
@@ -127,7 +127,7 @@ impl fmt::Debug for Value {
             Value::NativeFn(_) => write!(f, "[native fn]"),
             Value::Fn(_)       => write!(f, "[fn]"),
             Value::Str(s)      => write!(f, "{}", s),
-            Value::Dict(_)     => write!(f, "[dict]"),
+            Value::Record(_)   => write!(f, "[record]"),
             Value::Array(_)    => write!(f, "[array]"),
             Value::NativeObj   => write!(f, "[native obj]"),
             _ => write!(f, "[unk]")

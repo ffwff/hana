@@ -16,12 +16,15 @@ void exception_frame_free(struct exception_frame *frame) {
     array_free(frame->handlers);
 }
 
-struct value *exception_frame_get_handler_for_error(struct exception_frame *frame, const struct vm *vm, const struct value *error) {
+struct value *exception_frame_get_handler_for_error(__attribute__((unused)) struct exception_frame *frame, __attribute__((unused)) const struct vm *vm, __attribute__((unused)) const struct value *error)
+{
+#if 0
     for(size_t i = 0; i < frame->handlers.length; i++) {
         if(value_get_prototype(vm, error) == frame->handlers.data[i].etype.as.dict) {
             return &frame->handlers.data[i].fn;
         }
     }
+#endif
     return NULL;
 }
 

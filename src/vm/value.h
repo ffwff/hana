@@ -5,6 +5,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 #include "native_obj.h"
+#include "dict.h"
 #include "array_obj.h"
 
 struct vm;
@@ -31,7 +32,7 @@ struct value {
         struct string *str;
         value_fn fn;
         struct function *ifn;
-        struct hmap *dict;
+        struct dict *dict;
         array_obj *array;
         struct native_obj *native;
     } as;
@@ -70,7 +71,7 @@ void value_eq(struct value  *result, const struct value left, const struct value
 void value_neq(struct value *result, const struct value left, const struct value right);
 
 bool value_is_true(const struct value);
-struct hmap *value_get_prototype(const struct vm *vm, const struct value *val);
+struct dict *value_get_prototype(const struct vm *vm, const struct value val);
 
 #ifdef __cplusplus
 }

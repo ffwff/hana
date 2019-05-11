@@ -30,7 +30,7 @@ void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *
 }
 void value_dict(struct value *val) {
     val->type = TYPE_DICT;
-    val->as.dict = hmap_malloc();
+    val->as.dict = dict_malloc();
 }
 void value_array(struct value *val) {
     val->type = TYPE_ARRAY;
@@ -213,17 +213,17 @@ bool value_is_true(const struct value val) {
     }
 }
 
-struct hmap *value_get_prototype(const struct vm *vm, const struct value *val) {
-    if(val->type == TYPE_STR) {
+struct dict *value_get_prototype(const struct vm *vm, const struct value val) {
+    if(val.type == TYPE_STR) {
         return vm->dstr;
-    } else if(val->type == TYPE_INT) {
+    } else if(val.type == TYPE_INT) {
         return vm->dint;
-    } else if(val->type == TYPE_FLOAT) {
+    } else if(val.type == TYPE_FLOAT) {
         return vm->dfloat;
-    } else if(val->type == TYPE_ARRAY) {
+    } else if(val.type == TYPE_ARRAY) {
         return vm->darray;
-    } else if(val->type == TYPE_DICT) {
-        return hmap_get(val->as.dict, "prototype")->as.dict;
+    } else if(val.type == TYPE_DICT) {
+        return dict_get(val.as.dict, "prototype")->as.dict;
     }
     return NULL;
 }

@@ -229,7 +229,7 @@ function X(y) begin
 end
 ");
         let stmt = cast_box!(progast[0], ast::FunctionStatement);
-        assert_eq!(stmt.def().id, "X");
+        assert_eq!(stmt.def().id, Some("X".to_string()));
         assert_eq!(stmt.def().args.len(), 1);
         assert_eq!(stmt.def().args[0], "y");
     }

@@ -226,7 +226,7 @@ pub mod ast {
                     binexpr.right.emit(c);
                     c.vm.code.push(VmOpcode::OP_PUSHSTR);
                     c.vm.cpushs(id.val.clone());
-                } else { unreachable!(); }
+                }
                 c.vm.code.push(VmOpcode::OP_DICT_LOAD);
             }
         }

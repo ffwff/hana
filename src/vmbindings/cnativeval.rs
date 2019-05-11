@@ -1,6 +1,7 @@
 use libc::c_void;
 use super::chmap::CHashMap;
-use super::cfunction::Function;
+use super::record::Record;
+use super::function::Function;
 use super::carray::CArray;
 use super::value::{Value, NativeFnData};
 use super::gc::mark_reachable;
@@ -49,7 +50,7 @@ impl NativeValue {
                 Value::Str(&*(self.data as *const String))
             },
         _valueType::TYPE_DICT       => unsafe {
-                Value::Dict(&*(self.data as *const CHashMap))
+                Value::Record(&*(self.data as *const Record))
             },
         _valueType::TYPE_ARRAY      => unsafe {
                 Value::Array(&*(self.data as *const CArray<NativeValue>))
@@ -73,7 +74,7 @@ impl NativeValue {
             },
         _valueType::TYPE_FN         => Value::mut_Fn(self.data as *mut Function),
         _valueType::TYPE_STR        => Value::mut_Str(self.data as *mut String),
-        _valueType::TYPE_DICT       => Value::mut_Dict(self.data as *mut CHashMap),
+        _valueType::TYPE_DICT       => Value::mut_Record(self.data as *mut Record),
         _valueType::TYPE_ARRAY      => Value::mut_Array(self.data as *mut CArray<NativeValue>),
         _valueType::TYPE_NATIVE_OBJ => Value::NativeObj,
         }

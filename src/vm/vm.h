@@ -54,7 +54,7 @@ struct vm {
     struct exception_frame *eframe;
     a_uint8 code;
     a_value stack;
-    struct hmap *dstr, *dint, *dfloat, *darray;
+    struct dict *dstr, *dint, *dfloat, *darray;
     bool error;
 };
 
