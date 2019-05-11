@@ -190,6 +190,10 @@ pub unsafe extern "C" fn env_init(selfptr: *mut Env, nslots: u16, cvm: *mut Vm) 
         vm.stack.pop();
     }
 }
+#[no_mangle]
+pub unsafe extern "C" fn env_free(cenv: *mut Env) {
+    std::boxed::Box::from_raw(cenv);
+}
 
 //
 #[no_mangle]
@@ -215,9 +219,13 @@ pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, slot: u16, val: 
 
 //
 #[no_mangle]
-pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) {
+pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) -> bool {
     let vm = &mut *selfptr;
+    if (&*vm.localenv).retip == std::u32::MAX {
+        return true;
+    }
     vm.leave_env();
+    false
 }
 // #endregion
 

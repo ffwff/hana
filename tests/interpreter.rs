@@ -10,6 +10,10 @@ pub mod interpreter_tests {
     use haru::vm::Value;
     use haru::gc;
 
+    // TODO
+    use haru::vmbindings::carray::CArray;
+    use haru::vmbindings::cnativeval::NativeValue;
+
     macro_rules! eval {
         ($x:expr) => {{
             gc::disable();
@@ -197,6 +201,18 @@ end
 y = a()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
+    }
+    #[test]
+    fn function_call_from_native() {
+        let mut vm : Vm = eval!("
+function a() begin
+    return 10
+end
+");
+        let val = vm.global().get("a").unwrap().clone();
+        let mut args : CArray<NativeValue> = CArray::new();
+        assert_eq!(vm.call(val, args.clone()), Value::Int(10));
+        args.drop();
     }
     // #endregion
 

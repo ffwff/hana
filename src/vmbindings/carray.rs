@@ -38,6 +38,14 @@ impl<T> CArray<T> {
         self.capacity = 0;
     }
 
+    pub fn clone(&self) -> CArray<T> { // TODO
+        CArray::<T> {
+            data: self.data,
+            len: self.len,
+            capacity: self.capacity
+        }
+    }
+
     // length
     pub fn len(&self) -> usize {
         self.len

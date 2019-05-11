@@ -362,13 +362,13 @@ void vm_execute(struct vm *vm) {
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += strlen(key)+1;
         LOG("GET GLOBAL %s\n", key);
-        array_push(vm->stack, (struct value){0});
         const struct value *val = hmap_get(vm->globalenv, key);
         if(val == NULL) {
             FATAL("no global variable named %s!\n", key);
             ERROR();
-        } else
-            value_copy(&array_top(vm->stack), *val);
+        } else {
+            array_push(vm->stack, *val);
+        }
         dispatch();
     }
 
@@ -499,14 +499,11 @@ do { \
         LOG("RET %p\n", vm->localenv);
 
         // TODO
-        #if 0
-        if(vm->localenv->retip == (uint32_t)-1) {
+        if (vm_leave_env(vm)) {
             LOG("return from vm_call\n");
             return;
         }
-        #endif
 
-        vm_leave_env(vm);
         dispatch();
     }
 
@@ -556,9 +553,12 @@ do { \
             if(op == OP_MEMBER_GET) array_pop(vm->stack);
         }
 
-        array_push(vm->stack, (struct value){0});
         const struct value *result = dict_get(dict, key);
-        if(result != NULL) value_copy(&array_top(vm->stack), *result);
+        if(result != NULL) {
+            array_push(vm->stack, *result);
+        } else {
+            array_push(vm->stack, (struct value){0});
+        }
 
         dispatch();
     }
@@ -626,8 +626,7 @@ do { \
                 FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->length);
                 ERROR();
             }
-            array_push(vm->stack, (struct value){0});
-            value_copy(&array_top(vm->stack), dval.as.array->data[i]);
+            array_push(vm->stack, dval.as.array->data[i]);
         } else if(dval.type == TYPE_STR) {
             if(index.type != TYPE_INT) {
                 FATAL("index type for string must be integer!\n");
@@ -640,15 +639,16 @@ do { \
             // TODO bounds check
             array_push(vm->stack, val);
         } else if(dval.type == TYPE_DICT) {
-            //LOG("GET DICT %p %s\n", dval.as.dict, string_data(index.as.str));
             if(index.type != TYPE_STR) {
                 FATAL("index type for record must be string!\n");
                 ERROR();
             }
-            array_push(vm->stack, (struct value){0});
             const struct value *val = dict_get_str(dval.as.dict, index.as.str);
-            LOG("%p\n", val);
-            if(val != NULL) value_copy(&array_top(vm->stack), *val);
+            if(val != NULL) {
+                array_push(vm->stack, *val);
+            } else {
+                array_push(vm->stack, (struct value){0});
+            }
         } else {
             FATAL("can only access keys of record, array or string\n");
             ERROR();
@@ -707,7 +707,7 @@ do { \
             value_array_n(&aval, length);
             aval.as.array->length = length;
             while(length--) {
-                value_copy(&aval.as.array->data[length], array_top(vm->stack));
+                aval.as.array->data[length] = array_top(vm->stack);
                 array_pop(vm->stack);
             }
         }
@@ -750,8 +750,7 @@ do { \
         LOG("RAISE\n");
         vm->ip++;
 
-        struct value raiseval;
-        value_copy(&raiseval, array_top(vm->stack));
+        struct value raiseval = array_top(vm->stack);
         array_pop(vm->stack);
 
         // search eframes for exact handler
@@ -848,72 +847,71 @@ do { \
     }
 }
 
-struct value *vm_call(__attribute__((unused)) struct vm *vm, __attribute__((unused)) struct value *fn, __attribute__((unused)) a_arguments args)
-{
-    assert(0);
-    #if 0
-    debug_assert(fn->type == TYPE_FN || fn->type == TYPE_DICT);
+struct value vm_call(struct vm *vm, const struct value fn, const a_arguments args) {
+    //debug_assert(fn->type ==  || fn->type == TYPE_DICT);
 
-    struct function *ifn;
+    static struct value errorval;
+    errorval.type = TYPE_INTERPRETER_ERROR;
 
-    if(fn->type == TYPE_DICT) {
-        const struct value *ctor = hmap_get(fn->as.dict, "constructor");
+    struct function *ifn = NULL;
+
+    if(fn.type == TYPE_DICT) {
+        const struct value *ctor = dict_get(fn.as.dict, "constructor");
         if(ctor == NULL) {
             FATAL("expected record to have constructor\n");
-            return NULL;
+            return errorval;
         }
         if(ctor->type == TYPE_NATIVE_FN) {
             for(int64_t i = args.length-1; i >= 0; i--) {
-                array_push(vm->stack, (struct value){0});
-                value_copy(&array_top(vm->stack), &args.data[i]);
+                array_push(vm->stack, args.data[i]);
             }
             ctor->as.fn(vm, args.length);
-            return &array_top(vm->stack);
+            return array_top(vm->stack);
         } else if(ctor->type != TYPE_FN) {
             printf("constructor must be a function!\n");
-            return NULL;
+            return errorval;
         } else {
             ifn = ctor->as.ifn;
         }
+    } else if (fn.type == TYPE_FN) {
+        ifn = fn.as.ifn;
     } else {
-        ifn = fn->as.ifn;
+        FATAL("expected caller to be function");
+        return errorval;
     }
 
     if((uint32_t)args.length != ifn->nargs) {
-        printf("function requires %d arguments, got %ld\n", ifn->nargs, args.length);
-        return NULL;
+        FATAL("function requires %d arguments, got %ld\n", ifn->nargs, args.length);
+        return errorval;
     }
 
     const uint32_t last = vm->ip;
     // setup env
     struct env *oldenv = vm->localenv;
-    struct env *curenv = vm->localenv = calloc(1, sizeof(struct env));
-    vm->localenv->parent = oldenv;
-    vm->localenv->retip = (uint32_t)-1;
-    vm->localenv->nargs = ifn->nargs;
-    vm->localenv->lexical_parent = &ifn->bound;
+    struct env *curenv = vm->localenv = env_malloc(
+        oldenv, (uint32_t)-1, ifn->bound, ifn->nargs);
     // setup stack/ip
     for(int64_t i = args.length-1; i >= 0; i--) {
-        array_push(vm->stack, (struct value){0});
-        value_copy(&array_top(vm->stack), &args.data[i]);
+        array_push(vm->stack, args.data[i]);
     }
     vm->ip = ifn->ip;
     // call it
     vm_execute(vm);
     if(vm->error) // unhandled exception
-        return NULL;
+        return errorval;
     if(vm->localenv != curenv) { // exception occurred outside of function's scope
         // NOTE: curenv already free'd from unwinding
-        return (struct value *)-1;
+        return errorval;
     }
     // restore ip
     LOG("vm_call complete. %d\n", last);
     env_free(vm->localenv);
-    free(vm->localenv);
     vm->localenv = oldenv;
     vm->ip = last;
-    return &array_top(vm->stack);
-    #endif
+
+    const struct value val = array_top(vm->stack);
+    array_pop(vm->stack);
+    return val;
 }
 
 void vm_print_stack(const struct vm *vm) {

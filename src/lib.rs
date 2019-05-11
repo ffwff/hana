@@ -6,6 +6,6 @@
 pub mod compiler;
 pub mod ast;
 pub mod hanayo;
-mod vmbindings;
+pub mod vmbindings; // TODO
 pub use vmbindings::gc;
 pub use vmbindings::vm;

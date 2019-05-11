@@ -1,11 +1,11 @@
 use std::ptr::null_mut;
 use std::ffi::CString;
-use std::collections::LinkedList;
 extern crate libc;
 
 use super::carray::CArray;
 use super::chmap::CHashMap;
-use super::cnativeval::{_valueType, NativeValue};
+use super::function::Function;
+use super::cnativeval::NativeValue;
 use super::env::Env;
 use super::gc::*;
 pub use super::value::Value;
@@ -49,7 +49,7 @@ pub enum VmOpcode {
 #[repr(C)]
 pub struct Vm {
     pub ip        : u32, // current instruction pointer
-    localenv      : *mut Env,
+    pub localenv  : *mut Env,
     // represents a linked list of call frames
     pub globalenv : *mut CHashMap,
     // global environment, all unscoped variables/variables
@@ -75,6 +75,8 @@ extern "C" {
     fn vm_free(vm: *mut Vm);
     fn vm_execute(vm: *mut Vm);
     fn vm_print_stack(vm: *const Vm);
+    fn vm_call(vm: *mut Vm, fun: NativeValue, args: CArray<NativeValue>)
+        -> NativeValue;
 
     fn vm_code_push8  (vm: *mut Vm, n : u8);
     fn vm_code_push16 (vm: *mut Vm, n : u16);
@@ -174,6 +176,11 @@ impl Vm {
             std::boxed::Box::from_raw(self.localenv);
             self.localenv = parent;
         }
+    }
+
+    // functions
+    pub fn call(&mut self, fun: NativeValue, args: CArray<NativeValue>) -> Value {
+        unsafe{ vm_call(self, fun, args) }.unwrap()
     }
 }
 
