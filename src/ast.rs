@@ -501,11 +501,13 @@ pub mod ast {
             for arg in self.args.iter().rev() { arg.emit(c); }
             if let Some(memexpr) = self.callee.as_any().downcast_ref::<MemExpr>() {
                 memexpr._emit(c, true);
+                c.vm.code.push(VmOpcode::OP_CALL);
+                c.vm.cpush16((self.args.len() as u16) + 1);
             } else {
                 self.callee.emit(c);
+                c.vm.code.push(VmOpcode::OP_CALL);
+                c.vm.cpush16(self.args.len() as u16);
             }
-            c.vm.code.push(VmOpcode::OP_CALL);
-            c.vm.cpush16(self.args.len() as u16);
         }
     }
 

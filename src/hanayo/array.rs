@@ -12,7 +12,6 @@ fn alloc_free(ptr: *mut libc::c_void) {
 }
 
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
-
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
         let array : CArray<NativeValue> = CArray::new();
@@ -91,18 +90,44 @@ fn sort_(array: Value::mut_Array) -> Value {
 }
 
 // functional
-#[hana_function()]
-fn map(array: Value::Array) -> Value {
-    unimplemented!()
+pub extern fn map(cvm : *mut Vm, nargs : u16) {
+    assert_eq!(nargs, 2);
+    let vm = unsafe { &mut *cvm };
+
+    let array = vm.stack.top().unwrap().array();
+    vm.stack.pop();
+
+    let fun = vm.stack.top().unwrap();
+    vm.stack.pop();
+
+    let mut new_array : CArray<NativeValue> = CArray::reserve(array.len());
+    match fun {
+    Value::Fn(_) | Value::Record(_) => {
+        let mut args = CArray::reserve(1);
+        for val in array.iter() {
+            args[0] = val.clone();
+            new_array.push(vm.call(fun.wrap(), args.clone()));
+        }
+        args.drop();
+    },
+    Value::NativeFn(_) => {
+        unimplemented!();
+    }
+    _ => panic!("expected fn/record/native fn")
+    };
+
+    vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());
 }
-#[hana_function()]
-fn filter(array: Value::Array) -> Value {
-    unimplemented!()
+
+pub extern fn filter(cvm : *mut Vm, nargs : u16) {
+    assert_eq!(nargs, 2);
 }
-#[hana_function()]
-fn reduce(array: Value::Array) -> Value {
-    unimplemented!()
+
+pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
+    assert_eq!(nargs, 3);
 }
+
+// search
 #[hana_function()]
 fn index(array: Value::Array, elem: Value::Any) -> Value {
     unimplemented!()

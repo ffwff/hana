@@ -4,6 +4,7 @@ extern crate libc;
 
 use super::carray::CArray;
 use super::chmap::CHashMap;
+use super::record::Record;
 use super::function::Function;
 use super::cnativeval::NativeValue;
 use super::env::Env;
@@ -59,10 +60,10 @@ pub struct Vm {
     pub stack     : CArray<NativeValue>, // stack
 
     // prototype types for primitive values
-    pub dstr      : *mut CHashMap,
-    pub dint      : *mut CHashMap,
-    pub dfloat    : *mut CHashMap,
-    pub darray    : *mut CHashMap,
+    pub dstr      : *mut Record,
+    pub dint      : *mut Record,
+    pub dfloat    : *mut Record,
+    pub darray    : *mut Record,
 
     pub error     : bool
     // whether the interpreter raised an unhandled error
@@ -179,8 +180,8 @@ impl Vm {
     }
 
     // functions
-    pub fn call(&mut self, fun: NativeValue, args: CArray<NativeValue>) -> Value {
-        unsafe{ vm_call(self, fun, args) }.unwrap()
+    pub fn call(&mut self, fun: NativeValue, args: CArray<NativeValue>) -> NativeValue {
+        unsafe{ vm_call(self, fun, args) }
     }
 }
 

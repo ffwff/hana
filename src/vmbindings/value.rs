@@ -45,7 +45,7 @@ impl Value {
     pub fn array(&self) -> &'static CArray<NativeValue> {
         match self {
             Value::Array(s) => s,
-            _ => { panic!("Expected string"); }
+            _ => { panic!("Expected array"); }
         }
     }
 

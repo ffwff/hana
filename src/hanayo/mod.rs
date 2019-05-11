@@ -42,7 +42,10 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(array, "reduce",      Value::NativeFn(array::reduce));
     set_obj_var!(array, "index",       Value::NativeFn(array::index));
     set_obj_var!(array, "join",        Value::NativeFn(array::join));
-    set_var!("Array", Value::Record(unsafe{ &*Box::into_raw(Box::new(array)) }));
+
+    let ptr = Box::into_raw(Box::new(array));
+    set_var!("Array", Value::Record(unsafe{ &*ptr }));
+    vm.darray = ptr;
     }
     // #endregion
 
