@@ -24,7 +24,7 @@ impl GcNode {
 }
 
 // finalizer
-// gets called with a pointer (represented as *u8) to
+// gets called with a pointer (represented as *void) to
 // the data that's about to be freed
 type GenericFinalizer = fn(*mut c_void);
 

@@ -30,6 +30,8 @@ impl<T> CArray<T> {
     }
 
     pub fn drop(&mut self) { // must be called manually
+        // this function MUST BE called by its owner
+        // for example from array_obj::drop function
         unsafe{ libc::free(self.data as *mut libc::c_void) };
         self.data = null_mut();
         self.len = 0;
