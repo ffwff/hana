@@ -8,7 +8,7 @@ use super::gc::mark_reachable;
 
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum _valueType {
     TYPE_NIL        = 0,
     TYPE_INT        = 1,
@@ -21,8 +21,8 @@ pub enum _valueType {
     TYPE_NATIVE_OBJ = 8,
 }
 
-#[repr(C)]
-#[derive(Clone)]
+#[repr(C, packed)]
+#[derive(Clone, Copy)]
 pub struct NativeValue {
     pub data : u64,
     pub r#type : _valueType,

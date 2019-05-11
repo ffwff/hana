@@ -243,7 +243,7 @@ pub fn disable() {
 }
 
 // collect
-pub fn collect(vm: *mut Vm) {
+pub fn collect() {
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
         gc_manager.collect();
