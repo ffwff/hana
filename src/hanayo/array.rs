@@ -4,16 +4,18 @@ use crate::vmbindings::cnativeval::NativeValue;
 use super::malloc;
 use crate::vm::Value;
 
+fn alloc_free(ptr: *mut libc::c_void) {
+    let array = unsafe { &mut *(ptr as *mut CArray<NativeValue>) };
+    array.drop();
+}
+
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
-    fn alloc_free(ptr: *mut libc::c_void) {
-        let array = unsafe { &mut *(ptr as *mut CArray<NativeValue>) };
-        array.drop();
-    }
 
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
         let array : CArray<NativeValue> = CArray::new();
-        vm.stack.push(unsafe { Value::Array(&*malloc(array, alloc_free)) }.wrap());
+        vm.stack.push(Value::Array(unsafe {
+                 &*malloc(array, alloc_free) }).wrap());
         return;
     }
     let nargs = nargs as usize;
@@ -23,7 +25,8 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
         array[i] = val.clone();
         vm.stack.pop();
     }
-    vm.stack.push(unsafe { Value::Array(&*malloc(array, alloc_free)) }.wrap());
+    vm.stack.push(Value::Array(unsafe {
+                 &*malloc(array, alloc_free) }).wrap());
 }
 
 #[hana_function()]

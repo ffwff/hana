@@ -55,9 +55,9 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "startswith",  Value::NativeFn(string::startswith));
     set_obj_var!(string, "endswith",    Value::NativeFn(string::endswith));
     set_obj_var!(string, "delete",      Value::NativeFn(string::delete));
+    set_obj_var!(string, "delete!",     Value::NativeFn(string::delete_));
     set_obj_var!(string, "copy",        Value::NativeFn(string::copy));
-    set_obj_var!(string, "insert",      Value::NativeFn(string::insert));
-    set_obj_var!(string, "index",       Value::NativeFn(string::index));
+    set_obj_var!(string, "insert!",     Value::NativeFn(string::insert_));
     set_obj_var!(string, "split",       Value::NativeFn(string::split));
     set_var!("String", Value::Record(unsafe{ &*Box::into_raw(Box::new(string)) }));
     }
