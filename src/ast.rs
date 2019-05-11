@@ -209,6 +209,7 @@ pub mod ast {
     impl AST for RecordDefinition {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
+            c.vm.code.push(VmOpcode::OP_PUSH_NIL);
             for stmt in &self.stmts {
                 let any = stmt.as_any();
                 if let Some(stmt) = any.downcast_ref::<FunctionStatement>() {
@@ -227,8 +228,8 @@ pub mod ast {
                     c.vm.code.push(VmOpcode::OP_PUSHSTR);
                     c.vm.cpushs(id.val.clone());
                 }
-                c.vm.code.push(VmOpcode::OP_DICT_LOAD);
             }
+            c.vm.code.push(VmOpcode::OP_DICT_LOAD);
         }
     }
 

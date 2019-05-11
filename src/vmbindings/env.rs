@@ -10,7 +10,8 @@ pub struct Env {
     pub nslots: u16,
     // raw slots array. rust doesn't have an non bounds-check index
     // function for arrays so we'll have to use this
-    // slot indexes SHOULD be bounded whenever the script "compiles"
+    // slot indexes access SHOULD be bounded whenever the script
+    // is compiled to bytecode
 
     pub nargs : u16,
     // cached number of args the function was called with

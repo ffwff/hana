@@ -200,4 +200,39 @@ y = a()
     }
     // #endregion
 
+    // #region record
+    #[test]
+    fn record_stmt_simple() {
+        let mut vm : Vm = eval!("
+record A
+end
+");
+        assert!(match vm.global().get("A").unwrap().unwrap() {
+            Value::Record(_) => true,
+            _ => false
+        });
+    }
+
+    #[test]
+    fn record_stmt_with_body() {
+        let mut vm : Vm = eval!("
+record A
+    y = 0
+    function x() begin
+
+    end
+end
+");
+        let rec = match vm.global().get("A").unwrap().unwrap() {
+            Value::Record(x) => x,
+            _ => panic!("expected record")
+        };
+        assert_eq!(rec.get(&"y".to_string()).unwrap().unwrap(), Value::Int(0));
+        assert!(match rec.get(&"x".to_string()).unwrap().unwrap() {
+            Value::Fn(_) => true,
+            _ => false
+        });
+    }
+    // #endregion
+
 }
