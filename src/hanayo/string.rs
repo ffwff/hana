@@ -27,7 +27,7 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
 #[hana_function()]
 fn length(s: Value::Str) -> Value {
     let chars: Vec<char> = s.chars().collect();
-    Value::Int(s.len() as i64)
+    Value::Int(chars.len() as i64)
 }
 #[hana_function()]
 fn bytesize(s: Value::Str) -> Value {
@@ -66,7 +66,7 @@ fn copy(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos_u = from_pos as usize;
     let nchars_u = nchars as usize;
     let new_s = unsafe { &*malloc(s[from_pos_u..from_pos_u+nchars_u].to_string(), alloc_free) };
-    Value::Str(s)
+    Value::Str(new_s)
 }
 
 #[hana_function()]
@@ -80,7 +80,7 @@ fn insert_(dst: Value::mut_Str, from_pos: Value::Int, src: Value::Str) -> Value 
 #[hana_function()]
 fn split(s: Value::Str, delim: Value::Str) -> Value {
     let mut array : CArray<NativeValue> = CArray::new();
-    for ss in s.split("") {
+    for ss in s.split(delim) {
         array.push(Value::Str(unsafe {
                 &*malloc(ss.clone().to_string(), alloc_free) }).wrap());
     }
