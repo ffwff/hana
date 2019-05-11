@@ -29,6 +29,17 @@ impl<T> CArray<T> {
         }
     }
 
+    pub fn new_static(arr: &mut [T]) -> CArray<T> {
+        // convenient wrapper for statically allocated
+        // (stack-allocated) arrays, use this for storing function
+        // arguments that will be passed to Vm::call
+        CArray::<T> {
+            data: unsafe{ &mut arr[0] as *mut T },
+            len: arr.len(),
+            capacity: arr.len()
+        }
+    }
+
     pub fn drop(&mut self) { // must be called manually
         // this function MUST BE called by its owner
         // for example from array_obj::drop function
@@ -38,12 +49,27 @@ impl<T> CArray<T> {
         self.capacity = 0;
     }
 
-    pub fn clone(&self) -> CArray<T> { // TODO
+    // to slice
+    pub fn as_slice(&self) -> &[T] {
+        unsafe{ std::slice::from_raw_parts(self.data, self.len) }
+    }
+    pub fn as_slice_mut(&self) -> &mut [T] {
+        unsafe { std::slice::from_raw_parts_mut(self.data, self.len) }
+    }
+
+    // clone
+    pub fn clone(&self) -> CArray<T> {
+        use std::mem::size_of;
         CArray::<T> {
-            data: self.data,
+            data: unsafe {
+                let d = libc::malloc(size_of::<T>()*self.len) as *mut T;
+                std::ptr::copy(self.data, d, self.len);
+                d
+            },
             len: self.len,
-            capacity: self.capacity
+            capacity: self.len
         }
+
     }
 
     // length

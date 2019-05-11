@@ -1,6 +1,8 @@
+use std::cmp::Ordering;
+
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
-use crate::vmbindings::cnativeval::NativeValue;
+use crate::vmbindings::cnativeval::{_valueType, NativeValue};
 use super::malloc;
 use crate::vm::Value;
 
@@ -55,13 +57,37 @@ fn pop(array: Value::mut_Array) -> Value {
 }
 
 // sorting
+extern "C" {
+fn value_gt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+fn value_lt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+}
+fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
+    let left = left.clone();
+    let right = right.clone();
+    let mut val = NativeValue { data: 0, r#type: _valueType::TYPE_NIL };
+
+    unsafe { value_gt(&mut val, left, right); }
+    if val.data == 1 { return Ordering::Greater; }
+
+    unsafe { value_lt(&mut val, left, right); }
+    if val.data == 1 { return Ordering::Less; }
+
+    Ordering::Equal
+}
+
 #[hana_function()]
 fn sort(array: Value::Array) -> Value {
-    unimplemented!()
+    let new_array = array.clone();
+    let slice = new_array.as_slice_mut();
+    slice.sort_by(value_cmp);
+    Value::Array(unsafe {
+                 &*malloc(new_array, alloc_free) })
 }
 #[hana_function()]
-fn sort_(array: Value::Array) -> Value {
-    unimplemented!()
+fn sort_(array: Value::mut_Array) -> Value {
+    let slice = array.as_slice_mut();
+    slice.sort_by(value_cmp);
+    Value::Array(array)
 }
 
 // functional

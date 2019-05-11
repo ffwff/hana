@@ -210,9 +210,7 @@ function a() begin
 end
 ");
         let val = vm.global().get("a").unwrap().clone();
-        let mut args : CArray<NativeValue> = CArray::new();
-        assert_eq!(vm.call(val, args.clone()), Value::Int(10));
-        args.drop();
+        assert_eq!(vm.call(val, CArray::new_nil()), Value::Int(10));
     }
     // #endregion
 
