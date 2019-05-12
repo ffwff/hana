@@ -2,7 +2,7 @@ use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::NativeValue;
 use crate::vm::Value;
-use super::{malloc, drop};
+use super::{malloc, drop, unpin_all};
 
 fn alloc_free(ptr: *mut libc::c_void) {
     unsafe { drop::<String>(ptr) };
@@ -81,11 +81,14 @@ fn insert_(dst: Value::mut_Str, from_pos: Value::Int, src: Value::Str) -> Value 
 fn split(s: Value::Str, delim: Value::Str) -> Value {
     let mut array : CArray<NativeValue> = CArray::new();
     for ss in s.split(delim) {
-        array.push(Value::Str(unsafe {
-                &*malloc(ss.clone().to_string(), alloc_free) }).wrap());
+        let val = Value::Str(unsafe {
+                &*malloc(ss.clone().to_string(), alloc_free) });
+        array.push(val.pin().wrap());
     }
-    Value::Array(unsafe { &*malloc(array, |ptr| {
+    let ret = Value::Array(unsafe { &*malloc(array, |ptr| {
         let array = &mut *(ptr as *mut CArray<NativeValue>);
         array.drop();
-    }) })
+    }) });
+    unpin_all();
+    ret
 }

@@ -10,6 +10,7 @@ struct GcNode {
     size: usize,
     unreachable: bool, // by default this is false
     // if the node is unreachable, it will be pruned (free'd)
+    pinned: bool, // don't free if it is pinned
     finalizer: GenericFinalizer
 }
 
@@ -34,6 +35,7 @@ const USED_SPACE_RATIO: f64 = 0.7;
 struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
+    pinned: Vec<*mut GcNode>,
     root: *mut Vm,
     bytes_allocated: usize,
     threshold: usize,
@@ -46,6 +48,7 @@ impl GcManager {
         GcManager {
             first_node: null_mut(),
             last_node: null_mut(),
+            pinned: Vec::new(),
             root: null_mut(),
             bytes_allocated: 0,
             threshold: INITIAL_THRESHOLD,
@@ -78,6 +81,7 @@ impl GcManager {
             (*bytes).next = null_mut();
             self.last_node = bytes;
         }
+        (*bytes).pinned = false;
         (*bytes).finalizer = finalizer;
         (*bytes).size = GcNode::alloc_size::<T>();
         self.bytes_allocated += (*bytes).size;
@@ -135,7 +139,7 @@ impl GcManager {
             let mut node : *mut GcNode = self.first_node;
             while !node.is_null() {
                 let next : *mut GcNode = (*node).next;
-                if (*node).unreachable {
+                if !(*node).pinned && (*node).unreachable {
                     let body = node.add(1);
 
                     // remove from ll
@@ -168,6 +172,23 @@ impl GcManager {
         if !(*node).unreachable { return false; }
         (*node).unreachable = false;
         true
+    }
+
+    // ## pin
+    pub unsafe fn pin(&mut self, ptr: *mut c_void) -> bool {
+        // => start byte
+        if ptr.is_null() { return false; }
+        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        if (*node).pinned { return false; }
+        (*node).pinned = true;
+        self.pinned.push(node);
+        true
+    }
+    pub fn unpin_all(&mut self) {
+        unsafe { for node in &self.pinned {
+            (*(*node)).pinned = false;
+        } }
+        self.pinned.clear();
     }
 
 }
@@ -246,6 +267,20 @@ pub fn collect() {
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
         gc_manager.collect();
+    });
+}
+pub fn pin(ptr: *mut c_void) -> bool {
+    let mut pinned = false;
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        pinned = unsafe {gc_manager.pin(ptr)}
+    });
+    pinned
+}
+pub fn unpin_all() {
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        gc_manager.unpin_all();
     });
 }
 pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {

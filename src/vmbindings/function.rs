@@ -39,4 +39,12 @@ impl Function {
         }
     }
 
+    pub fn pin(&self) {
+        unsafe {
+            for i in 0..(*self.bound).nslots {
+                (*self.bound).get(i).pin();
+            }
+        }
+    }
+
 }

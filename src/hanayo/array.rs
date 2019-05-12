@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::{_valueType, NativeValue};
-use super::malloc;
+use super::{malloc, unpin_all};
 use crate::vm::Value;
 
 fn alloc_free(ptr: *mut libc::c_void) {
@@ -23,11 +23,13 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     let mut array : CArray<NativeValue> = CArray::reserve(nargs);
     for i in 0..nargs {
         let val = vm.stack.top();
+        val.pin();
         array[i] = val.clone();
         vm.stack.pop();
     }
     vm.stack.push(Value::Array(unsafe {
                  &*malloc(array, alloc_free) }).wrap());
+    unpin_all();
 }
 
 #[hana_function()]
@@ -79,10 +81,15 @@ fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
 #[hana_function()]
 fn sort(array: Value::Array) -> Value {
     let new_array = array.clone();
+    for val in array.iter() {
+        val.pin();
+    }
     let slice = new_array.as_slice_mut();
     slice.sort_by(value_cmp);
-    Value::Array(unsafe {
-                 &*malloc(new_array, alloc_free) })
+    let arr = Value::Array(unsafe {
+                 &*malloc(new_array, alloc_free) });
+    unpin_all();
+    arr
 }
 #[hana_function()]
 fn sort_(array: Value::mut_Array) -> Value {
@@ -96,10 +103,11 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
     assert_eq!(nargs, 2);
     let vm = unsafe { &mut *cvm };
 
-    let array = vm.stack.top().unwrap().array();
+    let array = vm.stack.top().unwrap().pin().array();
     vm.stack.pop();
 
     let fun = vm.stack.top().unwrap();
+    fun.pin();
     vm.stack.pop();
 
     let mut new_array : CArray<NativeValue> = CArray::reserve(array.len());
@@ -119,16 +127,18 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
     };
 
     vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());
+    unpin_all();
 }
 
 pub extern fn filter(cvm : *mut Vm, nargs : u16) {
     assert_eq!(nargs, 2);
     let vm = unsafe { &mut *cvm };
 
-    let array = vm.stack.top().unwrap().array();
+    let array = vm.stack.top().unwrap().pin().array();
     vm.stack.pop();
 
     let fun = vm.stack.top().unwrap();
+    fun.pin();
     vm.stack.pop();
 
     let mut new_array : CArray<NativeValue> = CArray::reserve(array.len());
@@ -152,6 +162,7 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
     };
 
     vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());
+    unpin_all();
 }
 
 pub extern fn reduce(cvm : *mut Vm, nargs : u16) {

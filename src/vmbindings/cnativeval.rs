@@ -4,7 +4,7 @@ use super::record::Record;
 use super::function::Function;
 use super::carray::CArray;
 use super::value::{Value, NativeFnData};
-use super::gc::mark_reachable;
+use super::gc::{mark_reachable, pin};
 
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
@@ -84,10 +84,23 @@ impl NativeValue {
         match self.r#type {
             _valueType::TYPE_FN   |
             _valueType::TYPE_STR  |
-            //_valueType::TYPE_DICT |
+            _valueType::TYPE_DICT |
             _valueType::TYPE_ARRAY  => unsafe {
                 if mark_reachable(self.data as *mut c_void) {
                     self.unwrap().mark(); }
+            },
+            _ => {}
+        }
+    }
+
+    pub fn pin(&self) {
+        match self.r#type {
+            _valueType::TYPE_FN   |
+            _valueType::TYPE_STR  |
+            _valueType::TYPE_DICT |
+            _valueType::TYPE_ARRAY  => unsafe {
+                if pin(self.data as *mut c_void) {
+                    self.unwrap().pin(); }
             },
             _ => {}
         }

@@ -3,7 +3,6 @@ use super::carray::CArray;
 use super::function::Function;
 use super::vm::Vm;
 use super::cnativeval::{NativeValue, _valueType};
-use super::gc::*;
 extern crate libc;
 
 pub type NativeFnData = extern fn(*mut Vm, u16);
@@ -93,6 +92,26 @@ impl Value {
             },
             _ => {}
         }
+    }
+
+    pub fn pin(&self) -> &Value {
+        match &self {
+            Value::Fn(f)       => {
+                f.pin();
+            },
+            Value::Record(d)   => {
+                for (_, val) in d.iter() {
+                    val.pin();
+                }
+            },
+            Value::Array(a)    => {
+                for val in a.iter() {
+                    val.pin();
+                }
+            },
+            _ => {}
+        }
+        self
     }
 
 }
