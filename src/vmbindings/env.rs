@@ -56,28 +56,22 @@ impl Env {
         unsafe { (*self.slots.add(idx as usize)).clone() }
     }
     pub fn get_up(&self, up: u16, idx: u16) -> NativeValue {
-        unsafe {
-            let mut env : *mut Env = self.lexical_parent;
-            for _ in 1..up {
-                env = (*env).lexical_parent;
-            }
-            (*env).get(idx)
+        let mut env : *mut Env = self.lexical_parent;
+        for _ in 1..up {
+            env = unsafe{ (*env).lexical_parent };
         }
+        unsafe{ (*env).get(idx) }
     }
 
     pub fn set(&mut self, idx: u16, val: NativeValue) {
-        unsafe {
-            std::ptr::copy(&val, self.slots.add(idx as usize), 1);
-        }
+        unsafe { std::ptr::copy(&val, self.slots.add(idx as usize), 1); }
     }
     pub fn set_up(&mut self, up: u16, idx: u16, val: NativeValue) {
-        unsafe {
-            let mut env : *mut Env = self.lexical_parent;
-            for _ in 1..up {
-                env = (*env).lexical_parent;
-            }
-            (*env).set(idx, val);
+        let mut env : *mut Env = self.lexical_parent;
+        for _ in 1..up {
+            env = unsafe{ (*env).lexical_parent };
         }
+        unsafe { (*env).set(idx, val); }
     }
 
     pub fn reserve(&mut self, nslots: u16) {
@@ -95,9 +89,9 @@ impl std::ops::Drop for Env {
 
     fn drop(&mut self) {
         if self.nslots == 0 { return; }
-        unsafe {
+        if !self.slots.is_null() {
             let layout = Layout::array::<NativeValue>(self.nslots as usize).unwrap();
-            dealloc(self.slots as *mut u8, layout);
+            unsafe { dealloc(self.slots as *mut u8, layout); }
         }
     }
 

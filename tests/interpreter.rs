@@ -267,4 +267,50 @@ end
     }
     // #endregion
 
+    // #region array
+    #[test]
+    fn array_simple() {
+        let mut vm : Vm = eval!("
+a = []
+");
+        assert!(match vm.global().get("a").unwrap().unwrap() {
+            Value::Array(x) => true,
+            _ => false
+        });
+    }
+
+    #[test]
+    fn array_multiple() {
+        let mut vm : Vm = eval!("
+a = ['a', 'b']
+");
+        let arr = match vm.global().get("a").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0].unwrap().string(), &"a".to_string());
+        assert_eq!(arr[1].unwrap().string(), &"b".to_string());
+    }
+
+    #[test]
+    fn array_index() {
+        let mut vm : Vm = eval!("
+a = ['a', 'b']
+y = a[0]
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), &"a".to_string());
+    }
+    // #endregion
+
+    // #region string
+    #[test]
+    fn string_index() {
+        let mut vm : Vm = eval!("
+a = 'abcdef'
+y = a[0]
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), &"a".to_string());
+    }
+    // #endregion
 }

@@ -186,7 +186,6 @@ impl Vm {
 
     // call stack
     pub fn enter_env(&mut self, fun: &'static Function) {
-        use std::boxed::Box;
         if self.localenv.is_null() {
             self.localenv = self.localenv_bp;
         } else {
@@ -198,9 +197,11 @@ impl Vm {
             self.localenv = unsafe{ self.localenv.add(1) };
         }
         unsafe {
-            use std::mem::replace;
+            // NOTE: std::mem::replace causes memory corruption
+            // when replacing unallocated stack env with current env
+            use std::ptr::copy;
             let env = Env::new(self.ip, fun.bound, fun.nargs);
-            replace(&mut *self.localenv, env);
+            copy(&env, self.localenv, 1);
         }
         self.ip = fun.ip;
     }
