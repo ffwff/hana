@@ -2,7 +2,7 @@ use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::NativeValue;
 use crate::vm::Value;
-use super::{malloc, drop, unpin_all};
+use super::{malloc, drop, pin_start, pin_end};
 
 fn alloc_free(ptr: *mut libc::c_void) {
     unsafe { drop::<String>(ptr) };
@@ -80,6 +80,7 @@ fn insert_(dst: Value::mut_Str, from_pos: Value::Int, src: Value::Str) -> Value 
 #[hana_function()]
 fn split(s: Value::Str, delim: Value::Str) -> Value {
     let mut array : CArray<NativeValue> = CArray::new();
+    let p = pin_start();
     for ss in s.split(delim) {
         let val = Value::Str(unsafe {
                 &*malloc(ss.clone().to_string(), alloc_free) });
@@ -89,6 +90,6 @@ fn split(s: Value::Str, delim: Value::Str) -> Value {
         let array = &mut *(ptr as *mut CArray<NativeValue>);
         array.drop();
     }) });
-    unpin_all();
+    pin_end(p);
     ret
 }

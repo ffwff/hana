@@ -184,11 +184,18 @@ impl GcManager {
         self.pinned.push(node);
         true
     }
-    pub fn unpin_all(&mut self) {
-        unsafe { for node in &self.pinned {
-            (*(*node)).pinned = false;
-        } }
-        self.pinned.clear();
+    pub fn pin_start(&mut self) -> usize {
+        self.pinned.len()
+    }
+    pub fn pin_end(&mut self, from: usize) {
+        unsafe {
+            for i in from..self.pinned.len() {
+                (*self.pinned[i]).pinned = false;
+            }
+            for i in 0..from {
+                self.pinned.pop();
+            }
+        }
     }
 
 }
@@ -277,10 +284,18 @@ pub fn pin(ptr: *mut c_void) -> bool {
     });
     pinned
 }
-pub fn unpin_all() {
+pub fn pin_start() -> usize {
+    let mut p : usize = 0;
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
-        gc_manager.unpin_all();
+        p = gc_manager.pin_start();
+    });
+    p
+}
+pub fn pin_end(from: usize) {
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        gc_manager.pin_end(from);
     });
 }
 pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {

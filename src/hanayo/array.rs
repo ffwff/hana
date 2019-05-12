@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::{_valueType, NativeValue};
-use super::{malloc, unpin_all};
+use super::{malloc, pin_start, pin_end};
 use crate::vm::Value;
 
 fn alloc_free(ptr: *mut libc::c_void) {
@@ -19,6 +19,9 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
                  &*malloc(array, alloc_free) }).wrap());
         return;
     }
+
+    let p = pin_start();
+
     let nargs = nargs as usize;
     let mut array : CArray<NativeValue> = CArray::reserve(nargs);
     for i in 0..nargs {
@@ -29,7 +32,8 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     }
     vm.stack.push(Value::Array(unsafe {
                  &*malloc(array, alloc_free) }).wrap());
-    unpin_all();
+
+    pin_end(p);
 }
 
 #[hana_function()]
@@ -81,6 +85,7 @@ fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
 #[hana_function()]
 fn sort(array: Value::Array) -> Value {
     let new_array = array.clone();
+    let p = pin_start();
     for val in array.iter() {
         val.pin();
     }
@@ -88,7 +93,7 @@ fn sort(array: Value::Array) -> Value {
     slice.sort_by(value_cmp);
     let arr = Value::Array(unsafe {
                  &*malloc(new_array, alloc_free) });
-    unpin_all();
+    pin_end(p);
     arr
 }
 #[hana_function()]
@@ -102,6 +107,8 @@ fn sort_(array: Value::mut_Array) -> Value {
 pub extern fn map(cvm : *mut Vm, nargs : u16) {
     assert_eq!(nargs, 2);
     let vm = unsafe { &mut *cvm };
+
+    let p = pin_start();
 
     let array = vm.stack.top().unwrap().pin().array();
     vm.stack.pop();
@@ -127,12 +134,15 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
     };
 
     vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());
-    unpin_all();
+
+    pin_end(p);
 }
 
 pub extern fn filter(cvm : *mut Vm, nargs : u16) {
     assert_eq!(nargs, 2);
     let vm = unsafe { &mut *cvm };
+
+    let p = pin_start();
 
     let array = vm.stack.top().unwrap().pin().array();
     vm.stack.pop();
@@ -162,7 +172,8 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
     };
 
     vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());
-    unpin_all();
+
+    pin_end(p);
 }
 
 pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
