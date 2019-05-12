@@ -165,23 +165,21 @@ impl Vm {
             val.mark();
         }
         // call stack
-        unsafe {
+        if !self.localenv.is_null() { unsafe {
             let mut env = self.localenv_bp;
-            if !env.is_null() {
-                while env != self.localenv {
-                    for i in 0..(*env).nslots {
-                        let val = (*env).get(i);
-                        val.mark();
-                    }
-                    env = env.add(1);
-                }
-                env = self.localenv_bp;
+            while env != self.localenv {
                 for i in 0..(*env).nslots {
                     let val = (*env).get(i);
                     val.mark();
                 }
+                env = env.add(1);
             }
-        }
+            env = self.localenv;
+            for i in 0..(*env).nslots {
+                let val = (*env).get(i);
+                val.mark();
+            }
+        } }
     }
 
     // call stack
@@ -191,9 +189,7 @@ impl Vm {
         } else {
             if unsafe {
                 self.localenv.offset_from(self.localenv_bp) > (CALL_STACK_SIZE as isize)
-            } {
-                panic!("call stack overflow");
-            }
+            } { panic!("maximum stack depth exceeded"); }
             self.localenv = unsafe{ self.localenv.add(1) };
         }
         unsafe {
@@ -211,7 +207,11 @@ impl Vm {
         // this must be non-null
         unsafe {
             self.ip = (*self.localenv).retip;
-            self.localenv = self.localenv.sub(1);
+            if self.localenv == self.localenv_bp {
+                self.localenv = null_mut();
+            } else {
+                self.localenv = self.localenv.sub(1);
+            }
         }
     }
 
@@ -225,11 +225,21 @@ impl std::ops::Drop for Vm {
     fn drop(&mut self) {
         unsafe {
             use std::alloc::{dealloc, Layout};
-            use std::mem::size_of;
+            use std::mem::{size_of, drop};
 
+            if !self.localenv.is_null() {
+                let mut env = self.localenv_bp;
+                while env != self.localenv {
+                    drop(env);
+                    env = env.add(1);
+                }
+                drop(self.localenv);
+            }
             let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
+
             vm_free(self);
+
         }
     }
 }
