@@ -77,6 +77,10 @@ impl Env {
     pub fn reserve(&mut self, nslots: u16) {
         if nslots == 0 { self.slots = null_mut(); }
         else { unsafe {
+            if !self.slots.is_null() { // preallocated
+                let layout = Layout::array::<NativeValue>(self.nslots as usize).unwrap();
+                dealloc(self.slots as *mut u8, layout);
+            }
             let layout = Layout::array::<NativeValue>(nslots as usize).unwrap();
             self.slots = alloc_zeroed(layout) as *mut NativeValue;
         } }
@@ -89,10 +93,8 @@ impl std::ops::Drop for Env {
 
     fn drop(&mut self) {
         if self.nslots == 0 { return; }
-        if !self.slots.is_null() {
-            let layout = Layout::array::<NativeValue>(self.nslots as usize).unwrap();
-            unsafe { dealloc(self.slots as *mut u8, layout); }
-        }
+        let layout = Layout::array::<NativeValue>(self.nslots as usize).unwrap();
+        unsafe { dealloc(self.slots as *mut u8, layout); }
     }
 
 }
