@@ -110,27 +110,26 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
 
     let p = pin_start();
 
-    let array = vm.stack.top().unwrap().pin().array();
+    let array = vm.stack.top().pin().unwrap().array();
     vm.stack.pop();
 
-    let fun = vm.stack.top().unwrap();
-    fun.pin();
+    let fun = vm.stack.top().pin().unwrap();
     vm.stack.pop();
 
     let mut new_array : CArray<NativeValue> = CArray::reserve(array.len());
     match fun {
-    Value::Fn(_) | Value::Record(_) => {
-        let mut args = CArray::reserve(1);
-        for val in array.iter() {
-            args[0] = val.clone();
-            new_array.push(vm.call(fun.wrap(), args.clone()));
+        Value::Fn(_) | Value::Record(_) => {
+            let mut args = CArray::reserve(1);
+            for val in array.iter() {
+                args[0] = val.clone();
+                new_array.push(vm.call(fun.wrap(), args.clone()));
+            }
+            args.drop();
+        },
+        Value::NativeFn(_) => {
+            unimplemented!();
         }
-        args.drop();
-    },
-    Value::NativeFn(_) => {
-        unimplemented!();
-    }
-    _ => panic!("expected fn/record/native fn")
+        _ => panic!("expected fn/record/native fn")
     };
 
     vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());
@@ -144,31 +143,30 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
 
     let p = pin_start();
 
-    let array = vm.stack.top().unwrap().pin().array();
+    let array = vm.stack.top().pin().unwrap().array();
     vm.stack.pop();
 
-    let fun = vm.stack.top().unwrap();
-    fun.pin();
+    let fun = vm.stack.top().pin().unwrap();
     vm.stack.pop();
 
     let mut new_array : CArray<NativeValue> = CArray::reserve(array.len());
     match fun {
-    Value::Fn(_) | Value::Record(_) => {
-        let mut args = CArray::reserve(1);
-        for val in array.iter() {
-            args[0] = val.clone();
-            unsafe {
-                if value_is_true(vm.call(fun.wrap(), args.clone())) {
-                    new_array.push(val.clone());
+        Value::Fn(_) | Value::Record(_) => {
+            let mut args = CArray::reserve(1);
+            for val in array.iter() {
+                args[0] = val.clone();
+                unsafe {
+                    if value_is_true(vm.call(fun.wrap(), args.clone())) {
+                        new_array.push(val.clone());
+                    }
                 }
             }
+            args.drop();
+        },
+        Value::NativeFn(_) => {
+            unimplemented!();
         }
-        args.drop();
-    },
-    Value::NativeFn(_) => {
-        unimplemented!();
-    }
-    _ => panic!("expected fn/record/native fn")
+        _ => panic!("expected fn/record/native fn")
     };
 
     vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());

@@ -84,7 +84,7 @@ fn split(s: Value::Str, delim: Value::Str) -> Value {
     for ss in s.split(delim) {
         let val = Value::Str(unsafe {
                 &*malloc(ss.clone().to_string(), alloc_free) });
-        array.push(val.pin().wrap());
+        array.push(val.wrap().pin());
     }
     let ret = Value::Array(unsafe { &*malloc(array, |ptr| {
         let array = &mut *(ptr as *mut CArray<NativeValue>);

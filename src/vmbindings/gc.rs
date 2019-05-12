@@ -240,6 +240,8 @@ pub unsafe fn malloc<T: Sized>(x: T, finalizer: GenericFinalizer) -> *mut T {
     });
     alloced
 }
+
+#[allow(dead_code)]
 pub unsafe fn free<T: Sized>(x: *mut T) {
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
@@ -256,12 +258,15 @@ pub fn set_root(vm: *mut Vm) {
 }
 
 // state
+#[allow(dead_code)]
 pub fn enable() {
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
         gc_manager.enable();
     });
 }
+
+#[allow(dead_code)]
 pub fn disable() {
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
@@ -303,7 +308,10 @@ pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
 }
 
 // helpers
+#[allow(dead_code)]
 pub fn no_finalizer(_ : *mut c_void) {}
+
+#[allow(dead_code)]
 pub unsafe fn drop<T>(ptr: *mut c_void) {
     drop_in_place::<T>(ptr as *mut T);
 }

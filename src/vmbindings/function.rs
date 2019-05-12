@@ -1,6 +1,5 @@
-use super::cnativeval::NativeValue;
 use super::env::Env;
-use std::ptr::{null, null_mut};
+use std::ptr::null_mut;
 
 // functions
 #[repr(C)]

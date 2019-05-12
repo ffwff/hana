@@ -59,14 +59,14 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                 };
                 args_setup.push(match atype.as_str() {
                     "Any" => quote!(let #pattern = {
-                        let val = vm.stack.top().unwrap();
+                        let val = vm.stack.top().pin().unwrap();
                         vm.stack.pop();
                         val
                     };),
                     _ => {
                         quote!(
                             let #pattern = {
-                                let val = vm.stack.top().unwrap();
+                                let val = vm.stack.top().pin().unwrap();
                                 vm.stack.pop();
                                 match val {
                                     #match_arm,
@@ -92,6 +92,8 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
             if nargs != #arglen {
                 panic!("unmatched arguments length, expected {}!", #arglen);
             }
+            use super::{pin_start, pin_end};
+            let _p = pin_start();
             #[inline(always)]
             fn #name(vm: &mut Vm) -> Value {
                 #(#args_setup)*
@@ -100,6 +102,7 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
             let vm = unsafe { &mut *cvm };
             let result : Value = #name(vm);
             vm.stack.push(result.wrap());
+            pin_end(_p);
         }
     ).into()
 }

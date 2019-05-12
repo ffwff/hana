@@ -34,7 +34,7 @@ impl<T> CArray<T> {
         // (stack-allocated) arrays, use this for storing function
         // arguments that will be passed to Vm::call
         CArray::<T> {
-            data: unsafe{ &mut arr[0] as *mut T },
+            data: &mut arr[0] as *mut T,
             len: arr.len(),
             capacity: arr.len()
         }

@@ -26,6 +26,7 @@ pub enum Value {
     NativeObj,
 
     // mut wrappers
+    #[allow(non_camel_case_types)]
     mut_Fn(*mut Function),
     mut_Str(*mut String),
     mut_Record(*mut Record),
@@ -94,7 +95,7 @@ impl Value {
         }
     }
 
-    pub fn pin(&self) -> &Value {
+    pub fn pin_rec(&self) {
         match &self {
             Value::Fn(f)       => {
                 f.pin();
@@ -111,7 +112,6 @@ impl Value {
             },
             _ => {}
         }
-        self
     }
 
 }
