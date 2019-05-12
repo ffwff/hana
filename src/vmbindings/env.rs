@@ -8,7 +8,7 @@ use std::alloc::{alloc_zeroed, dealloc, Layout};
 pub struct Env {
     pub slots: *mut NativeValue,
     pub nslots: u16,
-    // raw slots array. rust doesn't have an non bounds-check index
+    // raw slots array. rust doesn't have a non bounds-check index
     // function for arrays so we'll have to use this
     // slot indexes access SHOULD be bounded whenever the script
     // is compiled to bytecode

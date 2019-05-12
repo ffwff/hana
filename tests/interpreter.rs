@@ -221,6 +221,27 @@ y = a()
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
     #[test]
+    fn function_tco() {
+        let mut vm : Vm = eval!("
+y = 0
+function a() begin
+    if $y == 1000 return
+    $y += 1
+    return a()
+end
+a()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1000));
+    }
+    #[test]
+    fn function_tco_short() {
+        let mut vm : Vm = eval!("
+a(x) = x == 1000 ? x : a(x+1)
+y = a(0)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1000));
+    }
+    #[test]
     fn function_call_from_native() {
         let mut vm : Vm = eval!("
 function a() begin

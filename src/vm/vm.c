@@ -35,13 +35,7 @@ void vm_init(struct vm *vm) {
 }
 
 void vm_free(struct vm *vm) {
-    // TODO free vm->localenv
-    /* while(vm->localenv != NULL) {
-        struct env *localenv = vm->localenv->parent;
-        env_free(vm->localenv);
-        free(vm->localenv);
-        vm->localenv = localenv;
-    } */
+    // vm->localenv is free'd by rust
     hmap_free(vm->globalenv);
     while(vm->eframe != NULL) {
         struct exception_frame *eframe = vm->eframe->prev;
@@ -496,13 +490,10 @@ do { \
     // returns from function
     doop(OP_RET): {
         LOG("RET %p\n", vm->localenv);
-
-        // TODO
         if (vm_leave_env(vm)) {
             LOG("return from vm_call\n");
             return;
         }
-
         dispatch();
     }
 
@@ -794,52 +785,39 @@ do { \
 
     // tail calls
     doop(OP_RETCALL): {
-        assert(0);
-        #if 0
         vm->ip++;
         struct value val = array_top(vm->stack);
         const uint16_t nargs = vm->code.data[vm->ip+0] << 4 | vm->code.data[vm->ip+1];
         vm->ip += sizeof(nargs);
-        LOG("TAIL RET %d\n", nargs);
-        if(val.type == TYPE_NATIVE_FN) {
-
+        debug_assert(vm->stack.length >= nargs);
+        LOG("retcall %d\n", nargs);
+        switch(val.type) {
+        case TYPE_NATIVE_FN: {
             array_pop(vm->stack);
             val.as.fn(vm, nargs);
-
-            // return regularly if it's a native function
-            if(vm->localenv->retip == (uint32_t)-1) {
-                LOG("return to vm_call\n");
+            if (vm_leave_env(vm)) {
+                LOG("return from vm_call\n");
                 return;
             }
-            struct env *parent = vm->localenv->parent;
-            env_free(vm->localenv);
-            vm->ip = vm->localenv->retip;
-            free(vm->localenv);
-            vm->localenv = parent;
-
-        } else if(val.type == TYPE_FN || val.type == TYPE_DICT) {
+            break; }
+        case TYPE_FN:
+        case TYPE_DICT: {
             struct function *ifn;
-            JMP_INTERPRETED_FN(do{
-                if(vm->localenv->retip == (uint32_t)-1) {
-                    LOG("return to vm_call\n");
+            JMP_INTERPRETED_FN(
+                if (vm_leave_env(vm)) {
+                    LOG("return from vm_call\n");
                     return;
                 }
-                vm->ip = vm->localenv->retip;
-                struct env *parent = vm->localenv->parent;
-                env_free(vm->localenv);
-                free(vm->localenv);
-                vm->localenv = parent;
-                dispatch();
-            } while(0));
-            vm->localenv->lexical_parent = &ifn->bound;
-            vm->localenv->nargs = ifn->nargs;
-            vm->ip = ifn->ip;
-        } else {
+            );
+
+            // caller
+            vm_enter_env_tail(vm, ifn);
+            break; }
+        default: {
             FATAL("calling a value that's not a record constructor or a function\n");
-            ERROR();
+            ERROR(); }
         }
         dispatch();
-        #endif
     }
 
     }

@@ -15,6 +15,7 @@ const CALL_STACK_SIZE : usize = 512;
 
 //
 #[repr(u8)]
+#[derive(Debug, PartialEq)]
 #[allow(non_camel_case_types)]
 pub enum VmOpcode {
     OP_HALT,
@@ -199,6 +200,13 @@ impl Vm {
             let env = Env::new(self.ip, fun.bound, fun.nargs);
             copy(&env, self.localenv, 1);
         }
+        self.ip = fun.ip;
+    }
+
+    pub fn enter_env_tail(&mut self, fun: &'static Function) {
+        let env = unsafe{ &mut *self.localenv };
+        env.nargs = fun.nargs;
+        env.lexical_parent = fun.bound;
         self.ip = fun.ip;
     }
 

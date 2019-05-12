@@ -64,6 +64,7 @@ void vm_execute(struct vm*);
 typedef array(struct value) a_arguments;
 struct value vm_call(struct vm *, const struct value, const a_arguments);
 struct env *vm_enter_env(struct vm *, const struct function *);
+struct env *vm_enter_env_tail(struct vm *, const struct function *);
 bool vm_leave_env(struct vm *);
 void vm_print_stack(const struct vm*);
 

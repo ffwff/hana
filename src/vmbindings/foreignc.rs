@@ -224,6 +224,13 @@ pub unsafe extern "C" fn vm_enter_env(selfptr: *mut Vm, fun: *const Function) ->
     vm.enter_env(fun);
     vm.localenv
 }
+#[no_mangle]
+pub unsafe extern "C" fn vm_enter_env_tail(selfptr: *mut Vm, fun: *const Function) -> *const Env {
+    let vm = &mut *selfptr;
+    let fun = &*fun;
+    vm.enter_env_tail(fun);
+    vm.localenv
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) -> bool {
