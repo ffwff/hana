@@ -175,9 +175,8 @@ pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n:
 
 // #region env
 #[no_mangle]
-pub unsafe extern "C" fn env_malloc(parent: *mut Env, retip: u32, lexical_parent : *mut Env, nargs: u16) -> *mut Env {
-    Box::into_raw(Box::new(Env::new(
-        parent, retip, lexical_parent, nargs)))
+pub unsafe extern "C" fn env_malloc(retip: u32, lexical_parent : *mut Env, nargs: u16) -> *mut Env {
+    Box::into_raw(Box::new(Env::new(retip, lexical_parent, nargs)))
 }
 #[no_mangle]
 pub unsafe extern "C" fn env_init(selfptr: *mut Env, nslots: u16, cvm: *mut Vm) {
@@ -218,6 +217,14 @@ pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, slot: u16, val: 
 }
 
 //
+#[no_mangle]
+pub unsafe extern "C" fn vm_enter_env(selfptr: *mut Vm, fun: *const Function) -> *const Env {
+    let vm = &mut *selfptr;
+    let fun = &*fun;
+    vm.enter_env(fun);
+    vm.localenv
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) -> bool {
     let vm = &mut *selfptr;

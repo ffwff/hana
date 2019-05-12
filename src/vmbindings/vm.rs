@@ -11,6 +11,8 @@ use super::env::Env;
 use super::gc::*;
 pub use super::value::Value;
 
+const CALL_STACK_SIZE : usize = 512;
+
 //
 #[repr(u8)]
 #[allow(non_camel_case_types)]
@@ -51,7 +53,9 @@ pub enum VmOpcode {
 pub struct Vm {
     pub ip        : u32, // current instruction pointer
     pub localenv  : *mut Env,
-    // represents a linked list of call frames
+    // pointer to current stack frame
+    localenv_bp   : *mut Env, // rust owns this, so drop it pls
+    // pointer to start of pool of stack frames
     pub globalenv : *mut CHashMap,
     // global environment, all unscoped variables/variables
     // starting with '$' should be stored here
@@ -95,6 +99,12 @@ impl Vm {
         let mut vm = Vm{
             ip: 0,
             localenv: null_mut(),
+            localenv_bp: {
+                use std::alloc::{alloc, Layout};
+                use std::mem::size_of;
+                let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
+                unsafe { alloc(layout.unwrap()) as *mut Env }
+            },
             globalenv: null_mut(),
             eframe: null_mut(),
             code: CArray::new_nil(),
@@ -156,26 +166,44 @@ impl Vm {
         }
         // call stack
         unsafe {
-            let mut env = self.localenv;
-            while !env.is_null() {
+            let mut env = self.localenv_bp;
+            while env != self.localenv {
                 for i in 0..(*env).nslots {
                     let val = (*env).get(i);
                     val.mark();
                 }
-                env = (*env).parent;
+                env = env.add(1);
             }
         }
     }
 
     // call stack
+    pub fn enter_env(&mut self, fun: &'static Function) {
+        use std::boxed::Box;
+        if self.localenv.is_null() {
+            self.localenv = self.localenv_bp;
+        } else {
+            if unsafe {
+                self.localenv.offset_from(self.localenv_bp) > (CALL_STACK_SIZE as isize)
+            } {
+                panic!("call stack overflow");
+            }
+            self.localenv = unsafe{ self.localenv.add(1) };
+        }
+        unsafe {
+            use std::mem::replace;
+            let env = Env::new(self.ip, fun.bound, fun.nargs);
+            replace(&mut *self.localenv, env);
+        }
+        self.ip = fun.ip;
+    }
+
     pub fn leave_env(&mut self) {
         // we don't check for env leaving
         // this must be non-null
         unsafe {
-            let parent = (*self.localenv).parent;
             self.ip = (*self.localenv).retip;
-            std::boxed::Box::from_raw(self.localenv);
-            self.localenv = parent;
+            self.localenv = self.localenv.sub(1);
         }
     }
 
@@ -187,6 +215,13 @@ impl Vm {
 
 impl std::ops::Drop for Vm {
     fn drop(&mut self) {
-        unsafe { vm_free(self); }
+        unsafe {
+            use std::alloc::{dealloc, Layout};
+            use std::mem::size_of;
+
+            let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
+            dealloc(self.localenv_bp as *mut u8, layout.unwrap());
+            vm_free(self);
+        }
     }
 }

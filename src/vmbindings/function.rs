@@ -5,9 +5,9 @@ use std::ptr::{null, null_mut};
 // functions
 #[repr(C)]
 pub struct Function {
-    ip: u32, // instruction pointer
-    nargs : u16, // number of args
-    bound: *mut Env,
+    pub ip: u32, // instruction pointer
+    pub nargs : u16, // number of args
+    pub bound: *mut Env,
     // represents the current local environment
     // at the time the function is declared, this will be
     // COPIED into another struct env whenever OP_CALL is issued
@@ -21,14 +21,13 @@ impl Function {
             ip: ip,
             nargs: nargs,
             bound: Box::into_raw(Box::new(
-                    if env.is_null() {
-                        Env::new(null_mut(), 0, null_mut(), nargs) }
+                    if env.is_null() { Env::new(0, null_mut(), nargs) }
                     else { Env::copy(&*env) }
                 ))
         }
     }
 
-    pub fn drop(&mut self) {
+    pub fn drop(&mut self) { // must be called by the gc
         unsafe { Box::from_raw(self.bound); }
     }
 

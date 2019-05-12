@@ -172,6 +172,24 @@ outer()
         assert_eq!(vm.global().get("z").unwrap().unwrap(), Value::Int(3));
     }
     #[test]
+    fn function_stmt_scope_up() {
+        let mut vm : Vm = eval!("
+(function() begin
+
+    a = 10
+    function A() begin
+        function B() begin
+            $x = a
+        end
+        B()
+    end
+    A()
+
+end)()
+");
+        assert_eq!(vm.global().get("x").unwrap().unwrap(), Value::Int(10));
+    }
+    #[test]
     fn function_stmt_iife() {
         let mut vm : Vm = eval!("
 (function() begin
@@ -210,7 +228,7 @@ function a() begin
 end
 ");
         let val = vm.global().get("a").unwrap().clone();
-        assert_eq!(vm.call(val, CArray::new_nil()), Value::Int(10));
+        assert_eq!(vm.call(val, CArray::new_nil()).unwrap(), Value::Int(10));
     }
     // #endregion
 

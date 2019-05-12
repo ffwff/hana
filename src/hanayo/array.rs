@@ -55,11 +55,13 @@ fn pop(array: Value::mut_Array) -> Value {
     el.unwrap()
 }
 
-// sorting
 extern "C" {
 fn value_gt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
 fn value_lt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+fn value_is_true(left: NativeValue) -> bool;
 }
+
+// sorting
 fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
     let left = left.clone();
     let right = right.clone();
@@ -121,6 +123,35 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
 
 pub extern fn filter(cvm : *mut Vm, nargs : u16) {
     assert_eq!(nargs, 2);
+    let vm = unsafe { &mut *cvm };
+
+    let array = vm.stack.top().unwrap().array();
+    vm.stack.pop();
+
+    let fun = vm.stack.top().unwrap();
+    vm.stack.pop();
+
+    let mut new_array : CArray<NativeValue> = CArray::reserve(array.len());
+    match fun {
+    Value::Fn(_) | Value::Record(_) => {
+        let mut args = CArray::reserve(1);
+        for val in array.iter() {
+            args[0] = val.clone();
+            unsafe {
+                if value_is_true(vm.call(fun.wrap(), args.clone())) {
+                    new_array.push(val.clone());
+                }
+            }
+        }
+        args.drop();
+    },
+    Value::NativeFn(_) => {
+        unimplemented!();
+    }
+    _ => panic!("expected fn/record/native fn")
+    };
+
+    vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());
 }
 
 pub extern fn reduce(cvm : *mut Vm, nargs : u16) {

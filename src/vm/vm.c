@@ -23,9 +23,9 @@
 #define FATAL(...) fprintf(stderr, __VA_ARGS__)
 
 void vm_init(struct vm *vm) {
-    //hmap_init(&vm->globalenv);
     vm->error = 0;
     vm->localenv = NULL;
+    // vm->localenv_bp is owned by rust
     vm->globalenv = hmap_malloc();
     vm->eframe = NULL;
     vm->code = (a_uint8)array_init(uint8_t);
@@ -485,8 +485,7 @@ do { \
             JMP_INTERPRETED_FN(dispatch());
 
             // caller
-            vm->localenv = env_malloc(vm->localenv, vm->ip, ifn->bound, ifn->nargs);
-            vm->ip = ifn->ip;
+            vm_enter_env(vm, ifn);
             break; }
         default: {
             FATAL("calling a value that's not a record constructor or a function\n");
@@ -581,7 +580,6 @@ do { \
             ERROR();
         }
         dict_set_str(dval.as.dict, val.as.str, val);
-        // NOTE: val should not be free'd.
         dispatch();
     }
     doop(OP_DICT_LOAD): {
@@ -888,13 +886,12 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
     const uint32_t last = vm->ip;
     // setup env
     struct env *oldenv = vm->localenv;
-    struct env *curenv = vm->localenv = env_malloc(
-        oldenv, (uint32_t)-1, ifn->bound, ifn->nargs);
+    vm->ip = (uint32_t)-1;
+    struct env *curenv = vm_enter_env(vm, ifn);
     // setup stack/ip
     for(int64_t i = args.length-1; i >= 0; i--) {
         array_push(vm->stack, args.data[i]);
     }
-    vm->ip = ifn->ip;
     // call it
     vm_execute(vm);
     if(vm->error) // unhandled exception
@@ -905,7 +902,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
     }
     // restore ip
     LOG("vm_call complete. %d\n", last);
-    env_free(vm->localenv);
+    // don't free vm->localenv because it's allocated in vm->localenv_bp
     vm->localenv = oldenv;
     vm->ip = last;
 

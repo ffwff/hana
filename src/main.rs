@@ -1,5 +1,6 @@
 #![feature(vec_remove_item)]
 #![feature(alloc_layout_extra)]
+#![feature(ptr_offset_from)]
 
 #[macro_use] extern crate decorator;
 use std::io::Read;

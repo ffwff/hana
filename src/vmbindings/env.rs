@@ -19,14 +19,13 @@ pub struct Env {
     pub lexical_parent : *mut Env,
     // lexical parents are the parent of the function's lexical scopes
     // this should be set to (struct function*)->bound
-    pub parent : *mut Env, // previous of the env chain
 
     pub retip : u32, // return ip, where to return to on pop
 }
 
 impl Env {
 
-    pub fn new(parent: *mut Env, retip: u32,
+    pub fn new(retip: u32,
               lexical_parent: *mut Env,
               nargs: u16) -> Env {
         Env {
@@ -34,7 +33,6 @@ impl Env {
             nslots: 0,
             nargs: nargs,
             lexical_parent: lexical_parent,
-            parent: parent,
             retip: retip
         }
     }
@@ -44,7 +42,6 @@ impl Env {
             slots: null_mut(),
             nslots: other.nslots,
             nargs: 0,
-            parent: null_mut(),
             lexical_parent: other.lexical_parent,
             retip: std::u32::MAX
         };
