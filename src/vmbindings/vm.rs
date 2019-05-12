@@ -167,12 +167,19 @@ impl Vm {
         // call stack
         unsafe {
             let mut env = self.localenv_bp;
-            while env != self.localenv {
+            if !env.is_null() {
+                while env != self.localenv {
+                    for i in 0..(*env).nslots {
+                        let val = (*env).get(i);
+                        val.mark();
+                    }
+                    env = env.add(1);
+                }
+                env = self.localenv_bp;
                 for i in 0..(*env).nslots {
                     let val = (*env).get(i);
                     val.mark();
                 }
-                env = env.add(1);
             }
         }
     }

@@ -56,13 +56,13 @@ impl GcManager {
     pub unsafe fn malloc<T: Sized>
         (&mut self, x: T, finalizer: GenericFinalizer) -> *mut T {
         // free up if over threshold
-        /* if self.bytes_allocated > self.threshold {
+        if self.bytes_allocated > self.threshold {
             self.collect();
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
                 self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
             }
-        } */
+        }
         // tfw no qt malloc function
         let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
         let bytes : *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
