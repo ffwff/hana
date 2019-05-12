@@ -275,6 +275,8 @@ pub mod ast {
             if is_tail {
                 if let Some(expr) = self.then.as_any().downcast_ref::<CallExpr>() {
                     expr._emit(c, true);
+                } else if let Some(expr) = self.then.as_any().downcast_ref::<CondExpr>() {
+                    expr._emit(c, true);
                 } else { self.then.emit(c); }
             } else {
                 self.then.emit(c);
@@ -286,6 +288,8 @@ pub mod ast {
 
             if is_tail {
                 if let Some(expr) = self.alt.as_any().downcast_ref::<CallExpr>() {
+                    expr._emit(c, true);
+                } else if let Some(expr) = self.then.as_any().downcast_ref::<CondExpr>() {
                     expr._emit(c, true);
                 } else { self.alt.emit(c); }
             } else {
