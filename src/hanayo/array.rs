@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::{_valueType, NativeValue};
-use super::{malloc, pin_start, pin_end};
+use super::{malloc, drop, pin_start, pin_end};
 use crate::vm::Value;
 
 fn alloc_free(ptr: *mut libc::c_void) {
@@ -179,13 +179,27 @@ pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
 }
 
 // search
+extern "C" {
+fn value_eq(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+}
 #[hana_function()]
 fn index(array: Value::Array, elem: Value::Any) -> Value {
-    unimplemented!()
+    for i in 0..array.len() {
+        let mut val = NativeValue { data: 0, r#type: _valueType::TYPE_NIL };
+        unsafe { value_eq(&mut val, array[i], elem.wrap()); }
+        if val.data == 1 {
+            return Value::Int(i as i64);
+        }
+    }
+    Value::Int(-1)
 }
 
 // strings
 #[hana_function()]
 fn join(array: Value::Array) -> Value {
-    unimplemented!()
+    let mut s = String::new();
+    for val in array.iter() {
+        s += format!("{:?}", val.unwrap()).as_str();
+    }
+    Value::Str(unsafe { &*malloc(s, |ptr| drop::<String>(ptr)) })
 }
