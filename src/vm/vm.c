@@ -18,7 +18,7 @@
 #ifdef NOLOG
 #define LOG(...)
 #else
-#define LOG(...) printf(__VA_ARGS__)
+#define LOG(...) fprintf(stderr, __VA_ARGS__)
 #endif
 #define FATAL(...) fprintf(stderr, __VA_ARGS__)
 
@@ -513,6 +513,10 @@ do { \
         vm->ip += strlen(key)+1;
         LOG(op == OP_MEMBER_GET ? "MEMBER_GET %s\n" : "MEMBER_GET_NO_POP %s\n", key);
 
+#ifndef NOLOG
+        LOG("print stack: ");
+        vm_print_stack(vm);
+#endif
         struct value val = array_top(vm->stack);
         struct dict *dict = NULL;
         if(val.type != TYPE_DICT) {
@@ -832,6 +836,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
     struct function *ifn = NULL;
 
     if(fn.type == TYPE_DICT) {
+        assert(0);
         const struct value *ctor = dict_get(fn.as.dict, "constructor");
         if(ctor == NULL) {
             FATAL("expected record to have constructor\n");
@@ -844,7 +849,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
             ctor->as.fn(vm, args.length);
             return array_top(vm->stack);
         } else if(ctor->type != TYPE_FN) {
-            printf("constructor must be a function!\n");
+            FATAL("constructor must be a function!\n");
             return errorval;
         } else {
             ifn = ctor->as.ifn;
@@ -879,7 +884,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
         return errorval;
     }
     // restore ip
-    LOG("vm_call complete. %d\n", last);
+    LOG("vm_call complete\n");
     // don't free vm->localenv because it's allocated in vm->localenv_bp
     vm->localenv = oldenv;
     vm->ip = last;
@@ -890,12 +895,12 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
 }
 
 void vm_print_stack(const struct vm *vm) {
-    printf("[");
+    fprintf(stderr, "[");
     for(size_t i = 0; i < vm->stack.length; i++) {
         value_print(&vm->stack.data[i]);
-        printf(" ");
+        fprintf(stderr, " ");
     }
-    printf("]\n");
+    fprintf(stderr, "]\n");
 }
 
 // push bits

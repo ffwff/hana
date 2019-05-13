@@ -95,7 +95,7 @@ impl<T> CArray<T> {
                 self.data = libc::realloc(self.data as *mut libc::c_void,
                     size_of::<T>()*self.capacity) as *mut T;
             }
-            std::ptr::write(self.data.add(self.len*size_of::<T>()), val);
+            std::ptr::write(self.data.add(self.len), val);
             self.len += 1;
         }
     }

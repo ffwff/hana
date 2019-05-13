@@ -48,23 +48,23 @@ void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
 
 void value_print(struct value *val) {
     if(val->type == TYPE_INT)
-        printf("%ld", val->as.integer);
+        fprintf(stderr, "%ld", val->as.integer);
     else if(val->type == TYPE_FLOAT)
-        printf("%f", val->as.floatp);
+        fprintf(stderr, "%f", val->as.floatp);
     else if(val->type == TYPE_STR)
-        printf("[string]");
+        fprintf(stderr, "[string]");
     else if(val->type == TYPE_NATIVE_FN)
-        printf("[native fn %lx]", (intptr_t)val->as.fn);
+        fprintf(stderr, "[native fn %lx]", (intptr_t)val->as.fn);
     else if(val->type == TYPE_FN)
-        printf("[fn %d]", (uint32_t)val->as.ifn->ip);
+        fprintf(stderr, "[fn %d]", (uint32_t)val->as.ifn->ip);
     else if(val->type == TYPE_DICT)
-        printf("[dict %p]", val->as.dict);
+        fprintf(stderr, "[dict %p]", val->as.dict);
     else if(val->type == TYPE_ARRAY)
-        printf("[array %p]", val->as.array);
+        fprintf(stderr, "[array %p]", val->as.array);
     else if(val->type == TYPE_NATIVE_OBJ)
-        printf("[native obj %p]", val->as.native);
+        fprintf(stderr, "[native obj %p]", val->as.native);
     else {
-        printf("nil");
+        fprintf(stderr, "nil");
     }
 }
 
