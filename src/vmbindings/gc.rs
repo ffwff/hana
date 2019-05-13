@@ -58,15 +58,14 @@ impl GcManager {
 
     pub unsafe fn malloc<T: Sized>
         (&mut self, x: T, finalizer: GenericFinalizer) -> *mut T {
-        self.collect();
-        /*// free up if over threshold
+        // free up if over threshold
         if self.bytes_allocated > self.threshold {
             self.collect();
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
                 self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
             }
-        }*/
+        }
         // tfw no qt malloc function
         let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
         let bytes : *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
@@ -193,7 +192,7 @@ impl GcManager {
             for i in from..self.pinned.len() {
                 (*self.pinned[i]).pinned = false;
             }
-            for i in 0..from {
+            for _ in 0..from {
                 self.pinned.pop();
             }
         }
@@ -276,12 +275,14 @@ pub fn disable() {
 }
 
 // collect
+#[allow(dead_code)]
 pub fn collect() {
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
         gc_manager.collect();
     });
 }
+#[allow(dead_code)]
 pub fn pin(ptr: *mut c_void) -> bool {
     let mut pinned = false;
     GC_MANAGER.with(|gc_manager| {

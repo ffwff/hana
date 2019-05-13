@@ -203,9 +203,7 @@ pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
             for val in array.iter() {
                 args[0] = acc.wrap().clone();
                 args[1] = val.clone();
-                unsafe {
-                    acc = vm.call(fun.wrap(), args.clone()).unwrap();
-                }
+                acc = vm.call(fun.wrap(), args.clone()).unwrap();
             }
             args.drop();
         },

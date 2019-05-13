@@ -32,6 +32,20 @@ pub mod hanayo_tests {
 
     // #region array
     #[test]
+    fn array_constructor() {
+        let mut vm : Vm = eval!("
+a = Array(1,2,3)
+");
+        let arr = match vm.global().get("a").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0].unwrap(), Value::Int(1));
+        assert_eq!(arr[1].unwrap(), Value::Int(2));
+        assert_eq!(arr[2].unwrap(), Value::Int(3));
+    }
+    #[test]
     fn array_pop() {
         let mut vm : Vm = eval!("
 a = [1,2]
@@ -134,6 +148,14 @@ y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)
     // #endregion
 
     // #region string
+    #[test]
+    fn string_constructor() {
+        let mut vm : Vm = eval!("
+y = String(10)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "10");
+    }
+
     #[test]
     fn string_delete() {
         let mut vm : Vm = eval!("

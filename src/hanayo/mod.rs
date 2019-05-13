@@ -26,6 +26,7 @@ pub fn init(vm : &mut Vm) {
     set_var!("input", Value::NativeFn(io::input));
 
     // builtin objects
+    let rec_free = |ptr| unsafe{ drop::<Record>(ptr) };
 
     // #region array
     {
@@ -44,7 +45,7 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(array, "index",       Value::NativeFn(array::index));
     set_obj_var!(array, "join",        Value::NativeFn(array::join));
 
-    let ptr = Box::into_raw(Box::new(array));
+    let ptr = unsafe { malloc(array, rec_free) };
     set_var!("Array", Value::Record(unsafe{ &*ptr }));
     vm.darray = ptr;
     }
@@ -65,7 +66,7 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "split",       Value::NativeFn(string::split));
     set_obj_var!(string, "index",       Value::NativeFn(string::index));
 
-    let ptr = Box::into_raw(Box::new(string));
+    let ptr = unsafe { malloc(string, rec_free) };
     set_var!("String", Value::Record(unsafe{ &*ptr }));
     vm.dstr = ptr;
     }

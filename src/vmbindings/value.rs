@@ -8,6 +8,7 @@ extern crate libc;
 pub type NativeFnData = extern fn(*mut Vm, u16);
 
 #[derive(Clone)]
+#[allow(non_camel_case_types)]
 pub enum Value {
     // we don't have control over how rust manages its variant
     // types, so this is a convenient wrapper for (de)serialising
@@ -26,7 +27,6 @@ pub enum Value {
     NativeObj,
 
     // mut wrappers
-    #[allow(non_camel_case_types)]
     mut_Fn(*mut Function),
     mut_Str(*mut String),
     mut_Record(*mut Record),
@@ -67,7 +67,8 @@ impl Value {
                                                 data: transmute::<*const Function, u64>(*f) },
             Value::Str(s)      => NativeValue { r#type: _valueType::TYPE_STR,
                                                 data: transmute::<*const String, u64>(*s) },
-            Value::Record(_)     => NativeValue { r#type: _valueType::TYPE_DICT , data: 0     },
+            Value::Record(d)   => NativeValue { r#type: _valueType::TYPE_DICT,
+                                                data: transmute::<*const Record, u64>(*d) },
             Value::Array(a)    => NativeValue { r#type: _valueType::TYPE_ARRAY,
                                                 data: transmute::<*const CArray<NativeValue>, u64>(*a) },
             Value::NativeObj   => NativeValue { r#type: _valueType::TYPE_NATIVE_OBJ, data: 0},
@@ -145,7 +146,7 @@ impl fmt::Debug for Value {
             Value::Int(n)      => write!(f, "{}", n),
             Value::Float(n)    => write!(f, "{}", n),
             Value::NativeFn(_) => write!(f, "[native fn]"),
-            Value::Fn(x)       => write!(f, "[fn]"),
+            Value::Fn(_)       => write!(f, "[fn]"),
             Value::Str(s)      => write!(f, "{}", s),
             Value::Record(_)   => write!(f, "[record]"),
             Value::Array(_)    => write!(f, "[array]"),
