@@ -33,7 +33,7 @@ word -> String
     = w:$(id_start id_chars*) { w.to_string() }
     / #expected("word")
 keyword
-    = ("and" / "or" / "not" / "mod" / "begin" / "end" / "if" / "else" /
+    = ("and" / "or" / "not" / "mod" / "begin" / "end" / "then" / "if" / "else" /
       "while" / "for" / "to" / "downto" / "step" / "continue" / "break" /
       "try" / "case" / "as" / "in" /
       "function" / "return" / "record" / "not") !id_chars
@@ -58,16 +58,16 @@ value -> std::boxed::Box<ast::AST>
     / s:int_literal     { Box::new(ast::IntLiteral   { val: s.parse::<i64>().unwrap() }) }
     / s:string_literal  { Box::new(ast::StrLiteral::new(&s)) }
     / array_expr / record_expr / function_expr
-    / "(" _ e:expr _ ")" { e }
+    / "(" __ e:expr __ ")" { e }
 
 array_expr -> std::boxed::Box<ast::AST>
-    = "[" _ "]"
+    = "[" __ "]"
     {
         Box::new(ast::ArrayExpr {
             exprs: vec![]
         })
     }
-    / "[" _ fexpr:expr lexpr:(_ "," _ e:expr { e })* _ "]"
+    / "[" __ fexpr:expr lexpr:(__ "," __ e:expr { e })* _ "]"
     {
         let mut exprs = vec![fexpr];
         for expr in lexpr { exprs.push(expr); }
@@ -77,7 +77,7 @@ array_expr -> std::boxed::Box<ast::AST>
     }
 
 unary_expr -> std::boxed::Box<ast::AST>
-    = op:$("not" / "-") __ val:value
+    = op:$("not" / "-") _ val:value
     {
         Box::new(ast::UnaryExpr {
             op: match op {
@@ -184,18 +184,18 @@ callexpr -> std::boxed::Box<ast::AST>
     }
     / memexpr
 callexpr_args -> Vec<std::boxed::Box<ast::AST>>
-    = "(" _ farg:expr larg:(_ "," _ e:expr { e })* _ ")"
+    = "(" __ farg:expr larg:(__ "," __ e:expr { e })* __ ")"
     {
         let mut args = vec![farg];
         for arg in larg { args.push(arg); }
         args
     }
-    / "(" _ ")" { vec!() }
+    / "(" __ ")" { vec!() }
 callexpr_arm -> ast::CallExprArm
-    = _ "." _ id:identifier {
+    = _ "." _ id:word {
         ast::CallExprArm::MemExprIden(
             Box::new(ast::Identifier   { val: id }) as std::boxed::Box<ast::AST>) }
-    / _ "[" _ e:expr _ "]" {
+    / _ "[" __ e:expr __ "]" {
         let is_expr = e.as_any().downcast_ref::<ast::StrLiteral>().is_none();
         if is_expr { ast::CallExprArm::MemExpr(e) }
         else { ast::CallExprArm::MemExprIden(e) }
@@ -218,10 +218,10 @@ memexpr -> std::boxed::Box<ast::AST>
     }
     / value
 memexpr_arm -> (std::boxed::Box<ast::AST>, bool /* is_expr */)
-    = _ "." _ id:identifier {
+    = _ "." _ id:word {
         (Box::new(ast::Identifier   { val: id }) as std::boxed::Box<ast::AST>,
          false) }
-    / _ "[" _ e:expr _ "]" {
+    / _ "[" __ e:expr __ "]" {
         let is_expr = e.as_any().downcast_ref::<ast::StrLiteral>().is_none();
         ( e, is_expr )
     }
@@ -250,18 +250,24 @@ block_stmt -> std::boxed::Box<ast::AST>
     { Box::new(ast::BlockStatement{ stmts: s }) }
 
 // control flows
+then_stmt -> std::boxed::Box<ast::AST>
+    = #quiet<"then" s:statement { s }>
+    / #quiet<block_stmt>
+    / #expected("block or then <stmt>")
+
 if_stmt -> std::boxed::Box<ast::AST>
-    = "if" _ e:expr _ s:statement a:(_ "else" _ s:statement { s })?
+    = "if" _ e:expr _ s:then_stmt a:(_ "else" _ s:statement { s })?
     { Box::new(ast::IfStatement{ expr: e, then: s, alt: a }) }
 
 while_stmt -> std::boxed::Box<ast::AST>
-    = "while" _ e:expr _ s:statement
+    = "while" _ e:expr _ s:then_stmt
     { Box::new(ast::WhileStatement{ expr: e, then: s }) }
 
 for_stmt -> std::boxed::Box<ast::AST>
     = "for" _ id:identifier _ "=" _ from:expr  _
-       dir:("to" { true }/"downto" { false }) _ to:expr step:(_ "step" _ e:expr {e})? _
-       s:statement
+       dir:("to" { true }/"downto" { false }) _ to:expr
+       step:(_ "step" _ e:expr {e})? _
+       s:then_stmt
     {
         Box::new(ast::ForStatement {
             id: id,
@@ -310,8 +316,8 @@ case_stmt -> std::boxed::Box<ast::CaseStatement>
 
 // functions
 function_arguments -> Vec<String>
-    = "(" _ ")" { Vec::new() }
-    / "(" _ fid:identifier lid:(_ "," _ id:identifier { id })* _ ")"
+    = "(" __ ")" { Vec::new() }
+    / "(" __ fid:identifier lid:(__ "," __ id:identifier { id })* __ ")"
     {
         let mut v = vec![fid.to_string()];
         for id in lid { v.push(id.to_string()); }

@@ -59,7 +59,7 @@ pub mod interpreter_tests {
     #[test]
     fn if_stmt() {
         let mut vm : Vm = eval!("
-if 0 y = 1
+if 0 then y = 1
 ");
         assert!(vm.global().get("y").is_none());
     }
@@ -67,7 +67,7 @@ if 0 y = 1
     #[test]
     fn if_else_stmt() {
         let mut vm : Vm = eval!("
-if 0 y = 1
+if 0 then y = 1
 else y = 2
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(2));
@@ -112,7 +112,7 @@ end
     fn break_stmt() {
         let mut vm : Vm = eval!("
 for i=0 to 10 begin
-if i == 5 break
+if i == 5 then break
 end
 ");
         assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(5));
@@ -225,7 +225,7 @@ y = a()
         let mut vm : Vm = eval!("
 y = 0
 function a() begin
-    if $y == 1000 return
+    if $y == 1000 then return
     $y += 1
     return a()
 end

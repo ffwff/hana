@@ -131,7 +131,7 @@ end
     #[test]
     fn if_stmt() {
         let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("
-if 0 1
+if 0 then 1
 ");
         let stmt = cast_box!(progast[0], ast::IfStatement);
         assert_eq!(cast_box!(stmt.expr, ast::IntLiteral).val, 0);
@@ -141,7 +141,7 @@ if 0 1
     #[test]
     fn if_else_stmt() {
         let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("
-if 0 1
+if 0 then 1
 else 2
 ");
         let stmt = cast_box!(progast[0], ast::IfStatement);
@@ -155,7 +155,7 @@ else 2
     #[test]
     fn while_stmt() {
         let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("
-while 0 1
+while 0 then 1
 ");
         let stmt = cast_box!(progast[0], ast::WhileStatement);
         assert_eq!(cast_box!(stmt.expr, ast::IntLiteral).val, 0);
@@ -180,9 +180,9 @@ end
     fn for_stmt_with_if() {
         let progast : Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!(r#"
 for i=0 to 100 begin
-    if i mod 3 == 0 and i mod 5 == 0 print("Fizzbuzz\n")
-    else if i mod 3 == 0 print("Fizz\n")
-    else if i mod 5 == 0 print("Buzz\n")
+    if i mod 3 == 0 and i mod 5 == 0 then print("Fizzbuzz\n")
+    else if i mod 3 == 0 then print("Fizz\n")
+    else if i mod 5 == 0 then print("Buzz\n")
     else print(i, "\n")
 end
 "#);
@@ -252,7 +252,7 @@ end
         parse_ast_statement!("
 function X(y) begin
     if x == 0 begin
-        if x == 0 1
+        if x == 0 then 1
     end
 end
 ");

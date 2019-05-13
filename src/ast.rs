@@ -409,7 +409,11 @@ pub mod ast {
                         c.fill_label16(nslot_label, nslots);
                         c.fill_label(function_end, c.vm.code.len());
 
-                        c.emit_set_var_fn(callexpr.callee.as_any().downcast_ref::<Identifier>().unwrap().val.clone());
+                        let id = &callexpr.callee.as_any().downcast_ref::<Identifier>().unwrap().val;
+                        if id != "_" {
+                            // _ for id is considered a anonymous function decl
+                            c.emit_set_var_fn(id.clone());
+                        }
                     } else {
                         panic!("Invalid left hand side expression!");
                     }
