@@ -195,9 +195,9 @@ impl Vm {
         {
             // NOTE: std::mem::replace causes memory corruption
             // when replacing unallocated stack env with current env
-            use std::ptr::copy;
+            use std::ptr::copy_nonoverlapping;
             let env = Env::new(self.ip, fun.bound, fun.nargs);
-            unsafe { copy(&env, self.localenv, 1); }
+            unsafe { copy_nonoverlapping(&env, self.localenv, 1); }
         }
         self.ip = fun.ip;
     }

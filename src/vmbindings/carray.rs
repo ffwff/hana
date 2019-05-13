@@ -107,7 +107,7 @@ impl<T> CArray<T> {
 
     pub fn top(&self) -> &T {
         if self.len == 0 { panic!("accessing unbounded!"); }
-        unsafe { &(*self.data.add(self.len-1)) }
+        unsafe{ &*self.data.add(self.len - 1) }
     }
 
     // iterator
@@ -122,9 +122,9 @@ impl<T> CArray<T> {
     pub fn insert(&mut self, pos: usize, elem: T) {
         assert!(pos < self.len());
         unsafe {
-            std::ptr::copy(self.data.add(pos),
+            std::ptr::copy_nonoverlapping(self.data.add(pos),
                 self.data.add(pos+1), self.len() - pos);
-            std::ptr::copy(&elem, self.data.add(pos), 1);
+            std::ptr::copy_nonoverlapping(&elem, self.data.add(pos), 1);
         }
         self.len += 1;
     }
@@ -133,7 +133,7 @@ impl<T> CArray<T> {
         assert!(from_pos + nelems < self.len());
         let remaining = self.len - from_pos - nelems;
         unsafe {
-            std::ptr::copy(self.data.add(from_pos+nelems),
+            std::ptr::copy_nonoverlapping(self.data.add(from_pos+nelems),
                 self.data.add(from_pos), remaining);
         }
         self.len -= nelems;
