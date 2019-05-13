@@ -148,8 +148,8 @@ impl fmt::Debug for Value {
             Value::NativeFn(_) => write!(f, "[native fn]"),
             Value::Fn(_)       => write!(f, "[fn]"),
             Value::Str(s)      => write!(f, "{}", s),
-            Value::Record(_)   => write!(f, "[record]"),
-            Value::Array(_)    => write!(f, "[array]"),
+            Value::Record(p)   => write!(f, "[record {:p}]", p),
+            Value::Array(p)    => write!(f, "[array {:p}]", p),
             Value::NativeObj   => write!(f, "[native obj]"),
             _ => write!(f, "[unk]")
         }

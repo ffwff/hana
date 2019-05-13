@@ -7,7 +7,7 @@ use super::gc::{mark_reachable, pin};
 
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
-#[derive(PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum _valueType {
     TYPE_NIL        = 0,
     TYPE_INT        = 1,
@@ -21,7 +21,7 @@ pub enum _valueType {
 }
 
 #[repr(C, packed)]
-#[derive(Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct NativeValue {
     pub data : u64,
     pub r#type : _valueType,

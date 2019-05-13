@@ -285,6 +285,43 @@ end
             _ => false
         });
     }
+
+    #[test]
+    fn record_stmt_constructor() {
+        let mut vm : Vm = eval!("
+record A
+    function constructor(self) begin
+        return self
+    end
+end
+
+a = A()
+");
+        let a = match vm.global().get("a").unwrap().unwrap() {
+            Value::Record(x) => x,
+            _ => panic!("expected record")
+        };
+        assert_eq!(*a.get(&"prototype".to_string()).unwrap(), *vm.global().get("A").unwrap());
+    }
+
+    #[test]
+    fn record_stmt_prototype_method() {
+        let mut vm : Vm = eval!("
+record A
+    function constructor(self) begin
+        return self
+    end
+
+    function test(self) begin
+        return 10
+    end
+end
+
+a = A()
+y = a.test()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
+    }
     // #endregion
 
     // #region array
