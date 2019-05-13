@@ -11,10 +11,6 @@ pub mod hanayo_tests {
     use haru::gc;
     use haru::hanayo;
 
-    // TODO
-    use haru::vmbindings::carray::CArray;
-    use haru::vmbindings::cnativeval::NativeValue;
-
     macro_rules! eval {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();

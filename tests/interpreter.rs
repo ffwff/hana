@@ -12,7 +12,6 @@ pub mod interpreter_tests {
 
     // TODO
     use haru::vmbindings::carray::CArray;
-    use haru::vmbindings::cnativeval::NativeValue;
 
     macro_rules! eval {
         ($x:expr) => {{
@@ -295,7 +294,7 @@ end
 a = []
 ");
         assert!(match vm.global().get("a").unwrap().unwrap() {
-            Value::Array(x) => true,
+            Value::Array(_) => true,
             _ => false
         });
     }

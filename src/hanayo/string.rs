@@ -2,7 +2,7 @@ use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::NativeValue;
 use crate::vm::Value;
-use super::{malloc, drop, pin_start, pin_end};
+use super::{malloc, drop};
 
 fn alloc_free(ptr: *mut libc::c_void) {
     unsafe { drop::<String>(ptr) };

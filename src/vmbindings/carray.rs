@@ -51,7 +51,7 @@ impl<T> CArray<T> {
 
     // to slice
     pub fn as_slice(&self) -> &[T] {
-        unsafe{ std::slice::from_raw_parts(self.data, self.len) }
+        unsafe { std::slice::from_raw_parts(self.data, self.len) }
     }
     pub fn as_slice_mut(&self) -> &mut [T] {
         unsafe { std::slice::from_raw_parts_mut(self.data, self.len) }
@@ -88,16 +88,16 @@ impl<T> CArray<T> {
 
     // stack
     pub fn push(&mut self, val : T) {
-        use std::mem::size_of;
         unsafe {
+            use std::mem::size_of;
             if self.len == self.capacity {
                 self.capacity *= 2;
                 self.data = libc::realloc(self.data as *mut libc::c_void,
                     size_of::<T>()*self.capacity) as *mut T;
             }
             std::ptr::write(self.data.add(self.len), val);
-            self.len += 1;
         }
+        self.len += 1;
     }
 
     pub fn pop(&mut self) {

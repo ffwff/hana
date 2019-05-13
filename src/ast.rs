@@ -82,25 +82,23 @@ pub mod ast {
     impl AST for IntLiteral {
         as_any!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unsafe {
-                let n = std::mem::transmute::<i64, u64>(self.val);
-                match n {
-                0...0xff =>  {
-                        c.vm.code.push(VmOpcode::OP_PUSH8);
-                        c.vm.cpush8(n as u8);
-                    },
-                0x100...0xffff =>  {
-                        c.vm.code.push(VmOpcode::OP_PUSH16);
-                        c.vm.cpush16(n as u16);
-                    },
-                0x10000...0xffffffff =>  {
-                        c.vm.code.push(VmOpcode::OP_PUSH32);
-                        c.vm.cpush32(n as u32);
-                    },
-                _ => {
-                        c.vm.code.push(VmOpcode::OP_PUSH64);
-                        c.vm.cpush64(n);
-                    }
+            let n = unsafe { std::mem::transmute::<i64, u64>(self.val) };
+            match n {
+            0...0xff => {
+                    c.vm.code.push(VmOpcode::OP_PUSH8);
+                    c.vm.cpush8(n as u8);
+                },
+            0x100...0xffff => {
+                    c.vm.code.push(VmOpcode::OP_PUSH16);
+                    c.vm.cpush16(n as u16);
+                },
+            0x10000...0xffffffff =>  {
+                    c.vm.code.push(VmOpcode::OP_PUSH32);
+                    c.vm.cpush32(n as u32);
+                },
+            _ => {
+                    c.vm.code.push(VmOpcode::OP_PUSH64);
+                    c.vm.cpush64(n);
                 }
             }
         }

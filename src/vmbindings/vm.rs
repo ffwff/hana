@@ -8,7 +8,6 @@ use super::record::Record;
 use super::function::Function;
 use super::cnativeval::NativeValue;
 use super::env::Env;
-use super::gc::*;
 pub use super::value::Value;
 
 const CALL_STACK_SIZE : usize = 512;
@@ -193,12 +192,12 @@ impl Vm {
             } { panic!("maximum stack depth exceeded"); }
             self.localenv = unsafe{ self.localenv.add(1) };
         }
-        unsafe {
+        {
             // NOTE: std::mem::replace causes memory corruption
             // when replacing unallocated stack env with current env
             use std::ptr::copy;
             let env = Env::new(self.ip, fun.bound, fun.nargs);
-            copy(&env, self.localenv, 1);
+            unsafe { copy(&env, self.localenv, 1); }
         }
         self.ip = fun.ip;
     }
@@ -233,17 +232,17 @@ impl std::ops::Drop for Vm {
     fn drop(&mut self) {
         unsafe {
             use std::alloc::{dealloc, Layout};
-            use std::mem::{size_of, drop};
+            use std::mem;
 
             if !self.localenv.is_null() {
                 let mut env = self.localenv_bp;
                 while env != self.localenv {
-                    drop(env);
+                    mem::drop(env);
                     env = env.add(1);
                 }
-                drop(self.localenv);
+                mem::drop(self.localenv);
             }
-            let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
+            let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
             vm_free(self);

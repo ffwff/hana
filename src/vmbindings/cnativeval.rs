@@ -1,5 +1,4 @@
 use libc::c_void;
-use super::chmap::CHashMap;
 use super::record::Record;
 use super::function::Function;
 use super::carray::CArray;
