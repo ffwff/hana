@@ -32,6 +32,7 @@ pub fn init(vm : &mut Vm) {
     let mut array : Record = Record::new();
     set_obj_var!(array, "constructor", Value::NativeFn(array::constructor));
     set_obj_var!(array, "length",      Value::NativeFn(array::length));
+    set_obj_var!(array, "insert!",     Value::NativeFn(array::insert_));
     set_obj_var!(array, "delete!",     Value::NativeFn(array::delete_));
     set_obj_var!(array, "push",        Value::NativeFn(array::push));
     set_obj_var!(array, "pop",         Value::NativeFn(array::pop));

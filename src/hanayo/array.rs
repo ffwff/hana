@@ -42,6 +42,12 @@ fn length(array: Value::Array) -> Value {
 }
 
 #[hana_function()]
+fn insert_(array: Value::mut_Array, pos: Value::Int, elem: Value::Any) -> Value {
+    array.insert(pos as usize, elem.wrap());
+    Value::Int(array.len() as i64)
+}
+
+#[hana_function()]
 fn delete_(array: Value::mut_Array, from_pos: Value::Int, nelems: Value::Int) -> Value {
     array.delete(from_pos as usize, nelems as usize);
     Value::Int(array.len() as i64)
@@ -120,9 +126,11 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
     match fun {
         Value::Fn(_) | Value::Record(_) => {
             let mut args = CArray::reserve(1);
+            let mut i = 0;
             for val in array.iter() {
                 args[0] = val.clone();
-                new_array.push(vm.call(fun.wrap(), args.clone()));
+                new_array[i] = vm.call(fun.wrap(), args.clone());
+                i += 1;
             }
             args.drop();
         },
@@ -149,7 +157,7 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
     let fun = vm.stack.top().pin().unwrap();
     vm.stack.pop();
 
-    let mut new_array : CArray<NativeValue> = CArray::reserve(array.len());
+    let mut new_array : CArray<NativeValue> = CArray::new();
     match fun {
         Value::Fn(_) | Value::Record(_) => {
             let mut args = CArray::reserve(1);
@@ -176,6 +184,40 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
 
 pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
     assert_eq!(nargs, 3);
+    let vm = unsafe { &mut *cvm };
+
+    let p = pin_start();
+
+    let array = vm.stack.top().pin().unwrap().array();
+    vm.stack.pop();
+
+    let fun = vm.stack.top().pin().unwrap();
+    vm.stack.pop();
+
+    let mut acc = vm.stack.top().pin().unwrap();
+    vm.stack.pop();
+
+    match fun {
+        Value::Fn(_) | Value::Record(_) => {
+            let mut args = CArray::reserve(2);
+            for val in array.iter() {
+                args[0] = acc.wrap().clone();
+                args[1] = val.clone();
+                unsafe {
+                    acc = vm.call(fun.wrap(), args.clone()).unwrap();
+                }
+            }
+            args.drop();
+        },
+        Value::NativeFn(_) => {
+            unimplemented!();
+        }
+        _ => panic!("expected fn/record/native fn")
+    };
+
+    vm.stack.push(acc.wrap());
+
+    pin_end(p);
 }
 
 // search

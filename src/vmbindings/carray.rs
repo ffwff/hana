@@ -119,6 +119,16 @@ impl<T> CArray<T> {
     }
 
     // other
+    pub fn insert(&mut self, pos: usize, elem: T) {
+        assert!(pos < self.len());
+        unsafe {
+            std::ptr::copy(self.data.add(pos),
+                self.data.add(pos+1), self.len() - pos);
+            std::ptr::copy(&elem, self.data.add(pos), 1);
+        }
+        self.len += 1;
+    }
+
     pub fn delete(&mut self, from_pos : usize, nelems : usize) {
         assert!(from_pos + nelems < self.len());
         let remaining = self.len - from_pos - nelems;
@@ -126,7 +136,7 @@ impl<T> CArray<T> {
             std::ptr::copy(self.data.add(from_pos+nelems),
                 self.data.add(from_pos), remaining);
         }
-        self.len = remaining;
+        self.len -= nelems;
     }
 }
 

@@ -552,6 +552,12 @@ pub mod ast {
             self._emit(c, false);
         }
     }
+    // util for parser
+    pub enum CallExprArm {
+        MemExprIden(std::boxed::Box<AST>),
+        MemExpr(std::boxed::Box<AST>),
+        CallExpr(Vec<std::boxed::Box<AST>>)
+    }
 
     // #region statement
     // ## control flows

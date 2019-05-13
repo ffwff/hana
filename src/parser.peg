@@ -156,23 +156,53 @@ binexpr -> std::boxed::Box<ast::AST>
     / callexpr
 
 callexpr -> std::boxed::Box<ast::AST>
-    = left:memexpr _ "(" _ farg:expr larg:(_ "," _ e:expr { e })* _ ")"
+    = _left:memexpr _ args:callexpr_args _right:callexpr_arm*
+    {
+        let mut left : std::boxed::Box<ast::AST> = Box::new(ast::CallExpr {
+            callee: _left,
+            args: args
+        });
+        for right in _right {
+            match right {
+            ast::CallExprArm::MemExprIden(x) =>
+                left = Box::new(ast::MemExpr {
+                    left: left,
+                    right: x,
+                    is_expr: false }),
+            ast::CallExprArm::MemExpr(x) =>
+                left = Box::new(ast::MemExpr {
+                    left: left,
+                    right: x,
+                    is_expr: true }),
+            ast::CallExprArm::CallExpr(x) =>
+                left = Box::new(ast::CallExpr {
+                    callee: left,
+                    args: x }),
+            };
+        }
+        left
+    }
+    / memexpr
+callexpr_args -> Vec<std::boxed::Box<ast::AST>>
+    = "(" _ farg:expr larg:(_ "," _ e:expr { e })* _ ")"
     {
         let mut args = vec![farg];
         for arg in larg { args.push(arg); }
-        Box::new(ast::CallExpr {
-            callee: left,
-            args: args
-        })
+        args
     }
-    / left:memexpr _ "(" _ ")"
-    {
-        Box::new(ast::CallExpr {
-            callee: left,
-            args: Vec::new()
-        })
+    / "(" _ ")" { vec!() }
+callexpr_arm -> ast::CallExprArm
+    = _ "." _ id:identifier {
+        ast::CallExprArm::MemExprIden(
+            Box::new(ast::Identifier   { val: id }) as std::boxed::Box<ast::AST>) }
+    / _ "[" _ e:expr _ "]" {
+        let is_expr = e.as_any().downcast_ref::<ast::StrLiteral>().is_none();
+        if is_expr { ast::CallExprArm::MemExpr(e) }
+        else { ast::CallExprArm::MemExprIden(e) }
     }
-    / memexpr
+    / _ args:callexpr_args {
+        ast::CallExprArm::CallExpr(args)
+    }
 
 memexpr -> std::boxed::Box<ast::AST>
     = _left:value _right:memexpr_arm+
@@ -187,7 +217,7 @@ memexpr -> std::boxed::Box<ast::AST>
         left
     }
     / value
-memexpr_arm -> (std::boxed::Box<ast::AST>, bool)
+memexpr_arm -> (std::boxed::Box<ast::AST>, bool /* is_expr */)
     = _ "." _ id:identifier {
         (Box::new(ast::Identifier   { val: id }) as std::boxed::Box<ast::AST>,
          false) }

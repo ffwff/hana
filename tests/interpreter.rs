@@ -322,6 +322,16 @@ y = a[0]
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), &"a".to_string());
     }
+
+    #[test]
+    fn array_index_set() {
+        let mut vm : Vm = eval!("
+a = ['a', 'b']
+a[0] = 'x'
+y = a[0]
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), &"x".to_string());
+    }
     // #endregion
 
     // #region string
