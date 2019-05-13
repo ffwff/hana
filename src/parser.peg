@@ -67,7 +67,7 @@ array_expr -> std::boxed::Box<ast::AST>
             exprs: vec![]
         })
     }
-    / "[" __ fexpr:expr lexpr:(__ "," __ e:expr { e })* _ "]"
+    / "[" __ fexpr:expr lexpr:(__ "," __ e:expr { e })* __ "]"
     {
         let mut exprs = vec![fexpr];
         for expr in lexpr { exprs.push(expr); }
@@ -205,7 +205,7 @@ callexpr_arm -> ast::CallExprArm
     }
 
 memexpr -> std::boxed::Box<ast::AST>
-    = _left:value _right:memexpr_arm+
+    = _left:unary_expr _right:memexpr_arm+
     {
         let mut left = _left;
         for right in _right {
@@ -216,7 +216,7 @@ memexpr -> std::boxed::Box<ast::AST>
         }
         left
     }
-    / value
+    / unary_expr
 memexpr_arm -> (std::boxed::Box<ast::AST>, bool /* is_expr */)
     = _ "." _ id:word {
         (Box::new(ast::Identifier   { val: id }) as std::boxed::Box<ast::AST>,

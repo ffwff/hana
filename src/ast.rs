@@ -536,7 +536,20 @@ pub mod ast {
             if let Some(memexpr) = self.callee.as_any().downcast_ref::<MemExpr>() {
                 memexpr._emit(c, true);
                 c.vm.code.push(op);
-                c.vm.cpush16((self.args.len() as u16) + 1);
+
+                let right = memexpr.right.as_any();
+                let is_type: bool = // upper case ids are considered types
+                    if let Some(s) = right.downcast_ref::<StrLiteral>() {
+                        s.val.chars().next().unwrap().is_uppercase() }
+                    else if let Some(s) = right.downcast_ref::<Identifier>() {
+                        s.val.chars().next().unwrap().is_uppercase() }
+                    else { false };
+
+                if is_type {
+                    c.vm.cpush16(self.args.len() as u16);
+                } else {
+                    c.vm.cpush16((self.args.len() as u16) + 1);
+                }
             } else {
                 self.callee.emit(c);
                 c.vm.code.push(op);
