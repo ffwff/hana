@@ -63,7 +63,11 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "copy",        Value::NativeFn(string::copy));
     set_obj_var!(string, "insert!",     Value::NativeFn(string::insert_));
     set_obj_var!(string, "split",       Value::NativeFn(string::split));
-    set_var!("String", Value::Record(unsafe{ &*Box::into_raw(Box::new(string)) }));
+    set_obj_var!(string, "index",       Value::NativeFn(string::index));
+
+    let ptr = Box::into_raw(Box::new(string));
+    set_var!("String", Value::Record(unsafe{ &*ptr }));
+    vm.dstr = ptr;
     }
     // #endregion
 

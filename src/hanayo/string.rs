@@ -93,3 +93,11 @@ fn split(s: Value::Str, delim: Value::Str) -> Value {
     pin_end(p);
     ret
 }
+
+#[hana_function()]
+fn index(s: Value::Str, needle: Value::Str) -> Value {
+    match s.find(needle) {
+        Some(x) => Value::Int(x as i64),
+        None => Value::Int(-1)
+    }
+}

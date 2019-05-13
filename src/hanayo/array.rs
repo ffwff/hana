@@ -238,10 +238,18 @@ fn index(array: Value::Array, elem: Value::Any) -> Value {
 
 // strings
 #[hana_function()]
-fn join(array: Value::Array) -> Value {
+fn join(array: Value::Array, delim: Value::Str) -> Value {
     let mut s = String::new();
-    for val in array.iter() {
-        s += format!("{:?}", val.unwrap()).as_str();
+    if array.len() > 0 {
+        s += format!("{:?}", array[0].unwrap()).as_str();
+    }
+    if array.len() > 1 {
+        let mut i = 1;
+        while i < array.len() {
+            s += delim;
+            s += format!("{:?}", array[i].unwrap()).as_str();
+            i += 1;
+        }
     }
     Value::Str(unsafe { &*malloc(s, |ptr| drop::<String>(ptr)) })
 }

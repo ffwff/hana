@@ -133,4 +133,42 @@ y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)
     }
     // #endregion
 
+    // #region string
+    #[test]
+    fn string_delete() {
+        let mut vm : Vm = eval!("
+s = 'Honest Abe Lincoln'
+y = s.delete(7, 4)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "Honest Lincoln");
+    }
+
+    #[test]
+    fn string_copy() {
+        let mut vm : Vm = eval!("
+s = 'Honest Abe Lincoln'
+y = s.copy(7, 3)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "Abe");
+    }
+
+    #[test]
+    fn string_index() {
+        let mut vm : Vm = eval!("
+s = 'Honest Abe Lincoln'
+y = s.index('Lincoln')
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(11));
+    }
+
+    #[test]
+    fn string_insert() {
+        let mut vm : Vm = eval!("
+s = 'Honest Abe Lincoln'
+s.insert!(0, 'Not So ')
+");
+        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "Not So Honest Abe Lincoln");
+    }
+    // #endregion
+
 }
