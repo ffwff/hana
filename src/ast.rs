@@ -24,6 +24,18 @@ pub mod ast {
         fn span(&self) -> &Span;
         fn emit(&self, c : &mut compiler::Compiler);
     }
+    pub struct AstBox {
+        pub data: std::boxed::Box<AST>,
+        pub start: usize,
+        pub end: usize
+    }
+
+    pub fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
+        let before = &input[..pos];
+        let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
+        let col = before.chars().rev().take_while(|&c| c != '\n').count() + 1;
+        (line, col)
+    }
 
     // # values
     // ## identifier

@@ -9,6 +9,7 @@ build = "build.rs"
 decorator = { path = "./src/decorator/" }
 libc = "0.2.0"
 ansi_term = "0.11"
+codemap = "0.1"
 
 [build-dependencies]
 peg = "0.5"
