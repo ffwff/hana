@@ -234,8 +234,9 @@ impl Vm {
     pub fn raise(&mut self) -> bool {
         if self.exframes.len() == 0 { return false; }
         let val = self.stack.top().unwrap();
-        for i in (self.exframes.len() - 1)..0 {
-            let exframe = &self.exframes[i];
+        let mut i = self.exframes.len();
+        while i != 0 {
+            let exframe = &self.exframes[i-1];
             if let Some(handler) = exframe.get_handler(self, &val) {
                 self.ip = handler.ip;
                 if handler.nargs == 0 {
@@ -243,6 +244,7 @@ impl Vm {
                 }
                 return true;
             }
+            i -= 1;
         }
         false
     }

@@ -4,10 +4,9 @@ use std::ptr::null_mut;
 pub struct CArray<T> {
     // structure for arrays that can be used with c through ffi
     // NOTE: extreme precautions must be taken to use this!!
-    // it doesn't automatically drop <T> for you so be careful!
 
     data: *mut T,
-    // NOTE: this won't be freed using drop because
+    // NOTE: this won't be freed using ops::Drop due to c interop
     // the owner SHOULD automatically call array_free
 
     len: usize,
@@ -47,7 +46,12 @@ impl<T> CArray<T> {
     pub fn drop(&mut self) { // must be called manually
         // this function MUST BE called by its owner
         // for example from array_obj::drop function
-        unsafe{ libc::free(self.data as *mut libc::c_void) };
+        unsafe{
+            for i in 0..self.len {
+                std::ptr::drop_in_place(self.data.add(i));
+            }
+            libc::free(self.data as *mut libc::c_void)
+        };
         self.data = null_mut();
         self.len = 0;
         self.capacity = 0;
@@ -106,7 +110,7 @@ impl<T> CArray<T> {
 
     pub fn pop(&mut self) {
         if self.len == 0 { panic!("popping unbounded!"); }
-        unsafe{ std::ptr::drop_in_place(self.data.add(self.len)); }
+        unsafe{ std::ptr::drop_in_place(self.data.add(self.len-1)); }
         self.len -= 1;
     }
 
@@ -149,6 +153,9 @@ impl<T> CArray<T> {
         assert!(from_pos + nelems < self.len());
         let remaining = self.len - from_pos - nelems;
         unsafe {
+            for i in from_pos..(from_pos+nelems) {
+                std::ptr::drop_in_place(self.data.add(i));
+            }
             std::ptr::copy(self.data.add(from_pos+nelems),
                 self.data.add(from_pos), remaining);
         }

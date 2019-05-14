@@ -859,7 +859,7 @@ pub mod ast {
             for case in &self.cases {
                 // function will take in 1 arg if id is set
                 c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
-                c.vm.cpush16(if case.id.is_none() { 1 } else { 0 });
+                c.vm.cpush16(if case.id.is_some() { 1 } else { 0 });
                 let body_start = c.reserve_label();
                 // id
                 if let Some(id) = &case.id {

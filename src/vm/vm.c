@@ -730,10 +730,10 @@ do { \
     }
     doop(OP_RAISE): {
         vm->ip++;
-        LOG("RAISE");
+        LOG("RAISE\n");
 
         if(!vm_raise(vm)) {
-            FATAL("unhandled exception!");
+            FATAL("unhandled exception!\n");
             /* if(raiseval.type == TYPE_DICT) {
             struct value *val = dict_get_cptr(raiseval.as.dict, "what?");
             if(val != NULL)
@@ -745,13 +745,15 @@ do { \
         dispatch();
     }
     doop(OP_EXFRAME_RET): {
-        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
-                        vm->code.data[vm->ip+1] << 8  |
-                        vm->code.data[vm->ip+2] << 4  |
-                        vm->code.data[vm->ip+3];
-        LOG("FRAME POP %d\n", pos);
+        vm->ip++;
+        const uint32_t pos = vm->code.data[vm->ip + 0] << 12 |
+                             vm->code.data[vm->ip + 1] << 8 |
+                             vm->code.data[vm->ip + 2] << 4 |
+                             vm->code.data[vm->ip + 3];
+        LOG("EXFRAME_RET %d\n", pos);
         vm_leave_exframe(vm);
         vm->ip = pos;
+        dispatch();
     }
 
     // tail calls
