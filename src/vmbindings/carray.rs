@@ -107,7 +107,12 @@ impl<T> CArray<T> {
 
     pub fn top(&self) -> &T {
         if self.len == 0 { panic!("accessing unbounded!"); }
-        unsafe{ &*self.data.add(self.len - 1) }
+        &self[self.len - 1]
+    }
+    pub fn top_mut(&mut self) -> &mut T {
+        if self.len == 0 { panic!("accessing unbounded!"); }
+        let idx = self.len - 1;
+        &mut self[idx]
     }
 
     // iterator

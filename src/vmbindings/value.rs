@@ -33,8 +33,14 @@ pub enum Value {
     mut_Array(*mut CArray<NativeValue>),
 }
 
+extern "C" {
+#[allow(improper_ctypes)]
+fn value_get_prototype(vm: *const Vm, val: NativeValue) -> *const Record;
+}
+
 impl Value {
 
+    // coerce value to type
     pub fn string(&self) -> &'static String {
         match self {
             Value::Str(s) => s,
@@ -49,7 +55,7 @@ impl Value {
         }
     }
 
-    //
+    // wrapper for native
     pub fn wrap(&self) -> NativeValue {
         use std::mem::transmute;
         #[allow(non_camel_case_types)]
@@ -113,6 +119,11 @@ impl Value {
             },
             _ => {}
         }
+    }
+
+    // prototype
+    pub fn get_prototype(&self, vm: *const Vm) -> *const Record {
+        unsafe{ value_get_prototype(vm, self.wrap()) }
     }
 
 }

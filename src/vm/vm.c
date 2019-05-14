@@ -27,7 +27,7 @@ void vm_init(struct vm *vm) {
     vm->localenv = NULL;
     // vm->localenv_bp is owned by rust
     vm->globalenv = hmap_malloc();
-    vm->eframe = NULL;
+    // vm->eframes is owned by rust
     vm->code = (a_uint8)array_init(uint8_t);
     vm->stack = (a_value)array_init(struct value);
     vm->ip = 0;
@@ -36,13 +36,8 @@ void vm_init(struct vm *vm) {
 
 void vm_free(struct vm *vm) {
     // vm->localenv is free'd by rust
+    // vm->eframes is owned by rust
     hmap_free(vm->globalenv);
-    while(vm->eframe != NULL) {
-        struct exception_frame *eframe = vm->eframe->prev;
-        exception_frame_free(vm->eframe);
-        free(vm->eframe);
-        vm->eframe = eframe;
-    }
     array_free(vm->code);
     array_free(vm->stack);
 }
@@ -711,6 +706,7 @@ do { \
     // exceptions
     doop(OP_TRY): {
         // stack: [nil][function][error type]
+        #if 0
         LOG("try\n");
         vm->ip++;
 
@@ -738,11 +734,12 @@ do { \
         array_pop(vm->stack); // pop nil
         exception_frame_init_vm(vm->eframe, vm);
         dispatch();
+        #endif
     }
     doop(OP_RAISE): {
-        LOG("RAISE\n");
         vm->ip++;
 
+        #if 0
         struct value raiseval = array_top(vm->stack);
         array_pop(vm->stack);
 
@@ -768,8 +765,10 @@ do { \
                     val->type == TYPE_STR ? string_data(val->as.str) : "[non-string]");
         } */
         ERROR();
+        #endif
     }
     doop(OP_EXFRAME_RET): {
+        #if 0
         struct exception_frame *eframe = vm->eframe->prev;
         exception_frame_free(vm->eframe);
         free(vm->eframe);
@@ -785,6 +784,7 @@ do { \
         vm->ip = pos;
 
         dispatch();
+        #endif
     }
 
     // tail calls

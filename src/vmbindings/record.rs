@@ -3,6 +3,7 @@ use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
 use super::value::Value;
 
+#[repr(C)]
 pub struct Record {
     data: CHashMap,
     prototype: *const Record

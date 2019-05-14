@@ -6,5 +6,6 @@ pub mod carray;
 pub mod env;
 pub mod gc;
 pub mod function;
+pub mod exframe;
 pub mod foreignc;
 pub mod vm;

@@ -44,14 +44,15 @@ enum vm_opcode {
 
 typedef array(uint8_t) a_uint8;
 typedef array(struct value) a_value;
-struct exception_frame;
+struct eframe;
+typedef array(struct eframe) a_eframe;
 struct hmap;
 
 struct vm {
     uint32_t ip;
     struct env *localenv, *localenv_bp;
     struct hmap *globalenv;
-    struct exception_frame *eframe;
+    a_eframe eframes;
     a_uint8 code;
     a_value stack;
     struct dict *dstr, *dint, *dfloat, *darray;
@@ -62,10 +63,15 @@ void vm_init(struct vm*);
 void vm_free(struct vm*);
 void vm_execute(struct vm*);
 typedef array(struct value) a_arguments;
+
+struct exception_frame *vm_enter_eframe(struct vm *);
+struct exception_frame *vm_raise(struct vm *, const struct value);
+
 struct value vm_call(struct vm *, const struct value, const a_arguments);
 struct env *vm_enter_env(struct vm *, const struct function *);
 struct env *vm_enter_env_tail(struct vm *, const struct function *);
 bool vm_leave_env(struct vm *);
+
 void vm_print_stack(const struct vm*);
 
 void vm_code_push8(struct vm *vm, uint8_t);

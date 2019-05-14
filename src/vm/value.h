@@ -25,10 +25,7 @@ struct string;
 #define TYPE_INTERPRETER_ERROR 127
 
 typedef void (*value_fn)(struct vm *vm, int nargs);
-struct __attribute__((packed)) value
-{
-    // memory efficient packed data structure for storing
-    // dynamically-typed values (patent pending)
+struct value {
     union {
         int64_t integer;
         double floatp;

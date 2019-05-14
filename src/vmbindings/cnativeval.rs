@@ -20,7 +20,7 @@ pub enum _valueType {
     TYPE_NATIVE_OBJ = 8,
 }
 
-#[repr(C, packed)]
+#[repr(C)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct NativeValue {
     pub data : u64,

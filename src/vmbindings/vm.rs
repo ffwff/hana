@@ -7,6 +7,7 @@ use super::chmap::CHashMap;
 use super::record::Record;
 use super::function::Function;
 use super::cnativeval::NativeValue;
+use super::exframe::ExFrame;
 use super::env::Env;
 pub use super::value::Value;
 
@@ -59,7 +60,7 @@ pub struct Vm {
     pub globalenv : *mut CHashMap,
     // global environment, all unscoped variables/variables
     // starting with '$' should be stored here
-    eframe        : *mut u8, // exception frame (TODO)
+    pub eframes   : CArray<ExFrame>, // exception frame
     pub code      : CArray<VmOpcode>, // where all the code is
     pub stack     : CArray<NativeValue>, // stack
 
@@ -106,7 +107,7 @@ impl Vm {
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
             globalenv: null_mut(),
-            eframe: null_mut(),
+            eframes: CArray::new(),
             code: CArray::new_nil(),
             stack: CArray::new_nil(),
             dstr: null_mut(),
@@ -222,6 +223,10 @@ impl Vm {
         }
     }
 
+    // exceptions
+    pub fn raise(&mut self, val: Value) {
+    }
+
     // functions
     pub fn call(&mut self, fun: NativeValue, args: CArray<NativeValue>) -> NativeValue {
         unsafe{ vm_call(self, fun, args) }
@@ -244,6 +249,8 @@ impl std::ops::Drop for Vm {
             }
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
+
+            self.eframes.drop();
 
             vm_free(self);
 

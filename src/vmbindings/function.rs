@@ -3,6 +3,7 @@ use std::ptr::null_mut;
 
 // functions
 #[repr(C)]
+#[derive(Clone)]
 pub struct Function {
     pub ip: u32, // instruction pointer
     pub nargs : u16, // number of args
