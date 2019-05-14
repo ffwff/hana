@@ -21,8 +21,8 @@ string_literal_char_single -> String
     = s:$([^']) { s.to_owned() }
     / string_literal_escape
 string_literal -> String
-    = "\"" s:string_literal_char* "\"" { s.join("") }
-    / "'" s:string_literal_char_single* "'" { s.join("") }
+    = #quiet<"\"" s:string_literal_char* "\"" { s.join("") }>
+    / #quiet<"'" s:string_literal_char_single* "'" { s.join("") }>
     / #expected("string literal")
 
 id_start -> String
@@ -38,7 +38,8 @@ keyword
       "try" / "case" / "as" / "raise" / "in" /
       "function" / "return" / "record" / "not") !id_chars
 identifier -> String
-    = !keyword w:$(word) { w.to_string() }
+    = #quiet<!keyword w:$(word) { w.to_string() }>
+    / #expected("identifier")
 
 single_line_comment = "//" [^\n]*
 multiline_comment = "/*" (!"*/" .)* "*/"
@@ -58,16 +59,16 @@ value -> std::boxed::Box<ast::AST>
     / s:int_literal     { Box::new(ast::IntLiteral   { val: s.parse::<i64>().unwrap() }) }
     / s:string_literal  { Box::new(ast::StrLiteral::new(&s)) }
     / array_expr / record_expr / function_expr
-    / "(" __ e:expr __ ")" { e }
+    / #quiet<"(" __ e:expr __ ")" { e }>
 
 array_expr -> std::boxed::Box<ast::AST>
-    = "[" __ "]"
+    = #quiet<"[" __ "]">
     {
         Box::new(ast::ArrayExpr {
             exprs: vec![]
         })
     }
-    / "[" __ fexpr:expr lexpr:(__ "," __ e:expr { e })* __ "]"
+    / #quiet<"["> __ fexpr:expr lexpr:(__ "," __ e:expr { e })* __ "]"
     {
         let mut exprs = vec![fexpr];
         for expr in lexpr { exprs.push(expr); }
@@ -75,9 +76,10 @@ array_expr -> std::boxed::Box<ast::AST>
             exprs: exprs
         })
     }
+    / #expected("array literal")
 
 unary_expr -> std::boxed::Box<ast::AST>
-    = op:$("not" / "-") _ val:value
+    = #quiet<op:$("not" / "-") _ val:value
     {
         Box::new(ast::UnaryExpr {
             op: match op {
@@ -87,7 +89,7 @@ unary_expr -> std::boxed::Box<ast::AST>
             },
             val: val
         })
-    }
+    }>
     / value
 
 record_expr -> std::boxed::Box<ast::AST>
@@ -249,6 +251,7 @@ statement -> std::boxed::Box<ast::AST>
 block_stmt -> std::boxed::Box<ast::AST>
     = "begin" eos s:(statement*) _ "end"
     { Box::new(ast::BlockStatement{ stmts: s }) }
+    / #expected("block statement")
 
 // control flows
 then_stmt -> std::boxed::Box<ast::AST>
@@ -367,7 +370,6 @@ record_stmt -> std::boxed::Box<ast::AST>
             stmts: s
         }))
     }
-
 
 // expressions
 expr_stmt -> std::boxed::Box<ast::AST>
