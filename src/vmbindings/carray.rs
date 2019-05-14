@@ -125,11 +125,17 @@ impl<T> CArray<T> {
 
     // other
     pub fn insert(&mut self, pos: usize, elem: T) {
-        assert!(pos < self.len());
+        assert!(pos+1 < self.len);
         unsafe {
-            std::ptr::copy_nonoverlapping(self.data.add(pos),
-                self.data.add(pos+1), self.len() - pos);
-            std::ptr::copy_nonoverlapping(&elem, self.data.add(pos), 1);
+            use std::mem::size_of;
+            if self.len+1 >= self.capacity {
+                self.capacity *= 2;
+                self.data = libc::realloc(self.data as *mut libc::c_void,
+                    size_of::<T>()*self.capacity) as *mut T;
+            }
+            std::ptr::copy(self.data.add(pos),
+                self.data.add(pos+1), self.len - pos);
+            std::ptr::copy(&elem, self.data.add(pos), 1);
         }
         self.len += 1;
     }
@@ -138,7 +144,7 @@ impl<T> CArray<T> {
         assert!(from_pos + nelems < self.len());
         let remaining = self.len - from_pos - nelems;
         unsafe {
-            std::ptr::copy_nonoverlapping(self.data.add(from_pos+nelems),
+            std::ptr::copy(self.data.add(from_pos+nelems),
                 self.data.add(from_pos), remaining);
         }
         self.len -= nelems;
