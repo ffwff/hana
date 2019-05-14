@@ -2,6 +2,10 @@ use std::ptr::null_mut;
 
 #[repr(C)]
 pub struct CArray<T> {
+    // structure for arrays that can be used with c through ffi
+    // NOTE: extreme precautions must be taken to use this!!
+    // it doesn't automatically drop <T> for you so be careful!
+
     data: *mut T,
     // NOTE: this won't be freed using drop because
     // the owner SHOULD automatically call array_free
@@ -102,6 +106,7 @@ impl<T> CArray<T> {
 
     pub fn pop(&mut self) {
         if self.len == 0 { panic!("popping unbounded!"); }
+        unsafe{ std::ptr::drop_in_place(self.data.add(self.len)); }
         self.len -= 1;
     }
 

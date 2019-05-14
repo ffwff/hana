@@ -35,7 +35,7 @@ word -> String
 keyword
     = ("and" / "or" / "not" / "mod" / "begin" / "end" / "then" / "if" / "else" /
       "while" / "for" / "to" / "downto" / "step" / "continue" / "break" /
-      "try" / "case" / "as" / "in" /
+      "try" / "case" / "as" / "raise" / "in" /
       "function" / "return" / "record" / "not") !id_chars
 identifier -> String
     = !keyword w:$(word) { w.to_string() }
@@ -238,6 +238,7 @@ statement_no_eos -> std::boxed::Box<ast::AST>
     / continue_stmt
     / break_stmt
     / try_stmt
+    / raise_stmt
     / expr_stmt
 
 statement -> std::boxed::Box<ast::AST>
@@ -283,27 +284,26 @@ for_stmt -> std::boxed::Box<ast::AST>
     }
 
 continue_stmt -> std::boxed::Box<ast::AST>
-    = "continue" eos
+    = "continue"
     {
         Box::new(ast::ContinueStatement {})
     }
 
 break_stmt -> std::boxed::Box<ast::AST>
-    = "break" eos
+    = "break"
     {
         Box::new(ast::BreakStatement {})
     }
 
 // exceptions
 try_stmt -> std::boxed::Box<ast::AST>
-    = "try" eos stmts:(statement*) cases:(case_stmt*) "end" eos
+    = "try" eos stmts:(statement*) cases:(case_stmt*) "end"
     {
         Box::new(ast::TryStatement {
             stmts: stmts,
             cases: cases
         })
     }
-
 case_stmt -> std::boxed::Box<ast::CaseStatement>
     = "case" _ etype:expr id:(_ "as" _ t:expr { t })? eos stmts:statement*
     {
@@ -311,6 +311,14 @@ case_stmt -> std::boxed::Box<ast::CaseStatement>
             etype: etype,
             id: id,
             stmts: stmts
+        })
+    }
+
+raise_stmt -> std::boxed::Box<ast::AST>
+    = "raise" _ expr:expr
+    {
+        Box::new(ast::RaiseStatement {
+            expr: expr
         })
     }
 

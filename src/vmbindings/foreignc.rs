@@ -264,9 +264,9 @@ pub unsafe extern "C" fn vm_leave_exframe(cvm: *mut Vm) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn vm_raise(cvm: *mut Vm, val: NativeValue) -> bool {
+pub unsafe extern "C" fn vm_raise(cvm: *mut Vm) -> bool {
     let vm = &mut *cvm;
-    vm.raise(val.unwrap())
+    vm.raise()
 }
 // #endregion
 

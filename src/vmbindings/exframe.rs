@@ -25,7 +25,7 @@ impl ExFrame {
         self.handlers.insert(rec, fun);
     }
 
-    pub fn get_handler(&self, vm: *const Vm, val: Value)
+    pub fn get_handler(&self, vm: *const Vm, val: &Value)
         -> Option<&Function> {
         let rec = val.get_prototype(vm);
         self.handlers.get(&rec)

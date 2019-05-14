@@ -252,6 +252,43 @@ end
     }
     // #endregion
 
+    // #region exceptions
+    #[test]
+    fn try_stmt_simple() {
+        let mut vm : Vm = eval!("
+try
+    y = 10
+end
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
+    }
+
+    #[test]
+    fn try_stmt_unhandled_raise() {
+        let vm : Vm = eval!("
+raise 0
+");
+        assert!(vm.error);
+    }
+
+    #[test]
+    fn try_stmt_handled_raise() {
+        let mut vm : Vm = eval!("
+record A
+    function constructor(self) begin
+        return self
+    end
+end
+try
+    raise A()
+case A
+    y = 10
+end
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
+    }
+    // #endregion
+
     // #region record
     #[test]
     fn record_stmt_simple() {

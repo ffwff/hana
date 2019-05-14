@@ -66,7 +66,7 @@ typedef array(struct value) a_arguments;
 
 struct exframe *vm_enter_exframe(struct vm *);
 bool vm_leave_exframe(struct vm *);
-bool vm_raise(struct vm *, const struct value);
+bool vm_raise(struct vm *);
 
 struct value vm_call(struct vm *, const struct value, const a_arguments);
 struct env *vm_enter_env(struct vm *, const struct function *);

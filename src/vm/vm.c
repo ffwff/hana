@@ -706,7 +706,7 @@ do { \
     // exceptions
     doop(OP_TRY): {
         // stack: [nil][function][error type]
-        LOG("try\n");
+        LOG("TRY\n");
         vm->ip++;
 
         struct exframe *frame = vm_enter_exframe(vm);
@@ -730,10 +730,9 @@ do { \
     }
     doop(OP_RAISE): {
         vm->ip++;
+        LOG("RAISE");
 
-        struct value raiseval = array_top(vm->stack);
-        array_pop(vm->stack);
-        if(!vm_raise(vm, raiseval)) {
+        if(!vm_raise(vm)) {
             FATAL("unhandled exception!");
             /* if(raiseval.type == TYPE_DICT) {
             struct value *val = dict_get_cptr(raiseval.as.dict, "what?");
