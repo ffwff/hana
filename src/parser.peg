@@ -247,6 +247,17 @@ statement -> std::boxed::Box<ast::AST>
     = __ s:statement_no_eos __ { s }
     / #expected("statement")
 
+// # statements
+spanned<inner>
+    = start:#position node:inner end:#position
+    {
+        ast::AstBox {
+            data: Box::new(node),
+            start: start,
+            end: end
+        }
+    }
+
 // block
 block_stmt -> std::boxed::Box<ast::AST>
     = "begin" eos s:(statement*) _ "end"
