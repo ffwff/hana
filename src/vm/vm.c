@@ -706,14 +706,10 @@ do { \
     // exceptions
     doop(OP_TRY): {
         // stack: [nil][function][error type]
-        #if 0
         LOG("try\n");
         vm->ip++;
 
-        struct exception_frame *parent = vm->eframe;
-        vm->eframe = malloc(sizeof(struct exception_frame));
-        exception_frame_init(vm->eframe, parent);
-
+        struct exframe *frame = vm_enter_exframe(vm);
         struct value error = {0};
         while((error = array_top(vm->stack)).type != TYPE_NIL) {
             // error type
@@ -724,67 +720,39 @@ do { \
             array_pop(vm->stack);
             // val
             struct value fn = array_top(vm->stack);
+            debug_assert(fn.type == TYPE_FN);
             array_pop(vm->stack);
-            struct exception_frame_data data = {
-                .etype = error,
-                .fn = fn
-            };
-            array_push(vm->eframe->handlers, data);
+            exframe_set_handler(frame, error.as.dict, fn.as.ifn);
         }
         array_pop(vm->stack); // pop nil
-        exception_frame_init_vm(vm->eframe, vm);
+
         dispatch();
-        #endif
     }
     doop(OP_RAISE): {
         vm->ip++;
 
-        #if 0
         struct value raiseval = array_top(vm->stack);
         array_pop(vm->stack);
-
-        // search eframes for exact handler
-        for(struct exception_frame *eframe = vm->eframe;
-            eframe != NULL; eframe = eframe->prev) {
-            struct value *val = exception_frame_get_handler_for_error(eframe, vm, &raiseval);
-            if(val != NULL) {
-                debug_assert(val->type == TYPE_FN);
-                // unwind & jump to exception handler
-                exception_frame_unwind(eframe, vm);
-                array_push(vm->stack, raiseval);
-                vm->ip = val->as.ifn->ip;
-                dispatch();
-            }
-        }
-
-        FATAL("unhandled exception!");
-        /* if(raiseval.type == TYPE_DICT) {
+        if(!vm_raise(vm, raiseval)) {
+            FATAL("unhandled exception!");
+            /* if(raiseval.type == TYPE_DICT) {
             struct value *val = dict_get_cptr(raiseval.as.dict, "what?");
             if(val != NULL)
                 FATAL(" (what? => %s)\n",
                     val->type == TYPE_STR ? string_data(val->as.str) : "[non-string]");
-        } */
-        ERROR();
-        #endif
+            } */
+            ERROR();
+        }
+        dispatch();
     }
     doop(OP_EXFRAME_RET): {
-        #if 0
-        struct exception_frame *eframe = vm->eframe->prev;
-        exception_frame_free(vm->eframe);
-        free(vm->eframe);
-        vm->eframe = eframe;
-
-        vm->ip++;
-
         const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
                         vm->code.data[vm->ip+1] << 8  |
                         vm->code.data[vm->ip+2] << 4  |
                         vm->code.data[vm->ip+3];
         LOG("FRAME POP %d\n", pos);
+        vm_leave_exframe(vm);
         vm->ip = pos;
-
-        dispatch();
-        #endif
     }
 
     // tail calls

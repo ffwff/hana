@@ -8,8 +8,9 @@ extern "C" {
 
 struct dict;
 struct function;
+struct exframe;
 
-void eframe_set_handler(struct eframe *frame, const struct dict *proto, const struct function *fn);
+void exframe_set_handler(struct exframe *frame, const struct dict *proto, const struct function *fn);
 
 #ifdef __cplusplus
 }

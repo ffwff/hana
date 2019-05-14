@@ -60,7 +60,7 @@ pub struct Vm {
     pub globalenv : *mut CHashMap,
     // global environment, all unscoped variables/variables
     // starting with '$' should be stored here
-    pub eframes   : CArray<ExFrame>, // exception frame
+    pub exframes  : CArray<ExFrame>, // exception frame
     pub code      : CArray<VmOpcode>, // where all the code is
     pub stack     : CArray<NativeValue>, // stack
 
@@ -107,7 +107,7 @@ impl Vm {
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
             globalenv: null_mut(),
-            eframes: CArray::new(),
+            exframes: CArray::new(),
             code: CArray::new_nil(),
             stack: CArray::new_nil(),
             dstr: null_mut(),
@@ -224,7 +224,15 @@ impl Vm {
     }
 
     // exceptions
-    pub fn raise(&mut self, val: Value) {
+    pub fn enter_exframe(&mut self) -> &mut ExFrame {
+        self.exframes.push(ExFrame::new(self.localenv, self.stack.len()-1));
+        self.exframes.top_mut()
+    }
+    pub fn leave_exframe(&mut self) {
+        self.exframes.pop();
+    }
+    pub fn raise(&mut self, val: Value) -> bool {
+        false
     }
 
     // functions
@@ -250,7 +258,7 @@ impl std::ops::Drop for Vm {
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
-            self.eframes.drop();
+            //self.exframes.drop();
 
             vm_free(self);
 

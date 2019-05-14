@@ -246,22 +246,27 @@ pub unsafe extern "C" fn vm_leave_env(selfptr: *mut Vm) -> bool {
 
 // #region exceptions
 #[no_mangle]
-pub unsafe extern "C" fn eframe_set_handler(selfptr: *mut ExFrame, proto: *const Record, fun: *const Function) {
+pub unsafe extern "C" fn exframe_set_handler(selfptr: *mut ExFrame, proto: *const Record, fun: *const Function) {
     let exframe = &mut *selfptr;
     exframe.set_handler(proto, (*fun).clone());
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn vm_enter_eframe(cvm: *mut Vm) -> *mut ExFrame {
+pub unsafe extern "C" fn vm_enter_exframe(cvm: *mut Vm) -> *mut ExFrame {
     let vm = &mut *cvm;
-    vm.eframes.push(ExFrame::new(vm.localenv, vm.stack.len()-1));
-    vm.eframes.top_mut()
+    vm.enter_exframe()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn vm_raise(cvm: *mut Vm, val: NativeValue) {
+pub unsafe extern "C" fn vm_leave_exframe(cvm: *mut Vm) {
     let vm = &mut *cvm;
-    vm.raise(val.unwrap());
+    vm.leave_exframe()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn vm_raise(cvm: *mut Vm, val: NativeValue) -> bool {
+    let vm = &mut *cvm;
+    vm.raise(val.unwrap())
 }
 // #endregion
 
