@@ -729,7 +729,6 @@ do { \
         dispatch();
     }
     doop(OP_RAISE): {
-        vm->ip++;
         LOG("RAISE\n");
 
         if(!vm_raise(vm)) {
@@ -742,6 +741,8 @@ do { \
             } */
             ERROR();
         }
+
+        vm->ip++;
         dispatch();
     }
     doop(OP_EXFRAME_RET): {

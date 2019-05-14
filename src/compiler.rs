@@ -17,9 +17,16 @@ struct LoopStatement {
 }
 
 // public
+pub type ArrayIndexRange = (usize, usize);
+pub struct SourceMap {
+    pub file: ArrayIndexRange,
+    pub bytecode: ArrayIndexRange,
+}
+
 pub struct Compiler {
     scopes : Vec<Scope>,
     loop_stmts : Vec<LoopStatement>,
+    pub smap: Vec<SourceMap>,
     pub vm : Vm
 }
 impl Compiler {
@@ -27,6 +34,7 @@ impl Compiler {
         Compiler{
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
+            smap: Vec::new(),
             vm: Vm::new()
         }
     }
@@ -176,5 +184,22 @@ impl Compiler {
         for label in ls.fill_break {
             self.fill_label(label, end_pos);
         }
+    }
+
+    // source map
+    pub fn lookup_smap(&self, bc_idx: usize) -> Option<&SourceMap> {
+        // TODO: fix this and maybe use binary search?
+        eprintln!("{} {}", bc_idx, self.smap.len());
+        let mut last_found : Option<&SourceMap> = None;
+        for smap in self.smap.iter() {
+            let contains = (smap.bytecode.0..=smap.bytecode.1).contains(&bc_idx);
+            eprintln!("{:?} {:?}", smap.file, smap.bytecode);
+            if contains {
+                last_found = Some(smap);
+            } else if last_found.is_some() && !contains {
+                return last_found;
+            }
+        }
+        None
     }
 }
