@@ -5,7 +5,7 @@
 #[macro_use] pub extern crate decorator;
 
 pub mod compiler;
-pub mod ast;
+#[macro_use] pub mod ast;
 pub mod hanayo;
 pub mod vmbindings; // TODO
 pub use vmbindings::gc;

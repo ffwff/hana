@@ -9,7 +9,7 @@ extern crate ansi_term;
 use ansi_term::Color as ac;
 
 pub mod compiler;
-pub mod ast;
+#[macro_use] pub mod ast;
 mod vmbindings;
 pub use vmbindings::vm;
 pub use vmbindings::vm::VmOpcode;

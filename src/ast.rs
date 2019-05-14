@@ -9,18 +9,26 @@ pub mod ast {
     use super::compiler;
     use super::VmOpcode;
 
-    macro_rules! as_any {
-        () => (fn as_any(&self) -> &dyn Any { self });
+    // #region macros
+    macro_rules! ast_impl {
+        () => (
+            fn as_any(&self) -> &dyn Any { self }
+            fn span(&self) -> &Span { &self._span }
+        );
     }
+    // #endregion
 
+    pub type Span = (usize, usize);
     pub trait AST : fmt::Debug {
         fn as_any(&self) -> &dyn Any;
+        fn span(&self) -> &Span;
         fn emit(&self, c : &mut compiler::Compiler);
     }
 
     // # values
     // ## identifier
     pub struct Identifier {
+        pub _span : Span,
         pub val : String
     }
     impl fmt::Debug for Identifier {
@@ -29,18 +37,19 @@ pub mod ast {
         }
     }
     impl AST for Identifier {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             c.emit_get_var(self.val.clone());
         }
     }
     // ## strings
     pub struct StrLiteral {
+        pub _span : Span,
         pub val : String,
         rawval : String
     }
     impl StrLiteral {
-        pub fn new(str : &String) -> StrLiteral {
+        pub fn new(str : &String, span: Span) -> StrLiteral {
             let mut s = "".to_string();
             let mut chars = str.chars();
             while let Some(c) = chars.next() {
@@ -55,7 +64,7 @@ pub mod ast {
                     s += &c.to_string();
                 }
             }
-            StrLiteral { val: s, rawval: str.clone() }
+            StrLiteral { _span: span, val: s, rawval: str.clone() }
         }
     }
     impl fmt::Debug for StrLiteral {
@@ -64,7 +73,7 @@ pub mod ast {
         }
     }
     impl AST for StrLiteral {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             c.vm.code.push(VmOpcode::OP_PUSHSTR);
             c.vm.cpushs(self.val.clone());
@@ -72,6 +81,7 @@ pub mod ast {
     }
     // ## ints
     pub struct IntLiteral {
+        pub _span : Span,
         pub val : i64
     }
     impl fmt::Debug for IntLiteral {
@@ -80,7 +90,7 @@ pub mod ast {
         }
     }
     impl AST for IntLiteral {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             let n = unsafe { std::mem::transmute::<i64, u64>(self.val) };
             match n {
@@ -105,6 +115,7 @@ pub mod ast {
     }
     // ## floats
     pub struct FloatLiteral {
+        pub _span : Span,
         pub val : f64
     }
     impl fmt::Debug for FloatLiteral {
@@ -113,7 +124,7 @@ pub mod ast {
         }
     }
     impl AST for FloatLiteral {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             c.vm.code.push(VmOpcode::OP_PUSH64);
             c.vm.cpushf64(self.val);
@@ -121,6 +132,7 @@ pub mod ast {
     }
     // ## arrays
     pub struct ArrayExpr {
+        pub _span : Span,
         pub exprs : Vec<std::boxed::Box<AST>>
     }
     impl fmt::Debug for ArrayExpr {
@@ -129,7 +141,7 @@ pub mod ast {
         }
     }
     impl AST for ArrayExpr {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             for expr in &self.exprs { expr.emit(c); }
             c.vm.code.push(VmOpcode::OP_PUSH64);
@@ -139,6 +151,7 @@ pub mod ast {
     }
     // ### fn def
     pub struct FunctionDefinition {
+        pub _span : Span,
         pub id : Option<String>,
         pub args : Vec<String>,
         pub stmt : std::boxed::Box<AST>,
@@ -159,7 +172,7 @@ pub mod ast {
         }
     }
     impl AST for FunctionDefinition {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             // definition
             c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
@@ -196,6 +209,7 @@ pub mod ast {
     }
     // ### record def
     pub struct RecordDefinition {
+        pub _span : Span,
         pub id : Option<String>,
         pub stmts : Vec<std::boxed::Box<AST>>,
     }
@@ -205,7 +219,7 @@ pub mod ast {
         }
     }
     impl AST for RecordDefinition {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             c.vm.code.push(VmOpcode::OP_PUSH_NIL);
             for stmt in &self.stmts {
@@ -237,6 +251,7 @@ pub mod ast {
         Not, Neg
     }
     pub struct UnaryExpr {
+        pub _span : Span,
         pub op : UnaryOp,
         pub val : std::boxed::Box<AST>,
     }
@@ -246,13 +261,14 @@ pub mod ast {
         }
     }
     impl AST for UnaryExpr {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             unimplemented!()
         }
     }
     // ## cond expr
     pub struct CondExpr {
+        pub _span : Span,
         pub cond : std::boxed::Box<AST>,
         pub then : std::boxed::Box<AST>,
         pub alt  : std::boxed::Box<AST>,
@@ -304,7 +320,7 @@ pub mod ast {
         }
     }
     impl AST for CondExpr {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             self._emit(c, false)
         }
@@ -318,6 +334,7 @@ pub mod ast {
         Assign, Adds, Subs, Muls, Divs, Mods,
     }
     pub struct BinExpr {
+        pub _span : Span,
         pub left : std::boxed::Box<AST>,
         pub right : std::boxed::Box<AST>,
         pub op: BinOp,
@@ -338,7 +355,7 @@ pub mod ast {
         }
     }
     impl AST for BinExpr {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             macro_rules! arithop_do {
                 ($x:expr) => {{
@@ -481,6 +498,7 @@ pub mod ast {
 
     // ## member expr
     pub struct MemExpr {
+        pub _span : Span,
         pub left : std::boxed::Box<AST>,
         pub right : std::boxed::Box<AST>,
         pub is_expr: bool,
@@ -515,7 +533,7 @@ pub mod ast {
         }
     }
     impl AST for MemExpr {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             self._emit(c, false)
         }
@@ -523,6 +541,7 @@ pub mod ast {
 
     // ## call expr
     pub struct CallExpr {
+        pub _span : Span,
         pub callee : std::boxed::Box<AST>,
         pub args : Vec<std::boxed::Box<AST>>,
     }
@@ -562,7 +581,7 @@ pub mod ast {
         }
     }
     impl AST for CallExpr {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
             self._emit(c, false);
         }
@@ -578,6 +597,7 @@ pub mod ast {
     // ## control flows
     // ### if
     pub struct IfStatement {
+        pub _span : Span,
         pub expr : std::boxed::Box<AST>,
         pub then : std::boxed::Box<AST>,
         pub alt  : Option<std::boxed::Box<AST>>,
@@ -596,7 +616,7 @@ pub mod ast {
         }
     }
     impl AST for IfStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             // Pseudo code of the generated bytecode
             //   [condition]
@@ -623,6 +643,7 @@ pub mod ast {
 
     // ### while
     pub struct WhileStatement {
+        pub _span : Span,
         pub expr : std::boxed::Box<AST>,
         pub then : std::boxed::Box<AST>,
     }
@@ -633,7 +654,7 @@ pub mod ast {
         }
     }
     impl AST for WhileStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             // pseudocode of generated bytecode:
             //   begin: jmp condition
@@ -660,6 +681,7 @@ pub mod ast {
 
     // ### for
     pub struct ForStatement {
+        pub _span : Span,
         pub id   : String,
         pub from : std::boxed::Box<AST>,
         pub to   : std::boxed::Box<AST>,
@@ -681,7 +703,7 @@ pub mod ast {
         }
     }
     impl AST for ForStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             // pseudocode of generated bytecode:
             //   [start]
@@ -730,6 +752,7 @@ pub mod ast {
     }
     // ### continue statement
     pub struct ContinueStatement {
+        pub _span : Span,
     }
     impl fmt::Debug for ContinueStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -737,7 +760,7 @@ pub mod ast {
         }
     }
     impl AST for ContinueStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             c.vm.code.push(VmOpcode::OP_JMP);
             c.loop_continue();
@@ -745,6 +768,7 @@ pub mod ast {
     }
     // ### break
     pub struct BreakStatement {
+        pub _span : Span,
     }
     impl fmt::Debug for BreakStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -752,7 +776,7 @@ pub mod ast {
         }
     }
     impl AST for BreakStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             c.vm.code.push(VmOpcode::OP_JMP);
             c.loop_break();
@@ -761,14 +785,17 @@ pub mod ast {
 
     // ## other
     // #### fn
-    pub struct FunctionStatement(FunctionDefinition);
+    pub struct FunctionStatement {
+        pub _span : Span,
+        def: FunctionDefinition
+    }
     impl FunctionStatement {
-        pub fn new(def : FunctionDefinition) -> FunctionStatement {
-            FunctionStatement(def)
+        pub fn new(def : FunctionDefinition, span: Span) -> FunctionStatement {
+            FunctionStatement { _span: span, def: def }
         }
 
         pub fn def(&self) -> &FunctionDefinition {
-            &self.0
+            &self.def
         }
     }
     impl fmt::Debug for FunctionStatement {
@@ -777,17 +804,18 @@ pub mod ast {
         }
     }
     impl AST for FunctionStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            self.0.emit(c);
+            self.def.emit(c);
 
             // set var
-            c.emit_set_var_fn(self.0.id.as_ref().unwrap().clone());
+            c.emit_set_var_fn(self.def.id.as_ref().unwrap().clone());
             c.vm.code.push(VmOpcode::OP_POP);
         }
     }
     // #### return
     pub struct ReturnStatement {
+        pub _span : Span,
         pub expr : Option<std::boxed::Box<AST>>,
     }
     impl fmt::Debug for ReturnStatement {
@@ -796,7 +824,7 @@ pub mod ast {
         }
     }
     impl AST for ReturnStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             match &self.expr {
                 Some(expr) => {
@@ -815,14 +843,17 @@ pub mod ast {
     }
 
     // ### record statement
-    pub struct RecordStatement(RecordDefinition);
+    pub struct RecordStatement {
+        pub _span : Span,
+        def: RecordDefinition
+    }
     impl RecordStatement {
-        pub fn new(def : RecordDefinition) -> RecordStatement {
-            RecordStatement(def)
+        pub fn new(def : RecordDefinition, span: Span) -> RecordStatement {
+            RecordStatement { _span: span, def: def }
         }
 
         pub fn def(&self) -> &RecordDefinition {
-            &self.0
+            &self.def
         }
     }
     impl fmt::Debug for RecordStatement {
@@ -831,18 +862,19 @@ pub mod ast {
         }
     }
     impl AST for RecordStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            self.0.emit(c);
+            self.def.emit(c);
 
             // set var
-            c.emit_set_var(self.0.id.as_ref().unwrap().clone());
+            c.emit_set_var(self.def.id.as_ref().unwrap().clone());
             c.vm.code.push(VmOpcode::OP_POP);
         }
     }
 
     // ### try
     pub struct TryStatement {
+        pub _span : Span,
         pub stmts : Vec<std::boxed::Box<AST>>,
         pub cases : Vec<std::boxed::Box<CaseStatement>>,
     }
@@ -852,7 +884,7 @@ pub mod ast {
         }
     }
     impl AST for TryStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             c.vm.code.push(VmOpcode::OP_PUSH_NIL);
             let mut cases_to_fill : Vec<usize> = Vec::new();
@@ -890,6 +922,7 @@ pub mod ast {
     }
     // #### case
     pub struct CaseStatement {
+        pub _span : Span,
         pub etype : std::boxed::Box<AST>,
         pub id    : Option<std::boxed::Box<AST>>,
         pub stmts : Vec<std::boxed::Box<AST>>,
@@ -900,7 +933,7 @@ pub mod ast {
         }
     }
     impl AST for CaseStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             // this is already generated by try statement
             unreachable!()
@@ -908,6 +941,7 @@ pub mod ast {
     }
     // #### raise
     pub struct RaiseStatement {
+        pub _span : Span,
         pub expr : std::boxed::Box<AST>,
     }
     impl fmt::Debug for RaiseStatement {
@@ -916,7 +950,7 @@ pub mod ast {
         }
     }
     impl AST for RaiseStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             self.expr.emit(c);
             c.vm.code.push(VmOpcode::OP_RAISE);
@@ -925,6 +959,7 @@ pub mod ast {
 
     // ### expr
     pub struct ExprStatement {
+        pub _span : Span,
         pub expr : std::boxed::Box<AST>,
     }
     impl fmt::Debug for ExprStatement {
@@ -934,7 +969,7 @@ pub mod ast {
         }
     }
     impl AST for ExprStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             self.expr.emit(c);
             c.vm.code.push(VmOpcode::OP_POP);
@@ -943,6 +978,7 @@ pub mod ast {
 
     // ### block
     pub struct BlockStatement {
+        pub _span : Span,
         pub stmts : Vec<std::boxed::Box<AST>>,
     }
     impl fmt::Debug for BlockStatement {
@@ -952,7 +988,7 @@ pub mod ast {
         }
     }
     impl AST for BlockStatement {
-        as_any!();
+        ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             for stmt in &self.stmts {
                 stmt.emit(c);
@@ -965,5 +1001,13 @@ pub mod ast {
 
 // parser
 pub mod grammar {
+    macro_rules! boxed {
+        ($x:ident, $ps:expr, $pe:expr, $($key:ident: $value:expr),*) => (
+            Box::new(ast::$x {
+                _span: ($ps, $pe),
+                $($key: $value),*
+            })
+        )
+    }
     include!(concat!(env!("OUT_DIR"), "/parser.rs"));
 }
