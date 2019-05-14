@@ -189,12 +189,10 @@ impl Compiler {
     // source map
     pub fn lookup_smap(&self, bc_idx: usize) -> Option<&SourceMap> {
         // TODO: fix this and maybe use binary search?
-        eprintln!("{} {}", bc_idx, self.smap.len());
         let mut last_found : Option<&SourceMap> = None;
         for smap in self.smap.iter() {
             let contains = (smap.bytecode.0..=smap.bytecode.1).contains(&bc_idx);
-            eprintln!("{:?} {:?}", smap.file, smap.bytecode);
-            if contains {
+            if contains { // this is so that the lookup gets more "specific"
                 last_found = Some(smap);
             } else if last_found.is_some() && !contains {
                 return last_found;
