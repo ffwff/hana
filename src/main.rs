@@ -52,6 +52,7 @@ fn main() {
     });
     let mut c = ManuallyDrop::new(compiler::Compiler::new());
     // manually drop because the interpreter will exit early
+    c.files.push(args[1].clone());
     for stmt in prog {
         stmt.emit(&mut c);
     }
@@ -59,12 +60,32 @@ fn main() {
     hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();
+
     if c.vm.error != VmError::ERROR_NO_ERROR {
-        let smap = c.lookup_smap(c.vm.ip as usize).unwrap();
-        let (line, col) = ast::pos_to_line(&s, smap.file.0);
-        let (line_end, col_end) = ast::pos_to_line(&s, smap.file.1);
-        let message = format!("{} at {}:{}", c.vm.error, line, col);
-        print_error(&s, line, col, line_end, col_end, "interpreter error:", &message);
+        {
+            let smap = c.lookup_smap(c.vm.ip as usize).unwrap();
+            let (line, col) = ast::pos_to_line(&s, smap.file.0);
+            let (line_end, col_end) = ast::pos_to_line(&s, smap.file.1);
+            let message = format!("{} at {}:{}:{}", c.vm.error, c.files[smap.fileno], line, col);
+            print_error(&s, line, col, line_end, col_end, "interpreter error:", &message);
+        }
+        if !c.vm.localenv.is_null() {
+            eprintln!("{}", ac::Red.bold().paint("backtrace:"));
+            let mut env = c.vm.localenv;
+            while env != unsafe{ c.vm.localenv_bp.sub(1) } {
+                let ip = unsafe{ &*env }.retip as usize;
+                if let Some(smap) = c.lookup_smap(ip) {
+                    let (line, col) = ast::pos_to_line(&s, smap.file.0);
+                    eprintln!(" from {}{}:{}:{}",
+                              if let Some(sym) = c.symbol.get(&ip) { sym.clone() + "@" }
+                              else { "".to_string() },
+                              c.files[smap.fileno], line, col);
+                } else {
+                    eprintln!(" from ???");
+                }
+                env = unsafe { env.sub(1) };
+            }
+        }
         std::process::exit(1);
     }
 }

@@ -21,6 +21,7 @@ pub mod ast {
         ($self:ident, $c:ident) => (
             $c.smap.push(compiler::SourceMap {
                 file: $self.span().clone(),
+                fileno: $c.files.len() - 1,
                 bytecode: ($c.vm.code.len(), 0)
             });
         );
@@ -223,6 +224,9 @@ pub mod ast {
                 c.set_local(arg.clone());
             }
             self.stmt.emit(c);
+            if self.id.is_some() {
+                c.symbol.insert(c.vm.code.len() - 1, self.id.as_ref().unwrap().clone());
+            }
 
             // default return
             match c.vm.code.top() {

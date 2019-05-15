@@ -1,5 +1,6 @@
 use crate::vm::Vm;
 use crate::vm::VmOpcode;
+use std::collections::HashMap;
 
 // private
 struct Scope {
@@ -21,12 +22,15 @@ pub type ArrayIndexRange = (usize, usize);
 pub struct SourceMap {
     pub file: ArrayIndexRange,
     pub bytecode: ArrayIndexRange,
+    pub fileno: usize,
 }
 
 pub struct Compiler {
     scopes : Vec<Scope>,
     loop_stmts : Vec<LoopStatement>,
     pub smap: Vec<SourceMap>,
+    pub files: Vec<String>,
+    pub symbol: HashMap<usize, String>,
     pub vm : Vm
 }
 impl Compiler {
@@ -35,6 +39,8 @@ impl Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             smap: Vec::new(),
+            files: Vec::new(),
+            symbol: HashMap::new(),
             vm: Vm::new()
         }
     }

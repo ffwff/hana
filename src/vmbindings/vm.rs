@@ -124,25 +124,25 @@ impl std::fmt::Display for VmError {
 
 #[repr(C)]
 pub struct Vm {
-    pub ip        : u32, // current instruction pointer
-    pub localenv  : *mut Env,
+    pub ip          : u32, // current instruction pointer
+    pub localenv    : *mut Env,
     // pointer to current stack frame
-    localenv_bp   : *mut Env, // rust owns this, so drop it pls
+    pub localenv_bp : *mut Env, // rust owns this, so drop it pls
     // pointer to start of pool of stack frames
-    pub globalenv : *mut CHashMap,
+    pub globalenv  : *mut CHashMap,
     // global environment, all unscoped variables/variables
     // starting with '$' should be stored here
-    pub exframes  : CArray<ExFrame>, // exception frame
-    pub code      : CArray<VmOpcode>, // where all the code is
-    pub stack     : CArray<NativeValue>, // stack
+    pub exframes   : CArray<ExFrame>, // exception frame
+    pub code       : CArray<VmOpcode>, // where all the code is
+    pub stack      : CArray<NativeValue>, // stack
 
     // prototype types for primitive values
-    pub dstr      : *mut Record,
-    pub dint      : *mut Record,
-    pub dfloat    : *mut Record,
-    pub darray    : *mut Record,
+    pub dstr       : *mut Record,
+    pub dint       : *mut Record,
+    pub dfloat     : *mut Record,
+    pub darray     : *mut Record,
 
-    pub error     : VmError
+    pub error      : VmError
     // whether the interpreter raised an unhandled error
 }
 
