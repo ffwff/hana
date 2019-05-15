@@ -70,7 +70,6 @@ fn pop(array: Value::mut_Array) -> Value {
 extern "C" {
 fn value_gt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
 fn value_lt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
-fn value_is_true(left: NativeValue) -> bool;
 }
 
 // sorting
@@ -129,13 +128,16 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
             let mut i = 0;
             for val in array.iter() {
                 args[0] = val.clone();
-                new_array[i] = vm.call(fun.wrap(), args.clone());
+                new_array[i] = vm.call(fun.wrap(), args.clone()).unwrap();
                 i += 1;
             }
             args.drop();
         },
-        Value::NativeFn(_) => {
-            unimplemented!();
+        Value::NativeFn(fun) => {
+            for val in array.iter() {
+                vm.stack.push(val.clone());
+                fun(cvm, 1);
+            }
         }
         _ => panic!("expected fn/record/native fn")
     };
@@ -163,16 +165,17 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
             let mut args = CArray::reserve(1);
             for val in array.iter() {
                 args[0] = val.clone();
-                unsafe {
-                    if value_is_true(vm.call(fun.wrap(), args.clone())) {
-                        new_array.push(val.clone());
-                    }
+                if vm.call(fun.wrap(), args.clone()).unwrap().unwrap().is_true(vm) {
+                    new_array.push(val.clone());
                 }
             }
             args.drop();
         },
-        Value::NativeFn(_) => {
-            unimplemented!();
+        Value::NativeFn(fun) => {
+            for val in array.iter() {
+                vm.stack.push(val.clone());
+                fun(cvm, 1);
+            }
         }
         _ => panic!("expected fn/record/native fn")
     };
@@ -203,12 +206,16 @@ pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
             for val in array.iter() {
                 args[0] = acc.wrap().clone();
                 args[1] = val.clone();
-                acc = vm.call(fun.wrap(), args.clone()).unwrap();
+                acc = vm.call(fun.wrap(), args.clone()).unwrap().unwrap();
             }
             args.drop();
         },
-        Value::NativeFn(_) => {
-            unimplemented!();
+        Value::NativeFn(fun) => {
+            for val in array.iter() {
+                vm.stack.push(acc.wrap().clone());
+                vm.stack.push(val.clone());
+                fun(cvm, 2);
+            }
         }
         _ => panic!("expected fn/record/native fn")
     };

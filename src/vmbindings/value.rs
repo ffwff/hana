@@ -33,9 +33,10 @@ pub enum Value {
     mut_Array(*mut CArray<NativeValue>),
 }
 
-extern "C" {
 #[allow(improper_ctypes)]
+extern "C" {
 fn value_get_prototype(vm: *const Vm, val: NativeValue) -> *const Record;
+fn value_is_true(left: NativeValue, vm: *const Vm) -> bool;
 }
 
 impl Value {
@@ -124,6 +125,11 @@ impl Value {
     // prototype
     pub fn get_prototype(&self, vm: *const Vm) -> *const Record {
         unsafe{ value_get_prototype(vm, self.wrap()) }
+    }
+
+    // bool
+    pub fn is_true(&self, vm: *const Vm) -> bool {
+        unsafe{ value_is_true(self.wrap(), vm) }
     }
 
 }

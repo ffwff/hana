@@ -1,10 +1,13 @@
-mod io;
-mod array;
-mod string;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::*;
 use crate::vmbindings::gc::*;
+
+mod io;
+mod array;
+mod string;
+mod int;
+mod float;
 
 pub fn init(vm : &mut Vm) {
     let globalenv = unsafe { &mut *vm.globalenv };
@@ -70,6 +73,32 @@ pub fn init(vm : &mut Vm) {
     set_var!("String", Value::Record(unsafe{ &*ptr }));
     vm.dstr = ptr;
     }
+    // #endregion
+
+    // #region int
+    {
+    let mut int : Record = Record::new();
+    set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
+
+    let ptr = unsafe { malloc(int, rec_free) };
+    set_var!("Int", Value::Record(unsafe{ &*ptr }));
+    vm.dint = ptr;
+    }
+    // #endregion
+
+    // #region float
+    {
+    let mut float : Record = Record::new();
+    set_obj_var!(float, "constructor", Value::NativeFn(float::constructor));
+
+    let ptr = unsafe { malloc(float, rec_free) };
+    set_var!("Float", Value::Record(unsafe{ &*ptr }));
+    vm.dfloat = ptr;
+    }
+    // #endregion
+
+    // #region record
+
     // #endregion
 
 }

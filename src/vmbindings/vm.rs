@@ -322,8 +322,10 @@ impl Vm {
     }
 
     // functions
-    pub fn call(&mut self, fun: NativeValue, args: CArray<NativeValue>) -> NativeValue {
-        unsafe{ vm_call(self, fun, args) }
+    pub fn call(&mut self, fun: NativeValue, args: CArray<NativeValue>) -> Option<NativeValue> {
+        let val = unsafe{ vm_call(self, fun, args) };
+        if self.error == VmError::ERROR_NO_ERROR { None }
+        else { Some(val) }
     }
 }
 
