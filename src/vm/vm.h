@@ -106,9 +106,6 @@ bool vm_leave_env(struct vm *);
 void vm_print_stack(const struct vm*);
 
 void vm_code_push8(struct vm *vm, uint8_t);
-void vm_code_push16(struct vm *vm, uint16_t);
-void vm_code_push32(struct vm *vm, uint32_t);
-void vm_code_push64(struct vm *vm, uint64_t);
 void vm_code_pushstr(struct vm *vm, const char *);
 void vm_code_pushf32(struct vm *vm, float f);
 void vm_code_pushf64(struct vm *vm, double f);

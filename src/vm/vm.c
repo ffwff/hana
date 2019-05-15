@@ -119,22 +119,22 @@ void vm_execute(struct vm *vm) {
     }
     push_int_op(OP_PUSH8,  uint8_t,  vm->code.data[vm->ip+0])
 
-    push_int_op(OP_PUSH16, uint16_t, vm->code.data[vm->ip+0] << 4 |
-                                     vm->code.data[vm->ip+1])
+    push_int_op(OP_PUSH16, uint16_t, (uint16_t)vm->code.data[vm->ip+0] << 8 |
+                                     (uint16_t)vm->code.data[vm->ip+1])
 
-    push_int_op(OP_PUSH32, uint32_t, vm->code.data[vm->ip+0] << 12 |
-                                     vm->code.data[vm->ip+1] << 8  |
-                                     vm->code.data[vm->ip+2] << 4  |
-                                     vm->code.data[vm->ip+3])
+    push_int_op(OP_PUSH32, uint32_t, (uint32_t)vm->code.data[vm->ip+0] << 24 |
+                                     (uint32_t)vm->code.data[vm->ip+1] << 16 |
+                                     (uint32_t)vm->code.data[vm->ip+2] << 8  |
+                                     (uint32_t)vm->code.data[vm->ip+3])
 
-    push_int_op(OP_PUSH64, uint64_t, vm->code.data[vm->ip+0] << 28 |
-                                     vm->code.data[vm->ip+1] << 24 |
-                                     vm->code.data[vm->ip+2] << 20 |
-                                     vm->code.data[vm->ip+3] << 16 |
-                                     vm->code.data[vm->ip+4] << 12 |
-                                     vm->code.data[vm->ip+5] << 8  |
-                                     vm->code.data[vm->ip+6] << 4  |
-                                     vm->code.data[vm->ip+7])
+    push_int_op(OP_PUSH64, uint64_t, (uint64_t)vm->code.data[vm->ip+0] << 56 |
+                                     (uint64_t)vm->code.data[vm->ip+1] << 48 |
+                                     (uint64_t)vm->code.data[vm->ip+2] << 40 |
+                                     (uint64_t)vm->code.data[vm->ip+3] << 32 |
+                                     (uint64_t)vm->code.data[vm->ip+4] << 24 |
+                                     (uint64_t)vm->code.data[vm->ip+5] << 16 |
+                                     (uint64_t)vm->code.data[vm->ip+6] << 8  |
+                                     (uint64_t)vm->code.data[vm->ip+7])
 
     // push 32/64-bit float on to the stack
     doop(OP_PUSHF32): {
@@ -845,29 +845,6 @@ void vm_print_stack(const struct vm *vm) {
 // push bits
 void vm_code_push8(struct vm *vm, uint8_t n) {
     array_push(vm->code, n);
-}
-
-void vm_code_push16(struct vm *vm, uint16_t n) {
-    array_push(vm->code, (n >> 4) & 0xff);
-    array_push(vm->code, (n >> 0) & 0xff);
-}
-
-void vm_code_push32(struct vm *vm, uint32_t n) {
-    array_push(vm->code, (n >> 12) & 0xff);
-    array_push(vm->code, (n >> 8)  & 0xff);
-    array_push(vm->code, (n >> 4)  & 0xff);
-    array_push(vm->code, (n >> 0)  & 0xff);
-}
-
-void vm_code_push64(struct vm *vm, uint64_t n) {
-    array_push(vm->code, (n >> 28) & 0xff);
-    array_push(vm->code, (n >> 24) & 0xff);
-    array_push(vm->code, (n >> 20) & 0xff);
-    array_push(vm->code, (n >> 16) & 0xff);
-    array_push(vm->code, (n >> 12) & 0xff);
-    array_push(vm->code, (n >> 8)  & 0xff);
-    array_push(vm->code, (n >> 4)  & 0xff);
-    array_push(vm->code, (n >> 0)  & 0xff);
 }
 
 void vm_code_pushstr(struct vm *vm, const char *s) {

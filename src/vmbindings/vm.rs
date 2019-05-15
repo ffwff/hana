@@ -86,9 +86,6 @@ extern "C" {
         -> NativeValue;
 
     fn vm_code_push8  (vm: *mut Vm, n : u8);
-    fn vm_code_push16 (vm: *mut Vm, n : u16);
-    fn vm_code_push32 (vm: *mut Vm, n : u32);
-    fn vm_code_push64 (vm: *mut Vm, n : u64);
     fn vm_code_pushstr(vm: *mut Vm, s : *const libc::c_char);
     fn vm_code_pushf32(vm: *mut Vm, n : f32);
     fn vm_code_pushf64(vm: *mut Vm, n : f64);
@@ -131,9 +128,21 @@ impl Vm {
 
     // pushes
     pub fn cpush8(&mut self, n : u8) { unsafe { vm_code_push8(self, n); } }
-    pub fn cpush16(&mut self, n : u16) { unsafe { vm_code_push16(self, n); } }
-    pub fn cpush32(&mut self, n : u32) { unsafe { vm_code_push32(self, n); } }
-    pub fn cpush64(&mut self, n : u64) { unsafe { vm_code_push64(self, n); } }
+    pub fn cpush16(&mut self, n : u16) {
+        for byte in &n.to_be_bytes() {
+            self.cpush8(*byte);
+        }
+    }
+    pub fn cpush32(&mut self, n : u32) {
+        for byte in &n.to_be_bytes() {
+            self.cpush8(*byte);
+        }
+    }
+    pub fn cpush64(&mut self, n : u64) {
+        for byte in &n.to_be_bytes() {
+            self.cpush8(*byte);
+        }
+    }
     pub fn cpushf32(&mut self, n : f32) { unsafe { vm_code_pushf32(self, n); } }
     pub fn cpushf64(&mut self, n : f64) { unsafe { vm_code_pushf64(self, n); } }
     pub fn cpushs<T : Into<Vec<u8>>>(&mut self, s : T) {
