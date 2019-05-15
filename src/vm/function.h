@@ -9,14 +9,11 @@ struct env;
 struct function {
     uint32_t ip;
     uint16_t nargs;
-    struct env *bound;
-    // NOTE: bound represents the current local environment
-    // at the time the function is declared, this will be
-    // COPIED into another struct env whenever OP_CALL is issued
-    // We use this to implement closures
+    // ... (additional rust properties)
 };
 
 struct function *function_malloc(uint32_t addr, uint16_t nargs, struct env *env);
+void function_set_bound_var(struct function *, uint16_t n, struct value val);
 
 #ifdef __cplusplus
 }

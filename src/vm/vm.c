@@ -308,7 +308,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(key);
         struct value val = array_top(vm->stack);
         env_set(vm->localenv, key, val);
-        env_set(val.as.ifn->bound, key, val);
+        function_set_bound_var(val.as.ifn, key, val);
         dispatch();
     }
     // pushes a copy of the value of current environment's slot

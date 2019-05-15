@@ -80,7 +80,7 @@ pub unsafe extern "C" fn dict_set(cr: *mut Record, ckey: *const libc::c_char, va
     r.insert(key, val.clone());
 }
 #[no_mangle]
-pub unsafe extern "C" fn dict_set_str(cr: *mut Record, ckey: *const  String, val: NativeValue) {
+pub unsafe extern "C" fn dict_set_str(cr: *mut Record, ckey: *const String, val: NativeValue) {
     let key = (&*ckey).clone();
     let r = &mut *cr;
     r.insert(key, val.clone());
@@ -140,6 +140,12 @@ pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env)
         let fun = &mut *(ptr as *mut Function);
         fun.drop();
     })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn function_set_bound_var(fun: *mut Function, slot: u16, val: NativeValue) {
+    let fun = &mut *fun;
+    fun.bound.set(slot, val)
 }
 // #endregion
 
@@ -219,16 +225,16 @@ pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, slot: u16, val: 
 
 //
 #[no_mangle]
-pub unsafe extern "C" fn vm_enter_env(selfptr: *mut Vm, fun: *const Function) -> *const Env {
+pub unsafe extern "C" fn vm_enter_env(selfptr: *mut Vm, fun: *mut Function) -> *const Env {
     let vm = &mut *selfptr;
-    let fun = &*fun;
+    let fun = &mut *fun;
     vm.enter_env(fun);
     vm.localenv
 }
 #[no_mangle]
-pub unsafe extern "C" fn vm_enter_env_tail(selfptr: *mut Vm, fun: *const Function) -> *const Env {
+pub unsafe extern "C" fn vm_enter_env_tail(selfptr: *mut Vm, fun: *mut Function) -> *const Env {
     let vm = &mut *selfptr;
-    let fun = &*fun;
+    let fun = &mut *fun;
     vm.enter_env_tail(fun);
     vm.localenv
 }

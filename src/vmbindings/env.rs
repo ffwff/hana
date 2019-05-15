@@ -5,6 +5,7 @@ use std::ptr::null_mut;
 use std::alloc::{alloc_zeroed, dealloc, Layout};
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct Env {
     pub slots: *mut NativeValue,
     pub nslots: u16,

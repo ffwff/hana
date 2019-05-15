@@ -185,7 +185,7 @@ impl Vm {
     }
 
     // call stack
-    pub fn enter_env(&mut self, fun: &'static Function) {
+    pub fn enter_env(&mut self, fun: &'static mut Function) {
         if self.localenv.is_null() {
             self.localenv = self.localenv_bp;
         } else {
@@ -198,16 +198,16 @@ impl Vm {
             // NOTE: std::mem::replace causes memory corruption
             // when replacing unallocated stack env with current env
             use std::ptr::copy_nonoverlapping;
-            let env = Env::new(self.ip, fun.bound, fun.nargs);
+            let env = Env::new(self.ip, unsafe{ fun.get_bound_ptr() }, fun.nargs);
             unsafe { copy_nonoverlapping(&env, self.localenv, 1); }
         }
         self.ip = fun.ip;
     }
 
-    pub fn enter_env_tail(&mut self, fun: &'static Function) {
+    pub fn enter_env_tail(&mut self, fun: &'static mut Function) {
         let env = unsafe{ &mut *self.localenv };
         env.nargs = fun.nargs;
-        env.lexical_parent = fun.bound;
+        env.lexical_parent = unsafe{ fun.get_bound_ptr() };
         self.ip = fun.ip;
     }
 

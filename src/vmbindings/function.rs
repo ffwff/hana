@@ -1,5 +1,6 @@
 use super::env::Env;
 use std::ptr::null_mut;
+use std::mem::ManuallyDrop;
 
 // functions
 #[repr(C)]
@@ -7,7 +8,9 @@ use std::ptr::null_mut;
 pub struct Function {
     pub ip: u32, // instruction pointer
     pub nargs : u16, // number of args
-    pub bound: *mut Env,
+
+    // internal rust properties:
+    pub bound: ManuallyDrop<Env>,
     // represents the current local environment
     // at the time the function is declared, this will be
     // COPIED into another struct env whenever OP_CALL is issued
@@ -20,30 +23,30 @@ impl Function {
         Function {
             ip: ip,
             nargs: nargs,
-            bound: Box::into_raw(Box::new(
+            bound: ManuallyDrop::new(
                     if env.is_null() { Env::new(0, null_mut(), nargs) }
                     else { Env::copy(&*env) }
-                ))
+                )
         }
     }
 
     pub fn drop(&mut self) { // must be called by the gc
-        unsafe { Box::from_raw(self.bound); }
+        unsafe{ ManuallyDrop::drop(&mut self.bound); }
+    }
+
+    pub unsafe fn get_bound_ptr(&mut self) -> *mut Env {
+        &mut *self.bound
     }
 
     pub fn mark(&self) {
-        unsafe {
-            for i in 0..(*self.bound).nslots {
-                (*self.bound).get(i).mark();
-            }
+        for i in 0..self.bound.nslots {
+            self.bound.get(i).mark();
         }
     }
 
     pub fn pin(&self) {
-        unsafe {
-            for i in 0..(*self.bound).nslots {
-                (*self.bound).get(i).pin();
-            }
+        for i in 0..self.bound.nslots {
+            self.bound.get(i).pin();
         }
     }
 

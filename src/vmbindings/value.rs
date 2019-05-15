@@ -41,20 +41,33 @@ fn value_is_true(left: NativeValue, vm: *const Vm) -> bool;
 
 impl Value {
 
-    // coerce value to type
+    // #region coerce value to type
+    pub fn int(&self) -> i64 {
+        match self {
+            Value::Int(s) => *s,
+            _ => { panic!("Expected integer"); }
+        }
+    }
+    pub fn float(&self) -> f64 {
+        match self {
+            Value::Float(s) => *s,
+            _ => { panic!("Expected integer"); }
+        }
+    }
     pub fn string(&self) -> &'static String {
         match self {
             Value::Str(s) => s,
             _ => { panic!("Expected string"); }
         }
     }
-
     pub fn array(&self) -> &'static CArray<NativeValue> {
         match self {
             Value::Array(s) => s,
             _ => { panic!("Expected array"); }
         }
     }
+
+    // #endregion
 
     // wrapper for native
     pub fn wrap(&self) -> NativeValue {

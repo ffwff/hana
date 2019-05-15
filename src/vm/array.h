@@ -9,17 +9,17 @@
         size_t capacity; \
     }
 
-#define array_init(type)  \
-    {                 \
+#define array_init(type)                  \
+    {                                     \
         .data = calloc(1, sizeof(type)), \
-        .length = 0,  \
-        .capacity = 1 \
+        .length = 0,                      \
+        .capacity = 1                     \
     }
-#define array_init_n(type, n)  \
-    {                 \
+#define array_init_n(type, n)             \
+    {                                     \
         .data = calloc(n, sizeof(type)), \
-        .length = n,  \
-        .capacity = n \
+        .length = n,                      \
+        .capacity = n                     \
     }
 
 #define array_free(array)   \

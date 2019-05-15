@@ -25,7 +25,7 @@ struct string;
 #define TYPE_INTERPRETER_ERROR 127
 
 typedef void (*value_fn)(struct vm *vm, int nargs);
-struct value {
+struct __attribute__((packed)) value {
     union {
         int64_t integer;
         double floatp;
