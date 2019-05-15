@@ -774,7 +774,6 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
     struct function *ifn = NULL;
 
     if(fn.type == TYPE_DICT) {
-        assert(0);
         const struct value *ctor = dict_get(fn.as.dict, "constructor");
         if(ctor == NULL) {
             FATAL("expected record to have constructor\n");
@@ -785,7 +784,9 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
                 array_push(vm->stack, args.data[i]);
             }
             ctor->as.fn(vm, args.length);
-            return array_top(vm->stack);
+            const struct value val = array_top(vm->stack);
+            array_pop(vm->stack);
+            return val;
         } else if(ctor->type != TYPE_FN) {
             FATAL("constructor must be a function!\n");
             return errorval;

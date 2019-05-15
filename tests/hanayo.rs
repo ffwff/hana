@@ -93,6 +93,7 @@ a.insert!(1, 4)
         assert_eq!(arr[2].unwrap(), Value::Int(2));
         assert_eq!(arr[3].unwrap(), Value::Int(3));
     }
+
     #[test]
     fn array_map() {
         let mut vm : Vm = eval!("
@@ -108,6 +109,21 @@ y = a.map(f(x) = x+1)
         assert_eq!(arr[1].unwrap(), Value::Int(6));
         assert_eq!(arr[2].unwrap(), Value::Int(65));
         assert_eq!(arr[3].unwrap(), Value::Int(3));
+    }
+    #[test]
+    fn array_map_native() {
+        let mut vm : Vm = eval!("
+a=['1','2','3']
+y = a.map(Int)
+");
+        let arr = match vm.global().get("y").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0].unwrap(), Value::Int(1));
+        assert_eq!(arr[1].unwrap(), Value::Int(2));
+        assert_eq!(arr[2].unwrap(), Value::Int(3));
     }
 
     #[test]

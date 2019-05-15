@@ -246,7 +246,7 @@ function a() begin
 end
 ");
         let val = vm.global().get("a").unwrap().clone();
-        assert_eq!(vm.call(val, CArray::new_nil()).unwrap(), Value::Int(10));
+        assert_eq!(vm.call(val, CArray::new_nil()).unwrap().unwrap(), Value::Int(10));
     }
     // #endregion
 

@@ -21,7 +21,8 @@ pub mod ast {
         ($self:ident, $c:ident) => (
             $c.smap.push(compiler::SourceMap {
                 file: $self.span().clone(),
-                fileno: $c.files.len() - 1,
+                fileno: if $c.files.len() == 0 { 0 }
+                        else { $c.files.len() - 1 },
                 bytecode: ($c.vm.code.len(), 0)
             });
         );
