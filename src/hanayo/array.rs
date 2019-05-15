@@ -128,7 +128,13 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
             let mut i = 0;
             for val in array.iter() {
                 args[0] = val.clone();
-                new_array[i] = vm.call(fun.wrap(), args.clone()).unwrap();
+                if let Some(val) = vm.call(fun.wrap(), args.clone()) {
+                    new_array[i] = val;
+                } else {
+                    args.drop();
+                    pin_end(p);
+                    return;
+                }
                 i += 1;
             }
             args.drop();

@@ -81,7 +81,7 @@ fn main() {
                               else { "".to_string() },
                               c.files[smap.fileno], line, col);
                 } else {
-                    eprintln!(" from ???");
+                    eprintln!(" from bytecode index {}", ip);
                 }
                 env = unsafe { env.sub(1) };
             }
