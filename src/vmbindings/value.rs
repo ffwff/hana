@@ -8,7 +8,7 @@ extern crate libc;
 pub type NativeFnData = extern fn(*mut Vm, u16);
 
 #[derive(Clone)]
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, dead_code)]
 pub enum Value {
     // we don't have control over how rust manages its variant
     // types, so this is a convenient wrapper for (de)serialising

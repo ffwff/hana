@@ -1,6 +1,7 @@
 #![feature(vec_remove_item)]
 #![feature(alloc_layout_extra)]
 #![feature(ptr_offset_from)]
+#![allow(dead_code)]
 
 use std::io::Read;
 use std::mem::ManuallyDrop;
@@ -8,12 +9,13 @@ use std::mem::ManuallyDrop;
 extern crate ansi_term;
 use ansi_term::Color as ac;
 
-pub mod compiler;
-#[macro_use] pub mod ast;
+mod compiler;
+#[macro_use] mod ast;
 mod vmbindings;
-pub use vmbindings::vm;
-pub use vmbindings::vm::{VmError, VmOpcode};
-pub use vmbindings::gc::set_root;
+use vmbindings::vm;
+use vmbindings::vmerror::VmError;
+use vmbindings::vm::VmOpcode;
+use vmbindings::gc::set_root;
 mod hanayo;
 
 fn print_error(s: &String, lineno: usize, col: usize, _lineno_end: usize, col_end: usize,

@@ -171,8 +171,14 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
             let mut args = CArray::reserve(1);
             for val in array.iter() {
                 args[0] = val.clone();
-                if vm.call(fun.wrap(), args.clone()).unwrap().unwrap().is_true(vm) {
-                    new_array.push(val.clone());
+                if let Some(filter) = vm.call(fun.wrap(), args.clone()) {
+                    if filter.unwrap().is_true(vm) {
+                        new_array.push(val.clone());
+                    }
+                } else {
+                    pin_end(p);
+                    args.drop();
+                    return;
                 }
             }
             args.drop();
@@ -212,7 +218,13 @@ pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
             for val in array.iter() {
                 args[0] = acc.wrap().clone();
                 args[1] = val.clone();
-                acc = vm.call(fun.wrap(), args.clone()).unwrap().unwrap();
+                if let Some(val) = vm.call(fun.wrap(), args.clone()) {
+                    acc = val.unwrap();
+                } else {
+                    args.drop();
+                    pin_end(p);
+                    return;
+                }
             }
             args.drop();
         },

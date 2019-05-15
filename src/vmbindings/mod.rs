@@ -8,4 +8,5 @@ pub mod gc;
 pub mod function;
 pub mod exframe;
 pub mod foreignc;
+pub mod vmerror;
 pub mod vm;
