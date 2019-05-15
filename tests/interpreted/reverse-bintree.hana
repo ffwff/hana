@@ -5,14 +5,14 @@ record Node
         return self
     end
     function print(self, indent) begin
-        if indent for i=1 to indent print(" ")
+        if indent then for i=1 to indent then print(" ")
         if self.left.prototype == Node begin
             print("[node]\n")
             self.left.print(indent+1)
         end
         else print(self.left, "\n")
 
-        if indent for i=1 to indent print(" ")
+        if indent then for i=1 to indent then print(" ")
         if self.right.prototype == Node begin
             print("[node]\n")
             self.right.print(indent+1)
@@ -23,8 +23,8 @@ record Node
         left = self.left
         self.left = self.right
         self.right = left
-        if self.left.prototype == Node self.left.reverse()
-        if self.right.prototype == Node self.right.reverse()
+        if self.left.prototype == Node then self.left.reverse()
+        if self.right.prototype == Node then self.right.reverse()
     end
 end
 

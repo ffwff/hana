@@ -2,12 +2,12 @@ function sieve(n) begin
     prime = [true]*(n+1)
     p = 2
     while p*p <= n begin
-        if prime[p] for i=p*2 to n-p+1 step p begin
+        if prime[p] then for i=p*2 to n-p+1 step p begin
             prime[i] = false
         end
         p += 1
     end
-    for p=2 to n if prime[p] print(p, " ")
+    for p=2 to n then if prime[p] then print(p, " ")
 end
 sieve(10000)
 print("\n")

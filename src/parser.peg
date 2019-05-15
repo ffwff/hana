@@ -268,7 +268,7 @@ then_stmt -> std::boxed::Box<ast::AST>
     / #expected("block or then <stmt>")
 
 if_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "if" _ e:expr _ s:then_stmt a:(_ "else" _ s:statement { s })? pe:#position
+    = ps:#position "if" _ e:expr _ s:then_stmt a:(__ "else" _ s:statement { s })? pe:#position
     { boxed!(IfStatement, ps, pe, expr: e, then: s, alt: a) }
 
 while_stmt -> std::boxed::Box<ast::AST>

@@ -556,10 +556,7 @@ void vm_execute(struct vm *vm) {
         array_pop(vm->stack);
 
         struct value val = array_top(vm->stack);
-        if (val.type != TYPE_STR) {
-            ERROR(ERROR_RECORD_KEY_NON_STRING);
-        }
-        dict_set_str(dval.as.dict, val.as.str, val);
+        dict_set(dval.as.dict, key, val);
         dispatch();
     }
     doop(OP_DICT_LOAD): {
