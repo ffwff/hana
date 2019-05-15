@@ -885,6 +885,9 @@ pub mod ast {
         ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
+            if !c.is_in_function() {
+                panic!("not in function!"); // TODO
+            }
             match &self.expr {
                 Some(expr) => {
                     if let Some(expr) = expr.as_any().downcast_ref::<CallExpr>() {

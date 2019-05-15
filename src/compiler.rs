@@ -45,6 +45,10 @@ impl Compiler {
         }
     }
 
+    pub fn is_in_function(&self) -> bool {
+        !self.scopes.is_empty()
+    }
+
     // local
     fn get_local(&self, var : &String) -> Option<(u16, u16)> {
         let mut relascope : u16 = 0;

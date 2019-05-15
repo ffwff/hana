@@ -116,43 +116,43 @@ expr -> std::boxed::Box<ast::AST> = assignmentexpr / #expected("expression")
 
 assignmentexpr -> std::boxed::Box<ast::AST>
     = #infix<condexpr> {
-        #L x (_ "="  _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Assign) }
-           x (_ "+=" _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Adds) }
-           x (_ "-=" _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Subs) }
-           x (_ "*=" _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Muls) }
-           x (_ "/=" _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Divs) }
-           x (_ "%=" _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mods) }
+        #L x #quiet<(_ "="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Assign) }
+           x #quiet<(_ "+=" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Adds) }
+           x #quiet<(_ "-=" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Subs) }
+           x #quiet<(_ "*=" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Muls) }
+           x #quiet<(_ "/=" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Divs) }
+           x #quiet<(_ "%=" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mods) }
       }
     / condexpr
 
 condexpr -> std::boxed::Box<ast::AST>
-    = ps:#position cond:binexpr _ "?" _ then:binexpr _ ":" _ alt:binexpr pe:#position
+    = #quiet<ps:#position cond:binexpr _ "?" _ then:binexpr _ ":" _ alt:binexpr pe:#position
     { boxed!(CondExpr, ps, pe,
              cond: cond,
              then: then,
-             alt: alt) }
+             alt: alt) }>
     / binexpr
 
 binexpr -> std::boxed::Box<ast::AST>
     = #infix<callexpr> {
-        #L x (_ "and" _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::And) }
-           x (_ "or"  _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Or ) }
-        #L x (_ "==" _)  y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Eq ) }
-           x (_ "!=" _)  y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Neq) }
-           x (_ ">" _)   y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Gt ) }
-           x (_ "<" _)   y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Lt ) }
-           x (_ ">=" _)  y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Geq) }
-           x (_ "<=" _)  y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Leq) }
-        #L x (_ "+" _)   y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Add) }
-           x (_ "-" _)   y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Sub) }
-        #L x (_ "*"   _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mul) }
-           x (_ "/"   _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Div) }
-           x (_ "mod" _) y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mod) }
+        #L x #quiet<(_ "and" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::And) }
+           x #quiet<(_ "or"  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Or ) }
+        #L x #quiet<(_ "=="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Eq ) }
+           x #quiet<(_ "!="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Neq) }
+           x #quiet<(_ ">"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Gt ) }
+           x #quiet<(_ "<"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Lt ) }
+           x #quiet<(_ ">="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Geq) }
+           x #quiet<(_ "<="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Leq) }
+        #L x #quiet<(_ "+"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Add) }
+           x #quiet<(_ "-"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Sub) }
+        #L x #quiet<(_ "*"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mul) }
+           x #quiet<(_ "/"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Div) }
+           x #quiet<(_ "mod" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mod) }
       }
     / callexpr
 
 callexpr -> std::boxed::Box<ast::AST>
-    = ps:#position _left:memexpr _ args:callexpr_args _right:callexpr_arm* pe:#position
+    = #quiet<ps:#position _left:memexpr _ args:callexpr_args _right:callexpr_arm* pe:#position
     {
         let mut left : Box<ast::AST> = boxed!(CallExpr, ps, pe,
             callee: _left,
@@ -179,7 +179,7 @@ callexpr -> std::boxed::Box<ast::AST>
             };
         }
         left
-    }
+    }>
     / memexpr
 callexpr_args -> Vec<std::boxed::Box<ast::AST>>
     = "(" __ farg:expr larg:(__ "," __ e:expr { e })* __ ")"
@@ -203,7 +203,7 @@ callexpr_arm -> ast::CallExprArm
     }
 
 memexpr -> std::boxed::Box<ast::AST>
-    = ps:#position _left:unary_expr _right:memexpr_arm+ pe:#position
+    = #quiet<ps:#position _left:unary_expr _right:memexpr_arm+ pe:#position
     {
         let mut left = _left;
         for right in _right {
@@ -214,7 +214,7 @@ memexpr -> std::boxed::Box<ast::AST>
                 is_expr: right.1 });
         }
         left
-    }
+    }>
     / unary_expr
 memexpr_arm -> (std::boxed::Box<ast::AST>, bool /* is_expr */)
     = _ "." _ ps:#position id:word pe:#position {
@@ -257,7 +257,7 @@ spanned<inner>
 
 // block
 block_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "begin" eos s:(statement*) _ "end" pe:#position
+    = ps:#position #quiet<"begin"> eos s:(statement*) _ "end" pe:#position
     { boxed!(BlockStatement, ps, pe, stmts: s) }
     / #expected("block statement")
 
@@ -268,16 +268,16 @@ then_stmt -> std::boxed::Box<ast::AST>
     / #expected("block or then <stmt>")
 
 if_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "if" _ e:expr _ s:then_stmt a:(__ "else" _ s:statement { s })? pe:#position
+    = ps:#position #quiet<"if"> _ e:expr _ s:then_stmt a:(__ "else" _ s:statement { s })? pe:#position
     { boxed!(IfStatement, ps, pe, expr: e, then: s, alt: a) }
 
 while_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "while" _ e:expr _ s:then_stmt pe:#position
+    = ps:#position #quiet<"while"> _ e:expr _ s:then_stmt pe:#position
     { boxed!(WhileStatement, ps, pe, expr: e, then: s) }
 
 for_stmt -> std::boxed::Box<ast::AST>
     = ps:#position
-      "for" _ id:identifier _ "=" _ from:expr  _
+      #quiet<"for"> _ id:identifier _ "=" _ from:expr  _
        dir:("to" { true }/"downto" { false }) _ to:expr
        step:(_ "step" _ e:expr {e})? _
        s:then_stmt pe:#position
@@ -295,27 +295,27 @@ for_stmt -> std::boxed::Box<ast::AST>
     }
 
 continue_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "continue" pe:#position
+    = ps:#position #quiet<"continue"> pe:#position
     { boxed!(ContinueStatement, ps, pe,) }
 break_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "break" pe:#position
+    = ps:#position #quiet<"break"> pe:#position
     { boxed!(BreakStatement, ps, pe,) }
 
 // exceptions
 try_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "try" eos stmts:(statement*) cases:(case_stmt*) "end" pe:#position
+    = ps:#position #quiet<"try"> eos stmts:(statement*) cases:(case_stmt*) "end" pe:#position
     { boxed!(TryStatement, ps, pe,
              stmts: stmts,
              cases: cases) }
 case_stmt -> std::boxed::Box<ast::CaseStatement>
-    = ps:#position "case" _ etype:expr id:(_ "as" _ t:expr { t })? eos stmts:statement* pe:#position
+    = ps:#position #quiet<"case"> _ etype:expr id:(_ "as" _ t:expr { t })? eos stmts:statement* pe:#position
     { boxed!(CaseStatement, ps, pe,
              etype: etype,
              id: id,
              stmts: stmts) }
 
 raise_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "raise" _ expr:expr pe:#position
+    = ps:#position #quiet<"raise"> _ expr:expr pe:#position
     { boxed!(RaiseStatement, ps, pe,
              expr: expr) }
 
@@ -342,7 +342,7 @@ function_stmt -> std::boxed::Box<ast::AST>
     }
 
 return_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "return" e:(_ e:expr {e})? eos pe:#position
+    = ps:#position #quiet<"return"> e:(_ e:expr {e})? eos pe:#position
     { boxed!(ReturnStatement, ps, pe, expr: e) }
 
 // record statements
@@ -354,7 +354,7 @@ record_body_stmt -> std::boxed::Box<ast::AST>
     / #expected("statement")
 
 record_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position "record" _ id:identifier eos s:(record_body_stmt*) _ "end" eos pe:#position
+    = ps:#position #quiet<"record"> _ id:identifier eos s:(record_body_stmt*) _ "end" eos pe:#position
     {
         Box::new(ast::RecordStatement::new(ast::RecordDefinition {
             _span: (ps, pe),

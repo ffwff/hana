@@ -49,7 +49,10 @@ fn main() {
     let prog = ast::grammar::start(&s).unwrap_or_else(|err| {
         print_error(&s, err.line, err.column,
             err.line, err.column,
-            "parser error:", &format!("{:?}", err.expected));
+            "parser error:", &format!("expected {}", {
+                let expected : Vec<String> = err.expected.iter().map(|x| x.to_string()).collect();
+                expected.join(", ")
+            }));
         std::process::exit(1);
     });
     let mut c = ManuallyDrop::new(compiler::Compiler::new());
