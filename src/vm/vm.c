@@ -44,7 +44,8 @@ void vm_free(struct vm *vm) {
 
 void vm_execute(struct vm *vm) {
     LOG("vm: %p\n", vm);
-#define ERROR() do { vm->error = 1; return; } while(0)
+#define ERROR(code) do { vm->error = code; return; } while(0)
+#define ERROR_EXPECT(code, expect) do { vm->error = code; vm->error_expected = expect; return; } while(0)
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
 #ifdef NOLOG
@@ -239,7 +240,7 @@ void vm_execute(struct vm *vm) {
         struct value *result = &array_top(vm->stack); \
         fn(result, left, right); \
         if(result->type == TYPE_INTERPRETER_ERROR) { \
-            FATAL("Invalid arguments for binary operator " #optype "\n"); ERROR(); } \
+            ERROR(ERROR_ ##optype); } \
         dispatch(); \
     }
     binop(OP_ADD, value_add)
@@ -353,8 +354,7 @@ void vm_execute(struct vm *vm) {
         LOG("GET GLOBAL %s\n", key);
         const struct value *val = hmap_get(vm->globalenv, key);
         if(val == NULL) {
-            FATAL("no global variable named %s!\n", key);
-            ERROR();
+            ERROR(ERROR_UNDEFINED_GLOBAL_VAR);
         } else {
             array_push(vm->stack, *val);
         }
@@ -420,41 +420,37 @@ void vm_execute(struct vm *vm) {
     }
     // pops a function/record constructor on top of the stack,
     // sets up necessary environment and calls it.
-#define JMP_INTERPRETED_FN(END_IF_NATIVE) \
-do { \
-    if(val.type == TYPE_DICT) { \
-        array_pop(vm->stack); \
-        const struct value *ctor = dict_get(val.as.dict, "constructor"); \
-        if(ctor == NULL) { \
-            FATAL("expected record to have constructor\n"); \
-            ERROR(); \
-        } \
-        if(ctor->type == TYPE_NATIVE_FN) { \
-            LOG("NATIVE CONSTRUCTOR\n"); \
-            ctor->as.fn(vm, nargs); \
-            END_IF_NATIVE; \
-        } else if(ctor->type != TYPE_FN) { \
-            FATAL("constructor must be a function!\n"); \
-            ERROR(); \
-        } \
-        ifn = ctor->as.ifn; \
-        if(nargs+1 != ifn->nargs) { \
-            FATAL("constructor expects exactly %d arguments, got %d\n", ifn->nargs, nargs+1); \
-            ERROR(); \
-        } \
-        struct value new_val; \
-        value_dict(&new_val); \
-        dict_set(new_val.as.dict, "prototype", val); \
-        array_push(vm->stack, new_val); \
-    } else { \
-        ifn = val.as.ifn; \
-        array_pop(vm->stack); \
-        if(nargs != ifn->nargs) { \
-            FATAL("function expects exactly %d arguments, got %d\n", ifn->nargs, nargs); \
-            ERROR(); \
-        } \
-    } \
-} while(0)
+#define JMP_INTERPRETED_FN(END_IF_NATIVE)                                    \
+    do {                                                                     \
+        if (val.type == TYPE_DICT) {                                         \
+            array_pop(vm->stack);                                            \
+            const struct value *ctor = dict_get(val.as.dict, "constructor"); \
+            if (ctor == NULL) {                                              \
+                ERROR(ERROR_RECORD_NO_CONSTRUCTOR);                          \
+            }                                                                \
+            if (ctor->type == TYPE_NATIVE_FN) {                              \
+                LOG("NATIVE CONSTRUCTOR\n");                                 \
+                ctor->as.fn(vm, nargs);                                      \
+                END_IF_NATIVE;                                               \
+            } else if (ctor->type != TYPE_FN) {                              \
+                ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION);                       \
+            }                                                                \
+            ifn = ctor->as.ifn;                                              \
+            if (nargs + 1 != ifn->nargs) {                                   \
+                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs);          \
+            }                                                                \
+            struct value new_val;                                            \
+            value_dict(&new_val);                                            \
+            dict_set(new_val.as.dict, "prototype", val);                     \
+            array_push(vm->stack, new_val);                                  \
+        } else {                                                             \
+            ifn = val.as.ifn;                                                \
+            array_pop(vm->stack);                                            \
+            if (nargs != ifn->nargs) {                                       \
+                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs);          \
+            }                                                                \
+        }                                                                    \
+    } while (0)
     doop(OP_CALL): {
         // argument: [arg2][arg1]
         vm->ip++;
@@ -477,8 +473,7 @@ do { \
             vm_enter_env(vm, ifn);
             break; }
         default: {
-            FATAL("calling a value that's not a record constructor or a function\n");
-            ERROR(); }
+            ERROR(ERROR_EXPECTED_CALLABLE); }
         }
         dispatch();
     }
@@ -518,13 +513,11 @@ do { \
             if((dict = value_get_prototype(vm, val)) == NULL) {
                 if(val.type == TYPE_NIL) {
                     if(strcmp(key, "prototype") != 0) {
-                        FATAL("can't access key of nil");
-                        ERROR();
+                        ERROR(ERROR_CANNOT_ACCESS_NIL);
                     }
                     dispatch();
                 } else {
-                    FATAL("can only access key of record\n");
-                    ERROR();
+                    ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
                 }
             }
             if(strcmp(key, "prototype") == 0) {
@@ -535,8 +528,7 @@ do { \
             }
         } else {
             if(val.type != TYPE_DICT) {
-                FATAL("can only access key of record\n");
-                ERROR();
+                ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
             }
             dict = val.as.dict;
             if(op == OP_MEMBER_GET) array_pop(vm->stack);
@@ -559,15 +551,13 @@ do { \
         LOG("MEMBER_SET %s\n", key);
         struct value dval = array_top(vm->stack);
         if(dval.type != TYPE_DICT) {
-            FATAL("can only set key of record\n");
-            ERROR();
+            ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
         }
         array_pop(vm->stack);
 
         struct value val = array_top(vm->stack);
-        if(val.type != TYPE_STR) {
-            FATAL("expected key of record to be string\n");
-            ERROR();
+        if (val.type != TYPE_STR) {
+            ERROR(ERROR_RECORD_KEY_NON_STRING);
         }
         dict_set_str(dval.as.dict, val.as.str, val);
         dispatch();
@@ -606,19 +596,16 @@ do { \
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
-                FATAL("index type for array must be integer!\n");
-                return;
+                ERROR(ERROR_KEY_NON_INT);
             }
             const int64_t i = (int64_t)index.as.integer;
             if(!(i >= 0 && i < (int64_t)dval.as.array->length)) {
-                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->length);
-                ERROR();
+                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, dval.as.array->length);
             }
             array_push(vm->stack, dval.as.array->data[i]);
         } else if(dval.type == TYPE_STR) {
             if(index.type != TYPE_INT) {
-                FATAL("index type for string must be integer!\n");
-                ERROR();
+                ERROR(ERROR_KEY_NON_INT);
             }
             const int64_t i = index.as.integer;
             struct value val;
@@ -628,8 +615,7 @@ do { \
             array_push(vm->stack, val);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
-                FATAL("index type for record must be string!\n");
-                ERROR();
+                ERROR(ERROR_RECORD_KEY_NON_STRING);
             }
             const struct value *val = dict_get_str(dval.as.dict, index.as.str);
             if(val != NULL) {
@@ -638,8 +624,7 @@ do { \
                 array_push(vm->stack, (struct value){0});
             }
         } else {
-            FATAL("can only access keys of record, array or string\n");
-            ERROR();
+            ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
         }
         dispatch();
     }
@@ -657,25 +642,20 @@ do { \
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
-                FATAL("index type of array must be integer!\n");
-                ERROR();
+                ERROR(ERROR_KEY_NON_INT);
             }
             const int64_t i = index.as.integer;
-            if (!(i >= 0 && i < (int64_t)dval.as.array->length))
-            {
-                FATAL("accessing index (%ld) that lies out of range [0,%ld) \n", i, dval.as.array->length);
-                ERROR();
+            if (!(i >= 0 && i < (int64_t)dval.as.array->length)) {
+                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, dval.as.array->length);
             }
             dval.as.array->data[i] = val;
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
-                FATAL("index type of record must be string!\n");
-                ERROR();
+                ERROR(ERROR_RECORD_KEY_NON_STRING);
             }
             dict_set_str(dval.as.dict, index.as.str, val);
         } else {
-            FATAL("can only set keys of record or array\n");
-            ERROR();
+            ERROR(ERROR_EXPECTED_RECORD_ARRAY);
         }
         dispatch();
     }
@@ -714,8 +694,7 @@ do { \
         while((error = array_top(vm->stack)).type != TYPE_NIL) {
             // error type
             if(error.type != TYPE_DICT) {
-                FATAL("expression in case must be of record type\n");
-                ERROR();
+                ERROR(ERROR_CASE_EXPECTS_DICT);
             }
             array_pop(vm->stack);
             // val
@@ -730,19 +709,9 @@ do { \
     }
     doop(OP_RAISE): {
         LOG("RAISE\n");
-
         if(!vm_raise(vm)) {
-            FATAL("unhandled exception!\n");
-            /* if(raiseval.type == TYPE_DICT) {
-            struct value *val = dict_get_cptr(raiseval.as.dict, "what?");
-            if(val != NULL)
-                FATAL(" (what? => %s)\n",
-                    val->type == TYPE_STR ? string_data(val->as.str) : "[non-string]");
-            } */
-            ERROR();
+            ERROR(ERROR_UNHANDLED_EXCEPTION);
         }
-
-        vm->ip++;
         dispatch();
     }
     doop(OP_EXFRAME_RET): {
@@ -788,8 +757,7 @@ do { \
             vm_enter_env_tail(vm, ifn);
             break; }
         default: {
-            FATAL("calling a value that's not a record constructor or a function\n");
-            ERROR(); }
+            ERROR(ERROR_EXPECTED_CALLABLE); }
         }
         dispatch();
     }

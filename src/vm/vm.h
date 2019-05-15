@@ -4,7 +4,6 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <stdbool.h>
 #include "array.h"
 #include "value.h"
 #include "env.h"
@@ -42,6 +41,37 @@ enum vm_opcode {
     OP_RETCALL
 };
 
+enum vm_error {
+    ERROR_NO_ERROR = 0,
+    ERROR_OP_ADD,
+    ERROR_OP_SUB,
+    ERROR_OP_MUL,
+    ERROR_OP_DIV,
+    ERROR_OP_MOD,
+    ERROR_OP_AND,
+    ERROR_OP_OR,
+    ERROR_OP_LT,
+    ERROR_OP_LEQ,
+    ERROR_OP_GT,
+    ERROR_OP_GEQ,
+    ERROR_OP_EQ,
+    ERROR_OP_NEQ,
+    ERROR_UNDEFINED_GLOBAL_VAR,
+    ERROR_RECORD_NO_CONSTRUCTOR,
+    ERROR_CONSTRUCTOR_NOT_FUNCTION,
+    ERROR_MISMATCH_ARGUMENTS,
+    ERROR_EXPECTED_CALLABLE,
+    ERROR_CANNOT_ACCESS_NIL,
+    ERROR_CANNOT_ACCESS_NON_RECORD,
+    ERROR_CANNOT_ACCESS_NON_STRING,
+    ERROR_KEY_NON_INT,
+    ERROR_RECORD_KEY_NON_STRING,
+    ERROR_UNBOUNDED_ACCESS,
+    ERROR_EXPECTED_RECORD_ARRAY,
+    ERROR_CASE_EXPECTS_DICT,
+    ERROR_UNHANDLED_EXCEPTION,
+};
+
 typedef array(uint8_t) a_uint8;
 typedef array(struct value) a_value;
 struct exframe;
@@ -56,7 +86,8 @@ struct vm {
     a_uint8 code;
     a_value stack;
     struct dict *dstr, *dint, *dfloat, *darray;
-    bool error;
+    enum vm_error error;
+    uint32_t error_expected;
 };
 
 void vm_init(struct vm*);

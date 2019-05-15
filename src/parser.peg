@@ -45,8 +45,8 @@ single_line_comment = "//" [^\n]*
 multiline_comment = "/*" (!"*/" .)* "*/"
 comment = single_line_comment / multiline_comment
 
-_ = #quiet<(comment / [ \t])*>
-__ = #quiet<(comment / [ \t\r\n])*>
+_ = #quiet<(comment / [ \t] / "\\" .)*>
+__ = #quiet<(comment / "\\" . / [ \t\r\n])*>
 newline
     = _ #quiet<("\r\n")+ / ("\n")+ / !.>
     / #expected("newline")

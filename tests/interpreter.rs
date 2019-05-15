@@ -5,9 +5,7 @@ pub mod interpreter_tests {
 
     use haru::ast::grammar;
     use haru::compiler;
-    use haru::vm::Vm;
-    use haru::vm::VmOpcode;
-    use haru::vm::Value;
+    use haru::vm::{Vm, VmOpcode, VmError, Value};
     use haru::gc;
 
     // TODO
@@ -268,7 +266,7 @@ end
         let vm : Vm = eval!("
 raise 0
 ");
-        assert!(vm.error);
+        assert_eq!(vm.error, VmError::ERROR_UNHANDLED_EXCEPTION);
     }
 
     #[test]

@@ -12,11 +12,12 @@ pub mod compiler;
 #[macro_use] pub mod ast;
 mod vmbindings;
 pub use vmbindings::vm;
-pub use vmbindings::vm::VmOpcode;
+pub use vmbindings::vm::{VmError, VmOpcode};
 pub use vmbindings::gc::set_root;
 mod hanayo;
 
-fn print_error(s: &String, lineno: usize, col: usize, etype: &str, message: &String) {
+fn print_error(s: &String, lineno: usize, col: usize, _lineno_end: usize, col_end: usize,
+               etype: &str, message: &String) {
     let line = s.split("\n").nth(lineno-1).unwrap();
     let lineno_info = format!("{} | ", lineno);
     let lineno_info_len = lineno_info.len();
@@ -27,7 +28,7 @@ fn print_error(s: &String, lineno: usize, col: usize, etype: &str, message: &Str
 {} {}",
     ac::Blue.bold().paint(lineno_info),
     line,
-    ac::Blue.bold().paint(" ".repeat(lineno_info_len + col-1) + "^"),
+    ac::Blue.bold().paint(" ".repeat(lineno_info_len + col-1) + &"^".repeat(col_end - col)),
     ac::Red.bold().paint(etype.to_string()),
     message);
 }
@@ -44,7 +45,9 @@ fn main() {
         std::process::exit(1);
     });
     let prog = ast::grammar::start(&s).unwrap_or_else(|err| {
-        print_error(&s, err.line, err.column, "parser error:", &format!("{:?}", err.expected));
+        print_error(&s, err.line, err.column,
+            err.line, err.column,
+            "parser error:", &format!("{:?}", err.expected));
         std::process::exit(1);
     });
     let mut c = ManuallyDrop::new(compiler::Compiler::new());
@@ -56,12 +59,12 @@ fn main() {
     hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();
-    if c.vm.error {
-        let mut message = String::new();
+    if c.vm.error != VmError::ERROR_NO_ERROR {
         let smap = c.lookup_smap(c.vm.ip as usize).unwrap();
         let (line, col) = ast::pos_to_line(&s, smap.file.0);
-        message += format!("at {}:{}", line, col).as_str();
-        print_error(&s, line, col, "interpreter error", &message);
+        let (line_end, col_end) = ast::pos_to_line(&s, smap.file.1);
+        let message = format!("{} at {}:{}", c.vm.error, line, col);
+        print_error(&s, line, col, line_end, col_end, "interpreter error:", &message);
         std::process::exit(1);
     }
 }
