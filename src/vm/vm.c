@@ -94,6 +94,7 @@ void vm_execute(struct vm *vm) {
         X(OP_RETCALL),
         // iterators
         X(OP_FOR_IN),
+        X(OP_SWAP),
     };
 
 #undef X
@@ -536,10 +537,6 @@ void vm_execute(struct vm *vm) {
         vm->ip += strlen(key)+1;
         LOG(op == OP_MEMBER_GET ? "MEMBER_GET %s\n" : "MEMBER_GET_NO_POP %s\n", key);
 
-#ifndef NOLOG
-        LOG("print stack: ");
-        vm_print_stack(vm);
-#endif
         struct value val = array_top(vm->stack);
         struct dict *dict = NULL;
         if(val.type != TYPE_DICT) {
@@ -835,6 +832,16 @@ void vm_execute(struct vm *vm) {
             ERROR(ERROR_EXPECTED_ITERABLE);
         }
 
+        dispatch();
+    }
+
+    doop(OP_SWAP): {
+        vm->ip++;
+        debug_assert(vm->stack.length >= 2);
+        const struct value lower = vm->stack.data[vm->stack.length-2];
+        const struct value higher = vm->stack.data[vm->stack.length-1];
+        vm->stack.data[vm->stack.length - 1] = lower;
+        vm->stack.data[vm->stack.length - 2] = higher;
         dispatch();
     }
 

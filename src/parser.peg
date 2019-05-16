@@ -109,6 +109,15 @@ function_expr -> std::boxed::Box<ast::AST>
             id: id,
             args: args,
             stmt: s)
+    } /
+      ps:#position
+      args:function_arguments_pipe _ "{" __ s:(statement*) __ "}"
+      pe:#position
+    {
+        boxed!(FunctionDefinition, ps, pe,
+            id: None,
+            args: args,
+            stmt: boxed!(BlockStatement, ps, pe, stmts: s))
     }
 
 // expressions
@@ -334,6 +343,16 @@ raise_stmt -> std::boxed::Box<ast::AST>
 function_arguments -> Vec<String>
     = "(" __ ")" { Vec::new() }
     / "(" __ fid:identifier lid:(__ "," __ id:identifier { id })* __ ")"
+    {
+        let mut v = vec![fid.to_string()];
+        for id in lid { v.push(id.to_string()); }
+        v
+    }
+    / #expected("function arguments")
+
+function_arguments_pipe -> Vec<String>
+    = "|" __ "|" { Vec::new() }
+    / "|" __ fid:identifier lid:(__ "," __ id:identifier { id })* __ "|"
     {
         let mut v = vec![fid.to_string()];
         for id in lid { v.push(id.to_string()); }

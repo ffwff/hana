@@ -30,7 +30,8 @@ fn print_error(s: &String, lineno: usize, col: usize, _lineno_end: usize, col_en
 {} {}",
     ac::Blue.bold().paint(lineno_info),
     line,
-    ac::Blue.bold().paint(" ".repeat(lineno_info_len + col-1) + &"^".repeat(col_end - col)),
+    ac::Blue.bold().paint(" ".repeat(lineno_info_len + col-1) +
+        &"^".repeat(if col_end > col { col_end - col } else { 1 })),
     ac::Red.bold().paint(etype.to_string()),
     message);
 }

@@ -333,6 +333,42 @@ end
     }
 
     #[test]
+    fn memexpr_set() {
+        let mut vm : Vm = eval!("
+record A
+    y = 0
+end
+function x() begin
+    A.y = 1
+end
+x()
+");
+        let rec = match vm.global().get("A").unwrap().unwrap() {
+            Value::Record(x) => x,
+            _ => panic!("expected record")
+        };
+        assert_eq!(rec.get(&"y".to_string()).unwrap().unwrap(), Value::Int(1));
+    }
+
+    #[test]
+    fn memexpr_adds() {
+        let mut vm : Vm = eval!("
+record A
+    y = 0
+end
+function x() begin
+    A.y += 1
+end
+x()
+");
+        let rec = match vm.global().get("A").unwrap().unwrap() {
+            Value::Record(x) => x,
+            _ => panic!("expected record")
+        };
+        assert_eq!(rec.get(&"y".to_string()).unwrap().unwrap(), Value::Int(1));
+    }
+
+    #[test]
     fn record_stmt_constructor() {
         let mut vm : Vm = eval!("
 record A

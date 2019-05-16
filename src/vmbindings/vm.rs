@@ -54,6 +54,7 @@ pub enum VmOpcode {
     OP_RETCALL,
     // iterators
     OP_FOR_IN,
+    OP_SWAP,
 }
 
 #[repr(C)]

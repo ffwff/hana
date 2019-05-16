@@ -83,7 +83,9 @@ pub mod ast {
                     match next {
                         Some('n') => s += "\n",
                         Some('r') => s += "\r",
-                        _ => panic!("expected character")
+                        Some('t') => s += "\t",
+                        Some(x) => s += &x.to_string(),
+                        _ => panic!("expected character, got eof")
                     }
                 } else {
                     s += &c.to_string();
@@ -494,10 +496,10 @@ pub mod ast {
                         c.vm.code.push(opcode);
                         c.emit_set_var(id.val.clone());
                     } else if let Some(memexpr) = any.downcast_ref::<MemExpr>() {
-                        self.right.emit(c);
                         memexpr.left.emit(c);
                         // optimize static member vars
                         let val = {
+                            let any = memexpr.right.as_any();
                             if let Some(id) = any.downcast_ref::<Identifier>()
                             { Some(&id.val) }
                             else if let Some(str) = any.downcast_ref::<StrLiteral>()
@@ -508,12 +510,17 @@ pub mod ast {
                             let val = val.unwrap();
                             c.vm.code.push(VmOpcode::OP_MEMBER_GET_NO_POP);
                             c.vm.cpushs(val.clone());
+                            self.right.emit(c);
                             c.vm.code.push(opcode);
+                            c.vm.code.push(VmOpcode::OP_SWAP);
                             c.vm.code.push(VmOpcode::OP_MEMBER_SET);
                             c.vm.cpushs(val.clone());
                         } else { // otherwise, do OP_INDEX_SET as normal
                             memexpr.right.emit(c);
                             c.vm.code.push(VmOpcode::OP_INDEX_GET);
+                            self.right.emit(c);
+                            c.vm.code.push(opcode);
+                            c.vm.code.push(VmOpcode::OP_SWAP);
                             memexpr.left.emit(c);
                             memexpr.right.emit(c);
                             c.vm.code.push(VmOpcode::OP_INDEX_SET);

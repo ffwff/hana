@@ -44,6 +44,7 @@ enum vm_opcode {
     OP_RETCALL,
     // iterators
     OP_FOR_IN,
+    OP_SWAP,
 };
 
 enum vm_error {
