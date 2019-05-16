@@ -51,6 +51,15 @@ pub mod interpreter_tests {
         let mut vm : Vm = eval!("y = 1 > 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
+
+    #[test]
+    fn adds_ordering() {
+        let mut vm : Vm = eval!("
+a = 'a'
+a += 'b'
+");
+        assert_eq!(*vm.global().get("a").unwrap().unwrap().string(), "ab".to_string());
+    }
     // #endregion
 
     // #region if statement
@@ -366,6 +375,24 @@ x()
             _ => panic!("expected record")
         };
         assert_eq!(rec.get(&"y".to_string()).unwrap().unwrap(), Value::Int(1));
+    }
+
+    #[test]
+    fn memexpr_adds_ordering() {
+        let mut vm : Vm = eval!("
+record A
+    y = 'a'
+end
+function x() begin
+    A.y += 'b'
+end
+x()
+");
+        let rec = match vm.global().get("A").unwrap().unwrap() {
+            Value::Record(x) => x,
+            _ => panic!("expected record")
+        };
+        assert_eq!(*rec.get(&"y".to_string()).unwrap().unwrap().string(), "ab".to_string());
     }
 
     #[test]

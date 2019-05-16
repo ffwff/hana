@@ -491,8 +491,8 @@ pub mod ast {
                     };
                     let any = self.left.as_any();
                     if let Some(id) = any.downcast_ref::<Identifier>() {
-                        self.right.emit(c);
                         c.emit_get_var(id.val.clone());
+                        self.right.emit(c);
                         c.vm.code.push(opcode);
                         c.emit_set_var(id.val.clone());
                     } else if let Some(memexpr) = any.downcast_ref::<MemExpr>() {
@@ -516,6 +516,8 @@ pub mod ast {
                             c.vm.code.push(VmOpcode::OP_MEMBER_SET);
                             c.vm.cpushs(val.clone());
                         } else { // otherwise, do OP_INDEX_SET as normal
+                            unimplemented!()
+                        /*
                             memexpr.right.emit(c);
                             c.vm.code.push(VmOpcode::OP_INDEX_GET);
                             self.right.emit(c);
@@ -524,6 +526,7 @@ pub mod ast {
                             memexpr.left.emit(c);
                             memexpr.right.emit(c);
                             c.vm.code.push(VmOpcode::OP_INDEX_SET);
+                            */
                         }
                     } else {
                         panic!("Invalid left hand side expression!");

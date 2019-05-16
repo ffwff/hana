@@ -268,8 +268,10 @@ spanned<inner>
 
 // block
 block_stmt -> std::boxed::Box<ast::AST>
-    = ps:#position #quiet<"begin"> eos s:(statement*) _ "end" pe:#position
+    = ps:#position #quiet<"begin"> eos s:(statement*) __ "end" pe:#position
     { boxed!(BlockStatement, ps, pe, stmts: s) }
+    / ps:#position #quiet<"begin"> eos __ "end" pe:#position
+    { boxed!(BlockStatement, ps, pe, stmts: Vec::new()) }
     / #expected("block statement")
 
 // control flows

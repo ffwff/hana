@@ -472,7 +472,7 @@ void vm_execute(struct vm *vm) {
                 ERROR(ERROR_RECORD_NO_CONSTRUCTOR);                          \
             }                                                                \
             if (ctor->type == TYPE_NATIVE_FN) {                              \
-                LOG("NATIVE CONSTRUCTOR\n");                                 \
+                LOG("NATIVE CONSTRUCTOR %d\n", nargs);                       \
                 ctor->as.fn(vm, nargs);                                      \
                 END_IF_NATIVE;                                               \
             } else if (ctor->type != TYPE_FN) {                              \
@@ -797,6 +797,8 @@ void vm_execute(struct vm *vm) {
                 if (vm_leave_env(vm)) {
                     LOG("return from vm_call\n");
                     return;
+                } else {
+                    dispatch();
                 }
             );
 

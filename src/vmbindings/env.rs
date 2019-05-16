@@ -65,6 +65,7 @@ impl Env {
     }
 
     pub fn set(&mut self, idx: u16, val: NativeValue) {
+        debug_assert!(idx <= self.nslots, "expected: {}", self.nslots);
         unsafe { std::ptr::copy(&val, self.slots.add(idx as usize), 1); }
     }
     pub fn set_up(&mut self, up: u16, idx: u16, val: NativeValue) {

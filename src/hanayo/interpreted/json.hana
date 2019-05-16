@@ -17,18 +17,19 @@ String.as_json = function(self) begin
     end
     r.parse_number = function(r) begin
         num = ""
-        while r.i < slen and chars[r.i] >= "0" and chars[r.i] <= "9" begin
+        while chars[r.i] >= "0" and chars[r.i] <= "9" begin
             num += chars[r.i]
             r.i += 1
+            if r.i == slen then return Int(num)
         end
         if chars[r.i] == "." begin
             num += "."
             r.i += 1
-            while r.i < slen and chars[r.i] >= "0" and chars[r.i] <= "9" begin
+            while chars[r.i] >= "0" and chars[r.i] <= "9" begin
                 num += chars[r.i]
                 r.i += 1
+                if r.i == slen then return Float(num)
             end
-            return Float(num)
         end
         else return Int(num)
     end
@@ -120,7 +121,7 @@ String.as_json = function(self) begin
             ws()
         end
     end
-    return r.parse_object()
+    return r.parse_value()
 end
 
 // serialising
@@ -150,6 +151,4 @@ Int.to_json = |self| {
 }
 Float.to_json = Int.to_json
 
-
-// doing shit
-print("123".as_json())
+print("123.1".as_json())
