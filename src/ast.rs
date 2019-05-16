@@ -374,6 +374,7 @@ pub mod ast {
         And, Or,
         Eq, Neq, Gt, Lt, Geq, Leq,
         Assign, Adds, Subs, Muls, Divs, Mods,
+        Of,
     }
     pub struct BinExpr {
         pub _span : Span,
@@ -393,6 +394,7 @@ pub mod ast {
                     BinOp::Lt  => "<",   BinOp::Leq  => "<=",
                     BinOp::Assign => "=", BinOp::Adds => "+=", BinOp::Subs => "-=",
                     BinOp::Muls => "*=",  BinOp::Divs => "/=", BinOp::Mods => "%=",
+                    BinOp::Of => "of"
                 })
         }
     }
@@ -534,6 +536,7 @@ pub mod ast {
                 BinOp::Lt  => arithop_do!(VmOpcode::OP_LT ),
                 BinOp::Geq => arithop_do!(VmOpcode::OP_GEQ),
                 BinOp::Leq => arithop_do!(VmOpcode::OP_LEQ),
+                BinOp::Of  => arithop_do!(VmOpcode::OP_OF),
                 //_ => panic!("not implemented: {:?}", self.op)
             }
             emit_end!(c, _smap_begin);

@@ -128,9 +128,9 @@ record JSON
 
     function stringify(obj) begin
         prototype = obj.prototype
-        if Record::is_record?(obj) begin
+        if prototype == Record begin
             // dictionaries
-            keys = Record::keys(obj)
+            keys = obj.keys()
             klen = keys.length() - 1
             s = "{"
             function print_key(i) begin
@@ -142,7 +142,7 @@ record JSON
             end
             if klen >= 0 begin
                 s += print_key(0)
-                if klen >= 1 for i=1 to klen s += ", " + print_key(i)
+                if klen >= 1 then for i=1 to klen then s += ", " + print_key(i)
             end
             s += "}"
             return s

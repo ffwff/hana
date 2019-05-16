@@ -26,8 +26,8 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
 // length
 #[hana_function()]
 fn length(s: Value::Str) -> Value {
-    let chars: Vec<char> = s.chars().collect();
-    Value::Int(chars.len() as i64)
+    // NOTE: this is an O(n) operation due to utf8 decoding
+    Value::Int(s.chars().count() as i64)
 }
 #[hana_function()]
 fn bytesize(s: Value::Str) -> Value {

@@ -73,6 +73,8 @@ void vm_execute(struct vm *vm) {
         // comparison
         X(OP_LT), X(OP_LEQ), X(OP_GT), X(OP_GEQ),
         X(OP_EQ), X(OP_NEQ),
+        // matching
+        X(OP_OF) /* type matching */,
         // variables
         X(OP_ENV_NEW),
         X(OP_SET_LOCAL), X(OP_SET_LOCAL_FUNCTION_DEF), X(OP_GET_LOCAL),
@@ -262,6 +264,35 @@ void vm_execute(struct vm *vm) {
     binop(OP_GEQ, value_geq)
     binop(OP_EQ,  value_eq)
     binop(OP_NEQ, value_neq)
+
+    // matching (these require the stdlib to be loaded)
+    doop(OP_OF): {
+        LOG("OF\n");
+        debug_assert(vm->stack.length >= 2);
+        vm->ip++;
+
+        struct value right = array_top(vm->stack);
+        array_pop(vm->stack);
+        struct value left = array_top(vm->stack);
+        array_pop(vm->stack);
+
+        if (right.type == TYPE_DICT) {
+            const struct dict *rhs = right.as.dict;
+            struct value retval = {
+                .as.integer = 0,
+                .type = TYPE_INT
+            };
+            if ((rhs == vm->drec && left.type == TYPE_DICT) ||
+                (value_get_prototype(vm, left) == rhs)) {
+                retval.as.integer = 1;
+            }
+            array_push(vm->stack, retval);
+        } else {
+            ERROR(ERROR_EXPECTED_RECORD_OF_EXPR);
+        }
+
+        dispatch();
+    }
 
     // variables
     // creates a new environment whenever a function is called
@@ -580,7 +611,7 @@ void vm_execute(struct vm *vm) {
             dict_set_str(dval.as.dict, key.as.str, val);
         }
 
-        if (load_prototype && vm->drec != NULL) {
+        if (load_prototype && dict_get(dval.as.dict, "prototype") == NULL) {
             struct value prototypev = {
                 .as.dict = vm->drec,
                 .type = TYPE_DICT};

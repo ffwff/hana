@@ -23,6 +23,8 @@ enum vm_opcode {
     // comparison
     OP_LT, OP_LEQ, OP_GT, OP_GEQ,
     OP_EQ, OP_NEQ,
+    // matching
+    OP_OF /* type matching */,
     // variables
     OP_ENV_NEW,
     OP_SET_LOCAL, OP_SET_LOCAL_FUNCTION_DEF, OP_GET_LOCAL,
@@ -73,6 +75,7 @@ enum vm_error {
     ERROR_CASE_EXPECTS_DICT,
     ERROR_UNHANDLED_EXCEPTION,
     ERROR_EXPECTED_ITERABLE,
+    ERROR_EXPECTED_RECORD_OF_EXPR,
 };
 
 typedef array(uint8_t) a_uint8;

@@ -33,6 +33,8 @@ pub enum VmOpcode {
     // comparison
     OP_LT, OP_LEQ, OP_GT, OP_GEQ,
     OP_EQ, OP_NEQ,
+    // matching
+    OP_OF /* type matching */,
     // variables
     OP_ENV_NEW,
     OP_SET_LOCAL, OP_SET_LOCAL_FUNCTION_DEF, OP_GET_LOCAL,

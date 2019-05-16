@@ -26,6 +26,29 @@ pub mod hanayo_tests {
         }};
     }
 
+    // #region vm extensions
+    #[test]
+    fn of_expr_simple() {
+        let mut vm : Vm = eval!("
+y = 1 of Int
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+
+    #[test]
+    fn of_expr_record() {
+        let mut vm : Vm = eval!("
+record Y
+end
+record X
+    prototype = Y
+end
+y = X of Y
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+    // #endregion
+
     // #region array
     #[test]
     fn array_constructor() {

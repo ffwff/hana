@@ -61,8 +61,8 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "constructor", Value::NativeFn(string::constructor));
     set_obj_var!(string, "length",      Value::NativeFn(string::length));
     set_obj_var!(string, "bytesize",    Value::NativeFn(string::bytesize));
-    set_obj_var!(string, "startswith",  Value::NativeFn(string::startswith));
-    set_obj_var!(string, "endswith",    Value::NativeFn(string::endswith));
+    set_obj_var!(string, "startswith?", Value::NativeFn(string::startswith));
+    set_obj_var!(string, "endswith?",   Value::NativeFn(string::endswith));
     set_obj_var!(string, "delete",      Value::NativeFn(string::delete));
     set_obj_var!(string, "delete!",     Value::NativeFn(string::delete_));
     set_obj_var!(string, "copy",        Value::NativeFn(string::copy));

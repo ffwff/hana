@@ -35,7 +35,7 @@ word -> String
 keyword
     = ("and" / "or" / "not" / "mod" / "begin" / "end" / "then" / "if" / "else" /
       "while" / "for" / "to" / "downto" / "step" / "continue" / "break" /
-      "try" / "case" / "as" / "raise" / "in" / "match" /
+      "try" / "case" / "as" / "raise" / "in" / "of" / "match" /
       "function" / "return" / "record" / "not") !id_chars
 identifier -> String
     = #quiet<!keyword w:$(word) { w.to_string() }>
@@ -143,6 +143,7 @@ binexpr -> std::boxed::Box<ast::AST>
            x #quiet<(_ "<"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Lt ) }
            x #quiet<(_ ">="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Geq) }
            x #quiet<(_ "<="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Leq) }
+        #L x #quiet<(_ "of"  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Of ) }
         #L x #quiet<(_ "+"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Add) }
            x #quiet<(_ "-"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Sub) }
         #L x #quiet<(_ "*"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mul) }

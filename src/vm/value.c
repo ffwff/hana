@@ -225,7 +225,9 @@ struct dict *value_get_prototype(const struct vm *vm, const struct value val) {
     } else if(val.type == TYPE_ARRAY) {
         return vm->darray;
     } else if(val.type == TYPE_DICT) {
-        return dict_get(val.as.dict, "prototype")->as.dict;
+        const struct value *p = dict_get(val.as.dict, "prototype");
+        if (p == NULL) return NULL;
+        return p->as.dict;
     }
     return NULL;
 }
