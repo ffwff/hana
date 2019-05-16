@@ -48,14 +48,18 @@ void vm_execute(struct vm *vm) {
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
 #ifdef NOLOG
-#define dispatch() do { \
+#define dispatch()                                   \
+    do {                                             \
+        debug_assert(vm->ip <= vm->code.length);     \
         goto *dispatch_table[vm->code.data[vm->ip]]; \
-    } while(0)
+    } while (0)
 #else
-#define dispatch() do { \
-        vm_print_stack(vm); \
+#define dispatch()                                   \
+    do {                                             \
+        vm_print_stack(vm);                          \
+        debug_assert(vm->ip <= vm->code.length);     \
         goto *dispatch_table[vm->code.data[vm->ip]]; \
-    } while(0)
+    } while (0)
 #endif
 
     static const void *dispatch_table[] = {
@@ -301,7 +305,7 @@ void vm_execute(struct vm *vm) {
     doop(OP_ENV_NEW): {
         vm->ip++;
         const uint16_t n =
-            vm->code.data[vm->ip+0] << 4 |
+            vm->code.data[vm->ip+0] << 8 |
             vm->code.data[vm->ip+1];
         vm->ip += sizeof(n);
         LOG("RESERVE %d\n", n);
@@ -313,7 +317,7 @@ void vm_execute(struct vm *vm) {
     // sets the value of current environment's slot to the top of the stack
     doop(OP_SET_LOCAL): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(key);
         LOG("SET LOCAL %d\n", key);
@@ -323,10 +327,10 @@ void vm_execute(struct vm *vm) {
     // same as above but set the upper scope
     doop(OP_SET_LOCAL_UP): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(key);
-        uint16_t relascope = vm->code.data[vm->ip+0] << 4 |
+        uint16_t relascope = vm->code.data[vm->ip+0] << 8 |
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(relascope);
         LOG("SET LOCAL UP %d %d\n", key, relascope);
@@ -337,7 +341,7 @@ void vm_execute(struct vm *vm) {
     // this is for recursive function
     doop(OP_SET_LOCAL_FUNCTION_DEF): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(key);
         struct value val = array_top(vm->stack);
@@ -348,7 +352,7 @@ void vm_execute(struct vm *vm) {
     // pushes a copy of the value of current environment's slot
     doop(OP_GET_LOCAL): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(key);
         LOG("GET LOCAL %d\n", key);
@@ -358,10 +362,10 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_GET_LOCAL_UP): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 4 |
+        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(key);
-        uint16_t relascope = vm->code.data[vm->ip+0] << 4 |
+        uint16_t relascope = vm->code.data[vm->ip+0] << 8 |
                              vm->code.data[vm->ip+1];
         vm->ip += sizeof(relascope);
         LOG("GET LOCAL UP %d %d\n", key, relascope);
@@ -400,13 +404,13 @@ void vm_execute(struct vm *vm) {
     doop(OP_DEF_FUNCTION_PUSH): {
         // [opcode][end address]
         vm->ip++;
-        const uint16_t nargs = vm->code.data[vm->ip+0] << 4 |
-                               vm->code.data[vm->ip+1];
+        const uint16_t nargs = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
+                               (uint16_t)vm->code.data[vm->ip + 1];
         vm->ip += sizeof(nargs);
-        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
-                             vm->code.data[vm->ip+1] << 8  |
-                             vm->code.data[vm->ip+2] << 4  |
-                             vm->code.data[vm->ip+3];
+        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
+                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
+                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
+                             (uint32_t)vm->code.data[vm->ip+3];
         vm->ip += sizeof(pos);
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
         array_push(vm->stack, (struct value){0});
@@ -418,33 +422,38 @@ void vm_execute(struct vm *vm) {
     // flow control
     doop(OP_JMP): { // jmp [32-bit position]
         vm->ip++;
-        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
-                             vm->code.data[vm->ip+1] << 8  |
-                             vm->code.data[vm->ip+2] << 4  |
-                             vm->code.data[vm->ip+3];
+        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
+                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
+                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
+                             (uint32_t)vm->code.data[vm->ip+3];
         LOG("JMP %d\n", pos);
         vm->ip = pos;
         dispatch();
     }
     doop(OP_JCOND): { // jmp if not true [32-bit position]
         vm->ip++;
-        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
-                             vm->code.data[vm->ip+1] << 8  |
-                             vm->code.data[vm->ip+2] << 4  |
-                             vm->code.data[vm->ip+3];
+        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
+                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
+                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
+                             (uint32_t)vm->code.data[vm->ip+3];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         LOG("JCOND %d\n", pos);
-        if(value_is_true(val)) vm->ip = pos;
-        else vm->ip += 4;
+        if(value_is_true(val)) {
+            vm->ip = pos;
+            LOG("jump!\n");
+        }
+        else {
+            vm->ip += 4;
+        }
         dispatch();
     }
     doop(OP_JNCOND): { // jump if true [32-bit position]
         vm->ip++;
-        const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
-                             vm->code.data[vm->ip+1] << 8  |
-                             vm->code.data[vm->ip+2] << 4  |
-                             vm->code.data[vm->ip+3];
+        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
+                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
+                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
+                             (uint32_t)vm->code.data[vm->ip+3];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         LOG("JNCOND %d\n", pos);
@@ -489,7 +498,8 @@ void vm_execute(struct vm *vm) {
         // argument: [arg2][arg1]
         vm->ip++;
         struct value val = array_top(vm->stack);
-        const uint16_t nargs = vm->code.data[vm->ip+0] << 4 | vm->code.data[vm->ip+1];
+        const uint16_t nargs = vm->code.data[vm->ip+0] << 8 |
+                               vm->code.data[vm->ip+1];
         vm->ip += sizeof(nargs);
         debug_assert(vm->stack.length >= nargs);
         LOG("call %d\n", nargs);
@@ -752,10 +762,10 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_EXFRAME_RET): {
         vm->ip++;
-        const uint32_t pos = vm->code.data[vm->ip + 0] << 12 |
-                             vm->code.data[vm->ip + 1] << 8 |
-                             vm->code.data[vm->ip + 2] << 4 |
-                             vm->code.data[vm->ip + 3];
+        const uint32_t pos = (uint32_t)vm->code.data[vm->ip + 0] << 24 |
+                             (uint32_t)vm->code.data[vm->ip + 1] << 16 |
+                             (uint32_t)vm->code.data[vm->ip + 2] << 8 |
+                             (uint32_t)vm->code.data[vm->ip + 3];
         LOG("EXFRAME_RET %d\n", pos);
         vm_leave_exframe(vm);
         vm->ip = pos;
@@ -766,7 +776,8 @@ void vm_execute(struct vm *vm) {
     doop(OP_RETCALL): {
         vm->ip++;
         struct value val = array_top(vm->stack);
-        const uint16_t nargs = vm->code.data[vm->ip+0] << 4 | vm->code.data[vm->ip+1];
+        const uint16_t nargs = (uint16_t)vm->code.data[vm->ip+0] << 8 |
+                               (uint16_t)vm->code.data[vm->ip+1];
         vm->ip += sizeof(nargs);
         debug_assert(vm->stack.length >= nargs);
         LOG("retcall %d\n", nargs);
@@ -801,9 +812,9 @@ void vm_execute(struct vm *vm) {
     // operators
     doop(OP_FOR_IN): {
         vm->ip++;
-        const uint32_t pos = vm->code.data[vm->ip + 0] << 12 |
-                             vm->code.data[vm->ip + 1] << 8 |
-                             vm->code.data[vm->ip + 2] << 4 |
+        const uint32_t pos = vm->code.data[vm->ip + 0] << 24 |
+                             vm->code.data[vm->ip + 1] << 16 |
+                             vm->code.data[vm->ip + 2] << 8  |
                              vm->code.data[vm->ip + 3];
         vm->ip += 4;
 
@@ -964,12 +975,12 @@ void vm_code_pushf64(struct vm *vm, double d) {
 }
 
 void vm_code_fill(struct vm *vm, const uint32_t pos, const uint32_t label) {
-    vm->code.data[pos + 0] = (label >> 12) & 0xff;
-    vm->code.data[pos + 1] = (label >> 8) & 0xff;
-    vm->code.data[pos + 2] = (label >> 4) & 0xff;
+    vm->code.data[pos + 0] = (label >> 24) & 0xff;
+    vm->code.data[pos + 1] = (label >> 16) & 0xff;
+    vm->code.data[pos + 2] = (label >> 8) & 0xff;
     vm->code.data[pos + 3] = (label >> 0) & 0xff;
 }
 void vm_code_fill16(struct vm *vm, const uint32_t pos, const uint16_t label) {
-    vm->code.data[pos + 0] = (label >> 4) & 0xff;
+    vm->code.data[pos + 0] = (label >> 8) & 0xff;
     vm->code.data[pos + 1] = (label >> 0) & 0xff;
 }
