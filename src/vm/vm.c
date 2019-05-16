@@ -43,7 +43,6 @@ void vm_free(struct vm *vm) {
 }
 
 void vm_execute(struct vm *vm) {
-    LOG("vm: %p\n", vm);
 #define ERROR(code) do { vm->error = code; return; } while(0)
 #define ERROR_EXPECT(code, expect) do { vm->error = code; vm->error_expected = expect; return; } while(0)
 #define doop(op) do_ ## op
@@ -89,7 +88,9 @@ void vm_execute(struct vm *vm) {
         // exceptions
         X(OP_TRY), X(OP_RAISE), X(OP_EXFRAME_RET),
         // tail calls
-        X(OP_RETCALL)
+        X(OP_RETCALL),
+        // iterators
+        X(OP_FOR_IN),
     };
 
 #undef X
@@ -395,9 +396,9 @@ void vm_execute(struct vm *vm) {
     doop(OP_JCOND): { // jmp if not true [32-bit position]
         vm->ip++;
         const uint32_t pos = vm->code.data[vm->ip+0] << 12 |
-                            vm->code.data[vm->ip+1] << 8  |
-                            vm->code.data[vm->ip+2] << 4  |
-                            vm->code.data[vm->ip+3];
+                             vm->code.data[vm->ip+1] << 8  |
+                             vm->code.data[vm->ip+2] << 4  |
+                             vm->code.data[vm->ip+3];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         LOG("JCOND %d\n", pos);
@@ -756,6 +757,43 @@ void vm_execute(struct vm *vm) {
         default: {
             ERROR(ERROR_EXPECTED_CALLABLE); }
         }
+        dispatch();
+    }
+
+    // operators
+    doop(OP_FOR_IN): {
+        vm->ip++;
+        const uint32_t pos = vm->code.data[vm->ip + 0] << 12 |
+                             vm->code.data[vm->ip + 1] << 8 |
+                             vm->code.data[vm->ip + 2] << 4 |
+                             vm->code.data[vm->ip + 3];
+        vm->ip += 4;
+
+        LOG("FOR_IN\n");
+        struct value *top = &array_top(vm->stack);
+        if (top->type == TYPE_INTERPRETER_ITERATOR) {
+            const array_obj *array = vm->stack.data[vm->stack.length-2].as.array;
+            const size_t idx = (size_t)top->as.integer;
+            if (idx == array->length) { // end of it
+                array_pop(vm->stack); // iterator
+                array_pop(vm->stack); // array
+                vm->ip = pos;
+            } else {
+                LOG("nop!\n");
+                top->as.integer++;
+                array_push(vm->stack, array->data[idx]);
+            }
+        } else if (top->type == TYPE_ARRAY) {
+            struct value val = {
+                .as.integer = 0,
+                .type = TYPE_INTERPRETER_ITERATOR
+            };
+            array_push(vm->stack, val);
+            array_push(vm->stack, top->as.array->data[0]);
+        } else {
+            ERROR(ERROR_EXPECTED_ITERABLE);
+        }
+
         dispatch();
     }
 

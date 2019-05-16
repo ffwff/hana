@@ -38,7 +38,9 @@ enum vm_opcode {
     // exceptions
     OP_TRY, OP_RAISE, OP_EXFRAME_RET,
     // tail calls
-    OP_RETCALL
+    OP_RETCALL,
+    // iterators
+    OP_FOR_IN,
 };
 
 enum vm_error {
@@ -69,6 +71,7 @@ enum vm_error {
     ERROR_EXPECTED_RECORD_ARRAY,
     ERROR_CASE_EXPECTS_DICT,
     ERROR_UNHANDLED_EXCEPTION,
+    ERROR_EXPECTED_ITERABLE,
 };
 
 typedef array(uint8_t) a_uint8;

@@ -168,7 +168,7 @@ pub mod ast {
     }
     impl fmt::Debug for ArrayExpr {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            unimplemented!()
+            write!(f, "{{\"array\": {:?}}}", self.exprs)
         }
     }
     impl AST for ArrayExpr {
@@ -734,11 +734,11 @@ pub mod ast {
     // ### for
     pub struct ForStatement {
         pub _span : Span,
-        pub id   : String,
-        pub from : std::boxed::Box<AST>,
-        pub to   : std::boxed::Box<AST>,
-        pub step : std::boxed::Box<AST>,
-        pub stmt : std::boxed::Box<AST>,
+        pub id    : String,
+        pub from  : std::boxed::Box<AST>,
+        pub to    : std::boxed::Box<AST>,
+        pub step  : std::boxed::Box<AST>,
+        pub stmt  : std::boxed::Box<AST>,
         pub is_up : bool
     }
     impl fmt::Debug for ForStatement {
@@ -801,6 +801,52 @@ pub mod ast {
             c.vm.cpush32(then_label);
 
             c.loop_end(next_it_pos, c.vm.code.len());
+            emit_end!(c, _smap_begin);
+        }
+    }
+    // ### for in
+    pub struct ForInStatement {
+        pub _span : Span,
+        pub id    : String,
+        pub expr  : std::boxed::Box<AST>,
+        pub stmt  : std::boxed::Box<AST>,
+    }
+    impl fmt::Debug for ForInStatement {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{{
+                \"id\": {:?},
+                \"expr\": {:?},
+                \"statement\": {:?},
+                \"type\": \"forinstmt\"}}",
+                    self.id, self.expr, self.stmt)
+        }
+    }
+    impl AST for ForInStatement {
+        ast_impl!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            // TODO: OP_FOR (pushes val onto stack)
+            // stack: [int iterator pos]
+            // code:
+            //  [PUSH array]
+            //  next_it: OP_FOR [end]
+            //  set id
+            //  [body]
+            //  jmp [next_it]
+            //  [end]
+            emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
+
+            self.expr.emit(c);
+            println!("{}", VmOpcode::OP_FOR_IN as u8);
+            let next_it_label = c.vm.code.len();
+            c.vm.code.push(VmOpcode::OP_FOR_IN);
+            let end_label = c.reserve_label();
+            c.emit_set_var(self.id.clone());
+            c.vm.code.push(VmOpcode::OP_POP);
+            self.stmt.emit(c);
+            c.vm.code.push(VmOpcode::OP_JMP);
+            c.vm.cpush32(next_it_label as u32);
+            c.fill_label(end_label, c.vm.code.len());
+
             emit_end!(c, _smap_begin);
         }
     }

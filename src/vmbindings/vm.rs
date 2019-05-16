@@ -48,7 +48,9 @@ pub enum VmOpcode {
     // exceptions
     OP_TRY, OP_RAISE, OP_EXFRAME_RET,
     // tail calls
-    OP_RETCALL
+    OP_RETCALL,
+    // iterators
+    OP_FOR_IN,
 }
 
 #[repr(C)]

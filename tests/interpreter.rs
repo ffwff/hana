@@ -103,6 +103,15 @@ end
 ");
         assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(0));
     }
+
+    #[test]
+    fn for_in_stmt() {
+        let mut vm : Vm = eval!("
+for i in [1,2,3,10] begin
+end
+");
+        assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(10));
+    }
     // #endregion
 
     // #region continue/break

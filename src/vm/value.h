@@ -22,7 +22,8 @@ struct string;
 #define TYPE_DICT       6
 #define TYPE_ARRAY      7
 #define TYPE_NATIVE_OBJ 8
-#define TYPE_INTERPRETER_ERROR 127
+#define TYPE_INTERPRETER_ERROR    127
+#define TYPE_INTERPRETER_ITERATOR 128
 
 typedef void (*value_fn)(struct vm *vm, int nargs);
 struct __attribute__((packed)) value {

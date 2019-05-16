@@ -63,6 +63,8 @@ void value_print(struct value *val) {
         fprintf(stderr, "[array %p]", val->as.array);
     else if(val->type == TYPE_NATIVE_OBJ)
         fprintf(stderr, "[native obj %p]", val->as.native);
+    else if(val->type == TYPE_INTERPRETER_ITERATOR)
+        fprintf(stderr, "[iterator %ld]", val->as.integer);
     else {
         fprintf(stderr, "nil");
     }

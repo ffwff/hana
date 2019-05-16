@@ -231,6 +231,7 @@ statement_no_eos -> std::boxed::Box<ast::AST>
     / if_stmt
     / while_stmt
     / for_stmt
+    / for_in_stmt
     / function_stmt
     / return_stmt
     / record_stmt
@@ -291,6 +292,15 @@ for_stmt -> std::boxed::Box<ast::AST>
                 None => Box::new(ast::IntLiteral { _span: (std::usize::MAX, std::usize::MAX), val: 1 })
             },
             is_up: dir,
+            stmt: s)
+    }
+for_in_stmt -> std::boxed::Box<ast::AST>
+    = ps:#position
+      #quiet<"for"> _ id:identifier _ "in" _ expr:expr _ s:then_stmt pe:#position
+    {
+        boxed!(ForInStatement, ps, pe,
+            id: id,
+            expr: expr,
             stmt: s)
     }
 
