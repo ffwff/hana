@@ -8,6 +8,7 @@ mod array;
 mod string;
 mod int;
 mod float;
+mod record;
 
 pub fn init(vm : &mut Vm) {
     let globalenv = unsafe { &mut *vm.globalenv };
@@ -99,7 +100,15 @@ pub fn init(vm : &mut Vm) {
     // #endregion
 
     // #region record
+    {
+    let mut record : Record = Record::new();
+    set_obj_var!(record, "constructor", Value::NativeFn(record::constructor));
+    set_obj_var!(record, "keys",        Value::NativeFn(record::keys));
 
+    let ptr = unsafe { malloc(record, rec_free) };
+    set_var!("Record", Value::Record(unsafe{ &*ptr }));
+    vm.drec = ptr;
+    }
     // #endregion
 
 }

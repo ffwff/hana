@@ -32,7 +32,8 @@ enum vm_opcode {
     // flow control
     OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
     // dictionary
-    OP_DICT_NEW, OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
+    OP_DICT_NEW, OP_DICT_LOAD_NO_PROTO,
+    OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
     OP_MEMBER_SET, OP_DICT_LOAD, OP_ARRAY_LOAD,
     OP_INDEX_GET, OP_INDEX_SET,
     // exceptions
@@ -87,7 +88,7 @@ struct vm {
     a_exframe eframes;
     a_uint8 code;
     a_value stack;
-    struct dict *dstr, *dint, *dfloat, *darray;
+    struct dict *dstr, *dint, *dfloat, *darray, *drec;
     enum vm_error error;
     uint32_t error_expected;
 };

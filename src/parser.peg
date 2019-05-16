@@ -35,7 +35,7 @@ word -> String
 keyword
     = ("and" / "or" / "not" / "mod" / "begin" / "end" / "then" / "if" / "else" /
       "while" / "for" / "to" / "downto" / "step" / "continue" / "break" /
-      "try" / "case" / "as" / "raise" / "in" /
+      "try" / "case" / "as" / "raise" / "in" / "match" /
       "function" / "return" / "record" / "not") !id_chars
 identifier -> String
     = #quiet<!keyword w:$(word) { w.to_string() }>

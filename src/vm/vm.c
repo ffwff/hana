@@ -82,7 +82,8 @@ void vm_execute(struct vm *vm) {
         // flow control
         X(OP_JMP), X(OP_JCOND), X(OP_JNCOND), X(OP_CALL), X(OP_RET),
         // record
-        X(OP_DICT_NEW), X(OP_MEMBER_GET), X(OP_MEMBER_GET_NO_POP),
+        X(OP_DICT_NEW), X(OP_DICT_LOAD_NO_PROTO),
+        X(OP_MEMBER_GET), X(OP_MEMBER_GET_NO_POP),
         X(OP_MEMBER_SET), X(OP_DICT_LOAD), X(OP_ARRAY_LOAD),
         X(OP_INDEX_GET), X(OP_INDEX_SET),
         // exceptions
@@ -560,10 +561,11 @@ void vm_execute(struct vm *vm) {
         dict_set(dval.as.dict, key, val);
         dispatch();
     }
-    doop(OP_DICT_LOAD): {
+    doop(OP_DICT_LOAD):
+    doop(OP_DICT_LOAD_NO_PROTO): {
         // stack: [nil][value][key]
         LOG("dict load\n");
-        vm->ip++;
+        const bool load_prototype = vm->code.data[vm->ip++] == OP_DICT_LOAD;
         struct value dval;
         value_dict(&dval);
 
@@ -577,7 +579,15 @@ void vm_execute(struct vm *vm) {
             array_pop(vm->stack);
             dict_set_str(dval.as.dict, key.as.str, val);
         }
-        array_pop(vm->stack); // pop nil
+
+        if (load_prototype && vm->drec != NULL) {
+            struct value prototypev = {
+                .as.dict = vm->drec,
+                .type = TYPE_DICT};
+            dict_set(dval.as.dict, "prototype", prototypev);
+        }
+
+        array_pop(vm->stack);  // pop nil
         array_push(vm->stack, dval);
         dispatch();
     }

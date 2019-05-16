@@ -205,4 +205,22 @@ s.insert!(0, 'Not So ')
     }
     // #endregion
 
+    // #region record
+    #[test]
+    fn record_keys() {
+        let mut vm : Vm = eval!("
+record x
+    a = 10
+    b = 10
+end
+y = x.keys()
+");
+        let arr = match vm.global().get("y").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 3); // a, b, prototype
+    }
+    // #endregion
+
 }

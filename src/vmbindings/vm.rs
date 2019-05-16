@@ -42,7 +42,8 @@ pub enum VmOpcode {
     // flow control
     OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
     // dictionary
-    OP_DICT_NEW, OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
+    OP_DICT_NEW, OP_DICT_LOAD_NO_PROTO,
+    OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
     OP_MEMBER_SET, OP_DICT_LOAD, OP_ARRAY_LOAD,
     OP_INDEX_GET, OP_INDEX_SET,
     // exceptions
@@ -72,6 +73,7 @@ pub struct Vm {
     pub dint       : *mut Record,
     pub dfloat     : *mut Record,
     pub darray     : *mut Record,
+    pub drec       : *mut Record,
 
     pub error      : VmError
     // whether the interpreter raised an unhandled error
@@ -114,6 +116,7 @@ impl Vm {
             dint: null_mut(),
             dfloat: null_mut(),
             darray: null_mut(),
+            drec: null_mut(),
             error: VmError::ERROR_NO_ERROR,
         };
         unsafe { vm_init(&mut vm); }
