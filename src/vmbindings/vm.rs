@@ -234,8 +234,10 @@ impl Vm {
         unsafe {
             self.ip = (*self.localenv).retip;
             if self.localenv == self.localenv_bp {
+                std::mem::drop(self.localenv);
                 self.localenv = null_mut();
             } else {
+                std::mem::drop(self.localenv);
                 self.localenv = self.localenv.sub(1);
             }
         }
