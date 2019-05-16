@@ -101,3 +101,20 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
         None => Value::Int(-1)
     }
 }
+
+#[hana_function()]
+fn chars(s: Value::Str) -> Value {
+    let mut array : CArray<NativeValue> = CArray::new();
+    let p = pin_start();
+    for ss in s.chars() {
+        let val = Value::Str(unsafe {
+                &*malloc(ss.clone().to_string(), alloc_free) });
+        array.push(val.wrap().pin());
+    }
+    let ret = Value::Array(unsafe { &*malloc(array, |ptr| {
+        let array = &mut *(ptr as *mut CArray<NativeValue>);
+        array.drop();
+    }) });
+    pin_end(p);
+    ret
+}

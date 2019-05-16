@@ -68,6 +68,7 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "insert!",     Value::NativeFn(string::insert_));
     set_obj_var!(string, "split",       Value::NativeFn(string::split));
     set_obj_var!(string, "index",       Value::NativeFn(string::index));
+    set_obj_var!(string, "chars",       Value::NativeFn(string::chars));
 
     let ptr = unsafe { malloc(string, rec_free) };
     set_var!("String", Value::Record(unsafe{ &*ptr }));

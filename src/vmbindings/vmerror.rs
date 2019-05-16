@@ -63,7 +63,7 @@ impl std::fmt::Display for VmError {
         VmError::ERROR_EXPECTED_RECORD_ARRAY    => write!(f, "Expected record or array to set an index for"),
         VmError::ERROR_CASE_EXPECTS_DICT        => write!(f, "case statement expects a dictionary as handler type"),
         VmError::ERROR_UNHANDLED_EXCEPTION      => write!(f, "Unhandled exception"),
-        ERROR_EXPECTED_ITERABLE                 => write!(f, "Expected iterable (array)"),
+        VmError::ERROR_EXPECTED_ITERABLE        => write!(f, "Expected iterable (array)"),
         _ => write!(f, "[vmerror]")
         }
     }
