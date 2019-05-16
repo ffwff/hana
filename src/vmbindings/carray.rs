@@ -1,4 +1,5 @@
 use std::ptr::null_mut;
+use std::alloc::{alloc_zeroed, realloc, dealloc, Layout};
 
 #[repr(C)]
 pub struct CArray<T> {
@@ -24,9 +25,11 @@ impl<T> CArray<T> {
 
     // constructor/destructor
     pub fn new() -> CArray<T> {
-        use std::mem::size_of;
         CArray::<T> {
-            data: unsafe{ libc::malloc(size_of::<T>()*2) as *mut T },
+            data: unsafe{
+                let layout = Layout::array::<T>(2).unwrap();
+                alloc_zeroed(layout) as *mut T
+            },
             len: 0,
             capacity: 2
         }
@@ -50,7 +53,8 @@ impl<T> CArray<T> {
             for i in 0..self.len {
                 std::ptr::drop_in_place(self.data.add(i));
             }
-            libc::free(self.data as *mut libc::c_void)
+            let layout = Layout::array::<T>(self.capacity).unwrap();
+            dealloc(self.data as *mut u8, layout)
         };
         self.data = null_mut();
         self.len = 0;
@@ -67,10 +71,10 @@ impl<T> CArray<T> {
 
     // clone
     pub fn clone(&self) -> CArray<T> {
-        use std::mem::size_of;
         CArray::<T> {
             data: unsafe {
-                let d = libc::malloc(size_of::<T>()*self.len) as *mut T;
+                let layout = Layout::array::<T>(self.len).unwrap();
+                let d = alloc_zeroed(layout) as *mut T;
                 std::ptr::copy(self.data, d, self.len);
                 d
             },
@@ -86,9 +90,11 @@ impl<T> CArray<T> {
     }
 
     pub fn reserve(n : usize) -> CArray<T> {
-        use std::mem::size_of;
         CArray::<T> {
-            data: unsafe{ libc::calloc(n, size_of::<T>()) as *mut T },
+            data: unsafe{
+                let layout = Layout::array::<T>(n).unwrap();
+                alloc_zeroed(layout) as *mut T
+            },
             len: n,
             capacity: n
         }
@@ -100,7 +106,8 @@ impl<T> CArray<T> {
             use std::mem::size_of;
             if self.len == self.capacity {
                 self.capacity *= 2;
-                self.data = libc::realloc(self.data as *mut libc::c_void,
+                let layout = Layout::array::<T>(self.capacity).unwrap();
+                self.data = realloc(self.data as *mut u8, layout,
                     size_of::<T>()*self.capacity) as *mut T;
             }
             std::ptr::write(self.data.add(self.len), val);
@@ -139,7 +146,8 @@ impl<T> CArray<T> {
             use std::mem::size_of;
             if self.len+1 >= self.capacity {
                 self.capacity *= 2;
-                self.data = libc::realloc(self.data as *mut libc::c_void,
+                let layout = Layout::array::<T>(self.capacity).unwrap();
+                self.data = realloc(self.data as *mut u8, layout,
                     size_of::<T>()*self.capacity) as *mut T;
             }
             std::ptr::copy(self.data.add(pos),
