@@ -559,6 +559,7 @@ pub mod ast {
         pub left : std::boxed::Box<AST>,
         pub right : std::boxed::Box<AST>,
         pub is_expr: bool,
+        pub is_namespace: bool,
     }
     impl MemExpr {
         fn _emit(&self, c : &mut compiler::Compiler, is_method_call : bool) {
@@ -611,20 +612,14 @@ pub mod ast {
                      else { VmOpcode::OP_CALL };
             for arg in self.args.iter().rev() { arg.emit(c); }
             if let Some(memexpr) = self.callee.as_any().downcast_ref::<MemExpr>() {
-                memexpr._emit(c, true);
-                c.vm.code.push(op);
-
                 let right = memexpr.right.as_any();
-                let is_type: bool = // upper case ids are considered types
-                    if let Some(s) = right.downcast_ref::<StrLiteral>() {
-                        s.val.chars().next().unwrap().is_uppercase() }
-                    else if let Some(s) = right.downcast_ref::<Identifier>() {
-                        s.val.chars().next().unwrap().is_uppercase() }
-                    else { false };
-
-                if is_type {
+                if memexpr.is_namespace {
+                    memexpr._emit(c, false);
+                    c.vm.code.push(op);
                     c.vm.cpush16(self.args.len() as u16);
                 } else {
+                    memexpr._emit(c, true);
+                    c.vm.code.push(op);
                     c.vm.cpush16((self.args.len() as u16) + 1);
                 }
             } else {
@@ -650,6 +645,7 @@ pub mod ast {
     // util for parser
     pub enum CallExprArm {
         MemExprIden(std::boxed::Box<AST>),
+        MemExprNs(std::boxed::Box<AST>),
         MemExpr(std::boxed::Box<AST>),
         CallExpr(Vec<std::boxed::Box<AST>>)
     }

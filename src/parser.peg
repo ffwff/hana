@@ -174,13 +174,22 @@ callexpr -> std::boxed::Box<ast::AST>
                     _span: (left.span().0, x.span().1),
                     left: left,
                     right: x,
-                    is_expr: false }),
+                    is_expr: false,
+                    is_namespace: false }),
+            ast::CallExprArm::MemExprNs(x) =>
+                left = Box::new(ast::MemExpr {
+                    _span: (left.span().0, x.span().1),
+                    left: left,
+                    right: x,
+                    is_expr: false,
+                    is_namespace: true }),
             ast::CallExprArm::MemExpr(x) =>
                 left = Box::new(ast::MemExpr {
                     _span: (left.span().0, x.span().1),
                     left: left,
                     right: x,
-                    is_expr: true }),
+                    is_expr: true,
+                    is_namespace: false }),
             ast::CallExprArm::CallExpr(x) =>
                 left = Box::new(ast::CallExpr {
                     _span: (left.span().0, x.last().unwrap().span().1),
@@ -203,6 +212,9 @@ callexpr_arm -> ast::CallExprArm
     = _ "." _ ps:#position id:word pe:#position {
         ast::CallExprArm::MemExprIden(
             boxed!(Identifier, ps, pe, val: id) as std::boxed::Box<ast::AST>) }
+    / _ "::" _ ps:#position id:word pe:#position {
+        ast::CallExprArm::MemExprNs(
+            boxed!(Identifier, ps, pe, val: id) as std::boxed::Box<ast::AST>) }
     / _ "[" __ e:expr __ "]" {
         let is_expr = e.as_any().downcast_ref::<ast::StrLiteral>().is_none();
         if is_expr { ast::CallExprArm::MemExpr(e) }
@@ -221,18 +233,22 @@ memexpr -> std::boxed::Box<ast::AST>
                 _span: (left.span().0, right.0.span().1),
                 left: left,
                 right: right.0,
-                is_expr: right.1 });
+                is_expr: right.1,
+                is_namespace: right.2 });
         }
         left
     }>
     / unary_expr
-memexpr_arm -> (std::boxed::Box<ast::AST>, bool /* is_expr */)
+memexpr_arm -> (std::boxed::Box<ast::AST>, bool /* is_expr */, bool /* is_namespace */)
     = _ "." _ ps:#position id:word pe:#position {
         (boxed!(Identifier, ps, pe, val: id) as std::boxed::Box<ast::AST>,
-         false) }
+         false, false) }
+    / _ "::" _ ps:#position id:word pe:#position {
+        (boxed!(Identifier, ps, pe, val: id) as std::boxed::Box<ast::AST>,
+         false, true) }
     / _ "[" __ e:expr __ "]" {
         let is_expr = e.as_any().downcast_ref::<ast::StrLiteral>().is_none();
-        ( e, is_expr )
+        ( e, is_expr, false )
     }
 
 // statements
