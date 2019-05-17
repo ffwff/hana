@@ -119,26 +119,30 @@ All statements are separated by newlines.
 Syntax (`else` line is optional):
 
 ```
-if [expression] [statement]
-else [statement]
+if [expression] then [statement]
+else [else statement]
 ```
+
+The statement evaluates `[statement]` if `[expression]` is true, else if the `else statement`
+is specified then it will be evaluated.
 
 ### While
 
 Syntax:
 
 ```
-while [expression] [statement]
+while [expression] then [statement]
 ```
 
-While `[expression]` is true, do `[statement]`
+The statement evaluates `[expression]`, if it true then continuously evaluate `[statement]`
+until `[expression]` is false.
 
 ### For
 
 Syntax:
 
 ```
-for [var]=[from] [to/downto] [dest] step [step] [statement]
+for [var]=[from] [to/downto] [dest] step [step] then [statement]
 ```
 
 The statement sets `[var]` to `[from]`, and loops to (or down to) `[dest]` (inclusive)
@@ -166,7 +170,7 @@ The statement tries to execute statements in `[body]`, if an exception is raised
 lookup the raised value's type in the `case` statements, once it finds a match, it will
 execute the statements after the matching case statement.
 
-Use `as [e]` to capture the raised value into the variable `[e]`.
+Use `as [e]` in a case statement to capture the raised value into the variable `[e]`.
 
 #### Raise statement
 
@@ -185,6 +189,8 @@ begin
 [statements]
 end
 ```
+
+The statement evaluates all of `[statements]` sequentially.
 
 ### Function
 
@@ -469,7 +475,7 @@ f() // sets the global variable a to 20
 a // => 20
 ```
 
-Note that the `$` identifier will just refer to the local `$` identifier.
+Note that the `$` identifier will just refer to the `$` identifier.
 
 # Types
 
@@ -478,14 +484,14 @@ Basic types include:
  * `String`: string
  * `Int`: 64-bit int
  * `Float`: 64-bit double precision floating point
+ * `Function`: function
  * `Record`: records
  * `Array`: array
- * `Function`: function
 
-`Int`, `Float`, `Function` values are primitives, they are passed by copies
+`Int`, `Float` values are primitives, they are passed by copies
 into (arguments) and out of (return) functions.
 
-`String`, `Record` and `Array` values are passed by reference. Those values are only deleted
+`Function`, `String`, `Record` and `Array` values are passed by reference. Those values are only deleted
 whenever the last variable containing the value is deleted or set to another value.
 
 By convention, type names are title-cased.
@@ -549,7 +555,8 @@ multiline = "
 "
 ```
 
-Strings can be indexed however it is a O(n) operation and you shouldn't do it!
+Strings can be indexed using the brackets (`[]`) operator, however it is a O(n) operation
+so you shouldn't do it!
 
 Methods:
 
@@ -693,8 +700,8 @@ v = input() // => gets a string from stdin
 
 ```
 f = File("/tmp/a", "r") // => opens the file /tmp/a with the read flag
-f.read(10) // => read first 10 bytes of file as string
-f.readall() // => read all of file as string
+f.read_up_to(10) // => read first 10 bytes of file as string
+f.read() // => read all of file as string
 f.readline() // => read a line as string
 
 f = File("/tmp/a", "w") // => opens the file /tmp/a with the writer flag
