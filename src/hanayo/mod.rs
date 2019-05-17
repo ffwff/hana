@@ -5,6 +5,8 @@ use crate::vmbindings::gc::*;
 
 mod io;
 mod file;
+mod env;
+
 mod array;
 mod string;
 mod int;
@@ -125,6 +127,18 @@ pub fn init(vm : &mut Vm) {
 
     let ptr = unsafe { malloc(file, rec_free) };
     set_var!("File", Value::Record(unsafe{ &*ptr }));
+    }
+    // #endregion
+
+    // #region env
+    {
+    let mut env : Record = Record::new();
+    set_obj_var!(env, "get",  Value::NativeFn(env::get));
+    set_obj_var!(env, "set",  Value::NativeFn(env::set));
+    set_obj_var!(env, "vars", Value::NativeFn(env::vars));
+
+    let ptr = unsafe { malloc(env, rec_free) };
+    set_var!("Env", Value::Record(unsafe{ &*ptr }));
     }
     // #endregion
 
