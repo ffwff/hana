@@ -70,6 +70,16 @@ fn read(file: Value::Record) -> Value {
     Value::Str(unsafe { &*malloc(s, |ptr| drop::<String>(ptr)) })
 }
 
+#[hana_function()]
+fn read_up_to(file: Value::Record, n: Value::Int) -> Value {
+    let mut file = get_file_from_obj(file).unwrap();
+    let mut bytes : Vec<u8> = Vec::with_capacity(n as usize);
+    file.borrow_mut().read_exact(bytes.as_mut_slice());
+    Value::Str(unsafe { &*malloc(String::from_utf8(bytes)
+        .unwrap_or_else(|e| panic!("error decoding file: {:?}", e)),
+        |ptr| drop::<String>(ptr)) })
+}
+
 // write
 #[hana_function()]
 fn write(file: Value::Record, buf: Value::Str) -> Value {
