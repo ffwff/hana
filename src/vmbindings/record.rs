@@ -38,6 +38,10 @@ impl Record {
         self.data.insert(k, v);
     }
 
+    pub fn remove(&mut self, k: &String) -> Option<NativeValue> {
+        self.data.remove(k)
+    }
+
     pub fn iter(&self) -> std::collections::hash_map::Iter<String, NativeValue> {
         self.data.iter()
     }

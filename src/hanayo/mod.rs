@@ -116,8 +116,12 @@ pub fn init(vm : &mut Vm) {
     {
     let mut file : Record = Record::new();
     set_obj_var!(file, "constructor", Value::NativeFn(file::constructor));
+    set_obj_var!(file, "close",       Value::NativeFn(file::close));
     set_obj_var!(file, "read",        Value::NativeFn(file::read));
     set_obj_var!(file, "write",       Value::NativeFn(file::write));
+    set_obj_var!(file, "seek",        Value::NativeFn(file::write));
+    set_obj_var!(file, "seek_from_start", Value::NativeFn(file::seek_from_start));
+    set_obj_var!(file, "seek_from_end",   Value::NativeFn(file::seek_from_end));
 
     let ptr = unsafe { malloc(file, rec_free) };
     set_var!("File", Value::Record(unsafe{ &*ptr }));

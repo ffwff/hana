@@ -56,7 +56,7 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                 let match_arm = match atype.as_str() {
                     "Int" | "Float" | "NativeFn" | "Fn" | "Str" | "Record" | "Array"
                         => quote!(#path(x) => x),
-                    "mut_Fn" | "mut_Str" | "mut_Dict" | "mut_Array"
+                    "mut_Fn" | "mut_Str" | "mut_Record" | "mut_Array"
                         => quote!(#path(x) => unsafe { &mut *x }),
                     _ => quote!(#path => x)
                 };

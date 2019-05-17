@@ -15,7 +15,7 @@ record JSON
                 r.i += 1
                 return
             end
-            raise JSON.ParserError("Expected " + ch + ", got " + chars[r.i])
+            raise JSON::ParserError("Expected " + ch + ", got " + chars[r.i])
         end
         r.parse_number = function(r) begin
             num = ""
@@ -124,6 +124,14 @@ record JSON
             end
         end
         return r.parse_value()
+    end
+
+    // errors
+    record ParserError
+        function constructor(self, what?) begin
+            self.what? = what?
+            return self
+        end
     end
 
 end

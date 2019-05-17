@@ -1,6 +1,6 @@
 use std::fs::{File, OpenOptions};
 use std::os::unix::io::{IntoRawFd, FromRawFd};
-use std::io::{Read, Write};
+use std::io::{Read, Write, Seek, SeekFrom};
 use std::mem::ManuallyDrop;
 use std::borrow::BorrowMut;
 
@@ -52,6 +52,15 @@ fn constructor(path : Value::Str, mode: Value::Str) -> Value {
     }) })
 }
 
+// reopen
+#[hana_function()]
+fn close(rec: Value::mut_Record) -> Value {
+    let file = get_file_from_obj(rec).unwrap();
+    ManuallyDrop::into_inner(file);
+    rec.insert("fptr!".to_string(), Value::Nil.wrap());
+    Value::Nil
+}
+
 // read
 #[hana_function()]
 fn read(file: Value::Record) -> Value {
@@ -66,4 +75,35 @@ fn read(file: Value::Record) -> Value {
 fn write(file: Value::Record, buf: Value::Str) -> Value {
     let mut file = get_file_from_obj(file).unwrap();
     Value::Int(file.borrow_mut().write_all(buf.as_bytes()).is_ok() as i64)
+}
+
+// positioning
+#[hana_function()]
+fn seek(file: Value::Record, pos: Value::Int) -> Value {
+    let mut file = get_file_from_obj(file).unwrap();
+    if let Result::Ok(result) = file.borrow_mut().seek(SeekFrom::Current(pos)) {
+        Value::Int(result as i64)
+    } else {
+        Value::Int(-1)
+    }
+}
+
+#[hana_function()]
+fn seek_from_start(file: Value::Record, pos: Value::Int) -> Value {
+    let mut file = get_file_from_obj(file).unwrap();
+    if let Result::Ok(result) = file.borrow_mut().seek(SeekFrom::Start(pos as u64)) {
+        Value::Int(result as i64)
+    } else {
+        Value::Int(-1)
+    }
+}
+
+#[hana_function()]
+fn seek_from_end(file: Value::Record, pos: Value::Int) -> Value {
+    let mut file = get_file_from_obj(file).unwrap();
+    if let Result::Ok(result) = file.borrow_mut().seek(SeekFrom::End(pos)) {
+        Value::Int(result as i64)
+    } else {
+        Value::Int(-1)
+    }
 }
