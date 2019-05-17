@@ -516,6 +516,12 @@ price = function(X) begin
 end
 ```
 
+or the Ruby style closure form (you should only use this for callbacks!):
+
+```
+price = |X| { return X*0.5 }
+```
+
 You can then call it like this:
 
 ```
@@ -536,8 +542,9 @@ greeting = "Hello " + name // => "Hello Alice"
 kaos_says = "ab"*3 + "a" // => "abababa"
 multiline = "
 
-    hey its me
-    a multiline string
+    multi
+    line
+    string
 
 "
 ```

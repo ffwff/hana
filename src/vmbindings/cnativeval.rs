@@ -86,10 +86,9 @@ impl NativeValue {
             _valueType::TYPE_FN   |
             _valueType::TYPE_STR  |
             _valueType::TYPE_DICT |
-            _valueType::TYPE_ARRAY  => {
+            _valueType::TYPE_ARRAY  =>
                 if unsafe{ mark_reachable(self.data as *mut c_void) } {
-                    self.unwrap().mark(); }
-                },
+                    self.unwrap().mark(); },
             _valueType::TYPE_NATIVE_OBJ => unsafe {
                     mark_reachable(self.data as *mut c_void);
                 },

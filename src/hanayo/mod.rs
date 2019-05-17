@@ -1,4 +1,5 @@
 use crate::vmbindings::vm::Vm;
+use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::*;
 use crate::vmbindings::gc::*;

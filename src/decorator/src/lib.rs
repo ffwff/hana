@@ -92,8 +92,11 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
 
     quote!(
         pub extern "C" fn #name(cvm : *mut Vm, nargs : u16) {
+            let vm = unsafe { &mut *cvm };
             if nargs != #arglen {
-                panic!("unmatched arguments length, expected {}!", #arglen);
+                use super::VmError;
+                vm.error = VmError::ERROR_MISMATCH_ARGUMENTS;
+                return;
             }
             use super::{pin_start, pin_end};
             let _p = pin_start();
@@ -102,7 +105,6 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                 #(#args_setup)*
                 #body
             }
-            let vm = unsafe { &mut *cvm };
             let result : Value = #name(vm);
             vm.stack.push(result.wrap());
             pin_end(_p);

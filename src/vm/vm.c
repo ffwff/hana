@@ -454,6 +454,11 @@ void vm_execute(struct vm *vm) {
     }
     // pops a function/record constructor on top of the stack,
     // sets up necessary environment and calls it.
+#define CALL_NATIVE(expr)     \
+    do {                      \
+        expr(vm, nargs);      \
+        if(vm->error) return; \
+    } while(0)
 #define JMP_INTERPRETED_FN(END_IF_NATIVE)                                    \
     do {                                                                     \
         if (val.type == TYPE_DICT) {                                         \
@@ -464,7 +469,7 @@ void vm_execute(struct vm *vm) {
             }                                                                \
             if (ctor->type == TYPE_NATIVE_FN) {                              \
                 LOG("NATIVE CONSTRUCTOR %d\n", nargs);                       \
-                ctor->as.fn(vm, nargs);                                      \
+                CALL_NATIVE(ctor->as.fn);                                    \
                 END_IF_NATIVE;                                               \
             } else if (ctor->type != TYPE_FN) {                              \
                 ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION);                       \
@@ -497,7 +502,7 @@ void vm_execute(struct vm *vm) {
         switch(val.type) {
         case TYPE_NATIVE_FN: {
             array_pop(vm->stack);
-            val.as.fn(vm, nargs);
+            CALL_NATIVE(val.as.fn);
             break; }
         case TYPE_FN:
         case TYPE_DICT: {
@@ -542,14 +547,7 @@ void vm_execute(struct vm *vm) {
         struct dict *dict = NULL;
         if(val.type != TYPE_DICT) {
             if((dict = value_get_prototype(vm, val)) == NULL) {
-                if(val.type == TYPE_NIL) {
-                    if(strcmp(key, "prototype") != 0) {
-                        ERROR(ERROR_CANNOT_ACCESS_NIL);
-                    }
-                    dispatch();
-                } else {
-                    ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
-                }
+                ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
             }
             if(strcmp(key, "prototype") == 0) {
                 struct value *val = &array_top(vm->stack);
@@ -775,7 +773,7 @@ void vm_execute(struct vm *vm) {
         switch(val.type) {
         case TYPE_NATIVE_FN: {
             array_pop(vm->stack);
-            val.as.fn(vm, nargs);
+            CALL_NATIVE(val.as.fn);
             if (vm_leave_env(vm)) {
                 LOG("return from vm_call\n");
                 return;
@@ -871,6 +869,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
                 array_push(vm->stack, args.data[i]);
             }
             ctor->as.fn(vm, args.length);
+            if(vm->error) return errorval;
             const struct value val = array_top(vm->stack);
             array_pop(vm->stack);
             return val;
