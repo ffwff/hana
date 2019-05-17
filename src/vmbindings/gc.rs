@@ -184,6 +184,14 @@ impl GcManager {
         self.pinned.push(node);
         true
     }
+    pub unsafe fn unpin(&mut self, ptr: *mut c_void) -> bool {
+        // => start byte
+        if ptr.is_null() { return false; }
+        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        (*node).pinned = false;
+        self.pinned.push(node);
+        true
+    }
     pub fn pin_start(&mut self) -> usize {
         self.pinned.len()
     }
@@ -288,6 +296,15 @@ pub fn pin(ptr: *mut c_void) -> bool {
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
         pinned = unsafe {gc_manager.pin(ptr)}
+    });
+    pinned
+}
+#[allow(dead_code)]
+pub fn unpin(ptr: *mut c_void) -> bool {
+    let mut pinned = false;
+    GC_MANAGER.with(|gc_manager| {
+        let mut gc_manager = gc_manager.borrow_mut();
+        pinned = unsafe {gc_manager.unpin(ptr)}
     });
     pinned
 }

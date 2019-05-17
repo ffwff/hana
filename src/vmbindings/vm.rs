@@ -11,6 +11,7 @@ use super::exframe::ExFrame;
 use super::env::Env;
 pub use super::value::Value;
 use super::vmerror::VmError;
+use super::gc::unpin;
 
 const CALL_STACK_SIZE : usize = 512;
 
@@ -285,6 +286,7 @@ impl std::ops::Drop for Vm {
             use std::alloc::{dealloc, Layout};
             use std::mem;
 
+            // stack frames
             if !self.localenv.is_null() {
                 let mut env = self.localenv_bp;
                 while env != self.localenv {
@@ -296,8 +298,17 @@ impl std::ops::Drop for Vm {
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
+            // exception frames
             self.exframes.drop();
 
+            // primitive objects
+            unpin(self.dstr as *mut libc::c_void);
+            unpin(self.dint as *mut libc::c_void);
+            unpin(self.dfloat as *mut libc::c_void);
+            unpin(self.darray as *mut libc::c_void);
+            unpin(self.drec as *mut libc::c_void);
+
+            // c stuff
             vm_free(self);
 
         }

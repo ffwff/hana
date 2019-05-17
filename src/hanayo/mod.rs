@@ -4,6 +4,7 @@ use crate::vmbindings::value::*;
 use crate::vmbindings::gc::*;
 
 mod io;
+mod file;
 mod array;
 mod string;
 mod int;
@@ -51,7 +52,7 @@ pub fn init(vm : &mut Vm) {
 
     let ptr = unsafe { malloc(array, rec_free) };
     set_var!("Array", Value::Record(unsafe{ &*ptr }));
-    vm.darray = ptr;
+    vm.darray = ptr; pin(ptr as *mut libc::c_void);
     }
     // #endregion
 
@@ -73,7 +74,7 @@ pub fn init(vm : &mut Vm) {
 
     let ptr = unsafe { malloc(string, rec_free) };
     set_var!("String", Value::Record(unsafe{ &*ptr }));
-    vm.dstr = ptr;
+    vm.dstr = ptr; pin(ptr as *mut libc::c_void);
     }
     // #endregion
 
@@ -84,7 +85,7 @@ pub fn init(vm : &mut Vm) {
 
     let ptr = unsafe { malloc(int, rec_free) };
     set_var!("Int", Value::Record(unsafe{ &*ptr }));
-    vm.dint = ptr;
+    vm.dint = ptr; pin(ptr as *mut libc::c_void);
     }
     // #endregion
 
@@ -95,7 +96,7 @@ pub fn init(vm : &mut Vm) {
 
     let ptr = unsafe { malloc(float, rec_free) };
     set_var!("Float", Value::Record(unsafe{ &*ptr }));
-    vm.dfloat = ptr;
+    vm.dfloat = ptr; pin(ptr as *mut libc::c_void);
     }
     // #endregion
 
@@ -107,7 +108,19 @@ pub fn init(vm : &mut Vm) {
 
     let ptr = unsafe { malloc(record, rec_free) };
     set_var!("Record", Value::Record(unsafe{ &*ptr }));
-    vm.drec = ptr;
+    vm.drec = ptr; pin(ptr as *mut libc::c_void);
+    }
+    // #endregion
+
+    // #region files
+    {
+    let mut file : Record = Record::new();
+    set_obj_var!(file, "constructor", Value::NativeFn(file::constructor));
+    set_obj_var!(file, "read",        Value::NativeFn(file::read));
+    set_obj_var!(file, "write",       Value::NativeFn(file::write));
+
+    let ptr = unsafe { malloc(file, rec_free) };
+    set_var!("File", Value::Record(unsafe{ &*ptr }));
     }
     // #endregion
 

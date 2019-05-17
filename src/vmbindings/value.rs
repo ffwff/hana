@@ -24,7 +24,7 @@ pub enum Value {
     Str(&'static String),
     Record(&'static Record),
     Array(&'static CArray<NativeValue>),
-    NativeObj,
+    NativeObj(*mut libc::c_void),
 
     // mut wrappers
     mut_Fn(*mut Function),
@@ -91,7 +91,8 @@ impl Value {
                                                 data: transmute::<*const Record, u64>(*d) },
             Value::Array(a)    => NativeValue { r#type: _valueType::TYPE_ARRAY,
                                                 data: transmute::<*const CArray<NativeValue>, u64>(*a) },
-            Value::NativeObj   => NativeValue { r#type: _valueType::TYPE_NATIVE_OBJ, data: 0},
+            Value::NativeObj(p) => NativeValue { r#type: _valueType::TYPE_NATIVE_OBJ,
+                                                data: transmute::<*mut libc::c_void, u64>(*p) },
             _ => unimplemented!()
         } }
     }
@@ -154,15 +155,15 @@ use std::cmp::PartialEq;
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
-            (Value::Nil,       Value::Nil)           => true,
-            (Value::Int(x),    Value::Int(y))        => x == y,
-            (Value::Float(x),  Value::Float(y))      => x == y,
-            (Value::NativeFn(x), Value::NativeFn(y)) => std::ptr::eq(x, y),
-            (Value::Fn(x),     Value::Fn(y))         => std::ptr::eq(x, y),
-            (Value::Str(x),    Value::Str(y))        => x == y,
-            (Value::Record(_), Value::Record(_))     => false,
-            (Value::Array(_),  Value::Array(_))      => false,
-            (Value::NativeObj, Value::NativeObj)     => false,
+            (Value::Nil,       Value::Nil)             => true,
+            (Value::Int(x),    Value::Int(y))          => x == y,
+            (Value::Float(x),  Value::Float(y))        => x == y,
+            (Value::NativeFn(x), Value::NativeFn(y))   => std::ptr::eq(x, y),
+            (Value::Fn(x),     Value::Fn(y))           => std::ptr::eq(x, y),
+            (Value::Str(x),    Value::Str(y))          => x == y,
+            (Value::Record(_), Value::Record(_))       => false,
+            (Value::Array(_),  Value::Array(_))        => false,
+            (Value::NativeObj(_), Value::NativeObj(_)) => false,
             _ => false
         }
     }
@@ -172,15 +173,15 @@ use std::fmt;
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Value::Nil         => write!(f, "[nil]"),
-            Value::Int(n)      => write!(f, "{}", n),
-            Value::Float(n)    => write!(f, "{}", n),
-            Value::NativeFn(_) => write!(f, "[native fn]"),
-            Value::Fn(_)       => write!(f, "[fn]"),
-            Value::Str(s)      => write!(f, "{}", s),
-            Value::Record(p)   => write!(f, "[record {:p}]", p),
-            Value::Array(p)    => write!(f, "[array {:p}]", p),
-            Value::NativeObj   => write!(f, "[native obj]"),
+            Value::Nil          => write!(f, "[nil]"),
+            Value::Int(n)       => write!(f, "{}", n),
+            Value::Float(n)     => write!(f, "{}", n),
+            Value::NativeFn(_)  => write!(f, "[native fn]"),
+            Value::Fn(_)        => write!(f, "[fn]"),
+            Value::Str(s)       => write!(f, "{}", s),
+            Value::Record(p)    => write!(f, "[record {:p}]", p),
+            Value::Array(p)     => write!(f, "[array {:p}]", p),
+            Value::NativeObj(p) => write!(f, "[native obj {:p}]", p),
             _ => write!(f, "[unk]")
         }
     }
