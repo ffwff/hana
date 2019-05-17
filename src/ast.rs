@@ -327,7 +327,7 @@ pub mod ast {
             //   [done]
             self.cond.emit(c);
             c.vm.code.push(VmOpcode::OP_JNCOND); // TODO: maybe do peephole opt?
-            let else_label = c.reserve_label();
+            let else_label = c.reserve_label16();
 
             if is_tail {
                 if let Some(expr) = self.then.as_any().downcast_ref::<CallExpr>() {
@@ -341,7 +341,7 @@ pub mod ast {
 
             c.vm.code.push(VmOpcode::OP_JMP);
             let done_label = c.reserve_label();
-            c.fill_label(else_label, c.vm.code.len());
+            c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
 
             if is_tail {
                 if let Some(expr) = self.alt.as_any().downcast_ref::<CallExpr>() {
@@ -685,16 +685,16 @@ pub mod ast {
             //   [done]
             self.expr.emit(c);
             c.vm.code.push(VmOpcode::OP_JNCOND); // TODO: maybe do peephole opt?
-            let else_label = c.reserve_label();
+            let else_label = c.reserve_label16();
             self.then.emit(c);
             if let Some(alt) = &self.alt {
                 c.vm.code.push(VmOpcode::OP_JMP);
                 let done_label = c.reserve_label();
-                c.fill_label(else_label, c.vm.code.len());
+                c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
                 alt.emit(c);
                 c.fill_label(done_label, c.vm.code.len());
             } else {
-                c.fill_label(else_label, c.vm.code.len());
+                c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
             }
             emit_end!(c, _smap_begin);
         }
@@ -724,7 +724,7 @@ pub mod ast {
             c.vm.code.push(VmOpcode::OP_JMP);
             let begin_label = c.reserve_label();
 
-            let then_label = c.vm.code.len() as u32;
+            let then_label = c.vm.code.len();
             c.loop_start();
             self.then.emit(c);
 
@@ -733,7 +733,7 @@ pub mod ast {
             let next_it_pos = c.vm.code.len();
             self.expr.emit(c);
             c.vm.code.push(VmOpcode::OP_JCOND);
-            c.vm.cpush32(then_label);
+            c.vm.cpush16((then_label as isize - c.vm.code.len() as isize) as u16);
 
             c.loop_end(next_it_pos, c.vm.code.len());
             emit_end!(c, _smap_begin);
@@ -786,7 +786,7 @@ pub mod ast {
             c.vm.code.push(VmOpcode::OP_JMP);
             let begin_label = c.reserve_label();
 
-            let then_label = c.vm.code.len() as u32;
+            let then_label = c.vm.code.len();
             c.loop_start();
             self.stmt.emit(c);
 
@@ -807,7 +807,7 @@ pub mod ast {
             c.vm.code.push(if self.is_up { VmOpcode::OP_LT }
                            else { VmOpcode::OP_GT });
             c.vm.code.push(VmOpcode::OP_JCOND);
-            c.vm.cpush32(then_label);
+            c.vm.cpush16((then_label as isize - c.vm.code.len() as isize) as u16);
 
             c.loop_end(next_it_pos, c.vm.code.len());
             emit_end!(c, _smap_begin);

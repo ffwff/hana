@@ -432,33 +432,24 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_JCOND): { // jmp if not true [32-bit position]
         vm->ip++;
-        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
-                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
-                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
-                             (uint32_t)vm->code.data[vm->ip+3];
+        const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
+                            (uint16_t)vm->code.data[vm->ip+1];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         LOG("JCOND %d\n", pos);
-        if(value_is_true(val)) {
-            vm->ip = pos;
-            LOG("jump!\n");
-        }
-        else {
-            vm->ip += 4;
-        }
+        if(value_is_true(val)) vm->ip += pos;
+        else vm->ip += sizeof(pos);
         dispatch();
     }
     doop(OP_JNCOND): { // jump if true [32-bit position]
         vm->ip++;
-        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
-                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
-                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
-                             (uint32_t)vm->code.data[vm->ip+3];
+        const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
+                            (uint16_t)vm->code.data[vm->ip+1];
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
         LOG("JNCOND %d\n", pos);
-        if(!value_is_true(val)) vm->ip = pos;
-        else vm->ip += 4;
+        if(!value_is_true(val)) vm->ip += pos;
+        else vm->ip += sizeof(pos);
         dispatch();
     }
     // pops a function/record constructor on top of the stack,

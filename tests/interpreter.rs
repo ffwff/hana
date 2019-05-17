@@ -46,10 +46,17 @@ pub mod interpreter_tests {
         let mut vm : Vm = eval!("y = 2*(3+5)");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(16));
     }
+
     #[test]
     fn basic_cmp() {
         let mut vm : Vm = eval!("y = 1 > 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
+    }
+
+    #[test]
+    fn condexpr() {
+        let mut vm : Vm = eval!("y = 1 ? 2*2 : 0");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(4));
     }
 
     #[test]
