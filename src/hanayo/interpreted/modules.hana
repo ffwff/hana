@@ -1,6 +1,6 @@
 __modules = Record()
 function import(x) begin
-    if not x.endswith?(".hana") x = x + ".hana"
+    if not x.endswith?(".hana") then x = x + ".hana"
     if x.startswith?("./") begin
         // resolve relative path
         dirs = __file__.split("/")
@@ -17,17 +17,17 @@ function import(x) begin
             name = x
             path = env+"/"+name
             x = File::realpath(path)
-            if x == nil panic!("can't find module " + name + "!")
+            if x == nil then panic!("can't find module " + name + "!")
         end
         else begin
             panic!("can't find module dir, environment variable HANA_PATH isn't set!")
             return false
         end
     end
-    if x == nil return false
+    if x == nil then return false
 
     // don't import if it's already imported
-    if $__modules[x] return false
+    if $__modules[x] then return false
 
     // save __file__ and import!
     old_file = $__file__

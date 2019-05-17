@@ -55,7 +55,7 @@
 				},
 				{
 					"name": "keyword.operator.logical.hana",
-					"match": "\\b(and|or|of|in)\\b"
+					"match": "\\b(and|or|not|of|in)\\b"
 				},
 				{
 					"name": "keyword.operator.assignment.hana",

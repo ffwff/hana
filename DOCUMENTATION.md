@@ -110,215 +110,6 @@ or multiple lines:
 */
 ```
 
-## Expressions
-
-### n-ary expressions
-
-Binary operators include (comma separated):
-
-```
-+, -, *, /, mod, ==, !=, >, <, >=, <=,
-and, or, =, +=, -=, *=, /=
-```
-
-Unary operators include:
-
-```
-not, -
-```
-
-#### Arithmetic operators
-
-##### Addition (+)
-
-Adds 2 values together.
-
-Type table:
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Integer                |
-| Integer    | Float       | Float                  |
-| Float      | Integer     | Float                  |
-| String     | String      | String (concatenation) |
-
-##### Subtraction (-)
-
-Subtracts right value from left value.
-
-Type table:
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Integer                |
-| Integer    | Float       | Float                  |
-| Float      | Integer     | Float                  |
-
-##### Division (/)
-
-Divides right value from left value.
-
-Type table:
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Float                  |
-| Integer    | Float       | Float                  |
-| Float      | Integer     | Float                  |
-
-##### Multiplication (*)
-
-Multiplies 2 values together.
-
-Type table:
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Integer                |
-| Integer    | Float       | Float                  |
-| Float      | Integer     | Float                  |
-| String     | Integer     | String (repeats string  by n times) |
-| Array      | Integer     | Array (repeats array by n times) |
-
-##### Modulo (mod)
-
-Gets the modulo or the remainder when the left value is divided by the right value.
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Integer                |
-
-#### Assignment operators
-
-Assignment operators assign the value of its right operand to its left operand.
-The left operand may be a function call (for function definitions), a variable
-or a member expression.
-
-List of assignment operators:
-
-| Shorthand operator | Meaning                        |
-|--------------------|--------------------------------|
-| `x = 10`           | Sets variable `x` to `10`.     |
-| `x += 10`          | Sets variable `x` to `x + 10`. |
-| `x -= 10`          | Sets variable `x` to `x - 10`. |
-| `x *= 10`          | Sets variable `x` to `x * 10`. |
-| `x /= 10`          | Sets variable `x` to `x / 10`. |
-
-#### Equality operators
-
-Compares 2 values to see if they are the same (`==`) or not the same (`!=`).
-
-Integer-integer and float-float pairs will be compared value-wise.
-
-If an integer is compared with a float, the float will be compared to a float-casted
-value of the integer.
-
-If a string is compared with another string, the byte values of the two strings will be
-compared.
-
-If an array is compared with another array, or a record is compared with another record,
-they will **only be the same** when they are of the same memory address.
-
-Otherwise, the two values will not be the same.
-
-#### Comparison operators
-
-Compares 2 values to see if they are greater than (`>`), greater than or equal to (`>=`),
-lesser than (`<`), lesser than or equal to (`<=`).
-
-Numeric values will be compared value-wise.
-
-String values will be compared based on their ASCII values (for all intents and purposes
-this works like `strcmp` in C).
-
-Otherwise comparison will always evaluate to `false`.
-
-#### Logical operators
-
-`and`, `or`: Casts the two values into booleans then does the boolean arithmetic.
-
-`not` casts the value into a boolean then does a boolean NOT (`true` becomes `false` and
-vice-versa).
-
-### conditions
-
-Hana uses the ternary operator to denote condition expressions:
-
-```
-condition ? then : otherwise
-```
-
-### call expressions
-
-Call expressions are used to call functions or records:
-
-```
-a() // calls function a with no arguments
-a(1,2) // calls function a with 2 arguments
-```
-
-When a record is called, its `constructor` function is invoked, and depending on
-the member expression's operator it will also pass a new dictionary in:
-
-```
-record Namespace
-    record Example
-        function constructor(self, num) begin
-            self.num = num
-            return self
-        end
-    end
-end
-
-Namespace.Example(10) // => calls constructor with arguments
-                      // containing a new record and 10
-Namespace::Example() // => calls constructor with arguments
-                     // containing the Namespace record
-```
-
-### member expressions
-
-Member expressions are used to access a key of a record, an array or a string:
-
-```
-a.b // => access "b" key of record "a"
-a["b"] // => access "b" key of record "a"
-v = [3,5]
-v[0] //  => access 0th index (value 3) of array "v"
-s = "abcd"
-s[3] // => "d" access 3rd element of string s
-```
-
-Calling a member expression will pass the left hand side as an argument to the
-called method, to call a value's method without passing itself, use the `::` operator:
-
-```
-record Test
-    function constructor(self) begin
-        print(self)
-    end
-end
-Test::constructor("Hello") // => Hello
-```
-
-## Values
-
-### Identifiers
-
-All tokens that don't contain quotes, operators (except for `?` and `!`) and don't start with a digit
-is an identifier.
-
-Identifiers starting with `$` denotes an identifier in the global scope:
-
-```
-a = 1
-f() = $a = 20
-f() // sets the global variable a to 20
-a // => 20
-```
-
-Note that the `$` identifier will just refer to the local `$` identifier.
-
 ## Statements
 
 All statements are separated by newlines.
@@ -472,6 +263,214 @@ Return statements are only possible in function bodies.
 
 Record bodies only accept function, assignment and record statements.
 
+## Expressions
+
+### n-ary expressions
+
+Binary operators include (comma separated):
+
+```
++, -, *, /, mod, ==, !=, >, <, >=, <=,
+and, or, =, +=, -=, *=, /=
+```
+
+Unary operators include:
+
+```
+not, -
+```
+
+#### Arithmetic operators
+
+##### Addition (+)
+
+Adds 2 values together.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+| String     | String      | String (concatenation) |
+
+##### Subtraction (-)
+
+Subtracts right value from left value.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+
+##### Division (/)
+
+Divides right value from left value.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Float                  |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+
+##### Multiplication (*)
+
+Multiplies 2 values together.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+| String     | Integer     | String (repeats string  by n times) |
+| Array      | Integer     | Array (repeats array by n times) |
+
+##### Modulo (mod)
+
+Gets the modulo or the remainder when the left value is divided by the right value.
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+
+#### Assignment operators
+
+Assignment operators assign the value of its right operand to its left operand.
+The left operand may be a function call (for function definitions), a variable
+or a member expression.
+
+List of assignment operators:
+
+| Shorthand operator | Meaning                        |
+|--------------------|--------------------------------|
+| `x = 10`           | Sets variable `x` to `10`.     |
+| `x += 10`          | Sets variable `x` to `x + 10`. |
+| `x -= 10`          | Sets variable `x` to `x - 10`. |
+| `x *= 10`          | Sets variable `x` to `x * 10`. |
+| `x /= 10`          | Sets variable `x` to `x / 10`. |
+
+#### Equality operators
+
+Compares 2 values to see if they are the same (`==`) or not the same (`!=`).
+
+Integer-integer and float-float pairs will be compared value-wise.
+
+If an integer is compared with a float, the float will be compared to a float-casted
+value of the integer.
+
+If a string is compared with another string, the byte values of the two strings will be
+compared.
+
+If an array is compared with another array, or a record is compared with another record,
+they will **only be the same** when they are of the same memory address.
+
+Otherwise, the two values will not be the same.
+
+#### Comparison operators
+
+Compares 2 values to see if they are greater than (`>`), greater than or equal to (`>=`),
+lesser than (`<`), lesser than or equal to (`<=`).
+
+Numeric values will be compared value-wise.
+
+String values will be compared based on their Unicode character points.
+
+Otherwise comparison will always evaluate to `false`.
+
+#### Logical operators
+
+`and`, `or`: Casts the two values into booleans then does the boolean arithmetic.
+
+`not` casts the value into a boolean then does a boolean NOT (`true` becomes `false` and
+vice-versa).
+
+### conditions
+
+Hana uses the ternary operator to denote condition expressions:
+
+```
+condition ? then : otherwise
+```
+
+### call expressions
+
+Call expressions are used to call functions or records:
+
+```
+a() // calls function a with no arguments
+a(1,2) // calls function a with 2 arguments
+```
+
+When a record is called, its `constructor` function is invoked, and depending on
+the member expression's operator it will also pass a new dictionary in:
+
+```
+record Namespace
+    record Example
+        function constructor(self, num) begin
+            self.num = num
+            return self
+        end
+    end
+end
+
+Namespace.Example(10) // => calls constructor with arguments
+                      // containing a new record and 10
+Namespace::Example() // => calls constructor with arguments
+                     // containing the Namespace record
+```
+
+### member expressions
+
+Member expressions are used to access a key of a record, an array or a string:
+
+```
+a.b // => access "b" key of record "a"
+a["b"] // => access "b" key of record "a"
+v = [3,5]
+v[0] //  => access 0th index (value 3) of array "v"
+s = "abcd"
+s[3] // => "d" access 3rd element of string s
+```
+
+Calling a member expression will pass the left hand side as an argument to the
+called method, to call a value's method without passing itself, use the `::` operator:
+
+```
+record Test
+    function constructor(self) begin
+        print(self)
+    end
+end
+Test::constructor("Hello") // => Hello
+```
+
+## Values
+
+### Identifiers
+
+All tokens that don't contain quotes, operators (except for `?` and `!`) and don't start with a digit
+is an identifier.
+
+Identifiers starting with `$` denotes an identifier in the global scope:
+
+```
+a = 1
+f() = $a = 20
+f() // sets the global variable a to 20
+a // => 20
+```
+
+Note that the `$` identifier will just refer to the local `$` identifier.
+
 # Types
 
 Basic types include:
@@ -529,7 +528,7 @@ set accordingly. (see [#Scoping rules](#scoping-rules))
 
 ## Strings
 
-Strings are immutable native ASCII character arrays. There's no support for Unicode yet!
+Strings are mutable UTF-8 strings.
 
 ```
 name = "Alice"
@@ -542,6 +541,8 @@ multiline = "
 
 "
 ```
+
+Strings can be indexed however it is a O(n) operation and you shouldn't do it!
 
 Methods:
 

@@ -1,44 +1,23 @@
 # 🌸 hana
 
-**hana**, a small object oriented programming language.
+**hana**, a small dynamically-typed scripting language. It is written in Rust/C
+and is inspired by Pascal, Ruby and Javascript. It primarily supports prototype-based
+object orientation and first-class functions (with closure support). The language
+has a simple mark-and-sweep garbage collector, meaning you won't have to worry
+about manual memory allocation.
 
-**NOTE:** hana's interpreter is under a rewrite in Rust! Please checkout the [master branch](https://github.com/ffwff/hana/tree/master)
-
-## Cloning
-
-You'll have to clone it recursively:
-
-```
-git checkout master
-git clone --recursive https://github.com/ffwff/hana
-```
+**haru**, the Rust parser/runtime generates bytecode that runs on an optimised
+virtual machine written in C (about as fast as Python and Ruby!)
 
 ## Building
 
-(building was tested by using gcc-7 on an x64 with Linux, mileage may vary on other architectures)
+(building was tested by using rust-nightly-2019-05-01 and gcc-8 on an x64 with Linux, mileage
+may vary on other architectures)
 
-You'll need to install **libffi** and **libgc** (BoehmGC garbage collector).
-
-For release builds, just do:
-
-```
-make RELEASE=1
-```
-
-It is recommended that you build the interpreter with libreadline and the `ENABLE_READLINE` flag set for a better REPL.
-
-To bootstrap the init bytecode, compile it using a debug/release build, then remake the interpreter:
+Just do:
 
 ```
-make
-make build/init.bin
-make RELEASE=1 INCLUDE_BYTECODE=1
-```
-
-For debug:
-
-```
-make DEBUG=1
+cargo build
 ```
 
 ## Running
@@ -48,14 +27,6 @@ Once built, you can write hana code into a source file, then invoke the interpre
 ```
 ./main program.hana
 ```
-
-Alternatively you could try things out in the REPL:
-
-```
-./main
-```
-
-In the REPL, to type a newline, simply put `\` at the end of the line then press enter.
 
 ## Documentation
 
