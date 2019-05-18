@@ -10,9 +10,9 @@ use std::borrow::BorrowMut;
 #[hana_function()]
 fn eval(s: Value::Str) -> Value {
     if let Ok(prog) = ast::grammar::start(&s) {
+        let target_ip = vm.code.len() as u32;
         let mut c = Compiler::new_append_vm(vm);
         // generate code
-        let target_ip = vm.ip;
         for stmt in prog {
             stmt.emit(&mut c);
         }

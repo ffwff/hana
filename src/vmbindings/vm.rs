@@ -1,4 +1,5 @@
 use std::ptr::null_mut;
+use std::mem::ManuallyDrop;
 use std::ffi::CString;
 use std::cell::RefCell;
 extern crate libc;
@@ -87,7 +88,6 @@ pub struct Vm {
     // whether the interpreter raised an unhandled error
 
     // rust-specific fields
-    pub compiler   : Option<Weak<RefCell<Compiler>>>
 }
 
 #[link(name="hana", kind="static")]
@@ -129,7 +129,6 @@ impl Vm {
             darray: null_mut(),
             drec: null_mut(),
             error: VmError::ERROR_NO_ERROR,
-            compiler: None,
         };
         unsafe { vm_init(&mut vm); }
         vm
@@ -286,7 +285,7 @@ impl Vm {
     }
 
     // execution context for eval
-    pub fn new_exec_ctx(&mut self) -> Vm {
+    pub fn new_exec_ctx(&mut self) -> ManuallyDrop<Vm> {
         // save current ctx
         let current_ctx = Vm{
             ip: self.ip,
@@ -304,7 +303,6 @@ impl Vm {
             drec: null_mut(),
             // shared
             error: VmError::ERROR_NO_ERROR,
-            compiler: None,
         };
         // create new ctx
         self.ip = 0;
@@ -317,10 +315,10 @@ impl Vm {
         };
         self.exframes = CArray::new_nil();
         self.stack = CArray::reserve(2);
-        current_ctx
+        ManuallyDrop::new(current_ctx)
     }
 
-    pub fn restore_exec_ctx(&mut self, mut ctx: Vm) {
+    pub fn restore_exec_ctx(&mut self, mut ctx: ManuallyDrop<Vm>) {
         self.ip = ctx.ip;
         self.localenv = ctx.localenv;
         self.localenv_bp = ctx.localenv_bp;

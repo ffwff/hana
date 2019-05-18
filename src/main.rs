@@ -57,21 +57,17 @@ fn main() {
             }));
         std::process::exit(1);
     });
-    let mut _c = Rc::pin(compiler::Compiler::new());
-    let c = || _c.borrow_mut();
-    // TODO: figure out a way to do bottom inside Compiler::new()
-    c().vm.compiler = Some(Rc::downgrade(&_c));
-    c().files.push(args[1].clone());
+    let mut c = compiler::Compiler::new();
+    c.files.push(args[1].clone());
     for stmt in prog {
-        stmt.emit(&mut c());
+        stmt.emit(&mut c);
     }
-    set_root(&mut c().vm);
-    hanayo::init(&mut c().vm);
-    c().vm.code.push(VmOpcode::OP_HALT);
-    c().vm.execute();
+    set_root(&mut c.vm);
+    hanayo::init(&mut c.vm);
+    c.vm.code.push(VmOpcode::OP_HALT);
+    c.vm.execute();
 
-    if _c.borrow().vm.error != VmError::ERROR_NO_ERROR {
-        let c = _c.borrow();
+    if c.vm.error != VmError::ERROR_NO_ERROR {
         {
             let smap = c.lookup_smap(c.vm.ip as usize).unwrap();
             let (line, col) = ast::pos_to_line(&s, smap.file.0);

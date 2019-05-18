@@ -39,15 +39,15 @@ pub struct Compiler {
     pub vm : Vm
 }
 impl Compiler {
-    pub fn new() -> Rc<RefCell<Compiler>> {
-        Rc::new(RefCell::new(Compiler{
+    pub fn new() -> Compiler {
+        Compiler{
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             smap: Vec::new(),
             files: Vec::new(),
             symbol: HashMap::new(),
             vm: Vm::new()
-        }))
+        }
     }
 
     // constructor for execution ctx
@@ -73,8 +73,7 @@ impl Compiler {
                 dfloat: null_mut(),
                 darray: null_mut(),
                 drec: null_mut(),
-                error: VmError::ERROR_NO_ERROR,
-                compiler: None,
+                error: VmError::ERROR_NO_ERROR
             }
         }
     }
