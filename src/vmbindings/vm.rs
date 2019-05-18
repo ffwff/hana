@@ -1,5 +1,6 @@
 use std::ptr::null_mut;
 use std::ffi::CString;
+use std::cell::RefCell;
 extern crate libc;
 
 use super::carray::CArray;
@@ -79,8 +80,10 @@ pub struct Vm {
     pub darray     : *mut Record,
     pub drec       : *mut Record,
 
-    pub error      : VmError
+    pub error      : VmError,
     // whether the interpreter raised an unhandled error
+
+    // rust-specific fields
 }
 
 #[link(name="hana", kind="static")]
@@ -188,16 +191,14 @@ impl Vm {
         if !self.localenv.is_null() { unsafe {
             let mut env = self.localenv_bp;
             while env != self.localenv {
-                for i in 0..(*env).nslots {
-                    let val = (*env).get(i);
-                    val.mark();
+                for val in (*env).slots.as_mut_slice().iter_mut() {
+                    (*val).mark();
                 }
                 env = env.add(1);
             }
             env = self.localenv;
-            for i in 0..(*env).nslots {
-                let val = (*env).get(i);
-                val.mark();
+            for val in (*env).slots.as_mut_slice().iter_mut() {
+                (*val).mark();
             }
         } }
     }

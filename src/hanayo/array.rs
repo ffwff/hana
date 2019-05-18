@@ -94,7 +94,7 @@ fn sort(array: Value::Array) -> Value {
     for val in array.iter() {
         val.pin();
     }
-    let slice = new_array.as_slice_mut();
+    let slice = new_array.as_mut_slice();
     slice.sort_by(value_cmp);
     let arr = Value::Array(unsafe {
                  &*malloc(new_array, alloc_free) });
@@ -103,7 +103,7 @@ fn sort(array: Value::Array) -> Value {
 }
 #[hana_function()]
 fn sort_(array: Value::mut_Array) -> Value {
-    let slice = array.as_slice_mut();
+    let slice = array.as_mut_slice();
     slice.sort_by(value_cmp);
     Value::Array(array)
 }

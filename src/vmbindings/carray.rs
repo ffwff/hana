@@ -65,7 +65,7 @@ impl<T> CArray<T> {
     pub fn as_slice(&self) -> &[T] {
         unsafe { std::slice::from_raw_parts(self.data, self.len) }
     }
-    pub fn as_slice_mut(&self) -> &mut [T] {
+    pub fn as_mut_slice(&self) -> &mut [T] {
         unsafe { std::slice::from_raw_parts_mut(self.data, self.len) }
     }
 
