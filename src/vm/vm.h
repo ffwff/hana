@@ -95,6 +95,9 @@ struct vm {
     struct dict *dstr, *dint, *dfloat, *darray, *drec;
     enum vm_error error;
     uint32_t error_expected;
+
+    struct exframe *exframe_fallthrough;
+    size_t native_call_depth;
 };
 
 void vm_init(struct vm*);

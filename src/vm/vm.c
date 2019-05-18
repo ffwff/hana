@@ -451,10 +451,14 @@ void vm_execute(struct vm *vm) {
     }
     // pops a function/record constructor on top of the stack,
     // sets up necessary environment and calls it.
-#define CALL_NATIVE(expr)     \
-    do {                      \
-        expr(vm, nargs);      \
-        if(vm->error) return; \
+#define CALL_NATIVE(expr)        \
+    do {                         \
+        vm->native_call_depth++; \
+        expr(vm, nargs);         \
+        vm->native_call_depth--; \
+        if(vm->exframe_fallthrough != NULL) \
+            vm->exframe_fallthrough = NULL; \
+        else if(vm->error) return;    \
     } while(0)
 #define JMP_INTERPRETED_FN(END_IF_NATIVE)                                    \
     do {                                                                     \
@@ -467,7 +471,7 @@ void vm_execute(struct vm *vm) {
             if (ctor->type == TYPE_NATIVE_FN) {                              \
                 LOG("NATIVE CONSTRUCTOR %d\n", nargs);                       \
                 CALL_NATIVE(ctor->as.fn);                                    \
-                END_IF_NATIVE;                                               \
+                do { END_IF_NATIVE } while(0);                               \
             } else if (ctor->type != TYPE_FN) {                              \
                 ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION);                       \
             }                                                                \
@@ -504,7 +508,18 @@ void vm_execute(struct vm *vm) {
         case TYPE_FN:
         case TYPE_DICT: {
             struct function *ifn;
-            JMP_INTERPRETED_FN(dispatch());
+            JMP_INTERPRETED_FN(
+                if (vm->exframe_fallthrough != NULL) {
+                    if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) {
+                        assert(0);
+                    } else {
+                        // just unwind
+                        FATAL("unwinding...\n");
+                        return;
+                    }
+                }
+                dispatch();
+            );
 
             // caller
             vm_enter_env(vm, ifn);
@@ -742,7 +757,18 @@ void vm_execute(struct vm *vm) {
     doop(OP_RAISE): {
         LOG("RAISE\n");
         if(!vm_raise(vm)) {
-            ERROR(ERROR_UNHANDLED_EXCEPTION);
+            LOG("ok\n");
+            if (vm->exframe_fallthrough != NULL || vm->native_call_depth != 0) {
+                vm->error = ERROR_UNHANDLED_EXCEPTION;
+                LOG("falling through pls wait (%ld)\n", vm->native_call_depth);
+                return;
+            }
+            return;
+        }
+        LOG("no ok\n");
+        if (vm->exframe_fallthrough != NULL) {
+            LOG("falling through pls wait (%ld)\n", vm->native_call_depth);
+            return;
         }
         dispatch();
     }
@@ -897,7 +923,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
     }
     // call it
     vm_execute(vm);
-    if(vm->error) // unhandled exception
+    if(vm->error || vm->exframe_fallthrough != NULL) // exception
         return errorval;
     if(vm->localenv != curenv) { // exception occurred outside of function's scope
         // NOTE: curenv already free'd from unwinding

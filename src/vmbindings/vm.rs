@@ -84,6 +84,11 @@ pub struct Vm {
 
     pub error      : VmError,
     // whether the interpreter raised an unhandled error
+    pub error_expected: u32,
+
+    // for handling exceptions inside of interpreted functions called by native functions
+    pub exframe_fallthrough: *const ExFrame,
+    pub native_call_depth: usize,
 
     // rust-specific fields
     pub compiler   : Option<*mut Compiler>,
@@ -130,6 +135,9 @@ impl Vm {
             darray: null_mut(),
             drec: null_mut(),
             error: VmError::ERROR_NO_ERROR,
+            error_expected: 0,
+            exframe_fallthrough: null_mut(),
+            native_call_depth: 0,
             compiler: None
         };
         unsafe { vm_init(&mut vm); }
@@ -247,7 +255,7 @@ impl Vm {
 
     // exceptions
     pub fn enter_exframe(&mut self) -> &mut ExFrame {
-        self.exframes.push(ExFrame::new(self.localenv, self.stack.len()-1));
+        self.exframes.push(ExFrame::new(self.localenv, self.stack.len()-1, self.native_call_depth));
         self.exframes.top_mut()
     }
     pub fn leave_exframe(&mut self) {
@@ -260,6 +268,10 @@ impl Vm {
         while i != 0 {
             let exframe = &self.exframes[i-1];
             if let Some(handler) = exframe.get_handler(self, &val) {
+                eprintln!("raise: {} {}", exframe.unwind_native_call_depth, self.native_call_depth);
+                if exframe.unwind_native_call_depth != self.native_call_depth {
+                    self.exframe_fallthrough = exframe;
+                }
                 self.ip = handler.ip;
                 if handler.nargs == 0 {
                     self.stack.pop();
@@ -274,10 +286,11 @@ impl Vm {
     // functions
     pub fn call(&mut self, fun: NativeValue, args: CArray<NativeValue>) -> Option<NativeValue> {
         let val = unsafe{ vm_call(self, fun, args) };
-        if self.code[self.ip as usize] == VmOpcode::OP_HALT {
-            return None; }
-        if self.error == VmError::ERROR_NO_ERROR { Some(val) }
-        else { None }
+        if self.code[self.ip as usize] == VmOpcode::OP_HALT ||
+           self.exframe_fallthrough != null_mut() ||
+           self.error != VmError::ERROR_NO_ERROR {
+            None }
+        else { Some(val) }
     }
 
     // execution context for eval
@@ -299,6 +312,9 @@ impl Vm {
             drec: null_mut(),
             // shared
             error: VmError::ERROR_NO_ERROR,
+            error_expected: 0,
+            exframe_fallthrough: null_mut(),
+            native_call_depth: 0,
             compiler: None
         };
         // create new ctx

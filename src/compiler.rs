@@ -70,6 +70,9 @@ impl Compiler {
                 darray: null_mut(),
                 drec: null_mut(),
                 error: VmError::ERROR_NO_ERROR,
+                error_expected:0,
+                exframe_fallthrough: null_mut(),
+                native_call_depth:0,
                 compiler: None
             }
         }

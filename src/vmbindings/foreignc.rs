@@ -245,6 +245,11 @@ pub unsafe extern "C" fn exframe_set_handler(selfptr: *mut ExFrame, proto: *cons
     let exframe = &mut *selfptr;
     exframe.set_handler(proto, (*fun).clone());
 }
+#[no_mangle]
+pub unsafe extern "C" fn exframe_native_stack_depth(selfptr: *const ExFrame) -> usize {
+    let exframe = &*selfptr;
+    exframe.unwind_native_call_depth
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn vm_enter_exframe(cvm: *mut Vm) -> *mut ExFrame {

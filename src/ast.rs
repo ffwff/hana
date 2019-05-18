@@ -1113,7 +1113,7 @@ pub mod ast {
         fn emit(&self, c : &mut compiler::Compiler) {
             emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
             c.vm.code.push(VmOpcode::OP_USE);
-            c.vm.cpushs(path.clone());
+            c.vm.cpushs(self.path.clone());
             emit_end!(c, _smap_begin);
         }
     }

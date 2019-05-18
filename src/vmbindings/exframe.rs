@@ -9,15 +9,17 @@ pub struct ExFrame {
     handlers: HashMap<*const Record, Function>,
     pub unwind_env: *const Env, // rewind target
     pub unwind_stack: usize, // stack rewind target
+    pub unwind_native_call_depth: usize, // how many native functions to return until we can call this?
 }
 
 impl ExFrame {
 
-    pub fn new(unwind_env: *const Env, unwind_stack: usize) -> ExFrame {
+    pub fn new(unwind_env: *const Env, unwind_stack: usize, unwind_native_call_depth: usize) -> ExFrame {
         ExFrame {
             handlers: HashMap::new(),
             unwind_env: unwind_env,
-            unwind_stack: unwind_stack
+            unwind_stack: unwind_stack,
+            unwind_native_call_depth: unwind_native_call_depth
         }
     }
 
