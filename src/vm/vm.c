@@ -407,15 +407,12 @@ void vm_execute(struct vm *vm) {
         const uint16_t nargs = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
                                (uint16_t)vm->code.data[vm->ip + 1];
         vm->ip += sizeof(nargs);
-        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
-                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
-                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
-                             (uint32_t)vm->code.data[vm->ip+3];
-        vm->ip += sizeof(pos);
+        const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
+                             (uint16_t)vm->code.data[vm->ip + 1];
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
         array_push(vm->stack, (struct value){0});
-        value_function(&array_top(vm->stack), vm->ip, nargs, vm->localenv);
-        vm->ip = pos;
+        value_function(&array_top(vm->stack), vm->ip + sizeof(pos), nargs, vm->localenv);
+        vm->ip += pos;
         dispatch();
     }
 

@@ -213,7 +213,7 @@ pub mod ast {
             // definition
             c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
             c.vm.cpush16(self.args.len() as u16);
-            let function_end = c.reserve_label();
+            let function_end = c.reserve_label16();
 
             if self.id.is_some() {
                 c.set_local(self.id.as_ref().unwrap().clone());
@@ -243,7 +243,7 @@ pub mod ast {
             // end
             let nslots = c.unscope();
             c.fill_label16(nslot_label, nslots);
-            c.fill_label(function_end, c.vm.code.len());
+            c.fill_label16(function_end, (c.vm.code.len() - function_end) as u16);
             emit_end!(c, _smap_begin);
         }
     }
@@ -442,7 +442,7 @@ pub mod ast {
                         // definition
                         c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
                         c.vm.cpush16(callexpr.args.len() as u16);
-                        let function_end = c.reserve_label();
+                        let function_end = c.reserve_label16();
 
                         c.set_local(callexpr.callee.as_any().downcast_ref::<Identifier>().unwrap().val.clone());
                         c.scope();
@@ -469,7 +469,7 @@ pub mod ast {
                         // end
                         let nslots = c.unscope();
                         c.fill_label16(nslot_label, nslots);
-                        c.fill_label(function_end, c.vm.code.len());
+                        c.fill_label16(function_end, (c.vm.code.len() - function_end) as u16);
 
                         let id = &callexpr.callee.as_any().downcast_ref::<Identifier>().unwrap().val;
                         if id != "_" {
@@ -1011,7 +1011,7 @@ pub mod ast {
                 // function will take in 1 arg if id is set
                 c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
                 c.vm.cpush16(if case.id.is_some() { 1 } else { 0 });
-                let body_start = c.reserve_label();
+                let body_start = c.reserve_label16();
                 // id
                 if let Some(id) = &case.id {
                     let id = id.as_any().downcast_ref::<Identifier>()
@@ -1026,7 +1026,7 @@ pub mod ast {
                 c.vm.code.push(VmOpcode::OP_EXFRAME_RET);
                 cases_to_fill.push(c.reserve_label());
                 // end
-                c.fill_label(body_start, c.vm.code.len());
+                c.fill_label16(body_start, (c.vm.code.len() - body_start) as u16);
                 // exception type
                 case.etype.emit(c);
             }

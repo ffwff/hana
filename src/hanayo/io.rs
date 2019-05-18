@@ -8,9 +8,9 @@ pub extern fn print(cvm : *mut Vm, nargs : u16) {
     for _ in 0..nargs {
         let val = vm.stack.top().unwrap();
         std::print!("{:?}", val);
-        std::io::stdout().flush().unwrap();
         vm.stack.pop();
     }
+    std::io::stdout().flush().unwrap();
     vm.stack.push(Value::Nil.wrap());
 }
 
