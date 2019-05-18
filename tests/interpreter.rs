@@ -3,6 +3,7 @@ extern crate haru;
 #[cfg(test)]
 pub mod interpreter_tests {
 
+    use std::rc::Rc;
     use haru::ast::grammar;
     use haru::compiler;
     use haru::vm::{Vm, VmOpcode, Value};
@@ -16,13 +17,18 @@ pub mod interpreter_tests {
         ($x:expr) => {{
             gc::disable();
             let prog = grammar::start($x).unwrap();
-            let mut c = compiler::Compiler::new();
+            let mut _c = compiler::Compiler::new();
+            let c = || { _c.borrow_mut() };
+            c().vm.compiler = Some(Rc::downgrade(&_c));
             for stmt in prog {
-                stmt.emit(&mut c);
+                stmt.emit(&mut c());
             }
-            c.vm.code.push(VmOpcode::OP_HALT);
-            c.vm.execute();
-            c.vm
+            c().vm.code.push(VmOpcode::OP_HALT);
+            c().vm.execute();
+            match Rc::try_unwrap(_c) {
+                Ok(c) => c.into_inner().vm,
+                _ => panic!("can't unwrap")
+            }
         }};
     }
 

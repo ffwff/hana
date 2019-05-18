@@ -7,6 +7,7 @@ use crate::vmbindings::gc::*;
 mod io;
 mod file;
 mod env;
+mod eval;
 
 mod array;
 mod string;
@@ -32,6 +33,7 @@ pub fn init(vm : &mut Vm) {
     // builtin functions
     set_var!("print", Value::NativeFn(io::print));
     set_var!("input", Value::NativeFn(io::input));
+    set_var!("eval", Value::NativeFn(eval::eval));
 
     // builtin objects
     let rec_free = |ptr| unsafe{ drop::<Record>(ptr) };

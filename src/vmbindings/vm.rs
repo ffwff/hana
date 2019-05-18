@@ -59,6 +59,9 @@ pub enum VmOpcode {
     OP_SWAP,
 }
 
+use std::rc::Weak;
+use crate::compiler::Compiler;
+
 #[repr(C)]
 pub struct Vm {
     pub ip          : u32, // current instruction pointer
@@ -84,6 +87,7 @@ pub struct Vm {
     // whether the interpreter raised an unhandled error
 
     // rust-specific fields
+    pub compiler   : Option<Weak<RefCell<Compiler>>>
 }
 
 #[link(name="hana", kind="static")]
@@ -125,6 +129,7 @@ impl Vm {
             darray: null_mut(),
             drec: null_mut(),
             error: VmError::ERROR_NO_ERROR,
+            compiler: None,
         };
         unsafe { vm_init(&mut vm); }
         vm

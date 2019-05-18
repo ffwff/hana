@@ -3,6 +3,8 @@ extern crate haru;
 #[cfg(test)]
 pub mod hanayo_tests {
 
+    use std::rc::Rc;
+
     use haru::ast::grammar;
     use haru::compiler;
     use haru::vm::Vm;
@@ -14,15 +16,20 @@ pub mod hanayo_tests {
     macro_rules! eval {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
-            let mut c = compiler::Compiler::new();
-            gc::set_root(&mut c.vm);
-            hanayo::init(&mut c.vm);
+            let mut _c = compiler::Compiler::new();
+            let c = || { _c.borrow_mut() };
+            c().vm.compiler = Some(Rc::downgrade(&_c));
+            gc::set_root(&mut c().vm);
+            hanayo::init(&mut c().vm);
             for stmt in prog {
-                stmt.emit(&mut c);
+                stmt.emit(&mut c());
             }
-            c.vm.code.push(VmOpcode::OP_HALT);
-            c.vm.execute();
-            c.vm
+            c().vm.code.push(VmOpcode::OP_HALT);
+            c().vm.execute();
+            match Rc::try_unwrap(_c) {
+                Ok(c) => c.into_inner().vm,
+                _ => panic!("can't unwrap")
+            }
         }};
     }
 

@@ -1,6 +1,10 @@
 use crate::vm::Vm;
 use crate::vm::VmOpcode;
 use std::collections::HashMap;
+use std::rc::*;
+use std::cell::RefCell;
+use std::borrow::Borrow;
+use std::borrow::BorrowMut;
 
 // private
 struct Scope {
@@ -34,15 +38,15 @@ pub struct Compiler {
     pub vm : Vm
 }
 impl Compiler {
-    pub fn new() -> Compiler {
-        Compiler{
+    pub fn new() -> Rc<RefCell<Compiler>> {
+        Rc::new(RefCell::new(Compiler{
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             smap: Vec::new(),
             files: Vec::new(),
             symbol: HashMap::new(),
             vm: Vm::new()
-        }
+        }))
     }
 
     pub fn is_in_function(&self) -> bool {
