@@ -6,7 +6,7 @@ use crate::vm::Value;
 fn eval(val: Value::Str) -> Value {
     if let Result(prog) = ast::grammar::start(&s) {
         let mut c = compiler::Compiler::new();
-        c.files.push(args[1].clone());
+        c.files.push("[eval]");
         for stmt in prog {
             stmt.emit(&mut c);
         }

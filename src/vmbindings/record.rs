@@ -1,4 +1,3 @@
-use std::ptr::null;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
 use super::value::Value;
@@ -6,7 +5,7 @@ use super::value::Value;
 #[repr(C)]
 pub struct Record {
     data: CHashMap,
-    prototype: *const Record
+    prototype: Option<&'static Record>
 }
 
 impl Record {
@@ -14,15 +13,14 @@ impl Record {
     pub fn new() -> Record {
         Record {
             data: std::collections::HashMap::new(),
-            prototype: null()
+            prototype: None
         }
     }
 
     pub fn get(&self, k: &String) -> Option<&NativeValue> {
         if let Some(v) = self.data.get(k) {
             return Some(v);
-        } else if self.prototype != null() {
-            let prototype = unsafe{ &*self.prototype };
+        } else if let Some(prototype) = self.prototype {
             return prototype.get(k);
         }
         None
@@ -30,9 +28,9 @@ impl Record {
 
     pub fn insert(&mut self, k: String, v: NativeValue) {
         if k == "prototype" {
-            self.prototype = match v.unwrap_mut() {
-                Value::mut_Record(x) => x,
-                _ => panic!("unk prototype")
+            self.prototype = match v.unwrap() {
+                Value::Record(x) => Some(x),
+                _ => None
             };
         }
         self.data.insert(k, v);

@@ -53,39 +53,39 @@ impl Env {
         env
     }
 
-    pub fn get(&self, idx: u16) -> NativeValue {
-        unsafe { (*self.slots.add(idx as usize)).clone() }
+    pub unsafe fn get(&self, idx: u16) -> NativeValue {
+        (*self.slots.add(idx as usize)).clone()
     }
-    pub fn get_up(&self, up: u16, idx: u16) -> NativeValue {
+    pub unsafe fn get_up(&self, up: u16, idx: u16) -> NativeValue {
         let mut env : *mut Env = self.lexical_parent;
         for _ in 1..up {
-            env = unsafe{ (*env).lexical_parent };
+            env = (*env).lexical_parent;
         }
-        unsafe{ (*env).get(idx) }
+        { (*env).get(idx) }
     }
 
-    pub fn set(&mut self, idx: u16, val: NativeValue) {
+    pub unsafe fn set(&mut self, idx: u16, val: NativeValue) {
         debug_assert!(idx <= self.nslots, "expected: {}", self.nslots);
-        unsafe { std::ptr::copy(&val, self.slots.add(idx as usize), 1); }
+        std::ptr::copy(&val, self.slots.add(idx as usize), 1);
     }
-    pub fn set_up(&mut self, up: u16, idx: u16, val: NativeValue) {
+    pub unsafe fn set_up(&mut self, up: u16, idx: u16, val: NativeValue) {
         let mut env : *mut Env = self.lexical_parent;
         for _ in 1..up {
-            env = unsafe{ (*env).lexical_parent };
+            env = (*env).lexical_parent;
         }
-        unsafe { (*env).set(idx, val); }
+        (*env).set(idx, val)
     }
 
-    pub fn reserve(&mut self, nslots: u16) {
+    pub unsafe fn reserve(&mut self, nslots: u16) {
         if nslots == 0 { self.slots = null_mut(); }
-        else { unsafe {
+        else {
             if !self.slots.is_null() { // preallocated
                 let layout = Layout::array::<NativeValue>(self.nslots as usize).unwrap();
                 dealloc(self.slots as *mut u8, layout);
             }
             let layout = Layout::array::<NativeValue>(nslots as usize).unwrap();
             self.slots = alloc_zeroed(layout) as *mut NativeValue;
-        } }
+        }
         self.nslots = nslots;
     }
 

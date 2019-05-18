@@ -40,13 +40,13 @@ impl Function {
 
     pub fn mark(&self) {
         for i in 0..self.bound.nslots {
-            self.bound.get(i).mark();
+            unsafe { self.bound.get(i) }.mark();
         }
     }
 
     pub fn pin(&self) {
         for i in 0..self.bound.nslots {
-            self.bound.get(i).pin();
+            unsafe{ self.bound.get(i) }.pin();
         }
     }
 

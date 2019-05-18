@@ -122,7 +122,7 @@ pub mod ast {
         ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
-            let n = unsafe { std::mem::transmute::<i64, u64>(self.val) };
+            let n = self.val as u64;
             match n {
             0...0xff => {
                     c.vm.code.push(VmOpcode::OP_PUSH8);
