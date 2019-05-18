@@ -112,7 +112,31 @@ or multiple lines:
 
 ## Statements
 
-All statements are separated by newlines.
+All statements are separated by newlines. For statements that are composed
+of a statement (X) which is preceded by `then`, if the statement X is a block
+statement, the `then` keyword can be omitted, for example you can write:
+
+```
+if 1+1 == 2 begin
+    print("math is correct")
+end
+```
+
+Instead of
+
+```
+if 1+1 == 2 then begin
+    print("math is correct")
+end
+```
+
+### Expression
+
+Syntax:
+
+`[expression]`
+
+Evaluates `[expression]`.
 
 ### If
 
@@ -123,19 +147,8 @@ if [expression] then [statement]
 else [else statement]
 ```
 
-The statement evaluates `[statement]` if `[expression]` is true, else if the `else statement`
-is specified then it will be evaluated.
-
-### While
-
-Syntax:
-
-```
-while [expression] then [statement]
-```
-
-The statement evaluates `[expression]`, if it true then continuously evaluate `[statement]`
-until `[expression]` is false.
+The statement evaluates `[statement]` if `[expression]` is true, else
+if `[else statement]` is specified then it will be evaluated.
 
 ### For
 
@@ -150,6 +163,29 @@ stepping `[step]` each iteration. With each iteration, it executes `[statement]`
 
 `step [step]` is optional, if not specified, and the `to` keyword is used, `[step]` will be 1,
 otherwise if `downto` is used, then `[step]` will be -1.
+
+### For-in
+
+Syntax:
+
+```
+for [var] in [array] then [statement]
+```
+
+The statement evaluates `[array]`, if `[array]` is an array, it will continuously
+set the variable `[var]` to every value in the array and evaluate `[statement]`.
+If it's not an array, the interpreter will panic.
+
+### While
+
+Syntax:
+
+```
+while [expression] then [statement]
+```
+
+The statement evaluates `[expression]`, if it true then continuously evaluate `[statement]`
+until `[expression]` is false.
 
 ### Try statements
 
@@ -225,8 +261,8 @@ a()
 Local variables inside of scopes can be used inside of functions that escapes the scope
 (through returns, global variables or through dictionary/array keys). These are called
 [closures](https://en.wikipedia.org/wiki/Closure_(computer_programming)). Hana implements
-this by copying the current scope's local variable (whenever the function is declared)
-into the function's bound variable field.
+this by copying the current scope's local variables (whenever the function is declared)
+into the function's hidden variable container.
 
 ```
 function adder(n) begin
@@ -537,6 +573,11 @@ fib(30) // => 1346269
 Each function creates a scope (a separate variable environment). Variables that don't
 exist in the upper scope will be declared locally, while existing variables will
 set accordingly. (see [#Scoping rules](#scoping-rules))
+
+If a return statement is issued within the function, and the expression within
+the return statement is a call, then the interpreter will tail-call optimise it
+by pushing the call expression's arguments onto the stack frame and jumping into
+the function.
 
 ## Strings
 
