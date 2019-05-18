@@ -3,8 +3,6 @@ extern crate haru;
 #[cfg(test)]
 pub mod hanayo_tests {
 
-    use std::rc::Rc;
-
     use haru::ast::grammar;
     use haru::compiler;
     use haru::vm::Vm;

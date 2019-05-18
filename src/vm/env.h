@@ -5,9 +5,7 @@
 #include "value.h"
 
 struct env;
-struct env *env_malloc(uint32_t retip, struct env *lexical_parent, uint16_t nargs);
 void env_init(struct env *, uint16_t nslots, struct vm *vm);
-void env_free(struct env *);
 struct env *env_copy(struct env *src);
 struct value env_get(struct env *, uint16_t n);
 struct value env_get_up(struct env *, uint16_t up, uint16_t n);

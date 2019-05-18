@@ -3,15 +3,11 @@ extern crate haru;
 #[cfg(test)]
 pub mod interpreter_tests {
 
-    use std::rc::Rc;
     use haru::ast::grammar;
     use haru::compiler;
     use haru::vm::{Vm, VmOpcode, Value};
     use haru::vmbindings::vmerror::VmError;
     use haru::gc;
-
-    // TODO
-    use haru::vmbindings::carray::CArray;
 
     macro_rules! eval {
         ($x:expr) => {{

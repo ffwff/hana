@@ -182,10 +182,6 @@ pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n:
 
 // #region env
 #[no_mangle]
-pub unsafe extern "C" fn env_malloc(retip: u32, lexical_parent : *mut Env, nargs: u16) -> *mut Env {
-    Box::into_raw(Box::new(Env::new(retip, lexical_parent, nargs)))
-}
-#[no_mangle]
 pub unsafe extern "C" fn env_init(selfptr: *mut Env, nslots: u16, cvm: *mut Vm) {
     let env = &mut *selfptr;
     env.reserve(nslots);
@@ -195,10 +191,6 @@ pub unsafe extern "C" fn env_init(selfptr: *mut Env, nslots: u16, cvm: *mut Vm) 
         env.set(i, val.clone());
         vm.stack.pop();
     }
-}
-#[no_mangle]
-pub unsafe extern "C" fn env_free(cenv: *mut Env) {
-    std::boxed::Box::from_raw(cenv);
 }
 
 //

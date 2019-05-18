@@ -213,13 +213,7 @@ impl Vm {
             } { panic!("maximum stack depth exceeded"); }
             self.localenv = unsafe{ self.localenv.add(1) };
         }
-        {
-            // NOTE: std::mem::replace causes memory corruption
-            // when replacing unallocated stack env with current env
-            use std::ptr::copy_nonoverlapping;
-            let env = Env::new(self.ip, unsafe{ fun.get_bound_ptr() }, fun.nargs);
-            unsafe { copy_nonoverlapping(&env, self.localenv, 1); }
-        }
+        unsafe { std::ptr::write(self.localenv, Env::new(self.ip, fun.get_bound_ptr(), fun.nargs)); }
         self.ip = fun.ip;
     }
 
@@ -236,10 +230,11 @@ impl Vm {
         unsafe {
             self.ip = (*self.localenv).retip;
             if self.localenv == self.localenv_bp {
-                std::mem::drop(self.localenv);
+                eprintln!("return from localenv_bp");
+                std::ptr::drop_in_place(self.localenv);
                 self.localenv = null_mut();
             } else {
-                std::mem::drop(self.localenv);
+                std::ptr::drop_in_place(self.localenv);
                 self.localenv = self.localenv.sub(1);
             }
         }
@@ -304,10 +299,10 @@ impl Vm {
         self.ip = 0;
         self.localenv = null_mut();
         self.localenv_bp = {
-            use std::alloc::{alloc, Layout};
+            use std::alloc::{alloc_zeroed, Layout};
             use std::mem::size_of;
             let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
-            unsafe { alloc(layout.unwrap()) as *mut Env }
+            unsafe { alloc_zeroed(layout.unwrap()) as *mut Env }
         };
         self.exframes = CArray::new_nil();
         self.stack = CArray::reserve(2);
@@ -333,10 +328,10 @@ impl std::ops::Drop for Vm {
             if !self.localenv.is_null() {
                 let mut env = self.localenv_bp;
                 while env != self.localenv {
-                    mem::drop(env);
+                    std::ptr::drop_in_place(env);
                     env = env.add(1);
                 }
-                mem::drop(self.localenv);
+                std::ptr::drop_in_place(self.localenv);
             }
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
