@@ -69,7 +69,8 @@ impl Compiler {
                 dfloat: null_mut(),
                 darray: null_mut(),
                 drec: null_mut(),
-                error: VmError::ERROR_NO_ERROR
+                error: VmError::ERROR_NO_ERROR,
+                compiler: None
             }
         }
     }

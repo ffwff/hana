@@ -13,6 +13,7 @@ use super::env::Env;
 pub use super::value::Value;
 use super::vmerror::VmError;
 use super::gc::unpin;
+use crate::compiler::Compiler;
 
 const CALL_STACK_SIZE : usize = 512;
 
@@ -55,8 +56,9 @@ pub enum VmOpcode {
     // tail calls
     OP_RETCALL,
     // iterators
-    OP_FOR_IN,
-    OP_SWAP,
+    OP_FOR_IN, OP_SWAP,
+    // modules
+    OP_USE,
 }
 
 #[repr(C)]
@@ -84,6 +86,9 @@ pub struct Vm {
     // whether the interpreter raised an unhandled error
 
     // rust-specific fields
+    pub compiler   : Option<*mut Compiler>,
+    // store compiler here for import modules
+    // TODO: rethink the design and use RC
 }
 
 #[link(name="hana", kind="static")]
@@ -125,6 +130,7 @@ impl Vm {
             darray: null_mut(),
             drec: null_mut(),
             error: VmError::ERROR_NO_ERROR,
+            compiler: None
         };
         unsafe { vm_init(&mut vm); }
         vm
@@ -230,7 +236,6 @@ impl Vm {
         unsafe {
             self.ip = (*self.localenv).retip;
             if self.localenv == self.localenv_bp {
-                eprintln!("return from localenv_bp");
                 std::ptr::drop_in_place(self.localenv);
                 self.localenv = null_mut();
             } else {
@@ -294,6 +299,7 @@ impl Vm {
             drec: null_mut(),
             // shared
             error: VmError::ERROR_NO_ERROR,
+            compiler: None
         };
         // create new ctx
         self.ip = 0;
@@ -316,6 +322,8 @@ impl Vm {
         self.exframes = ctx.exframes.deref();
         self.stack = ctx.stack.deref();
     }
+
+    // imports
 }
 
 impl std::ops::Drop for Vm {

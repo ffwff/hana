@@ -65,9 +65,8 @@ impl NativeValue {
         #[allow(non_camel_case_types)]
         match &self.r#type {
         _valueType::TYPE_NIL        => Value::Nil,
-        _valueType::TYPE_INT        => unsafe {
-                Value::Int(transmute::<u64, i64>(self.data))
-            },
+        _valueType::TYPE_INT        =>
+                Value::Int(self.data as i64),
         _valueType::TYPE_FLOAT      =>
                 Value::Float(f64::from_bits(self.data)),
         _valueType::TYPE_NATIVE_FN  => unsafe {

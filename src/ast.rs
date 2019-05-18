@@ -1098,6 +1098,26 @@ pub mod ast {
         }
     }
 
+    // ### use statement
+    pub struct UseStatement {
+        pub _span : Span,
+        pub path : String,
+    }
+    impl fmt::Debug for UseStatement {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            unimplemented!()
+        }
+    }
+    impl AST for UseStatement {
+        ast_impl!();
+        fn emit(&self, c : &mut compiler::Compiler) {
+            emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
+            c.vm.code.push(VmOpcode::OP_USE);
+            c.vm.cpushs(path.clone());
+            emit_end!(c, _smap_begin);
+        }
+    }
+
     // ### block
     pub struct BlockStatement {
         pub _span : Span,

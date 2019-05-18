@@ -57,6 +57,7 @@ fn main() {
     });
     let mut c = compiler::Compiler::new();
     c.files.push(args[1].clone());
+    c.vm.compiler = Some(&mut c);
     for stmt in prog {
         stmt.emit(&mut c);
     }

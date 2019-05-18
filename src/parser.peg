@@ -274,6 +274,7 @@ statement_no_eos -> std::boxed::Box<ast::AST>
     / break_stmt
     / try_stmt
     / raise_stmt
+    / use_stmt
     / expr_stmt
 
 statement -> std::boxed::Box<ast::AST>
@@ -355,6 +356,12 @@ raise_stmt -> std::boxed::Box<ast::AST>
     = ps:#position #quiet<"raise"> _ expr:expr pe:#position
     { boxed!(RaiseStatement, ps, pe,
              expr: expr) }
+
+// modules
+use_stmt -> std::boxed::Box<ast::AST>
+    = ps:#position #quiet<"use"> _ path:string_literal pe:#position
+    { boxed!(UseStatement, ps, pe,
+             path: path) }
 
 // functions
 function_arguments -> Vec<String>

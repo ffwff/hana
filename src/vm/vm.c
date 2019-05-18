@@ -104,7 +104,7 @@ void vm_execute(struct vm *vm) {
 #undef X
 
     dispatch();
-    while(1) {
+
     // halt
     doop(OP_HALT): {
         LOG("HALT\n");
@@ -842,8 +842,6 @@ void vm_execute(struct vm *vm) {
         vm->stack.data[vm->stack.length - 1] = lower;
         vm->stack.data[vm->stack.length - 2] = higher;
         dispatch();
-    }
-
     }
 }
 

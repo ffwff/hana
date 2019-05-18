@@ -136,10 +136,7 @@ pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
 // #region function
 #[no_mangle]
 pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env) -> *mut Function {
-    malloc(Function::new(addr, nargs, env), |ptr| {
-        let fun = &mut *(ptr as *mut Function);
-        fun.drop();
-    })
+    malloc(Function::new(addr, nargs, env), |ptr| drop::<Function>(ptr))
 }
 
 #[no_mangle]

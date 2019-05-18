@@ -43,8 +43,9 @@ enum vm_opcode {
     // tail calls
     OP_RETCALL,
     // iterators
-    OP_FOR_IN,
-    OP_SWAP,
+    OP_FOR_IN, OP_SWAP,
+    // modules
+    OP_USE,
 };
 
 enum vm_error {
