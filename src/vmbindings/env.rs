@@ -2,8 +2,6 @@
 
 use super::cnativeval::NativeValue;
 use super::vm::Value;
-use std::ptr::null_mut;
-use std::alloc::{alloc_zeroed, dealloc, Layout};
 
 #[derive(Clone)]
 pub struct Env {
@@ -35,13 +33,12 @@ impl Env {
     }
 
     pub fn copy(other : &Env) -> Env {
-        let mut env = Env {
+        Env {
             slots: other.slots.clone(),
             nargs: 0,
             lexical_parent: other.lexical_parent,
             retip: std::u32::MAX
-        };
-        env
+        }
     }
 
     pub unsafe fn get(&self, idx: u16) -> NativeValue {

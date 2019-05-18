@@ -17,18 +17,13 @@ pub mod interpreter_tests {
         ($x:expr) => {{
             gc::disable();
             let prog = grammar::start($x).unwrap();
-            let mut _c = compiler::Compiler::new();
-            let c = || { _c.borrow_mut() };
-            c().vm.compiler = Some(Rc::downgrade(&_c));
+            let mut c = compiler::Compiler::new();
             for stmt in prog {
-                stmt.emit(&mut c());
+                stmt.emit(&mut c);
             }
-            c().vm.code.push(VmOpcode::OP_HALT);
-            c().vm.execute();
-            match Rc::try_unwrap(_c) {
-                Ok(c) => c.into_inner().vm,
-                _ => panic!("can't unwrap")
-            }
+            c.vm.code.push(VmOpcode::OP_HALT);
+            c.vm.execute();
+            c.vm
         }};
     }
 

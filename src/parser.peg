@@ -109,8 +109,8 @@ function_expr -> std::boxed::Box<ast::AST>
             id: id,
             args: args,
             stmt: s)
-    } /
-      ps:#position
+    }
+    / ps:#position
       args:function_arguments_pipe _ "{" __ s:(statement*) __ "}"
       pe:#position
     {
@@ -118,6 +118,15 @@ function_expr -> std::boxed::Box<ast::AST>
             id: None,
             args: args,
             stmt: boxed!(BlockStatement, ps, pe, stmts: s))
+    }
+    / ps:#position
+      args:function_arguments_pipe _ e:expr
+      pe:#position
+    {
+        boxed!(FunctionDefinition, ps, pe,
+            id: None,
+            args: args,
+            stmt: boxed!(ReturnStatement, ps, pe, expr: Some(e)))
     }
 
 // expressions

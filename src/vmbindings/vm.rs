@@ -1,7 +1,6 @@
 use std::ptr::null_mut;
 use std::mem::ManuallyDrop;
 use std::ffi::CString;
-use std::cell::RefCell;
 extern crate libc;
 
 use super::carray::CArray;
@@ -59,9 +58,6 @@ pub enum VmOpcode {
     OP_FOR_IN,
     OP_SWAP,
 }
-
-use std::rc::Weak;
-use crate::compiler::Compiler;
 
 #[repr(C)]
 pub struct Vm {

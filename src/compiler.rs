@@ -2,10 +2,6 @@ use crate::vm::Vm;
 use crate::vm::VmOpcode;
 use crate::vmbindings::carray::CArray;
 use std::collections::HashMap;
-use std::rc::*;
-use std::cell::RefCell;
-use std::borrow::Borrow;
-use std::borrow::BorrowMut;
 
 // private
 struct Scope {

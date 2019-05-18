@@ -3,9 +3,6 @@ use crate::vmbindings::vm::VmOpcode;
 use crate::ast;
 use crate::vm::Value;
 use crate::compiler::Compiler;
-use std::cell::RefCell;
-use std::borrow::Borrow;
-use std::borrow::BorrowMut;
 
 #[hana_function()]
 fn eval(s: Value::Str) -> Value {

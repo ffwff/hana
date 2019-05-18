@@ -4,8 +4,6 @@
 #![allow(dead_code)]
 
 use std::io::Read;
-use std::rc::Rc;
-use std::mem::ManuallyDrop;
 #[macro_use] extern crate decorator;
 extern crate ansi_term;
 use ansi_term::Color as ac;
