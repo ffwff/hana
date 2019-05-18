@@ -1,5 +1,6 @@
 use crate::vm::Vm;
 use crate::vm::VmOpcode;
+use crate::vmbindings::carray::CArray;
 use std::collections::HashMap;
 use std::rc::*;
 use std::cell::RefCell;
@@ -49,6 +50,40 @@ impl Compiler {
         }))
     }
 
+    // constructor for execution ctx
+    pub fn new_append_vm(vm: &mut Vm) -> Compiler {
+        use std::ptr::null_mut;
+        use crate::vmbindings::vmerror::VmError;
+        Compiler{
+            scopes: Vec::new(),
+            loop_stmts: Vec::new(),
+            smap: Vec::new(),
+            files: Vec::new(),
+            symbol: HashMap::new(),
+            vm: Vm {
+                ip: 0,
+                localenv: null_mut(),
+                localenv_bp: null_mut(),
+                globalenv: null_mut(),
+                exframes: CArray::new_nil(),
+                code: vm.code.deref(),
+                stack: CArray::new_nil(),
+                dstr: null_mut(),
+                dint: null_mut(),
+                dfloat: null_mut(),
+                darray: null_mut(),
+                drec: null_mut(),
+                error: VmError::ERROR_NO_ERROR,
+                compiler: None,
+            }
+        }
+    }
+
+    pub fn deref_vm_code(mut self) -> CArray<VmOpcode> {
+        self.vm.code.deref()
+    }
+
+    // scopes
     pub fn is_in_function(&self) -> bool {
         !self.scopes.is_empty()
     }

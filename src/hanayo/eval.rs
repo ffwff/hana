@@ -10,17 +10,20 @@ use std::borrow::BorrowMut;
 #[hana_function()]
 fn eval(s: Value::Str) -> Value {
     if let Ok(prog) = ast::grammar::start(&s) {
-        if let Some(_c) = &mut vm.compiler {
-            let _crc = _c.upgrade().unwrap();
-            let c : &mut Compiler = &mut *_crc.as_ref().borrow_mut();
-            c.files.push("[eval]".to_string());
-            for stmt in prog {
-                stmt.emit(c);
-            }
-            c.vm.code.push(VmOpcode::OP_HALT);
-            c.vm.execute();
-            return Value::True;
+        let mut c = Compiler::new_append_vm(vm);
+        // generate code
+        let target_ip = vm.ip;
+        for stmt in prog {
+            stmt.emit(&mut c);
         }
+        vm.code = c.deref_vm_code();
+        vm.code.push(VmOpcode::OP_HALT);
+        // save current evaluation context
+        let ctx = vm.new_exec_ctx();
+        vm.ip = target_ip;
+        vm.execute();
+        vm.restore_exec_ctx(ctx);
+        return Value::True;
     }
     Value::False
 }

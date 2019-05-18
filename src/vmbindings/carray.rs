@@ -46,6 +46,18 @@ impl<T> CArray<T> {
         }
     }
 
+    pub fn deref(&mut self) -> CArray<T> {
+        let arr = CArray::<T> {
+            data: self.data,
+            len: self.len,
+            capacity: self.capacity
+        };
+        self.data = null_mut();
+        self.len = 0;
+        self.capacity = 0;
+        arr
+    }
+
     pub fn drop(&mut self) { // must be called manually
         // this function MUST BE called by its owner
         // for example from array_obj::drop function

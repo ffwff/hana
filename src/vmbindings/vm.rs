@@ -284,6 +284,49 @@ impl Vm {
         if self.error == VmError::ERROR_NO_ERROR { Some(val) }
         else { None }
     }
+
+    // execution context for eval
+    pub fn new_exec_ctx(&mut self) -> Vm {
+        // save current ctx
+        let current_ctx = Vm{
+            ip: self.ip,
+            localenv: self.localenv,
+            localenv_bp: self.localenv_bp,
+            globalenv: null_mut(), // shared
+            exframes: self.exframes.deref(),
+            code: CArray::new_nil(), // shared
+            stack: self.stack.deref(),
+            // types don't need to be saved:
+            dstr: null_mut(),
+            dint: null_mut(),
+            dfloat: null_mut(),
+            darray: null_mut(),
+            drec: null_mut(),
+            // shared
+            error: VmError::ERROR_NO_ERROR,
+            compiler: None,
+        };
+        // create new ctx
+        self.ip = 0;
+        self.localenv = null_mut();
+        self.localenv_bp = {
+            use std::alloc::{alloc, Layout};
+            use std::mem::size_of;
+            let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
+            unsafe { alloc(layout.unwrap()) as *mut Env }
+        };
+        self.exframes = CArray::new_nil();
+        self.stack = CArray::reserve(2);
+        current_ctx
+    }
+
+    pub fn restore_exec_ctx(&mut self, mut ctx: Vm) {
+        self.ip = ctx.ip;
+        self.localenv = ctx.localenv;
+        self.localenv_bp = ctx.localenv_bp;
+        self.exframes = ctx.exframes.deref();
+        self.stack = ctx.stack.deref();
+    }
 }
 
 impl std::ops::Drop for Vm {
