@@ -773,13 +773,11 @@ You can import files using the `use` statement:
 use [module]
 ```
 
-If the module name starts with a `./`, it will lookup and import the file relative to the script's local
-directory.
+Where `[module]` is a string,
 
-If the module name starts with a `/`, it will lookup and import the file relative to the root filesystem
-directory.
-
-Otherwise, it will lookup and import the file from the `HANA_PATH` environment variable.
+* If the module name starts with a `./`, it will lookup and import the file relative to the script's local directory.
+* If the module name starts with a `/`, it will lookup and import the file relative to the root filesystem directory.
+* Otherwise, it will lookup and import the file in the path specified by `HANA_PATH` environment variable.
 
 # Virtual machine
 
