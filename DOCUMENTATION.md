@@ -305,6 +305,10 @@ Return statements are only possible in function bodies.
 
 Record bodies only accept function, assignment and record statements.
 
+### Use
+
+(see [#Imports](/#Imports))
+
 ## Expressions
 
 ### n-ary expressions
@@ -695,9 +699,8 @@ Methods:
 ```
 [1,2,3].length() // => 3 (number of elements in array)
 [].empty?() // => true (is array empty?)
-[1,2,3].delete(1,2) // => [1] (deletes 2 elements starting from index 1)
+[1,2,3].delete!(1,2) // => [1] (deletes 2 elements starting from index 1)
 [1,2,3].copy(1, 2) // => [2,3] (copies 2 elements starting from index 1)
-[1,2,3].at(1) // => 2 (element at index 1)
 [1,2,3].index(2) // => 1 (index of the element 1 in array)
 [1,2,3].insert(1, 1) // => [1,1,2,3] (inserts 1 to [1,2,3] in index 1)
 a = [4,6,7,3,1]
@@ -743,23 +746,15 @@ v = input() // => gets a string from stdin
 f = File("/tmp/a", "r") // => opens the file /tmp/a with the read flag
 f.read_up_to(10) // => read first 10 bytes of file as string
 f.read() // => read all of file as string
-f.readline() // => read a line as string
 
 f = File("/tmp/a", "w") // => opens the file /tmp/a with the writer flag
 f.write("Hello World\n") // => overwrites the file with the string "Hello World\n"
-
-f.seek(offset, whence)
-f.tell()
-f.size()
-
-f.eof?()
-f.error?()
 ```
 
 ## Optional libraries
 
-In addition to the standard library, Hana also comes included
-with some optional libraries that must be imported to use.
+In addition to the standard library, Hana also comes included with some optional libraries that
+must be imported to use.
 
 ### JSON
 
@@ -772,35 +767,29 @@ end) // => {"a": true}
 
 ## Imports
 
-To import a module or a file, Hana must be compiled with the `INCLUDE_BYTECODE` flag.
-You can then invoke the `import` function with a string, which will lookup the specified module,
-and execute it in the global scope:
+You can import files using the `use` statement:
 
 ```
-import("module")
+use [module]
 ```
 
-If the module name starts with a `./`, it will lookup and import the file from the script's local
+If the module name starts with a `./`, it will lookup and import the file relative to the script's local
 directory.
 
-If the module name starts with a `/`, it will lookup and import the file from the root filesystem
+If the module name starts with a `/`, it will lookup and import the file relative to the root filesystem
 directory.
 
 Otherwise, it will lookup and import the file from the `HANA_PATH` environment variable.
 
-The import function returns 1 on once the module has been succesfully evaluated, otherwise it will
-return 0. Modules can only be imported once, subsequent calls to `import` with the same module
-parameter will return 0.
-
 # Virtual machine
 
-Hana is implemented in a stack-based virtual machine written in C. Code passed on to the interpreter will
+Hana has a stack-based virtual machine written in C. Code passed on to the interpreter will
 be parsed into an abstract syntax tree then translated into bytecodes which the virtual machine can
 understand.
 
 ## Memory management
 
-Hana uses garbage collection to manage memory, specifically implemented through the [BoehmGC](https://www.hboehm.info/gc/) library. All values that are not referenced in the value stack or are not referenced by any of the global objects will be automatically collected and free'd by the garbage collector.
+Hana uses garbage collection to manage memory. All values that are not referenced in the value stack or are not
+referenced by any of the global objects will be automatically collected and free'd by the garbage collector.
 
-Note that upon exit the virtual machine is not guaranteed to free out all values, so
-native objects are not guaranteed to be cleaned up at exit.
+Upon exit the virtual machine will release all memory that is managed by the garbage collector.

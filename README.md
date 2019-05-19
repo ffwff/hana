@@ -1,10 +1,10 @@
 # 🌸 hana
 
-**hana**, a small dynamically-typed scripting language. It is written in Rust/C
+**hana** is a small dynamically-typed scripting language written in Rust/C
 and is inspired by Pascal, Ruby and Javascript. It primarily supports prototype-based
-object orientation and first-class functions (with closure support). The language
-has a simple mark-and-sweep garbage collector, meaning you won't have to worry
-about manual memory allocation.
+object orientation and first-class functions (with closure support). The interpreter
+comes useful features such as a simple mark-and-sweep garbage collector, exception handling
+and a work in progress import system.
 
 **haru**, the Rust parser/runtime generates bytecode that runs on an optimised
 virtual machine written in C (about as fast as Python and Ruby!)
