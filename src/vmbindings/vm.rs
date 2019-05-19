@@ -100,8 +100,6 @@ pub struct Vm {
 #[link(name="hana", kind="static")]
 #[allow(improper_ctypes)]
 extern "C" {
-    fn vm_init(vm: *mut Vm);
-    fn vm_free(vm: *mut Vm);
     fn vm_execute(vm: *mut Vm);
     fn vm_print_stack(vm: *const Vm);
     fn vm_call(vm: *mut Vm, fun: NativeValue, args: CArray<NativeValue>)
@@ -118,7 +116,7 @@ impl Vm {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn new() -> Vm {
-        let mut vm = Vm{
+        Vm{
             ip: 0,
             localenv: null_mut(),
             localenv_bp: {
@@ -127,10 +125,10 @@ impl Vm {
                 let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
-            globalenv: null_mut(),
+            globalenv: unsafe { Box::into_raw(Box::new(CHashMap::new())) },
             exframes: CArray::new(),
-            code: CArray::new_nil(),
-            stack: CArray::new_nil(),
+            code: CArray::new(),
+            stack: CArray::new(),
             dstr: null_mut(),
             dint: null_mut(),
             dfloat: null_mut(),
@@ -141,9 +139,7 @@ impl Vm {
             exframe_fallthrough: null_mut(),
             native_call_depth: 0,
             compiler: None
-        };
-        unsafe { vm_init(&mut vm); }
-        vm
+        }
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -441,8 +437,12 @@ impl std::ops::Drop for Vm {
             unpin(self.darray as *mut libc::c_void);
             unpin(self.drec as *mut libc::c_void);
 
-            // c stuff
-            vm_free(self);
+            // other
+            if !self.globalenv.is_null() {
+                Box::from_raw(self.globalenv);
+            }
+            self.code.drop();
+            self.stack.drop();
 
         }
     }

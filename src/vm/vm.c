@@ -22,26 +22,6 @@
 #endif
 #define FATAL(...) fprintf(stderr, __VA_ARGS__)
 
-void vm_init(struct vm *vm) {
-    vm->error = 0;
-    vm->localenv = NULL;
-    // vm->localenv_bp is owned by rust
-    vm->globalenv = hmap_malloc();
-    // vm->eframes is owned by rust
-    vm->code = (a_uint8)array_init(uint8_t);
-    vm->stack = (a_value)array_init(struct value);
-    vm->ip = 0;
-    vm->dstr = vm->dint = vm->dfloat = vm->darray = 0;
-}
-
-void vm_free(struct vm *vm) {
-    // vm->localenv is free'd by rust
-    // vm->eframes is owned by rust
-    hmap_free(vm->globalenv);
-    array_free(vm->code);
-    array_free(vm->stack);
-}
-
 void vm_execute(struct vm *vm) {
 #define ERROR(code) do { vm->error = code; return; } while(0)
 #define ERROR_EXPECT(code, expect) do { vm->error = code; vm->error_expected = expect; return; } while(0)

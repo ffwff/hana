@@ -100,8 +100,6 @@ struct vm {
     size_t native_call_depth;
 };
 
-void vm_init(struct vm*);
-void vm_free(struct vm*);
 void vm_execute(struct vm*);
 typedef array(struct value) a_arguments;
 

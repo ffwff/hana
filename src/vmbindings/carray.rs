@@ -61,6 +61,7 @@ impl<T> CArray<T> {
     pub fn drop(&mut self) { // must be called manually
         // this function MUST BE called by its owner
         // for example from array_obj::drop function
+        if self.data.is_null() { return; }
         unsafe{
             for i in 0..self.len {
                 std::ptr::drop_in_place(self.data.add(i));

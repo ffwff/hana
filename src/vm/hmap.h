@@ -10,8 +10,6 @@ extern "C" {
 struct hmap;
 struct string;
 
-struct hmap *hmap_malloc();
-void hmap_free(struct hmap *);
 const struct value *hmap_get(struct hmap *, const char *);
 void hmap_set(struct hmap *, const char *, struct value);
 

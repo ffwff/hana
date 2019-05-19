@@ -17,17 +17,6 @@ use super::*;
 
 // #region hmap
 #[no_mangle]
-pub extern "C" fn hmap_malloc() -> *mut CHashMap {
-    Box::into_raw(Box::new(CHashMap::new()))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn hmap_free(hm: *mut CHashMap) {
-    if hm.is_null() { return; }
-    Box::from_raw(hm);
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn hmap_get(chm: *const CHashMap, ckey: *const libc::c_char) -> *const NativeValue {
     let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
     let hm = &*chm;

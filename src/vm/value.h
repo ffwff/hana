@@ -4,7 +4,6 @@ extern "C" {
 #endif
 #include <stdint.h>
 #include <stdbool.h>
-#include "native_obj.h"
 #include "dict.h"
 #include "array_obj.h"
 
@@ -35,7 +34,6 @@ struct __attribute__((packed)) value {
         struct function *ifn;
         struct dict *dict;
         array_obj *array;
-        struct native_obj *native;
     } as;
     uint8_t type;
 };
@@ -49,7 +47,6 @@ void value_function(struct value*, uint32_t ip, uint16_t nargs, struct env *env)
 void value_dict(struct value*);
 void value_array(struct value*);
 void value_array_n(struct value*, size_t n);
-void value_native_obj(struct value*, void *data, native_obj_free_fn free);
 
 void value_print(struct value*);
 

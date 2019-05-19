@@ -450,6 +450,15 @@ a = []
     }
 
     #[test]
+    fn array_repeat() {
+        let mut vm : Vm = eval!("
+a = [1]*5
+");
+        let arr = vm.global().get("a").unwrap().unwrap().array();
+        assert_eq!(arr.len(), 5);
+    }
+
+    #[test]
     fn array_multiple() {
         let mut vm : Vm = eval!("
 a = ['a', 'b']

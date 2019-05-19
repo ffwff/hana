@@ -40,11 +40,6 @@ void value_array_n(struct value *val, size_t n) {
     val->type = TYPE_ARRAY;
     val->as.array = array_obj_malloc_n(n);
 }
-void value_native_obj(struct value *val, void *data, native_obj_free_fn free) {
-    val->type = TYPE_NATIVE_OBJ;
-    val->as.native = malloc(sizeof(struct native_obj));
-    native_obj_init(val->as.native, data, free);
-}
 
 void value_print(struct value *val) {
     if(val->type == TYPE_INT)
@@ -61,8 +56,6 @@ void value_print(struct value *val) {
         fprintf(stderr, "[dict %p]", val->as.dict);
     else if(val->type == TYPE_ARRAY)
         fprintf(stderr, "[array %p]", val->as.array);
-    else if(val->type == TYPE_NATIVE_OBJ)
-        fprintf(stderr, "[native obj %p]", val->as.native);
     else if(val->type == TYPE_INTERPRETER_ITERATOR)
         fprintf(stderr, "[iterator %ld]", val->as.integer);
     else {
