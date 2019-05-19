@@ -49,7 +49,56 @@ y = X of Y
     }
     // #endregion
 
+    // #region int
+    #[test]
+    fn int_constructor() {
+        let mut vm : Vm = eval!("
+y = Int(1)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+
+    #[test]
+    fn int_constructor_str() {
+        let mut vm : Vm = eval!("
+y = Int('10')
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
+    }
+    // #end
+
+    // #region float
+    #[test]
+    fn float_constructor() {
+        let mut vm : Vm = eval!("
+y = Float(1)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().float(), 1.0);
+    }
+
+    #[test]
+    fn float_constructor_str() {
+        let mut vm : Vm = eval!("
+y = Float('10.55')
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().float(), 10.55);
+    }
+    // #end
+
+
     // #region array
+    #[test]
+    fn array_constructor_no_args() {
+        let mut vm : Vm = eval!("
+y = Array()
+");
+        let arr = match vm.global().get("y").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 0);
+    }
+
     #[test]
     fn array_constructor() {
         let mut vm : Vm = eval!("
@@ -64,6 +113,76 @@ a = Array(1,2,3)
         assert_eq!(arr[1].unwrap(), Value::Int(2));
         assert_eq!(arr[2].unwrap(), Value::Int(3));
     }
+
+    #[test]
+    fn array_length() {
+        let mut vm : Vm = eval!("
+y = [1,2,3].length()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 3);
+    }
+
+    #[test]
+    fn array_delete() {
+        let mut vm : Vm = eval!("
+y = [1,2,3]
+y.delete!(1,1)
+");
+        let arr = match vm.global().get("y").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0].unwrap(), Value::Int(1));
+        assert_eq!(arr[1].unwrap(), Value::Int(3));
+    }
+
+    #[test]
+    fn array_sort_in_place() {
+        let mut vm : Vm = eval!("
+y = [6,3,1]
+y.sort!()
+");
+        let arr = match vm.global().get("y").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0].unwrap(), Value::Int(1));
+        assert_eq!(arr[1].unwrap(), Value::Int(3));
+        assert_eq!(arr[2].unwrap(), Value::Int(6));
+    }
+
+    #[test]
+    fn array_sort() {
+        let mut vm : Vm = eval!("
+y = [6,3,1]
+x = y.sort()
+");
+        let arr = match vm.global().get("x").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0].unwrap(), Value::Int(1));
+        assert_eq!(arr[1].unwrap(), Value::Int(3));
+        assert_eq!(arr[2].unwrap(), Value::Int(6));
+    }
+
+    #[test]
+    fn array_push() {
+        let mut vm : Vm = eval!("
+y = []
+y.push(10)
+");
+        let arr = match vm.global().get("y").unwrap().unwrap() {
+            Value::Array(x) => x,
+            _ => panic!("expected array")
+        };
+        assert_eq!(arr.len(), 1);
+        assert_eq!(arr[0].unwrap(), Value::Int(10));
+    }
+
     #[test]
     fn array_pop() {
         let mut vm : Vm = eval!("
@@ -77,21 +196,7 @@ a.pop()
         assert_eq!(arr.len(), 1);
         assert_eq!(arr[0].unwrap(), Value::Int(1));
     }
-    #[test]
-    fn array_delete() {
-        let mut vm : Vm = eval!("
-a = [1,2,3,4,5]
-a.delete!(1,2)
-");
-        let arr = match vm.global().get("a").unwrap().unwrap() {
-            Value::Array(x) => x,
-            _ => panic!("expected array")
-        };
-        assert_eq!(arr.len(), 3);
-        assert_eq!(arr[0].unwrap(), Value::Int(1));
-        assert_eq!(arr[1].unwrap(), Value::Int(4));
-        assert_eq!(arr[2].unwrap(), Value::Int(5));
-    }
+
     #[test]
     fn array_index() {
         let mut vm : Vm = eval!("
@@ -100,6 +205,7 @@ y = a.index('b')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
+
     #[test]
     fn array_insert() {
         let mut vm : Vm = eval!("
@@ -180,6 +286,15 @@ y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(13));
     }
+
+    #[test]
+    fn array_join() {
+        let mut vm : Vm = eval!("
+a=[1,2,3,4,5,6]
+y = a.join('')
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "123456");
+    }
     // #endregion
 
     // #region string
@@ -230,6 +345,17 @@ s.insert!(0, 'Not So ')
 
     // #region record
     #[test]
+    fn record_new() {
+        let mut vm : Vm = eval!("
+y = Record()
+");
+        assert!(match vm.global().get("y").unwrap().unwrap() {
+            Value::Record(_) => true,
+            _ => false
+        });
+    }
+
+    #[test]
     fn record_keys() {
         let mut vm : Vm = eval!("
 record x
@@ -266,9 +392,9 @@ Env::set('test_key_set', 'value')
 
     #[test]
     fn env_vars() {
-        std::env::set_var("test_key", "value");
+        std::env::set_var("a_key", "value");
         let mut vm : Vm = eval!("
-y = Env::vars()['test_key']
+y = Env::vars()['a_key']
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "value");
     }

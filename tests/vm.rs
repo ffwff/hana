@@ -32,6 +32,17 @@ pub mod vm_tests {
     }
 
     #[test]
+    fn push_float() {
+        gc::disable();
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSHF64);
+        vm.cpushf64(0.645);
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Float(0.645));
+    }
+
+    #[test]
     fn add_ints() {
         gc::disable();
         let mut vm = Vm::new();
@@ -50,10 +61,10 @@ pub mod vm_tests {
     fn add_floats() {
         gc::disable();
         let mut vm = Vm::new();
-        vm.code.push(VmOpcode::OP_PUSHF32);
-        vm.cpushf32(1.5);
-        vm.code.push(VmOpcode::OP_PUSHF32);
-        vm.cpushf32(1.5);
+        vm.code.push(VmOpcode::OP_PUSHF64);
+        vm.cpushf64(1.5);
+        vm.code.push(VmOpcode::OP_PUSHF64);
+        vm.cpushf64(1.5);
         vm.code.push(VmOpcode::OP_ADD);
         vm.code.push(VmOpcode::OP_HALT);
         vm.execute();
@@ -125,4 +136,18 @@ pub mod vm_tests {
     }
     // #endregion
 
+    // #region vars
+    #[test]
+    fn op_not() {
+        gc::disable();
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSH8);
+        vm.cpush8(42);
+        vm.code.push(VmOpcode::OP_NOT);
+        vm.code.push(VmOpcode::OP_HALT);
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Int(0));
+    }
+    // #endregion
 }

@@ -17,6 +17,7 @@ use vmbindings::vm::VmOpcode;
 use vmbindings::gc::set_root;
 mod hanayo;
 
+#[cfg_attr(tarpaulin, skip)]
 fn print_error(s: &String, lineno: usize, col: usize, _lineno_end: usize, col_end: usize,
                etype: &str, message: &String) {
     let line = s.split("\n").nth(lineno-1).unwrap();
@@ -35,6 +36,7 @@ fn print_error(s: &String, lineno: usize, col: usize, _lineno_end: usize, col_en
     message);
 }
 
+#[cfg_attr(tarpaulin, skip)]
 fn main() {
     let args : Vec<String> = std::env::args().collect();
     let filename = &args[1];

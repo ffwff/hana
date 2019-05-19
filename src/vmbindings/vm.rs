@@ -26,7 +26,7 @@ pub enum VmOpcode {
     OP_HALT,
     // stack manip
     OP_PUSH8, OP_PUSH16, OP_PUSH32, OP_PUSH64,
-    OP_PUSH_NIL, OP_PUSHSTR, OP_PUSHF32, OP_PUSHF64,
+    OP_PUSH_NIL, OP_PUSHSTR, OP_PUSHF64,
     OP_POP,
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
@@ -109,7 +109,6 @@ extern "C" {
 
     fn vm_code_push8  (vm: *mut Vm, n : u8);
     fn vm_code_pushstr(vm: *mut Vm, s : *const libc::c_char);
-    fn vm_code_pushf32(vm: *mut Vm, n : f32);
     fn vm_code_pushf64(vm: *mut Vm, n : f64);
     fn vm_code_fill(vm: *mut Vm, pos : u32, len : u32);
     fn vm_code_fill16(vm: *mut Vm, pos : u32, len : u16);
@@ -147,6 +146,7 @@ impl Vm {
         vm
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn print_stack(&self) {
         unsafe { vm_print_stack(self); }
     }
@@ -172,13 +172,13 @@ impl Vm {
             self.cpush8(*byte);
         }
     }
-    pub fn cpushf32(&mut self, n : f32) { unsafe { vm_code_pushf32(self, n); } }
     pub fn cpushf64(&mut self, n : f64) { unsafe { vm_code_pushf64(self, n); } }
     pub fn cpushs<T : Into<Vec<u8>>>(&mut self, s : T) {
         let cstr = CString::new(s).expect("can't turn to cstring");
         unsafe { vm_code_pushstr(self, cstr.as_ptr()); }
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn cfill_label(&mut self, pos: usize, label: usize) {
         unsafe{ vm_code_fill(self, pos as u32, label as u32); }
     }

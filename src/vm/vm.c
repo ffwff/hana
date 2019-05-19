@@ -66,7 +66,7 @@ void vm_execute(struct vm *vm) {
         X(OP_HALT),
         // stack manip
         X(OP_PUSH8), X(OP_PUSH16), X(OP_PUSH32), X(OP_PUSH64),
-        X(OP_PUSH_NIL), X(OP_PUSHSTR), X(OP_PUSHF32), X(OP_PUSHF64),
+        X(OP_PUSH_NIL), X(OP_PUSHSTR), X(OP_PUSHF64),
         X(OP_POP),
         // arith
         X(OP_ADD), X(OP_SUB), X(OP_MUL), X(OP_DIV), X(OP_MOD),
@@ -147,22 +147,6 @@ void vm_execute(struct vm *vm) {
                                      (uint64_t)vm->code.data[vm->ip+7])
 
     // push 32/64-bit float on to the stack
-    doop(OP_PUSHF32): {
-        vm->ip++;
-        union {
-            float f;
-            uint8_t u[4];
-        } u;
-        u.u[0] = vm->code.data[vm->ip+0];
-        u.u[1] = vm->code.data[vm->ip+1];
-        u.u[2] = vm->code.data[vm->ip+2];
-        u.u[3] = vm->code.data[vm->ip+3];
-        vm->ip += sizeof(u);
-        LOG("PUSH_F32 %f\n", u.f);
-        array_push(vm->stack, (struct value){0});
-        value_float(&array_top(vm->stack), u.f);
-        dispatch();
-    }
     doop(OP_PUSHF64): {
         vm->ip++;
         union {
