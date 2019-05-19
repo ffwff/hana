@@ -2,7 +2,6 @@ use std::ptr::null_mut;
 use std::mem::ManuallyDrop;
 use std::ffi::CString;
 use std::path::Path;
-use std::collections::HashSet;
 extern crate libc;
 
 use super::carray::CArray;
@@ -49,7 +48,7 @@ pub enum VmOpcode {
     // flow control
     OP_JMP, OP_JMP_LONG, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
     // dictionary
-    OP_DICT_NEW, OP_DICT_LOAD_NO_PROTO,
+    OP_DICT_NEW,
     OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
     OP_MEMBER_SET, OP_DICT_LOAD, OP_ARRAY_LOAD,
     OP_INDEX_GET, OP_INDEX_SET,
@@ -354,19 +353,31 @@ impl Vm {
                 let last_path = c.files.last().unwrap();
                 let curpath = Path::new(&last_path);
                 eprintln!("{:?}", curpath);
-                if let Some(parent) = curpath.parent() {
+                let mut pbuf = if let Some(parent) = curpath.parent() {
                     parent.join(Path::new(path))
                 } else {
                     Path::new(path).to_path_buf()
-                }
+                };
+                if pbuf.extension().is_none() {
+                    pbuf.set_extension("hana"); }
+                pbuf
             } else if path.starts_with("/") {
-                Path::new(path).to_path_buf()
+                let mut pbuf = Path::new(path).to_path_buf();
+                if pbuf.extension().is_none() {
+                    pbuf.set_extension("hana"); }
+                pbuf
             } else {
                 use std::env;
                 match env::var_os("HANA_PATH") {
                     Some(parent) =>
                         env::split_paths(&parent)
-                            .map(|x| Path::new(&x).join(path).to_path_buf())
+                            .map(|x| {
+                                let mut pbuf = Path::new(&x)
+                                    .join(path).to_path_buf();
+                                if pbuf.extension().is_none() {
+                                    pbuf.set_extension("hana"); }
+                                pbuf
+                            })
                             .find(|x| x.as_path().is_file())
                             .unwrap(),
                     None => panic!("HANA_PATH not set!")

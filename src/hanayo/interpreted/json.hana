@@ -165,5 +165,3 @@ Int.to_json = function(self) begin
     return String(self)
 end
 Float.to_json = Int.to_json
-
-print(JSON::parse("123.1"))

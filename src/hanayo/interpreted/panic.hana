@@ -1,4 +1,0 @@
-function panic!(str) begin
-    print("PANIC! [", __file__, "]: ", str, "\n")
-    exit(1)
-end

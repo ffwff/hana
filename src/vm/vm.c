@@ -88,7 +88,7 @@ void vm_execute(struct vm *vm) {
         // flow control
         X(OP_JMP), X(OP_JMP_LONG), X(OP_JCOND), X(OP_JNCOND), X(OP_CALL), X(OP_RET),
         // record
-        X(OP_DICT_NEW), X(OP_DICT_LOAD_NO_PROTO),
+        X(OP_DICT_NEW),
         X(OP_MEMBER_GET), X(OP_MEMBER_GET_NO_POP),
         X(OP_MEMBER_SET), X(OP_DICT_LOAD), X(OP_ARRAY_LOAD),
         X(OP_INDEX_GET), X(OP_INDEX_SET),
@@ -607,11 +607,10 @@ void vm_execute(struct vm *vm) {
         dict_set(dval.as.dict, key, val);
         dispatch();
     }
-    doop(OP_DICT_LOAD):
-    doop(OP_DICT_LOAD_NO_PROTO): {
+    doop(OP_DICT_LOAD): {
         // stack: [nil][value][key]
         LOG("dict load\n");
-        const bool load_prototype = vm->code.data[vm->ip++] == OP_DICT_LOAD;
+        vm->ip++;
         struct value dval;
         value_dict(&dval);
 
@@ -624,13 +623,6 @@ void vm_execute(struct vm *vm) {
             struct value val = array_top(vm->stack);
             array_pop(vm->stack);
             dict_set_str(dval.as.dict, key.as.str, val);
-        }
-
-        if (load_prototype && dict_get(dval.as.dict, "prototype") == NULL) {
-            struct value prototypev = {
-                .as.dict = vm->drec,
-                .type = TYPE_DICT};
-            dict_set(dval.as.dict, "prototype", prototypev);
         }
 
         array_pop(vm->stack);  // pop nil

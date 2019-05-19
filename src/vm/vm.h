@@ -34,7 +34,7 @@ enum vm_opcode {
     // flow control
     OP_JMP, OP_JMP_LONG, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
     // dictionary
-    OP_DICT_NEW, OP_DICT_LOAD_NO_PROTO,
+    OP_DICT_NEW,
     OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
     OP_MEMBER_SET, OP_DICT_LOAD, OP_ARRAY_LOAD,
     OP_INDEX_GET, OP_INDEX_SET,
