@@ -1,6 +1,8 @@
 use std::ptr::null_mut;
 use std::mem::ManuallyDrop;
 use std::ffi::CString;
+use std::path::Path;
+use std::collections::HashSet;
 extern crate libc;
 
 use super::carray::CArray;
@@ -315,7 +317,7 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: null_mut(),
             native_call_depth: 0,
-            compiler: None
+            compiler: None,
         };
         // create new ctx
         self.ip = 0;
@@ -344,33 +346,57 @@ impl Vm {
         // loads module, jumps to the module then jump back to OP_USE
         use crate::ast;
         use std::io::Read;
+
         let mut c = unsafe{ &mut *self.compiler.unwrap() };
-        let mut file =
+
+        let pathobj =
             if path.starts_with("./") {
-                use std::path::Path;
                 let last_path = c.files.last().unwrap();
                 let curpath = Path::new(&last_path);
+                eprintln!("{:?}", curpath);
                 if let Some(parent) = curpath.parent() {
-                    std::fs::File::open(parent.join(Path::new(path))).unwrap()
+                    parent.join(Path::new(path))
                 } else {
-                    std::fs::File::open(path).unwrap()
+                    Path::new(path).to_path_buf()
                 }
+            } else if path.starts_with("/") {
+                Path::new(path).to_path_buf()
             } else {
-                std::fs::File::open(path).unwrap()
+                use std::env;
+                match env::var_os("HANA_PATH") {
+                    Some(parent) =>
+                        env::split_paths(&parent)
+                            .map(|x| Path::new(&x).join(path).to_path_buf())
+                            .find(|x| x.as_path().is_file())
+                            .unwrap(),
+                    None => panic!("HANA_PATH not set!")
+                }
             };
-        let mut s = String::new();
-        file.read_to_string(&mut s);
-        let prog = ast::grammar::start(&s).unwrap();
-        c.files.push(path.clone());
-        c.sources.push(s);
-        let importer_ip = self.ip;
-        let imported_ip = self.code.len();
-        for stmt in prog {
-            stmt.emit(&mut c);
+
+        if c.modules_loaded.contains(&pathobj) {
+            return;
+        } else {
+            c.modules_loaded.insert(pathobj.clone());
         }
-        self.code.push(VmOpcode::OP_JMP_LONG);
-        self.cpush32(importer_ip);
-        self.ip = imported_ip as u32;
+
+        if let Ok(mut file) = std::fs::File::open(pathobj) {
+            let mut s = String::new();
+            file.read_to_string(&mut s);
+            let prog = ast::grammar::start(&s).unwrap();
+            c.files.push(path.clone());
+            c.sources.push(s);
+
+            let importer_ip = self.ip;
+            let imported_ip = self.code.len();
+            for stmt in prog {
+                stmt.emit(&mut c);
+            }
+            self.code.push(VmOpcode::OP_JMP_LONG);
+            self.cpush32(importer_ip);
+            self.ip = imported_ip as u32;
+        } else {
+            return;
+        }
     }
 }
 

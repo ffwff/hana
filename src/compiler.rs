@@ -31,6 +31,7 @@ pub struct Compiler {
     loop_stmts : Vec<LoopStatement>,
     pub smap: Vec<SourceMap>,
     pub files: Vec<String>,
+    pub modules_loaded: std::collections::HashSet<std::path::PathBuf>,
     pub symbol: HashMap<usize, String>,
     pub sources: Vec<String>,
     pub vm : Vm
@@ -42,6 +43,7 @@ impl Compiler {
             loop_stmts: Vec::new(),
             smap: Vec::new(),
             files: Vec::new(),
+            modules_loaded: std::collections::HashSet::new(),
             symbol: HashMap::new(),
             sources: Vec::new(),
             vm: Vm::new()
@@ -57,6 +59,7 @@ impl Compiler {
             loop_stmts: Vec::new(),
             smap: Vec::new(),
             files: Vec::new(),
+            modules_loaded: std::collections::HashSet::new(),
             symbol: HashMap::new(),
             sources: Vec::new(),
             vm: Vm {
@@ -76,7 +79,7 @@ impl Compiler {
                 error_expected:0,
                 exframe_fallthrough: null_mut(),
                 native_call_depth:0,
-                compiler: None
+                compiler: None,
             }
         }
     }

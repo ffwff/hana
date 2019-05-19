@@ -57,6 +57,7 @@ fn main() {
         std::process::exit(1);
     });
     let mut c = compiler::Compiler::new();
+    c.modules_loaded.insert(std::path::Path::new(&filename).to_path_buf());
     c.files.push(filename.clone());
     c.sources.push(s);
     c.vm.compiler = Some(&mut c);

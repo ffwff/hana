@@ -779,6 +779,8 @@ Where `[module]` is a string,
 * If the module name starts with a `/`, it will lookup and import the file relative to the root filesystem directory.
 * Otherwise, it will lookup and import the file in the path specified by `HANA_PATH` environment variable.
 
+Circular dependency is undefined behavior. The interpreter may break if you do this.
+
 # Virtual machine
 
 Hana has a stack-based virtual machine written in C. Code passed on to the interpreter will

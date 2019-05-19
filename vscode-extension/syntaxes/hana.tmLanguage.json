@@ -13,9 +13,18 @@
 	],
 	"repository": {
 		"keywords": {
-			"patterns": [{
+			"patterns": [
+			{
 				"name": "keyword.control.hana",
-				"match": "\\b(if|else|while|then|for|to|function|record|continue|break|return|try|case|as|raise|begin|end)\\b"
+				"match": "\\b(if|else|while|for|then|to|function|record|continue|break|return|try|case|raise|begin|end)\\b"
+			},
+			{
+				"name": "keyword.other.control",
+				"match": "\\b(as)\\b"
+			},
+			{
+				"name": "keyword.other.modules",
+				"match": "\\buse\\b"
 			}]
 		},
 		"comments": {

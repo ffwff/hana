@@ -139,11 +139,11 @@ end
 // serialising
 Record.to_json = function(self) begin
     s = "{"
-    s += self.iter().map(|v| {
-        key = v[0]
-        value = v[1]
-        return key.to_json() + ":" + value.to_json()
-    }).join(", ")
+    a = []
+    for key in self.keys() begin
+        a.push(key.to_json() + ":" + self[key].to_json())
+    end
+    s += a.join(", ")
     s += "}"
     return s
 end
