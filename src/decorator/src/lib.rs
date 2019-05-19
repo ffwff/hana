@@ -58,7 +58,8 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                         => quote!(#path(x) => x),
                     "mut_Fn" | "mut_Str" | "mut_Record" | "mut_Array"
                         => quote!(#path(x) => unsafe { &mut *x }),
-                    _ => quote!(#path => x)
+                    "Any" => quote!(#path => x),
+                    _ => panic!("unknown type!")
                 };
                 args_setup.push(match atype.as_str() {
                     "Any" => quote!(let #pattern = {

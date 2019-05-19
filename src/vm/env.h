@@ -10,4 +10,3 @@ struct env *env_copy(struct env *src);
 struct value env_get(struct env *, uint16_t n);
 struct value env_get_up(struct env *, uint16_t up, uint16_t n);
 void env_set(struct env *env, uint16_t n, struct value val);
-void env_set_up(struct env *, uint16_t up, uint16_t n, struct value val);

@@ -236,13 +236,84 @@ record x
     a = 10
     b = 10
 end
-y = x.keys()
+y = Record::keys(x)
 ");
         let arr = match vm.global().get("y").unwrap().unwrap() {
             Value::Array(x) => x,
             _ => panic!("expected array")
         };
-        assert_eq!(arr.len(), 3); // a, b, prototype
+        assert_eq!(arr.len(), 2);
+    }
+    // #endregion
+
+    // #region env
+    #[test]
+    fn env_get() {
+        std::env::set_var("test_key", "value");
+        let mut vm : Vm = eval!("
+y = Env::get('test_key')
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "value");
+    }
+
+    #[test]
+    fn env_set() {
+        let mut vm : Vm = eval!("
+Env::set('test_key_set', 'value')
+");
+        assert_eq!(std::env::var("test_key_set").unwrap(), "value");
+    }
+
+    #[test]
+    fn env_vars() {
+        std::env::set_var("test_key", "value");
+        let mut vm : Vm = eval!("
+y = Env::vars()['test_key']
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "value");
+    }
+    // #endregion
+
+    // #region files
+    #[test]
+    fn file_read() {
+        std::fs::write("/tmp/a", "test");
+        let mut vm : Vm = eval!("
+f = File('/tmp/a', 'r')
+y = f.read()
+f.close()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "test");
+    }
+
+    #[test]
+    fn file_read_up_to() {
+        std::fs::write("/tmp/a", "test");
+        let mut vm : Vm = eval!("
+f = File('/tmp/a', 'r')
+y = f.read_up_to(2)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "te");
+    }
+
+    #[test]
+    fn file_write() {
+        let mut vm : Vm = eval!("
+f = File('/tmp/b', 'wc')
+f.write('Hello World')
+f.close()
+");
+        assert_eq!(std::str::from_utf8(&std::fs::read("/tmp/b").unwrap()).unwrap(), "Hello World");
+    }
+    // #endregion
+
+    // #region other
+    #[test]
+    fn eval() {
+        let mut vm : Vm = eval!("
+eval('y = 10')
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
     }
     // #endregion
 

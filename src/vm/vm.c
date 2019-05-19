@@ -82,7 +82,7 @@ void vm_execute(struct vm *vm) {
         // variables
         X(OP_ENV_NEW),
         X(OP_SET_LOCAL), X(OP_SET_LOCAL_FUNCTION_DEF), X(OP_GET_LOCAL),
-        X(OP_SET_LOCAL_UP), X(OP_GET_LOCAL_UP),
+        X(OP_GET_LOCAL_UP),
         X(OP_SET_GLOBAL), X(OP_GET_GLOBAL),
         X(OP_DEF_FUNCTION_PUSH),
         // flow control
@@ -322,20 +322,6 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(key);
         LOG("SET LOCAL %d\n", key);
         env_set(vm->localenv, key, array_top(vm->stack));
-        dispatch();
-    }
-    // same as above but set the upper scope
-    doop(OP_SET_LOCAL_UP): {
-        vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
-                             vm->code.data[vm->ip+1];
-        vm->ip += sizeof(key);
-        uint16_t relascope = vm->code.data[vm->ip+0] << 8 |
-                             vm->code.data[vm->ip+1];
-        vm->ip += sizeof(relascope);
-        LOG("SET LOCAL UP %d %d\n", key, relascope);
-
-        env_set_up(vm->localenv, relascope, key, array_top(vm->stack));
         dispatch();
     }
     // this is for recursive function

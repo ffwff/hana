@@ -10,6 +10,28 @@ pub mod vm_tests {
 
     //#region numbers
     #[test]
+    fn push_16() {
+        gc::disable();
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSH16);
+        vm.cpush16(40000);
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Int(40000));
+    }
+
+    #[test]
+    fn push_32() {
+        gc::disable();
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSH32);
+        vm.cpush32(100000);
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Int(100000));
+    }
+
+    #[test]
     fn add_ints() {
         gc::disable();
         let mut vm = Vm::new();

@@ -56,13 +56,6 @@ impl Env {
         let elem = self.slots.get_unchecked_mut(idx as usize);
         *elem = val;
     }
-    pub unsafe fn set_up(&mut self, up: u16, idx: u16, val: NativeValue) {
-        let mut env : *mut Env = self.lexical_parent;
-        for _ in 1..up {
-            env = (*env).lexical_parent;
-        }
-        (*env).set(idx, val)
-    }
 
     pub fn reserve(&mut self, nslots: u16) {
         self.slots.resize(nslots as usize, Value::Nil.wrap());

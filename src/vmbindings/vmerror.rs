@@ -31,6 +31,7 @@ pub enum VmError {
     ERROR_EXPECTED_ITERABLE,
 }
 
+#[cfg_attr(tarpaulin, skip)]
 impl std::fmt::Display for VmError {
 
     #[allow(non_snake_case)]

@@ -42,7 +42,7 @@ pub enum VmOpcode {
     // variables
     OP_ENV_NEW,
     OP_SET_LOCAL, OP_SET_LOCAL_FUNCTION_DEF, OP_GET_LOCAL,
-    OP_SET_LOCAL_UP, OP_GET_LOCAL_UP,
+    OP_GET_LOCAL_UP,
     OP_SET_GLOBAL, OP_GET_GLOBAL,
     OP_DEF_FUNCTION_PUSH,
     // flow control
@@ -116,6 +116,8 @@ extern "C" {
 }
 
 impl Vm {
+
+    #[cfg_attr(tarpaulin, skip)]
     pub fn new() -> Vm {
         let mut vm = Vm{
             ip: 0,

@@ -206,11 +206,6 @@ pub unsafe extern "C" fn env_set(selfptr: *mut Env, slot: u16, val: NativeValue)
     let env = &mut *selfptr;
     env.set(slot, val);
 }
-#[no_mangle]
-pub unsafe extern "C" fn env_set_up(selfptr: *mut Env, up: u16, slot: u16, val: NativeValue) {
-    let env = &mut *selfptr;
-    env.set_up(up, slot, val);
-}
 
 //
 #[no_mangle]

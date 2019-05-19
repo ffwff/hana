@@ -13,8 +13,11 @@ use crate::vm::Value;
 // the gc should be doing it in the record's finaliser!
 fn get_file_from_obj(rec: &Record) -> Option<ManuallyDrop<File>> {
     if let Some(fptr) = rec.get(&"fptr!".to_string()) {
-        Some(ManuallyDrop::new(unsafe {
-            File::from_raw_fd(fptr.unwrap().int() as i32) }))
+        match fptr.unwrap() {
+            Value::Int(x) => Some(ManuallyDrop::new(unsafe {
+                    File::from_raw_fd(x as i32) })),
+            _ => None
+        }
     } else {
         None
     }
@@ -46,7 +49,9 @@ fn constructor(path : Value::Str, mode: Value::Str) -> Value {
     Value::Record(unsafe{ &*malloc(rec, |ptr| {
         // cleanup file descriptor
         let rec = &mut *(ptr as *mut Record);
-        ManuallyDrop::into_inner(get_file_from_obj(rec).unwrap());
+        if let Some(fptr) = get_file_from_obj(rec) {
+            ManuallyDrop::into_inner(fptr);
+        }
         // cleanup record
         drop::<Record>(ptr);
     }) })
@@ -73,8 +78,9 @@ fn read(file: Value::Record) -> Value {
 #[hana_function()]
 fn read_up_to(file: Value::Record, n: Value::Int) -> Value {
     let mut file = get_file_from_obj(file).unwrap();
-    let mut bytes : Vec<u8> = Vec::with_capacity(n as usize);
-    if file.borrow_mut().read_exact(bytes.as_mut_slice()).is_err() {
+    let mut bytes : Vec<u8> = Vec::new();
+    bytes.resize(n as usize, 0);
+    if file.borrow_mut().read_exact(&mut bytes).is_err() {
         panic!("unable to read exact!");
     }
     Value::Str(unsafe { &*malloc(String::from_utf8(bytes)

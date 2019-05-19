@@ -26,5 +26,5 @@ fn vars() -> Value {
         record.insert(key, Value::Str(unsafe{
             &*malloc(value, |ptr| drop::<String>(ptr)) }).wrap());
     }
-    Value::Record(unsafe{ &*malloc(Record::new(), |ptr| drop::<Record>(ptr)) })
+    Value::Record(unsafe{ &*malloc(record, |ptr| drop::<Record>(ptr)) })
 }

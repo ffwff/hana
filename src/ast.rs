@@ -54,6 +54,7 @@ pub mod ast {
         pub _span : Span,
         pub val : String
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for Identifier {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"identifier\": \"{}\"}}", self.val)
@@ -94,6 +95,7 @@ pub mod ast {
             StrLiteral { _span: span, val: s, rawval: str.clone() }
         }
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for StrLiteral {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"string\": \"{}\"}}", self.rawval)
@@ -113,6 +115,7 @@ pub mod ast {
         pub _span : Span,
         pub val : i64
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for IntLiteral {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"integer\": {}}}", self.val)
@@ -149,6 +152,7 @@ pub mod ast {
         pub _span : Span,
         pub val : f64
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for FloatLiteral {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"float\": {}}}", self.val)
@@ -168,6 +172,7 @@ pub mod ast {
         pub _span : Span,
         pub exprs : Vec<std::boxed::Box<AST>>
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for ArrayExpr {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"array\": {:?}}}", self.exprs)
@@ -191,6 +196,7 @@ pub mod ast {
         pub args : Vec<String>,
         pub stmt : std::boxed::Box<AST>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for FunctionDefinition {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let mut args : String = "[".to_string();
@@ -253,6 +259,7 @@ pub mod ast {
         pub id : Option<String>,
         pub stmts : Vec<std::boxed::Box<AST>>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for RecordDefinition {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -297,6 +304,7 @@ pub mod ast {
         pub op : UnaryOp,
         pub val : std::boxed::Box<AST>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for UnaryExpr {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -357,6 +365,7 @@ pub mod ast {
             emit_end!(c, _smap_begin);
         }
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for CondExpr {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"cond\": {:?}, \"then\": {:?}, \"alt\": {:?}, \"op\": \"cond\"}}",
@@ -384,6 +393,7 @@ pub mod ast {
         pub right : std::boxed::Box<AST>,
         pub op: BinOp,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for BinExpr {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"left\": {:?}, \"right\": {:?}, \"op\": \"{}\"}}",
@@ -586,6 +596,7 @@ pub mod ast {
             emit_end!(c, _smap_begin);
         }
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for MemExpr {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"left\": {:?}, \"right\": {:?}, \"op\": \"memexpr\"}}",
@@ -630,6 +641,7 @@ pub mod ast {
             emit_end!(c, _smap_begin);
         }
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for CallExpr {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"callee\": {:?}, \"args\": {:?}, \"op\": \"call\"}}",
@@ -659,6 +671,7 @@ pub mod ast {
         pub then : std::boxed::Box<AST>,
         pub alt  : Option<std::boxed::Box<AST>>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for IfStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             const FMT_END : &'static str = "\"type\": \"ifstmt\"";
@@ -706,6 +719,7 @@ pub mod ast {
         pub expr : std::boxed::Box<AST>,
         pub then : std::boxed::Box<AST>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for WhileStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"expr\": {:?}, \"then\": {:?}, \"type\": \"whilestmt\"}}",
@@ -750,6 +764,7 @@ pub mod ast {
         pub stmt  : std::boxed::Box<AST>,
         pub is_up : bool
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for ForStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{
@@ -820,6 +835,7 @@ pub mod ast {
         pub expr  : std::boxed::Box<AST>,
         pub stmt  : std::boxed::Box<AST>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for ForInStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{
@@ -862,6 +878,7 @@ pub mod ast {
     pub struct ContinueStatement {
         pub _span : Span,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for ContinueStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -880,6 +897,7 @@ pub mod ast {
     pub struct BreakStatement {
         pub _span : Span,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for BreakStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -910,6 +928,7 @@ pub mod ast {
             &self.def
         }
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for FunctionStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -930,6 +949,7 @@ pub mod ast {
         pub _span : Span,
         pub expr : Option<std::boxed::Box<AST>>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for ReturnStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -973,6 +993,7 @@ pub mod ast {
             &self.def
         }
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for RecordStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -995,6 +1016,7 @@ pub mod ast {
         pub stmts : Vec<std::boxed::Box<AST>>,
         pub cases : Vec<std::boxed::Box<CaseStatement>>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for TryStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -1046,6 +1068,7 @@ pub mod ast {
         pub id    : Option<std::boxed::Box<AST>>,
         pub stmts : Vec<std::boxed::Box<AST>>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for CaseStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -1063,6 +1086,7 @@ pub mod ast {
         pub _span : Span,
         pub expr : std::boxed::Box<AST>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for RaiseStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -1081,6 +1105,7 @@ pub mod ast {
         pub _span : Span,
         pub expr : std::boxed::Box<AST>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for ExprStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"expr\": {:?}, \"type\": \"exprstmt\"}}",
@@ -1102,6 +1127,7 @@ pub mod ast {
         pub _span : Span,
         pub path : String,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for UseStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             unimplemented!()
@@ -1122,6 +1148,7 @@ pub mod ast {
         pub _span : Span,
         pub stmts : Vec<std::boxed::Box<AST>>,
     }
+    #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for BlockStatement {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(f, "{{\"stmts\": {:?}, \"type\": \"blockstmt\"}}",
