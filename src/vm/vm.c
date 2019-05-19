@@ -883,7 +883,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     }
     // restore ip
     LOG("vm_call complete\n");
-    // don't free vm->localenv because it's allocated in vm->localenv_bp
+    env_free(curenv);
     vm->localenv = oldenv;
     vm->ip = last;
 

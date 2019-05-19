@@ -279,7 +279,7 @@ y = a.reduce(f(x, y) = x + y, 0)
     }
 
     #[test]
-    fn array_chained_functional() {
+    fn array_chained_functional() { // TODO: MEMLEAK HERE
         let mut vm : Vm = eval!("
 a=[1,2,3,5,6]
 y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)

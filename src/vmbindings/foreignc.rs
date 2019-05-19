@@ -179,6 +179,11 @@ pub unsafe extern "C" fn env_init(selfptr: *mut Env, nslots: u16, cvm: *mut Vm) 
     }
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn env_free(selfptr: *mut Env) {
+    std::ptr::drop_in_place(selfptr);
+}
+
 //
 #[no_mangle]
 pub unsafe extern "C" fn env_get(selfptr: *mut Env, slot: u16) -> NativeValue {
