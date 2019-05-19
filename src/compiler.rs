@@ -32,6 +32,7 @@ pub struct Compiler {
     pub smap: Vec<SourceMap>,
     pub files: Vec<String>,
     pub symbol: HashMap<usize, String>,
+    pub sources: Vec<String>,
     pub vm : Vm
 }
 impl Compiler {
@@ -42,6 +43,7 @@ impl Compiler {
             smap: Vec::new(),
             files: Vec::new(),
             symbol: HashMap::new(),
+            sources: Vec::new(),
             vm: Vm::new()
         }
     }
@@ -56,6 +58,7 @@ impl Compiler {
             smap: Vec::new(),
             files: Vec::new(),
             symbol: HashMap::new(),
+            sources: Vec::new(),
             vm: Vm {
                 ip: 0,
                 localenv: null_mut(),
@@ -239,13 +242,12 @@ impl Compiler {
         // TODO: fix this and maybe use binary search?
         let mut last_found : Option<&SourceMap> = None;
         for smap in self.smap.iter() {
-            let contains = (smap.bytecode.0..=smap.bytecode.1).contains(&bc_idx);
-            if contains { // this is so that the lookup gets more "specific"
+            if (smap.bytecode.0..=smap.bytecode.1).contains(&bc_idx) {
+                // this is so that the lookup gets more "specific"
                 last_found = Some(smap);
-            } else if last_found.is_some() && !contains {
-                return last_found;
             }
         }
-        None
+        if last_found.is_some() { last_found }
+        else { None }
     }
 }

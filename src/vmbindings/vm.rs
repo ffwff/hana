@@ -362,6 +362,7 @@ impl Vm {
         file.read_to_string(&mut s);
         let prog = ast::grammar::start(&s).unwrap();
         c.files.push(path.clone());
+        c.sources.push(s);
         let importer_ip = self.ip;
         let imported_ip = self.code.len();
         for stmt in prog {

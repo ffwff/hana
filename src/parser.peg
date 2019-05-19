@@ -1,7 +1,7 @@
 use super::ast;
 
 pub start -> Vec<std::boxed::Box<ast::AST>>
-    = __ s:(statement*) __ { s }
+    = __ s:(statement_program*) __ { s }
 
 // #region tokens
 int_literal -> String
@@ -261,21 +261,29 @@ memexpr_arm -> (std::boxed::Box<ast::AST>, bool /* is_expr */, bool /* is_namesp
     }
 
 // statements
-statement_no_eos -> std::boxed::Box<ast::AST>
+
+statement_program_no_eos -> std::boxed::Box<ast::AST>
     = block_stmt
     / if_stmt
     / while_stmt
     / for_stmt
     / for_in_stmt
     / function_stmt
-    / return_stmt
     / record_stmt
-    / continue_stmt
-    / break_stmt
     / try_stmt
     / raise_stmt
     / use_stmt
     / expr_stmt
+
+statement_program -> std::boxed::Box<ast::AST>
+    = __ s:statement_program_no_eos __ { s }
+    / #expected("statement")
+
+statement_no_eos -> std::boxed::Box<ast::AST>
+    = statement_program_no_eos
+    / return_stmt
+    / continue_stmt
+    / break_stmt
 
 statement -> std::boxed::Box<ast::AST>
     = __ s:statement_no_eos __ { s }

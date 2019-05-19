@@ -58,6 +58,7 @@ fn main() {
     });
     let mut c = compiler::Compiler::new();
     c.files.push(filename.clone());
+    c.sources.push(s);
     c.vm.compiler = Some(&mut c);
     for stmt in prog {
         stmt.emit(&mut c);
@@ -70,10 +71,11 @@ fn main() {
     if c.vm.error != VmError::ERROR_NO_ERROR {
         {
             let smap = c.lookup_smap(c.vm.ip as usize).unwrap();
-            let (line, col) = ast::pos_to_line(&s, smap.file.0);
-            let (line_end, col_end) = ast::pos_to_line(&s, smap.file.1);
+            let src = &c.sources[smap.fileno];
+            let (line, col) = ast::pos_to_line(&src, smap.file.0);
+            let (line_end, col_end) = ast::pos_to_line(&src, smap.file.1);
             let message = format!("{} at {}:{}:{}", c.vm.error, c.files[smap.fileno], line, col);
-            print_error(&s, line, col, line_end, col_end, "interpreter error:", &message);
+            print_error(&src, line, col, line_end, col_end, "interpreter error:", &message);
         }
         if !c.vm.localenv.is_null() {
             eprintln!("{}", ac::Red.bold().paint("backtrace:"));
@@ -81,7 +83,8 @@ fn main() {
             while env != unsafe{ c.vm.localenv_bp.sub(1) } {
                 let ip = unsafe{ &*env }.retip as usize;
                 if let Some(smap) = c.lookup_smap(ip) {
-                    let (line, col) = ast::pos_to_line(&s, smap.file.0);
+                    let src = &c.sources[smap.fileno];
+                    let (line, col) = ast::pos_to_line(&src, smap.file.0);
                     eprintln!(" from {}{}:{}:{}",
                               if let Some(sym) = c.symbol.get(&ip) { sym.clone() + "@" }
                               else { "".to_string() },
