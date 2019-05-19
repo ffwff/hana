@@ -9,7 +9,6 @@ nchars = chars.length() - 1
 
 yScale = (maxX - minX)*(Float(height)/width)*aspectRatio
 for y=0 to height begin
-    line = ""
     for x=0 to width begin
         c_re = minX + x * (maxX - minX) / width
         c_im = y * yScale / height - yScale / 2
