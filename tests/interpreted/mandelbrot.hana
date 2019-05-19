@@ -1,0 +1,30 @@
+minX = -2.0
+maxX = 1.0
+width = 78
+height = 36
+aspectRatio = 2
+
+chars = " .,-:;i+hHM$*#@ ".chars()
+nchars = chars.length() - 1
+
+yScale = (maxX - minX)*(Float(height)/width)*aspectRatio
+for y=0 to height begin
+    line = ""
+    for x=0 to width begin
+        c_re = minX + x * (maxX - minX) / width
+        c_im = y * yScale / height - yScale / 2
+        a = c_re
+        b = c_im
+        // (a + bi)^2 = (a^2 - b^2) + 2abi
+        // (a + bi) + (c + di) = (a+c) + (b+d)i
+        for i=0 to nchars begin
+            if sqrt(a*a + b*b) > 2 then break
+            a_ = a
+            b_ = b
+            a = a_*a_ - b_*b_ + c_re
+            b = 2 * a_ * b_ + c_im
+        end
+        print(chars[i])
+    end
+    print("\n")
+end

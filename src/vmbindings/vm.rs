@@ -345,7 +345,7 @@ impl Vm {
 
         let mut c = unsafe{ &mut *self.compiler.unwrap() };
 
-        let mut pathobj =
+        let pathobj =
             if path.starts_with("./") {
                 let last_path = c.files.last().unwrap();
                 let curpath = Path::new(&last_path);

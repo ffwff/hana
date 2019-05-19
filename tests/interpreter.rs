@@ -25,6 +25,19 @@ pub mod interpreter_tests {
 
     // #region vars
     #[test]
+    fn int_literal() {
+        let mut vm : Vm = eval!("y = 1");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
+    }
+    #[test]
+    fn float_literal() {
+        let mut vm : Vm = eval!("y = 420.69");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Float(420.69));
+    }
+    // #endregion
+
+    // #region vars
+    #[test]
     fn global_var() {
         let mut vm : Vm = eval!("y = 10");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));

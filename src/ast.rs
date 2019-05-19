@@ -164,7 +164,7 @@ pub mod ast {
         ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
-            c.vm.code.push(VmOpcode::OP_PUSH64);
+            c.vm.code.push(VmOpcode::OP_PUSHF64);
             c.vm.cpushf64(self.val);
             emit_end!(c, _smap_begin);
         }
@@ -315,7 +315,15 @@ pub mod ast {
     impl AST for UnaryExpr {
         ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
-            unimplemented!()
+            emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
+            match self.op {
+                UnaryOp::Not => unimplemented!(),
+                UnaryOp::Neg => {
+                    self.val.emit(c);
+                    c.vm.code.push(VmOpcode::OP_NEGATE);
+                }
+            }
+            emit_end!(c, _smap_begin);
         }
     }
     // ## cond expr
