@@ -86,7 +86,7 @@ void vm_execute(struct vm *vm) {
         X(OP_SET_GLOBAL), X(OP_GET_GLOBAL),
         X(OP_DEF_FUNCTION_PUSH),
         // flow control
-        X(OP_JMP), X(OP_JCOND), X(OP_JNCOND), X(OP_CALL), X(OP_RET),
+        X(OP_JMP), X(OP_JMP_LONG), X(OP_JCOND), X(OP_JNCOND), X(OP_CALL), X(OP_RET),
         // record
         X(OP_DICT_NEW), X(OP_DICT_LOAD_NO_PROTO),
         X(OP_MEMBER_GET), X(OP_MEMBER_GET_NO_POP),
@@ -97,8 +97,9 @@ void vm_execute(struct vm *vm) {
         // tail calls
         X(OP_RETCALL),
         // iterators
-        X(OP_FOR_IN),
-        X(OP_SWAP),
+        X(OP_FOR_IN), X(OP_SWAP),
+        // modules
+        X(OP_USE)
     };
 
 #undef X
@@ -422,6 +423,16 @@ void vm_execute(struct vm *vm) {
                             (uint16_t)vm->code.data[vm->ip+1];
         LOG("JMP %d\n", pos);
         vm->ip += pos;
+        dispatch();
+    }
+    doop(OP_JMP_LONG): { // jmp [32-bit position]
+        vm->ip++;
+        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
+                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
+                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
+                             (uint32_t)vm->code.data[vm->ip+3];
+        LOG("JMP LONG %d\n", pos);
+        vm->ip = pos;
         dispatch();
     }
     doop(OP_JCOND): { // jmp if not true [32-bit position]
@@ -857,6 +868,15 @@ void vm_execute(struct vm *vm) {
         const struct value higher = vm->stack.data[vm->stack.length-1];
         vm->stack.data[vm->stack.length - 1] = lower;
         vm->stack.data[vm->stack.length - 2] = higher;
+        dispatch();
+    }
+
+    // modules
+    doop(OP_USE): {
+        vm->ip++;
+        char *str = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        vm->ip += strlen(str)+1;
+        vm_load_module(vm, str);
         dispatch();
     }
 }

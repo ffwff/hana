@@ -45,7 +45,7 @@ pub enum VmOpcode {
     OP_SET_GLOBAL, OP_GET_GLOBAL,
     OP_DEF_FUNCTION_PUSH,
     // flow control
-    OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
+    OP_JMP, OP_JMP_LONG, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
     // dictionary
     OP_DICT_NEW, OP_DICT_LOAD_NO_PROTO,
     OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
@@ -340,6 +340,25 @@ impl Vm {
     }
 
     // imports
+    pub fn load_module(&mut self, path: &String) {
+        // loads module, jumps to the module then jump back to OP_USE
+        use crate::ast;
+        use std::io::Read;
+        let mut c = unsafe{ &mut *self.compiler.unwrap() };
+        let mut file = std::fs::File::open(path).unwrap();
+        let mut s = String::new();
+        file.read_to_string(&mut s);
+        let prog = ast::grammar::start(&s).unwrap();
+        c.files.push(path.clone());
+        let importer_ip = self.ip;
+        let imported_ip = self.code.len();
+        for stmt in prog {
+            stmt.emit(&mut c);
+        }
+        self.code.push(VmOpcode::OP_JMP_LONG);
+        self.cpush32(importer_ip);
+        self.ip = imported_ip as u32;
+    }
 }
 
 impl std::ops::Drop for Vm {

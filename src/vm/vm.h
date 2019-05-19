@@ -32,7 +32,7 @@ enum vm_opcode {
     OP_SET_GLOBAL, OP_GET_GLOBAL,
     OP_DEF_FUNCTION_PUSH,
     // flow control
-    OP_JMP, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
+    OP_JMP, OP_JMP_LONG, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
     // dictionary
     OP_DICT_NEW, OP_DICT_LOAD_NO_PROTO,
     OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
@@ -113,6 +113,8 @@ struct value vm_call(struct vm *, const struct value, const a_arguments);
 struct env *vm_enter_env(struct vm *, struct function *);
 struct env *vm_enter_env_tail(struct vm *, struct function *);
 bool vm_leave_env(struct vm *);
+
+void vm_load_module(struct vm*, const char*);
 
 void vm_print_stack(const struct vm*);
 
