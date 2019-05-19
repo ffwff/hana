@@ -823,7 +823,7 @@ void vm_execute(struct vm *vm) {
     }
 }
 
-struct value vm_call(struct vm *vm, const struct value fn, const a_arguments args) {
+struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *args) {
     //debug_assert(fn->type ==  || fn->type == TYPE_DICT);
 
     static struct value errorval;
@@ -838,10 +838,10 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
             return errorval;
         }
         if(ctor->type == TYPE_NATIVE_FN) {
-            for(int64_t i = args.length-1; i >= 0; i--) {
-                array_push(vm->stack, args.data[i]);
+            for(int64_t i = args->length-1; i >= 0; i--) {
+                array_push(vm->stack, args->data[i]);
             }
-            ctor->as.fn(vm, args.length);
+            ctor->as.fn(vm, args->length);
             if(vm->error) return errorval;
             const struct value val = array_top(vm->stack);
             array_pop(vm->stack);
@@ -859,8 +859,8 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
         return errorval;
     }
 
-    if((uint32_t)args.length != ifn->nargs) {
-        FATAL("function requires %d arguments, got %ld\n", ifn->nargs, args.length);
+    if((uint32_t)args->length != ifn->nargs) {
+        FATAL("function requires %d arguments, got %ld\n", ifn->nargs, args->length);
         return errorval;
     }
 
@@ -870,8 +870,8 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
     vm->ip = (uint32_t)-1;
     struct env *curenv = vm_enter_env(vm, ifn);
     // setup stack/ip
-    for(int64_t i = args.length-1; i >= 0; i--) {
-        array_push(vm->stack, args.data[i]);
+    for(int64_t i = args->length-1; i >= 0; i--) {
+        array_push(vm->stack, args->data[i]);
     }
     // call it
     vm_execute(vm);

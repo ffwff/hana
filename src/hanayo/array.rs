@@ -128,7 +128,7 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
             let mut i = 0;
             for val in array.iter() {
                 args[0] = val.clone();
-                if let Some(val) = vm.call(fun.wrap(), args.clone()) {
+                if let Some(val) = vm.call(fun.wrap(), &args) {
                     new_array[i] = val;
                 } else {
                     args.drop();
@@ -171,7 +171,7 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
             let mut args = CArray::reserve(1);
             for val in array.iter() {
                 args[0] = val.clone();
-                if let Some(filter) = vm.call(fun.wrap(), args.clone()) {
+                if let Some(filter) = vm.call(fun.wrap(), &args) {
                     if filter.unwrap().is_true(vm) {
                         new_array.push(val.clone());
                     }
@@ -218,7 +218,7 @@ pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
             for val in array.iter() {
                 args[0] = acc.wrap().clone();
                 args[1] = val.clone();
-                if let Some(val) = vm.call(fun.wrap(), args.clone()) {
+                if let Some(val) = vm.call(fun.wrap(), &args) {
                     acc = val.unwrap();
                 } else {
                     args.drop();

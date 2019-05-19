@@ -102,7 +102,7 @@ pub struct Vm {
 extern "C" {
     fn vm_execute(vm: *mut Vm);
     fn vm_print_stack(vm: *const Vm);
-    fn vm_call(vm: *mut Vm, fun: NativeValue, args: CArray<NativeValue>)
+    fn vm_call(vm: *mut Vm, fun: NativeValue, args: *const CArray<NativeValue>)
         -> NativeValue;
 
     fn vm_code_push8  (vm: *mut Vm, n : u8);
@@ -282,7 +282,7 @@ impl Vm {
     }
 
     // functions
-    pub fn call(&mut self, fun: NativeValue, args: CArray<NativeValue>) -> Option<NativeValue> {
+    pub fn call(&mut self, fun: NativeValue, args: &CArray<NativeValue>) -> Option<NativeValue> {
         let val = unsafe{ vm_call(self, fun, args) };
         if self.code[self.ip as usize] == VmOpcode::OP_HALT ||
            self.exframe_fallthrough != null_mut() ||
@@ -311,8 +311,8 @@ impl Vm {
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
-            exframe_fallthrough: null_mut(),
-            native_call_depth: 0,
+            exframe_fallthrough: self.exframe_fallthrough,
+            native_call_depth: self.native_call_depth,
             compiler: None,
         };
         // create new ctx
@@ -329,12 +329,41 @@ impl Vm {
         ManuallyDrop::new(current_ctx)
     }
 
-    pub fn restore_exec_ctx(&mut self, mut ctx: ManuallyDrop<Vm>) {
+    pub fn restore_exec_ctx(&mut self, ctx: ManuallyDrop<Vm>) {
+        let mut ctx = ManuallyDrop::into_inner(ctx);
+
+        // drop old
+        self.stack.drop();
+        unsafe {
+            use std::mem;
+            use std::alloc::{dealloc, Layout};
+            // stack frames
+            if !self.localenv.is_null() {
+                let mut env = self.localenv_bp;
+                while env != self.localenv {
+                    std::ptr::drop_in_place(env);
+                    env = env.add(1);
+                }
+                std::ptr::drop_in_place(self.localenv);
+            }
+            let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
+            dealloc(self.localenv_bp as *mut u8, layout.unwrap());
+        }
+        // exception frames
+        self.exframes.drop();
+
+        // fill in
         self.ip = ctx.ip;
         self.localenv = ctx.localenv;
         self.localenv_bp = ctx.localenv_bp;
         self.exframes = ctx.exframes.deref();
+        self.exframe_fallthrough = ctx.exframe_fallthrough;
+        self.native_call_depth = ctx.native_call_depth;
         self.stack = ctx.stack.deref();
+
+        // prevent double freeing:
+        ctx.localenv = null_mut();
+        ctx.localenv_bp = null_mut();
     }
 
     // imports
