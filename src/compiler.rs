@@ -227,10 +227,10 @@ impl Compiler {
     pub fn loop_end(&mut self, next_it_pos : usize, end_pos : usize) {
         let ls = self.loop_stmts.pop().unwrap();
         for label in ls.fill_continue {
-            self.fill_label(label, next_it_pos);
+            self.fill_label16(label, (next_it_pos - label) as u16);
         }
         for label in ls.fill_break {
-            self.fill_label(label, end_pos);
+            self.fill_label16(label, (end_pos - label) as u16);
         }
     }
 

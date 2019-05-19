@@ -304,9 +304,8 @@ void vm_execute(struct vm *vm) {
     // the environment is initialized with a copy of the current environment's variables
     doop(OP_ENV_NEW): {
         vm->ip++;
-        const uint16_t n =
-            vm->code.data[vm->ip+0] << 8 |
-            vm->code.data[vm->ip+1];
+        const uint16_t n = vm->code.data[vm->ip+0] << 8 |
+                           vm->code.data[vm->ip+1];
         vm->ip += sizeof(n);
         LOG("RESERVE %d\n", n);
         env_init(vm->localenv, n, vm);
@@ -419,12 +418,10 @@ void vm_execute(struct vm *vm) {
     // flow control
     doop(OP_JMP): { // jmp [32-bit position]
         vm->ip++;
-        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
-                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
-                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
-                             (uint32_t)vm->code.data[vm->ip+3];
+        const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
+                            (uint16_t)vm->code.data[vm->ip+1];
         LOG("JMP %d\n", pos);
-        vm->ip = pos;
+        vm->ip += pos;
         dispatch();
     }
     doop(OP_JCOND): { // jmp if not true [32-bit position]
@@ -514,7 +511,6 @@ void vm_execute(struct vm *vm) {
                         assert(0);
                     } else {
                         // just unwind
-                        FATAL("unwinding...\n");
                         return;
                     }
                 }
@@ -757,15 +753,13 @@ void vm_execute(struct vm *vm) {
     doop(OP_RAISE): {
         LOG("RAISE\n");
         if(!vm_raise(vm)) {
-            LOG("ok\n");
+            vm->error = ERROR_UNHANDLED_EXCEPTION;
             if (vm->exframe_fallthrough != NULL || vm->native_call_depth != 0) {
-                vm->error = ERROR_UNHANDLED_EXCEPTION;
                 LOG("falling through pls wait (%ld)\n", vm->native_call_depth);
                 return;
             }
             return;
         }
-        LOG("no ok\n");
         if (vm->exframe_fallthrough != NULL) {
             LOG("falling through pls wait (%ld)\n", vm->native_call_depth);
             return;
@@ -774,13 +768,11 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_EXFRAME_RET): {
         vm->ip++;
-        const uint32_t pos = (uint32_t)vm->code.data[vm->ip + 0] << 24 |
-                             (uint32_t)vm->code.data[vm->ip + 1] << 16 |
-                             (uint32_t)vm->code.data[vm->ip + 2] << 8 |
-                             (uint32_t)vm->code.data[vm->ip + 3];
+        const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
+                             (uint16_t)vm->code.data[vm->ip + 1];
         LOG("EXFRAME_RET %d\n", pos);
         vm_leave_exframe(vm);
-        vm->ip = pos;
+        vm->ip += pos;
         dispatch();
     }
 
@@ -826,13 +818,10 @@ void vm_execute(struct vm *vm) {
     // operators
     doop(OP_FOR_IN): {
         vm->ip++;
-        const uint32_t pos = vm->code.data[vm->ip + 0] << 24 |
-                             vm->code.data[vm->ip + 1] << 16 |
-                             vm->code.data[vm->ip + 2] << 8  |
-                             vm->code.data[vm->ip + 3];
-        vm->ip += 4;
+        const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
+                             (uint16_t)vm->code.data[vm->ip + 1];
 
-        LOG("FOR_IN\n");
+        LOG("FOR_IN %d\n", pos);
         struct value *top = &array_top(vm->stack);
         if (top->type == TYPE_INTERPRETER_ITERATOR) {
             const array_obj *array = vm->stack.data[vm->stack.length-2].as.array;
@@ -840,7 +829,8 @@ void vm_execute(struct vm *vm) {
             if (idx == array->length) { // end of it
                 array_pop(vm->stack); // iterator
                 array_pop(vm->stack); // array
-                vm->ip = pos;
+                vm->ip += pos;
+                dispatch();
             } else {
                 LOG("nop!\n");
                 top->as.integer++;
@@ -856,7 +846,7 @@ void vm_execute(struct vm *vm) {
         } else {
             ERROR(ERROR_EXPECTED_ITERABLE);
         }
-
+        vm->ip += sizeof(pos);
         dispatch();
     }
 

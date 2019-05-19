@@ -340,8 +340,8 @@ pub mod ast {
             }
 
             c.vm.code.push(VmOpcode::OP_JMP);
-            let done_label = c.reserve_label();
-            c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
+            let done_label = c.reserve_label16();
+            c.fill_label16(else_label, (c.vm.code.len() - else_label) as u16);
 
             if is_tail {
                 if let Some(expr) = self.alt.as_any().downcast_ref::<CallExpr>() {
@@ -353,7 +353,7 @@ pub mod ast {
                 self.alt.emit(c);
             }
 
-            c.fill_label(done_label, c.vm.code.len());
+            c.fill_label16(done_label, (c.vm.code.len() - done_label) as u16);
             emit_end!(c, _smap_begin);
         }
     }
@@ -689,10 +689,10 @@ pub mod ast {
             self.then.emit(c);
             if let Some(alt) = &self.alt {
                 c.vm.code.push(VmOpcode::OP_JMP);
-                let done_label = c.reserve_label();
+                let done_label = c.reserve_label16();
                 c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
                 alt.emit(c);
-                c.fill_label(done_label, c.vm.code.len());
+                c.fill_label16(done_label, (c.vm.code.len() - done_label) as u16);
             } else {
                 c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
             }
@@ -722,13 +722,13 @@ pub mod ast {
             //   [condition]
             //   jcond [begin]
             c.vm.code.push(VmOpcode::OP_JMP);
-            let begin_label = c.reserve_label();
+            let begin_label = c.reserve_label16();
 
             let then_label = c.vm.code.len();
             c.loop_start();
             self.then.emit(c);
 
-            c.fill_label(begin_label, c.vm.code.len());
+            c.fill_label16(begin_label, (c.vm.code.len() - begin_label) as u16);
 
             let next_it_pos = c.vm.code.len();
             self.expr.emit(c);
@@ -784,7 +784,7 @@ pub mod ast {
             c.vm.code.push(VmOpcode::OP_POP);
 
             c.vm.code.push(VmOpcode::OP_JMP);
-            let begin_label = c.reserve_label();
+            let begin_label = c.reserve_label16();
 
             let then_label = c.vm.code.len();
             c.loop_start();
@@ -798,7 +798,7 @@ pub mod ast {
             c.emit_set_var(self.id.clone());
             c.vm.code.push(VmOpcode::OP_POP);
 
-            c.fill_label(begin_label, c.vm.code.len());
+            c.fill_label16(begin_label, (c.vm.code.len() - begin_label) as u16);
 
             // condition
             let next_it_pos = c.vm.code.len();
@@ -845,16 +845,15 @@ pub mod ast {
             emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
 
             self.expr.emit(c);
-            println!("{}", VmOpcode::OP_FOR_IN as u8);
             let next_it_label = c.vm.code.len();
             c.vm.code.push(VmOpcode::OP_FOR_IN);
-            let end_label = c.reserve_label();
+            let end_label = c.reserve_label16();
             c.emit_set_var(self.id.clone());
             c.vm.code.push(VmOpcode::OP_POP);
             self.stmt.emit(c);
             c.vm.code.push(VmOpcode::OP_JMP);
-            c.vm.cpush32(next_it_label as u32);
-            c.fill_label(end_label, c.vm.code.len());
+            c.vm.cpush16((next_it_label as isize - c.vm.code.len() as isize) as u16);
+            c.fill_label16(end_label, (c.vm.code.len() - end_label) as u16);
 
             emit_end!(c, _smap_begin);
         }
@@ -1024,7 +1023,7 @@ pub mod ast {
                     s.emit(c);
                 }
                 c.vm.code.push(VmOpcode::OP_EXFRAME_RET);
-                cases_to_fill.push(c.reserve_label());
+                cases_to_fill.push(c.reserve_label16());
                 // end
                 c.fill_label16(body_start, (c.vm.code.len() - body_start) as u16);
                 // exception type
@@ -1035,7 +1034,7 @@ pub mod ast {
                 s.emit(c);
             }
             for hole in cases_to_fill {
-                c.fill_label(hole, c.vm.code.len());
+                c.fill_label16(hole, (c.vm.code.len() - hole) as u16);
             }
             emit_end!(c, _smap_begin);
         }
