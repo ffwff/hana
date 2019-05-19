@@ -24,7 +24,7 @@ fn vars() -> Value {
     let mut record = Record::new();
     for (key, value) in env::vars() {
         record.insert(key, Value::Str(unsafe{
-            &*malloc(value, |ptr| drop::<String>(ptr)) }).wrap());
+            &*malloc(value, |ptr| drop::<String>(ptr)) }).wrap().pin());
     }
     Value::Record(unsafe{ &*malloc(record, |ptr| drop::<Record>(ptr)) })
 }

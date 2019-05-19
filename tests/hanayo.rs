@@ -1,5 +1,4 @@
 extern crate haru;
-#[macro_use] extern crate rusty_fork;
 
 #[cfg(test)]
 pub mod hanayo_tests {
@@ -448,7 +447,6 @@ y = Record::keys(x)
     // #endregion
 
     // #region env
-    rusty_fork_test! {
     #[test]
     fn env_get() {
         std::env::set_var("test_key", "value");
@@ -473,7 +471,6 @@ Env::set('test_key_set', 'value')
 y = Env::vars()['a_key']
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "value");
-    }
     }
     // #endregion
 

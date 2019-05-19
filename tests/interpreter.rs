@@ -26,7 +26,7 @@ pub mod interpreter_tests {
     // #region vars
     #[test]
     fn int_literal() {
-        let mut vm : Vm = eval!("y = 1");
+        let mut vm : Vm = eval!("y = 10");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
     }
     #[test]
