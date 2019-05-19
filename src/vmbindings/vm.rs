@@ -345,7 +345,19 @@ impl Vm {
         use crate::ast;
         use std::io::Read;
         let mut c = unsafe{ &mut *self.compiler.unwrap() };
-        let mut file = std::fs::File::open(path).unwrap();
+        let mut file =
+            if path.starts_with("./") {
+                use std::path::Path;
+                let last_path = c.files.last().unwrap();
+                let curpath = Path::new(&last_path);
+                if let Some(parent) = curpath.parent() {
+                    std::fs::File::open(parent.join(Path::new(path))).unwrap()
+                } else {
+                    std::fs::File::open(path).unwrap()
+                }
+            } else {
+                std::fs::File::open(path).unwrap()
+            };
         let mut s = String::new();
         file.read_to_string(&mut s);
         let prog = ast::grammar::start(&s).unwrap();

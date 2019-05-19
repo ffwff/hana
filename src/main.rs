@@ -37,7 +37,8 @@ fn print_error(s: &String, lineno: usize, col: usize, _lineno_end: usize, col_en
 
 fn main() {
     let args : Vec<String> = std::env::args().collect();
-    let mut file = std::fs::File::open(&args[1]).unwrap_or_else(|err| {
+    let filename = &args[1];
+    let mut file = std::fs::File::open(&filename).unwrap_or_else(|err| {
         println!("error opening file: {}", err);
         std::process::exit(1);
     });
@@ -56,7 +57,7 @@ fn main() {
         std::process::exit(1);
     });
     let mut c = compiler::Compiler::new();
-    c.files.push(args[1].clone());
+    c.files.push(filename.clone());
     c.vm.compiler = Some(&mut c);
     for stmt in prog {
         stmt.emit(&mut c);
