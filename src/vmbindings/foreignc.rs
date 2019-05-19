@@ -257,7 +257,7 @@ pub unsafe extern "C" fn vm_raise(cvm: *mut Vm) -> bool {
 // #region modules
 #[no_mangle]
 pub unsafe extern "C" fn vm_load_module(cvm: *mut Vm, cpath: *const libc::c_char) {
-    let path = String::from(CStr::from_ptr(cpath).to_str().unwrap());
+    let path = CStr::from_ptr(cpath).to_str().unwrap();
     let vm = &mut *cvm;
     vm.load_module(&path);
 }

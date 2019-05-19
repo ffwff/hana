@@ -299,11 +299,51 @@ y = a.join('')
 
     // #region string
     #[test]
+    fn string_constructor_no_args() {
+        let mut vm : Vm = eval!("
+y = String()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "");
+    }
+
+    #[test]
     fn string_constructor() {
         let mut vm : Vm = eval!("
 y = String(10)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "10");
+    }
+
+    #[test]
+    fn string_length() {
+        let mut vm : Vm = eval!("
+y = '日本'.length()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 2);
+    }
+
+    #[test]
+    fn string_bytesize() {
+        let mut vm : Vm = eval!("
+y = '日本'.bytesize()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 6);
+    }
+
+    #[test]
+    fn string_startswith() {
+        let mut vm : Vm = eval!("
+y = 'abc'.startswith?('a')
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+
+    #[test]
+    fn string_endswith() {
+        let mut vm : Vm = eval!("
+y = 'abc'.endswith?('bc')
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
 
     #[test]
@@ -313,6 +353,14 @@ s = 'Honest Abe Lincoln'
 y = s.delete(7, 4)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "Honest Lincoln");
+    }
+    #[test]
+    fn string_delete_in_place() {
+        let mut vm : Vm = eval!("
+s = 'Honest Abe Lincoln'
+s.delete!(7, 4)
+");
+        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "Honest Lincoln");
     }
 
     #[test]
@@ -340,6 +388,32 @@ s = 'Honest Abe Lincoln'
 s.insert!(0, 'Not So ')
 ");
         assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "Not So Honest Abe Lincoln");
+    }
+
+    #[test]
+    fn string_split() {
+        let mut vm : Vm = eval!("
+s = 'a b c'
+y = s.split(' ')
+");
+        let arr = vm.global().get("y").unwrap().unwrap().array();
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0].unwrap().string(), "a");
+        assert_eq!(arr[1].unwrap().string(), "b");
+        assert_eq!(arr[2].unwrap().string(), "c");
+    }
+
+    #[test]
+    fn string_chars() {
+        let mut vm : Vm = eval!("
+s = 'abc'
+y = s.chars()
+");
+        let arr = vm.global().get("y").unwrap().unwrap().array();
+        assert_eq!(arr.len(), 3);
+        assert_eq!(arr[0].unwrap().string(), "a");
+        assert_eq!(arr[1].unwrap().string(), "b");
+        assert_eq!(arr[2].unwrap().string(), "c");
     }
     // #endregion
 

@@ -20,10 +20,6 @@ void value_str(struct value *val, const char *data) {
     val->type = TYPE_STR;
     val->as.str = string_malloc(data);
 }
-void value_native(struct value *val, value_fn fn) {
-    val->type = TYPE_NATIVE_FN;
-    val->as.fn = fn;
-}
 void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *env) {
     val->type = TYPE_FN;
     val->as.ifn = function_malloc(ip, nargs, env);
@@ -63,11 +59,6 @@ void value_print(struct value *val) {
     }
 }
 
-void value_copy(struct value *dst, const struct value src) {
-    dst->type = src.type;
-    dst->as = src.as;
-}
-
 // arith
 #define arith_op(name, op, custom) \
 void value_ ## name (struct value *result, const struct value left, const struct value right) { \
@@ -84,12 +75,13 @@ void value_ ## name (struct value *result, const struct value left, const struct
         break; \
     } \
     case TYPE_FLOAT: { \
-        if(right.type == TYPE_INT) \
-            value_float(result, left.as.floatp op (double)right.as.integer); \
-        else if(right.type == TYPE_FLOAT) \
-            value_float(result, left.as.floatp op right.as.floatp); \
-        else \
-            result->type = TYPE_INTERPRETER_ERROR; \
+        switch(right.type) { \
+        case TYPE_INT: { \
+            value_float(result, left.as.floatp op (double)right.as.integer); break; } \
+        case TYPE_FLOAT: { \
+            value_float(result, left.as.floatp op right.as.floatp); break; } \
+        default: \
+            result->type = TYPE_INTERPRETER_ERROR; } \
         break; \
     } custom \
     default: result->type = TYPE_INTERPRETER_ERROR; }\
@@ -127,21 +119,30 @@ arith_op(mul, *,
             result->type = TYPE_INTERPRETER_ERROR;
         break; }
 )
-void value_div(struct value *result, __attribute__((unused)) const struct value left, __attribute__((unused)) const struct value right) {
-    result->type = TYPE_INTERPRETER_ERROR;
-    // TODO
-    /*
-    if( (left.type == TYPE_FLOAT && right.type == TYPE_INT) ||
-        (left.type == TYPE_INT && right.type == TYPE_FLOAT) ) {
-        const struct value *floatv = left.type == TYPE_FLOAT ? left : right;
-        const struct value *intv = left.type == TYPE_INT ? left : right;
-        value_float(result, floatv->as.floatp / (double)intv->as.integer);
-    } else if(left.type == TYPE_INT && right.type == TYPE_INT) {
-        value_float(result, (double)left.as.integer / (double)right.as.integer);
-    } else if(left.type == TYPE_FLOAT && right.type == TYPE_FLOAT) {
-        value_float(result, left.as.floatp / right.as.floatp);
-    } else
-        result->type = TYPE_INTERPRETER_ERROR; */
+void value_div(struct value *result, const struct value left, const struct value right) {
+    switch(left.type) {
+    case TYPE_INT: {
+        switch(right.type) {
+        case TYPE_FLOAT: {
+            value_float(result, (double)left.as.integer / right.as.floatp); break; }
+        case TYPE_INT: {
+            value_int(result, (double)left.as.integer / (double)right.as.integer);
+            break; }
+        default:
+            result->type = TYPE_INTERPRETER_ERROR; }
+        break;
+    }
+    case TYPE_FLOAT: {
+        switch(right.type) {
+        case TYPE_INT: {
+            value_float(result, left.as.floatp / (double)right.as.integer); break; }
+        case TYPE_FLOAT: {
+            value_float(result, left.as.floatp / right.as.floatp); break; }
+        default:
+            result->type = TYPE_INTERPRETER_ERROR; }
+        break;
+    }
+    default: result->type = TYPE_INTERPRETER_ERROR; }
 }
 void value_mod(struct value *result, const struct value left, const struct value right) {
     if(left.type == TYPE_INT && right.type == TYPE_INT) {

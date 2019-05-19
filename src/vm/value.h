@@ -41,7 +41,6 @@ struct __attribute__((packed)) value {
 void value_int(struct value*, int64_t);
 void value_float(struct value*, double);
 void value_str(struct value*, const char*);
-void value_native(struct value*, value_fn);
 struct env;
 void value_function(struct value*, uint32_t ip, uint16_t nargs, struct env *env);
 void value_dict(struct value*);

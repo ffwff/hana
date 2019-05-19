@@ -71,6 +71,36 @@ pub mod vm_tests {
         assert_eq!(vm.stack.len(), 1);
         assert_eq!(vm.stack.top().unwrap(), Value::Float(3.0));
     }
+
+    #[test]
+    fn div_floats() {
+        gc::disable();
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSHF64);
+        vm.cpushf64(1.5);
+        vm.code.push(VmOpcode::OP_PUSHF64);
+        vm.cpushf64(1.1);
+        vm.code.push(VmOpcode::OP_DIV);
+        vm.code.push(VmOpcode::OP_HALT);
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Float(1.5/1.1));
+    }
+
+    #[test]
+    fn div_float_and_int() {
+        gc::disable();
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSHF64);
+        vm.cpushf64(1.5);
+        vm.code.push(VmOpcode::OP_PUSH64);
+        vm.cpush64(15);
+        vm.code.push(VmOpcode::OP_DIV);
+        vm.code.push(VmOpcode::OP_HALT);
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Float(1.5/15.0));
+    }
     // #endregion
 
     // #region string

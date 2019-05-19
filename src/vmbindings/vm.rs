@@ -125,7 +125,7 @@ impl Vm {
                 let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
-            globalenv: unsafe { Box::into_raw(Box::new(CHashMap::new())) },
+            globalenv: Box::into_raw(Box::new(CHashMap::new())),
             exframes: CArray::new(),
             code: CArray::new(),
             stack: CArray::new(),
@@ -338,7 +338,7 @@ impl Vm {
     }
 
     // imports
-    pub fn load_module(&mut self, path: &String) {
+    pub fn load_module(&mut self, path: &str) {
         // loads module, jumps to the module then jump back to OP_USE
         use crate::ast;
         use std::io::Read;
@@ -358,7 +358,7 @@ impl Vm {
                 if pbuf.extension().is_none() {
                     pbuf.set_extension("hana"); }
                 pbuf
-            } else if path.starts_with("/") {
+            } else if path.starts_with('/') {
                 let mut pbuf = Path::new(path).to_path_buf();
                 if pbuf.extension().is_none() {
                     pbuf.set_extension("hana"); }
@@ -391,7 +391,7 @@ impl Vm {
             let mut s = String::new();
             file.read_to_string(&mut s);
             let prog = ast::grammar::start(&s).unwrap();
-            c.files.push(path.clone());
+            c.files.push(path.to_string());
             c.sources.push(s);
 
             let importer_ip = self.ip;
