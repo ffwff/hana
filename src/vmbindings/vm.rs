@@ -267,7 +267,6 @@ impl Vm {
         while i != 0 {
             let exframe = &self.exframes[i-1];
             if let Some(handler) = exframe.get_handler(self, &val) {
-                eprintln!("raise: {} {}", exframe.unwind_native_call_depth, self.native_call_depth);
                 if exframe.unwind_native_call_depth != self.native_call_depth {
                     self.exframe_fallthrough = exframe;
                 }
