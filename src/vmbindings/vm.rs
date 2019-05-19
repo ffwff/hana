@@ -345,35 +345,34 @@ impl Vm {
 
         let mut c = unsafe{ &mut *self.compiler.unwrap() };
 
-        let pathobj =
+        let mut pathobj =
             if path.starts_with("./") {
                 let last_path = c.files.last().unwrap();
                 let curpath = Path::new(&last_path);
-                eprintln!("{:?}", curpath);
-                let mut pbuf = if let Some(parent) = curpath.parent() {
+                let mut pathobj = if let Some(parent) = curpath.parent() {
                     parent.join(Path::new(path))
                 } else {
                     Path::new(path).to_path_buf()
                 };
-                if pbuf.extension().is_none() {
-                    pbuf.set_extension("hana"); }
-                pbuf
+                if !pathobj.as_path().is_file() && pathobj.extension().is_none() {
+                    pathobj.set_extension("hana"); }
+                pathobj
             } else if path.starts_with('/') {
-                let mut pbuf = Path::new(path).to_path_buf();
-                if pbuf.extension().is_none() {
-                    pbuf.set_extension("hana"); }
-                pbuf
+                let mut pathobj = Path::new(path).to_path_buf();
+                if !pathobj.as_path().is_file() && pathobj.extension().is_none() {
+                    pathobj.set_extension("hana"); }
+                pathobj
             } else {
                 use std::env;
                 match env::var_os("HANA_PATH") {
                     Some(parent) =>
                         env::split_paths(&parent)
                             .map(|x| {
-                                let mut pbuf = Path::new(&x)
+                                let mut pathobj = Path::new(&x)
                                     .join(path).to_path_buf();
-                                if pbuf.extension().is_none() {
-                                    pbuf.set_extension("hana"); }
-                                pbuf
+                                if pathobj.extension().is_none() {
+                                    pathobj.set_extension("hana"); }
+                                pathobj
                             })
                             .find(|x| x.as_path().is_file())
                             .unwrap(),

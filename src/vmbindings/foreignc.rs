@@ -15,6 +15,13 @@ use std::ffi::CStr;
 use std::ptr::null;
 use super::*;
 
+// #region value
+#[no_mangle]
+pub extern "C" fn value_print(val: NativeValue) {
+    eprint!("{:?}", val.unwrap());
+}
+// #endregion
+
 // #region hmap
 #[no_mangle]
 pub unsafe extern "C" fn hmap_get(chm: *const CHashMap, ckey: *const libc::c_char) -> *const NativeValue {

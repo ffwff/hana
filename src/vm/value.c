@@ -37,28 +37,6 @@ void value_array_n(struct value *val, size_t n) {
     val->as.array = array_obj_malloc_n(n);
 }
 
-void value_print(struct value *val) {
-    if(val->type == TYPE_INT)
-        fprintf(stderr, "%ld", val->as.integer);
-    else if(val->type == TYPE_FLOAT)
-        fprintf(stderr, "%f", val->as.floatp);
-    else if(val->type == TYPE_STR)
-        fprintf(stderr, "[string]");
-    else if(val->type == TYPE_NATIVE_FN)
-        fprintf(stderr, "[native fn %lx]", (intptr_t)val->as.fn);
-    else if(val->type == TYPE_FN)
-        fprintf(stderr, "[fn %d]", (uint32_t)val->as.ifn->ip);
-    else if(val->type == TYPE_DICT)
-        fprintf(stderr, "[dict %p]", val->as.dict);
-    else if(val->type == TYPE_ARRAY)
-        fprintf(stderr, "[array %p]", val->as.array);
-    else if(val->type == TYPE_INTERPRETER_ITERATOR)
-        fprintf(stderr, "[iterator %ld]", val->as.integer);
-    else {
-        fprintf(stderr, "nil");
-    }
-}
-
 // arith
 #define arith_op(name, op, custom) \
 void value_ ## name (struct value *result, const struct value left, const struct value right) { \

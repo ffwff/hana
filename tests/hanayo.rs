@@ -480,9 +480,9 @@ y = Env::vars()['a_key']
     // #region files
     #[test]
     fn file_read() {
-        std::fs::write("/tmp/a", "test");
+        std::fs::write("/tmp/file_read", "test");
         let mut vm : Vm = eval!("
-f = File('/tmp/a', 'r')
+f = File('/tmp/file_read', 'r')
 y = f.read()
 f.close()
 ");
@@ -491,9 +491,9 @@ f.close()
 
     #[test]
     fn file_read_up_to() {
-        std::fs::write("/tmp/a", "test");
+        std::fs::write("/tmp/file_read_up_to", "test");
         let mut vm : Vm = eval!("
-f = File('/tmp/a', 'r')
+f = File('/tmp/file_read_up_to', 'r')
 y = f.read_up_to(2)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "te");
@@ -502,7 +502,7 @@ y = f.read_up_to(2)
     #[test]
     fn file_write() {
         eval!("
-f = File('/tmp/b', 'wc')
+f = File('/tmp/file_write', 'wc')
 f.write('Hello World')
 f.close()
 ");

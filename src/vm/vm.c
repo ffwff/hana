@@ -895,7 +895,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments arg
 void vm_print_stack(const struct vm *vm) {
     fprintf(stderr, "[");
     for(size_t i = 0; i < vm->stack.length; i++) {
-        value_print(&vm->stack.data[i]);
+        value_print(vm->stack.data[i]);
         fprintf(stderr, " ");
     }
     fprintf(stderr, "]\n");

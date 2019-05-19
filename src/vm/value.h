@@ -47,7 +47,7 @@ void value_dict(struct value*);
 void value_array(struct value*);
 void value_array_n(struct value*, size_t n);
 
-void value_print(struct value*);
+void value_print(struct value);
 
 void value_add(struct value *result, const struct value left, const struct value right);
 void value_sub(struct value *result, const struct value left, const struct value right);
