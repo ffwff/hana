@@ -29,10 +29,17 @@ pub mod interpreter_tests {
         let mut vm : Vm = eval!("y = 10");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
     }
+
     #[test]
     fn float_literal() {
         let mut vm : Vm = eval!("y = 420.69");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Float(420.69));
+    }
+
+    #[test]
+    fn string_literal() {
+        let mut vm : Vm = eval!("y = 'test'");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "test");
     }
     // #endregion
 

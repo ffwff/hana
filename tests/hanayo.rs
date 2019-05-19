@@ -507,6 +507,16 @@ f.close()
     }
     // #endregion
 
+    // #region math
+    #[test]
+    fn math_sqrt() {
+        let mut vm : Vm = eval!("
+y = sqrt(4.0)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Float(2.0));
+    }
+    // #endregion
+
     // #region other
     #[test]
     fn eval() {

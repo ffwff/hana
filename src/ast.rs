@@ -75,13 +75,13 @@ pub mod ast {
         rawval : String
     }
     impl StrLiteral {
+        #[cfg_attr(tarpaulin, skip)]
         pub fn new(str : &String, span: Span) -> StrLiteral {
             let mut s = "".to_string();
             let mut chars = str.chars();
             while let Some(c) = chars.next() {
                 if c == '\\' {
                     let next = chars.next();
-                    #[cfg_attr(tarpaulin, skip)]
                     match next {
                         Some('n') => s += "\n",
                         Some('r') => s += "\r",
@@ -124,10 +124,10 @@ pub mod ast {
     }
     impl AST for IntLiteral {
         ast_impl!();
+        #[cfg_attr(tarpaulin, skip)]
         fn emit(&self, c : &mut compiler::Compiler) {
             emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
             let n = self.val as u64;
-            #[cfg_attr(tarpaulin, skip)]
             match n {
             0...0xff => {
                     c.vm.code.push(VmOpcode::OP_PUSH8);
