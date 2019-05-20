@@ -66,6 +66,14 @@ impl<T> CArray<T> {
         unsafe { std::slice::from_raw_parts_mut(self.data, self.len) }
     }
 
+    // bytes
+    pub fn as_bytes(&self) -> &[u8] {
+        unsafe {
+            std::slice::from_raw_parts((self.data as *const u8),
+                    std::mem::size_of::<T>() * self.len)
+        }
+    }
+
     // clone
     pub fn clone(&self) -> CArray<T> {
         CArray::<T> {

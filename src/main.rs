@@ -3,7 +3,7 @@
 #![feature(ptr_offset_from)]
 #![allow(dead_code)]
 
-use std::io::Read;
+use std::io::{self, Read, Write};
 #[macro_use] extern crate decorator;
 extern crate ansi_term;
 use ansi_term::Color as ac;
@@ -43,7 +43,7 @@ enum ProcessArg<'a> {
     File(&'a str),
 }
 
-fn process(arg: ProcessArg) {
+fn process(arg: ProcessArg, flag: ParserFlag) {
     let mut c = compiler::Compiler::new();
     let s : String =
         match arg {
@@ -75,11 +75,27 @@ fn process(arg: ProcessArg) {
             }));
         std::process::exit(1);
     });
-    c.sources.push(s);
-    c.vm.compiler = Some(&mut c);
+
+    // dump ast if asked
+    if flag.print_ast {
+        println!("{:?}", prog);
+        return;
+    }
+
+    // emit bytecode
     for stmt in prog {
         stmt.emit(&mut c);
     }
+
+    // dump bytecode if asked
+    if flag.dump_bytecode {
+        io::stdout().write(c.vm.code.as_bytes());
+        return;
+    }
+
+    // execute!
+    c.vm.compiler = Some(&mut c);
+    c.sources.push(s);
     set_root(&mut c.vm);
     hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
@@ -118,7 +134,7 @@ fn handle_error(c: &compiler::Compiler) {
 }
 
 // repl
-fn repl() {
+fn repl(flag: ParserFlag) {
     let mut rl = Editor::<()>::new();
     let mut c = compiler::Compiler::new();
     c.files.push("[repl]".to_string());
@@ -133,6 +149,10 @@ fn repl() {
                 rl.add_history_entry(s.as_ref());
                 match ast::grammar::start(&s) {
                     Ok(prog) => {
+                        if flag.print_ast {
+                            println!("{:?}", prog);
+                            continue;
+                        }
                         c.vm.error = VmError::ERROR_NO_ERROR;
                         c.sources[0] = s.clone();
                         c.vm.ip = c.vm.code.len() as u32;
@@ -191,30 +211,37 @@ as published by the Free Software Foundation, either version 3 of
 the License, or (at your option) any later version.")
 }
 
+// parser flags
+struct ParserFlag {
+    pub dump_bytecode: bool,
+    pub print_ast: bool,
+}
+
 fn main() {
     let mut args = std::env::args();
     let program = args.next().unwrap();
 
-    let mut dump_bytecode = false;
-    let mut bytecode = false;
-    let mut print_ast = false;
+    let mut flags = ParserFlag{
+        dump_bytecode: false,
+        print_ast: false
+    };
     let mut cmd = false;
     for arg in args {
         if arg.starts_with('-') {
             match arg.as_str() {
             "-h" | "--help" => { return help(&program); },
             "-v" | "--version" => { return version(); },
-            "-d" | "--dump-vmcode" => { dump_bytecode = true; },
-            "-a" | "--print-ast" => { print_ast = true; },
+            "-d" | "--dump-vmcode" => { flags.dump_bytecode = true; },
+            "-a" | "--print-ast" => { flags.print_ast = true; },
             "-c" => { cmd = true; },
             _ => { println!("{}: invalid argument", program); return; }
             }
         } else if cmd {
-            return process(ProcessArg::Command(&arg));
+            return process(ProcessArg::Command(&arg), flags);
         } else {
-            return process(ProcessArg::File(&arg));
+            return process(ProcessArg::File(&arg), flags);
         }
     }
 
-    repl()
+    repl(flags)
 }
