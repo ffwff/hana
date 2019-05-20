@@ -3,5 +3,4 @@ rust:
   - nightly
 cache: cargo
 env:
-  - CC=gcc
-  - NOLOG=1
+  - CC=gcc NOLOG=1
