@@ -1,7 +1,7 @@
 [package]
 name = "haru"
 description = "A fast general purpose scripting language"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["ffwff <mogamiriver@tuta.io>"]
 documentation = "https://github.com/ffwff/hana"
 homepage = "https://github.com/ffwff/hana"
@@ -10,6 +10,14 @@ readme = "README.md"
 license = "GPL-3.0"
 edition = "2018"
 build = "build.rs"
+
+[badges]
+travis-ci = { repository = "ffwff/hana" }
+
+[[bin]]
+bench = false
+path = "src/main.rs"
+name = "haru"
 
 [dependencies]
 haru-decorator = { version = "0.1.0", path = "./src/decorator/" }
