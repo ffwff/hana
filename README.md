@@ -12,6 +12,16 @@ and an import system.
 **haru**, the Rust parser/runtime generates bytecode that runs on an optimised
 virtual machine written in C (about as fast as Python and Ruby!)
 
+## Installation
+
+You'll need to have the cargo package manager and rust installed. You can then do:
+
+```
+cargo install haru
+```
+
+The interpreter called `haru` will be installed into your PATH.
+
 ## Examples
 
 *see [/examples](https://github.com/ffwff/hana/tree/haru/examples) for more*
@@ -42,16 +52,6 @@ fibrec(n, prev, curr) = n <= 0 ? curr : fibrec(n-1, prev+curr, prev)
 fib(n) = fibrec(n+1, 1, 0)
 print(fib(50), "\n")
 ```
-
-## Installation
-
-You'll need to have the cargo package manager and rust installed. You can then do:
-
-```
-cargo install haru
-```
-
-The interpreter called `haru` will be installed into your PATH.
 
 ## Building
 

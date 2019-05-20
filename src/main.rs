@@ -213,12 +213,13 @@ options:
 
 fn version() {
 println!(
-"interpreter for the hana programming language (alpha).
+"haru: interpreter implemententation forthe hana programming language (alpha).
+version {}
 
 This program is free software: you can redistribute it
 and/or modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation, either version 3 of
-the License, or (at your option) any later version.")
+the License, or (at your option) any later version.", env!("CARGO_PKG_VERSION"))
 }
 
 // parser flags
