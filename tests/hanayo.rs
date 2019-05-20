@@ -47,6 +47,14 @@ y = X of Y
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
+
+    #[test]
+    fn literal_prototype() {
+        let mut vm : Vm = eval!("
+y = (10).prototype == Int
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
     // #endregion
 
     // #region int

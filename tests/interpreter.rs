@@ -65,8 +65,32 @@ pub mod interpreter_tests {
     }
 
     #[test]
-    fn basic_cmp() {
+    fn cmp_gt() {
         let mut vm : Vm = eval!("y = 1 > 0");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
+    }
+
+    #[test]
+    fn cmp_lt() {
+        let mut vm : Vm = eval!("y = 1 < 0");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(0));
+    }
+
+    #[test]
+    fn cmp_gte() {
+        let mut vm : Vm = eval!("y = 0 >= 0");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
+    }
+
+    #[test]
+    fn cmp_lte() {
+        let mut vm : Vm = eval!("y = 0 <= 0");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
+    }
+
+    #[test]
+    fn cmp_eq() {
+        let mut vm : Vm = eval!("y = 0 == 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
 
@@ -363,6 +387,16 @@ end
             Value::Fn(_) => true,
             _ => false
         });
+    }
+
+    #[test]
+    fn memexpr_get_unk() {
+        let mut vm : Vm = eval!("
+record A
+end
+y = A.x
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Nil);
     }
 
     #[test]

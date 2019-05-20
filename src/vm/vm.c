@@ -911,17 +911,6 @@ void vm_code_pushstr(struct vm *vm, const char *s) {
     array_push(vm->code, 0);
 }
 
-void vm_code_pushf32(struct vm *vm, float f) {
-    union {
-        float f;
-        uint8_t u[4];
-    } u;
-    u.f = f;
-    array_push(vm->code, u.u[0]);
-    array_push(vm->code, u.u[1]);
-    array_push(vm->code, u.u[2]);
-    array_push(vm->code, u.u[3]);
-}
 void vm_code_pushf64(struct vm *vm, double d) {
     union {
         double d;
