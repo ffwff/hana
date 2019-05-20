@@ -35,18 +35,34 @@ fn print_error(s: &String, lineno: usize, col: usize, _lineno_end: usize, col_en
     message);
 }
 
-fn main() {
-    let args : Vec<String> = std::env::args().collect();
-    let filename = &args[1];
-    let mut file = std::fs::File::open(&filename).unwrap_or_else(|err| {
-        println!("error opening file: {}", err);
-        std::process::exit(1);
-    });
-    let mut s = String::new();
-    file.read_to_string(&mut s).unwrap_or_else(|err| {
-        println!("error reading file: {}", err);
-        std::process::exit(1);
-    });
+enum ProcessArg<'a> {
+    Command(&'a str),
+    File(&'a str),
+}
+
+fn process(arg: ProcessArg) {
+    let mut c = compiler::Compiler::new();
+    let s : String =
+        match arg {
+            ProcessArg::Command(cmd) => {
+                c.files.push("[cmdline]".to_string());
+                cmd.to_string()
+            },
+            ProcessArg::File(filename) => {
+                let mut file = std::fs::File::open(&filename).unwrap_or_else(|err| {
+                    println!("error opening file: {}", err);
+                    std::process::exit(1);
+                });
+                let mut s = String::new();
+                file.read_to_string(&mut s).unwrap_or_else(|err| {
+                    println!("error reading file: {}", err);
+                    std::process::exit(1);
+                });
+                c.modules_loaded.insert(std::path::Path::new(&filename).to_path_buf());
+                c.files.push(filename.to_string());
+                s
+            }
+        };
     let prog = ast::grammar::start(&s).unwrap_or_else(|err| {
         print_error(&s, err.line, err.column,
             err.line, err.column,
@@ -56,9 +72,6 @@ fn main() {
             }));
         std::process::exit(1);
     });
-    let mut c = compiler::Compiler::new();
-    c.modules_loaded.insert(std::path::Path::new(&filename).to_path_buf());
-    c.files.push(filename.clone());
     c.sources.push(s);
     c.vm.compiler = Some(&mut c);
     for stmt in prog {
@@ -98,4 +111,55 @@ fn main() {
         }
         std::process::exit(1);
     }
+}
+
+// CLI specific
+fn help(program: &str) {
+println!(
+"usage: {} [options] [-c cmd | file | -]
+options:
+ -c cmd : execute program passed in as string
+ -d/--dump-vmcode: dumps vm bytecode to stdout
+                   (only works in interpreter mode)
+ -b/--bytecode: runs file as bytecode
+ -a/--print-ast: prints ast and without run
+ -v/--version: version", program)
+}
+
+fn version() {
+println!(
+"interpreter for the hana programming language (alpha).
+
+This program is free software: you can redistribute it
+and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.")
+}
+
+fn main() {
+    let mut args = std::env::args();
+    let program = args.next().unwrap();
+
+    let mut dump_bytecode = false;
+    let mut bytecode = false;
+    let mut print_ast = false;
+    let mut cmd = false;
+    for arg in args {
+        if arg.starts_with('-') {
+            match arg.as_str() {
+            "-h" | "--help" => { return help(&program); },
+            "-v" | "--version" => { return version(); },
+            "-d" | "--dump-vmcode" => { dump_bytecode = true; },
+            "-a" | "--print-ast" => { print_ast = true; },
+            "-c" => { cmd = true; },
+            _ => { println!("{}: invalid argument", program); return; }
+            }
+        } else if cmd {
+            return process(ProcessArg::Command(&arg));
+        } else {
+            return process(ProcessArg::File(&arg));
+        }
+    }
+
+    println!("repl is unimplemented");
 }
