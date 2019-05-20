@@ -1,0 +1,12 @@
+a = [1,2]
+function fn(value) begin
+    function y(value) begin
+        raise 0
+    end
+    a.filter(y)
+end
+try
+    a.map(fn)
+case Int as i
+    print(i)
+end

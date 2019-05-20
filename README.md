@@ -34,7 +34,7 @@ Once built, you can write hana code into a source file, then invoke the interpre
 
 ## Examples
 
-*see [DOCUMENTATION.md#Examples](/DOCUMENTATION.md#examples) for more*
+*see [/examples](/examples) for more*
 
 ### Hello World
 

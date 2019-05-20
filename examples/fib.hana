@@ -1,0 +1,8 @@
+(function () begin
+
+// For faster calls, the function is wrapped in an IIFE
+
+fib(n) = n <= 1 ? 1 : fib(n-1) + fib(n-2)
+print(fib(30),"\n")
+
+end)()
