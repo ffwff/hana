@@ -7,6 +7,8 @@ use std::io::Read;
 #[macro_use] extern crate decorator;
 extern crate ansi_term;
 use ansi_term::Color as ac;
+use rustyline::Editor;
+use rustyline::error::ReadlineError;
 
 mod compiler;
 #[macro_use] mod ast;
@@ -35,6 +37,7 @@ fn print_error(s: &String, lineno: usize, col: usize, _lineno_end: usize, col_en
     message);
 }
 
+// command/file
 enum ProcessArg<'a> {
     Command(&'a str),
     File(&'a str),
@@ -81,7 +84,9 @@ fn process(arg: ProcessArg) {
     hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();
+}
 
+fn handle_error(c: &compiler::Compiler) {
     if c.vm.error != VmError::ERROR_NO_ERROR {
         {
             let smap = c.lookup_smap(c.vm.ip as usize).unwrap();
@@ -109,7 +114,57 @@ fn process(arg: ProcessArg) {
                 env = unsafe { env.sub(1) };
             }
         }
-        std::process::exit(1);
+    }
+}
+
+// repl
+fn repl() {
+    let mut rl = Editor::<()>::new();
+    let mut c = compiler::Compiler::new();
+    c.files.push("[repl]".to_string());
+    c.sources.push(String::new());
+    c.vm.compiler = Some(&mut c);
+    set_root(&mut c.vm);
+    hanayo::init(&mut c.vm);
+    loop {
+        let readline = rl.readline(">> ");
+        match readline {
+            Ok(s) => {
+                rl.add_history_entry(s.as_ref());
+                match ast::grammar::start(&s) {
+                    Ok(prog) => {
+                        c.vm.error = VmError::ERROR_NO_ERROR;
+                        c.sources[0] = s.clone();
+                        c.vm.ip = c.vm.code.len() as u32;
+                        for stmt in prog {
+                            stmt.emit(&mut c);
+                        }
+                        c.vm.code.push(VmOpcode::OP_HALT);
+                        c.vm.execute();
+                        handle_error(&c);
+                    }
+                    Err(err) => {
+                        print_error(&s, err.line, err.column,
+                            err.line, err.column,
+                            "parser error:", &format!("expected {}", {
+                                let expected : Vec<String> = err.expected.iter().map(|x| x.to_string()).collect();
+                                expected.join(", ")
+                            }));
+                    }
+                }
+            },
+            Err(ReadlineError::Interrupted) => {
+                continue
+            },
+            Err(ReadlineError::Eof) => {
+                println!("exitting...");
+                break
+            },
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break
+            }
+        }
     }
 }
 
@@ -161,5 +216,5 @@ fn main() {
         }
     }
 
-    println!("repl is unimplemented");
+    repl()
 }
