@@ -203,7 +203,6 @@ void vm_execute(struct vm *vm) {
     doop(optype): { \
         LOG("" #optype "\n"); \
         debug_assert(vm->stack.length >= 2); \
-        vm->ip++; \
 \
         struct value right = array_top(vm->stack); \
         array_pop(vm->stack); \
@@ -215,6 +214,7 @@ void vm_execute(struct vm *vm) {
         fn(result, left, right); \
         if(result->type == TYPE_INTERPRETER_ERROR) { \
             ERROR(ERROR_ ##optype); } \
+        vm->ip++; \
         dispatch(); \
     }
     binop(OP_ADD, value_add)
