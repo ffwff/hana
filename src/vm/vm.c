@@ -359,10 +359,10 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(nargs);
         const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
                              (uint16_t)vm->code.data[vm->ip + 1];
-        vm->ip += pos;
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
         array_push(vm->stack, (struct value){0});
         value_function(&array_top(vm->stack), vm->ip + sizeof(pos), nargs, vm->localenv);
+        vm->ip += pos;
         dispatch();
     }
 
