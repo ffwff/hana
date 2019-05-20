@@ -1,3 +1,5 @@
+use std::any::Any;
+use std::boxed::Box;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
 use super::value::Value;
@@ -5,7 +7,8 @@ use super::value::Value;
 #[repr(C)]
 pub struct Record {
     data: CHashMap,
-    prototype: Option<&'static Record>
+    prototype: Option<&'static Record>,
+    pub native_field: Option<Box<Any>>,
 }
 
 impl Record {
@@ -13,7 +16,8 @@ impl Record {
     pub fn new() -> Record {
         Record {
             data: std::collections::HashMap::new(),
-            prototype: None
+            prototype: None,
+            native_field: None
         }
     }
 

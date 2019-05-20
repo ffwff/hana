@@ -1,27 +1,11 @@
 use std::fs::{File, OpenOptions};
-use std::os::unix::io::{IntoRawFd, FromRawFd};
 use std::io::{Read, Write, Seek, SeekFrom};
-use std::mem::ManuallyDrop;
-use std::borrow::BorrowMut;
+use std::boxed::Box;
 
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::record::Record;
 use super::{malloc, drop};
 use crate::vm::Value;
-
-// manually drop because we don't want rust's RAII to automatically close the fd
-// the gc should be doing it in the record's finaliser!
-fn get_file_from_obj(rec: &Record) -> Option<ManuallyDrop<File>> {
-    if let Some(fptr) = rec.get(&"fptr!".to_string()) {
-        match fptr.unwrap() {
-            Value::Int(x) => Some(ManuallyDrop::new(unsafe {
-                    File::from_raw_fd(x as i32) })),
-            _ => None
-        }
-    } else {
-        None
-    }
-}
 
 #[hana_function()]
 fn constructor(path : Value::Str, mode: Value::Str) -> Value {
@@ -41,46 +25,39 @@ fn constructor(path : Value::Str, mode: Value::Str) -> Value {
 
     // file object
     let mut rec = Record::new();
+    // store native file
+    rec.native_field = Some(Box::new(options.open(path).unwrap()));
     // TODO: maybe not hardcode prototype it like this
     rec.insert("prototype".to_string(), *vm.global().get(&"File".to_string()).unwrap());
     rec.insert("path".to_string(), Value::Str(path).wrap());
     rec.insert("mode".to_string(), Value::Str(mode).wrap());
-    rec.insert("fptr!".to_string(), Value::Int(options.open(path).unwrap().into_raw_fd() as i64).wrap());
-    Value::Record(unsafe{ &*malloc(rec, |ptr| {
-        // cleanup file descriptor
-        let rec = &mut *(ptr as *mut Record);
-        if let Some(fptr) = get_file_from_obj(rec) {
-            ManuallyDrop::into_inner(fptr);
-        }
-        // cleanup record
-        drop::<Record>(ptr);
-    }) })
+    Value::Record(unsafe{ &*malloc(rec, |ptr| drop::<Record>(ptr)) })
 }
 
 // reopen
 #[hana_function()]
-fn close(rec: Value::mut_Record) -> Value {
-    let file = get_file_from_obj(rec).unwrap();
-    ManuallyDrop::into_inner(file);
-    rec.insert("fptr!".to_string(), Value::Nil.wrap());
+fn close(file: Value::mut_Record) -> Value {
+    file.native_field = None;
     Value::Nil
 }
 
 // read
 #[hana_function()]
-fn read(file: Value::Record) -> Value {
-    let mut file = get_file_from_obj(file).unwrap();
+fn read(file: Value::mut_Record) -> Value {
+    let field = file.native_field.as_mut().unwrap();
+    let file = field.downcast_mut::<File>().unwrap();
     let mut s = String::new();
-    file.borrow_mut().read_to_string(&mut s).unwrap_or(0);
+    file.read_to_string(&mut s);
     Value::Str(unsafe { &*malloc(s, |ptr| drop::<String>(ptr)) })
 }
 
 #[hana_function()]
-fn read_up_to(file: Value::Record, n: Value::Int) -> Value {
-    let mut file = get_file_from_obj(file).unwrap();
+fn read_up_to(file: Value::mut_Record, n: Value::Int) -> Value {
+    let field = file.native_field.as_mut().unwrap();
+    let file = field.downcast_mut::<File>().unwrap();
     let mut bytes : Vec<u8> = Vec::new();
     bytes.resize(n as usize, 0);
-    if file.borrow_mut().read_exact(&mut bytes).is_err() {
+    if file.read_exact(&mut bytes).is_err() {
         panic!("unable to read exact!");
     }
     Value::Str(unsafe { &*malloc(String::from_utf8(bytes)
@@ -90,38 +67,48 @@ fn read_up_to(file: Value::Record, n: Value::Int) -> Value {
 
 // write
 #[hana_function()]
-fn write(file: Value::Record, buf: Value::Str) -> Value {
-    let mut file = get_file_from_obj(file).unwrap();
-    Value::Int(file.borrow_mut().write_all(buf.as_bytes()).is_ok() as i64)
+fn write(file: Value::mut_Record, buf: Value::Str) -> Value {
+    if let Some(field) = file.native_field.as_mut() {
+        let file = field.downcast_mut::<File>().unwrap();
+        Value::Int(file.write_all(buf.as_bytes()).is_ok() as i64)
+    } else {
+        Value::Int(0)
+    }
 }
 
 // positioning
 #[hana_function()]
-fn seek(file: Value::Record, pos: Value::Int) -> Value {
-    let mut file = get_file_from_obj(file).unwrap();
-    if let Result::Ok(result) = file.borrow_mut().seek(SeekFrom::Current(pos)) {
-        Value::Int(result as i64)
-    } else {
-        Value::Int(-1)
-    }
+fn seek(file: Value::mut_Record, pos: Value::Int) -> Value {
+    if let Some(field) = file.native_field.as_mut() {
+        let file = field.downcast_mut::<File>().unwrap();
+        if let Result::Ok(result) = file.seek(SeekFrom::Current(pos)) {
+            Value::Int(result as i64)
+        } else {
+            Value::Int(-1)
+        }
+    } else { Value::Int(-1) }
 }
 
 #[hana_function()]
-fn seek_from_start(file: Value::Record, pos: Value::Int) -> Value {
-    let mut file = get_file_from_obj(file).unwrap();
-    if let Result::Ok(result) = file.borrow_mut().seek(SeekFrom::Start(pos as u64)) {
-        Value::Int(result as i64)
-    } else {
-        Value::Int(-1)
-    }
+fn seek_from_start(file: Value::mut_Record, pos: Value::Int) -> Value {
+    if let Some(field) = file.native_field.as_mut() {
+        let file = field.downcast_mut::<File>().unwrap();
+        if let Result::Ok(result) = file.seek(SeekFrom::Start(pos as u64)) {
+            Value::Int(result as i64)
+        } else {
+            Value::Int(-1)
+        }
+    } else { Value::Int(-1) }
 }
 
 #[hana_function()]
-fn seek_from_end(file: Value::Record, pos: Value::Int) -> Value {
-    let mut file = get_file_from_obj(file).unwrap();
-    if let Result::Ok(result) = file.borrow_mut().seek(SeekFrom::End(pos)) {
-        Value::Int(result as i64)
-    } else {
-        Value::Int(-1)
-    }
+fn seek_from_end(file: Value::mut_Record, pos: Value::Int) -> Value {
+    if let Some(field) = file.native_field.as_mut() {
+        let file = field.downcast_mut::<File>().unwrap();
+        if let Result::Ok(result) = file.seek(SeekFrom::End(pos)) {
+            Value::Int(result as i64)
+        } else {
+            Value::Int(-1)
+        }
+    } else { Value::Int(-1) }
 }
