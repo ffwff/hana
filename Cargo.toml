@@ -1,7 +1,12 @@
 [package]
 name = "haru"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["ffwff <mogamiriver@tuta.io>"]
+documentation = "https://github.com/ffwff/hana"
+homepage = "https://github.com/ffwff/hana"
+repository = "https://github.com/ffwff/hana"
+readme = "README.md"
+license = "GPL-3.0"
 edition = "2018"
 build = "build.rs"
 

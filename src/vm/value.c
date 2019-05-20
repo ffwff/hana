@@ -129,14 +129,6 @@ void value_mod(struct value *result, const struct value left, const struct value
         result->type = TYPE_INTERPRETER_ERROR;
 }
 
-// logic
-#define logic_op(name, op) \
-void value_ ## name (struct value *result, const struct value left, const struct value right) { \
-    value_int(result, value_is_true(left) op value_is_true(right)); \
-}
-logic_op(and, &&)
-logic_op(or, ||)
-
 // comparison
 #define strcmp_op(cond) \
     case TYPE_STR: \

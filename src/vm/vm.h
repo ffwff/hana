@@ -16,8 +16,6 @@ enum vm_opcode {
     OP_POP,
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
-    // logic
-    OP_AND, OP_OR,
     // unary
     OP_NEGATE, OP_NOT,
     // comparison
@@ -33,6 +31,7 @@ enum vm_opcode {
     OP_DEF_FUNCTION_PUSH,
     // flow control
     OP_JMP, OP_JMP_LONG, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
+    OP_JCOND_NO_POP, OP_JNCOND_NO_POP,
     // dictionary
     OP_DICT_NEW,
     OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,

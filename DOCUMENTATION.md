@@ -345,7 +345,8 @@ Otherwise comparison will always evaluate to `false`.
 
 #### Logical operators
 
-`and`, `or`: Casts the two values into booleans then does the boolean arithmetic.
+`and`, `or`: Casts the two values into booleans then does the equivalent **short-circuited**
+boolean operation.
 
 `not` casts the value into a boolean then does a boolean NOT (`true` becomes `false` and
 vice-versa).

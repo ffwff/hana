@@ -50,8 +50,6 @@ void vm_execute(struct vm *vm) {
         X(OP_POP),
         // arith
         X(OP_ADD), X(OP_SUB), X(OP_MUL), X(OP_DIV), X(OP_MOD),
-        // logic
-        X(OP_AND), X(OP_OR),
         // unary
         X(OP_NEGATE), X(OP_NOT),
         // comparison
@@ -67,6 +65,7 @@ void vm_execute(struct vm *vm) {
         X(OP_DEF_FUNCTION_PUSH),
         // flow control
         X(OP_JMP), X(OP_JMP_LONG), X(OP_JCOND), X(OP_JNCOND), X(OP_CALL), X(OP_RET),
+        X(OP_JCOND_NO_POP), X(OP_JNCOND_NO_POP),
         // record
         X(OP_DICT_NEW),
         X(OP_MEMBER_GET), X(OP_MEMBER_GET_NO_POP),
@@ -222,10 +221,6 @@ void vm_execute(struct vm *vm) {
     binop(OP_MUL, value_mul)
     binop(OP_DIV, value_div)
     binop(OP_MOD, value_mod)
-
-    // logic
-    binop(OP_AND, value_and)
-    binop(OP_OR, value_or)
 
     // comparison
     binop(OP_LT,  value_lt)
@@ -385,23 +380,25 @@ void vm_execute(struct vm *vm) {
         LOG("JMP LONG %d\n", pos);
         dispatch();
     }
-    doop(OP_JCOND): { // jmp if not true [32-bit position]
-        vm->ip++;
+    doop(OP_JCOND):
+    doop(OP_JCOND_NO_POP): { // jmp if not true [32-bit position]
+        const enum vm_opcode op = vm->code.data[vm->ip++];
         const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
                             (uint16_t)vm->code.data[vm->ip+1];
         struct value val = array_top(vm->stack);
-        array_pop(vm->stack);
+        if(op == OP_JCOND) array_pop(vm->stack);
         LOG("JCOND %d\n", pos);
         if(value_is_true(val)) vm->ip += pos;
         else vm->ip += sizeof(pos);
         dispatch();
     }
-    doop(OP_JNCOND): { // jump if true [32-bit position]
-        vm->ip++;
+    doop(OP_JNCOND):
+    doop(OP_JNCOND_NO_POP):  { // jump if true [32-bit position]
+        const enum vm_opcode op = vm->code.data[vm->ip++];
         const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
                             (uint16_t)vm->code.data[vm->ip+1];
         struct value val = array_top(vm->stack);
-        array_pop(vm->stack);
+        if(op == OP_JNCOND) array_pop(vm->stack);
         LOG("JNCOND %d\n", pos);
         if(!value_is_true(val)) vm->ip += pos;
         else vm->ip += sizeof(pos);

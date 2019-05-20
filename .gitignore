@@ -1,5 +1,3 @@
 *.txt
-experiment
 target
 .vscode
-*.lock

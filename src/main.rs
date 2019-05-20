@@ -98,7 +98,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
 
     // dump bytecode if asked
     if flag.dump_bytecode {
-        io::stdout().write(c.vm.code.as_bytes());
+        io::stdout().write(c.vm.code.as_bytes()).unwrap();
         return;
     }
 

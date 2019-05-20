@@ -557,9 +557,7 @@ pub mod ast {
                 BinOp::Sub => arithop_do!(VmOpcode::OP_SUB),
                 BinOp::Mul => arithop_do!(VmOpcode::OP_MUL),
                 BinOp::Div => arithop_do!(VmOpcode::OP_DIV),
-                BinOp::And => arithop_do!(VmOpcode::OP_AND),
                 BinOp::Mod => arithop_do!(VmOpcode::OP_MOD),
-                BinOp::Or  => arithop_do!(VmOpcode::OP_OR ),
                 BinOp::Eq  => arithop_do!(VmOpcode::OP_EQ ),
                 BinOp::Neq => arithop_do!(VmOpcode::OP_NEQ),
                 BinOp::Gt  => arithop_do!(VmOpcode::OP_GT ),
@@ -567,6 +565,22 @@ pub mod ast {
                 BinOp::Geq => arithop_do!(VmOpcode::OP_GEQ),
                 BinOp::Leq => arithop_do!(VmOpcode::OP_LEQ),
                 BinOp::Of  => arithop_do!(VmOpcode::OP_OF),
+                // boolean operators
+                BinOp::And => {
+                    self.left.emit(c);
+                    c.vm.code.push(VmOpcode::OP_JNCOND_NO_POP);
+                    let label = c.reserve_label16();
+                    c.vm.code.push(VmOpcode::OP_POP);
+                    self.right.emit(c);
+                    c.fill_label16(label, (c.vm.code.len() - label) as u16);
+                },
+                BinOp::Or  => {
+                    self.left.emit(c);
+                    c.vm.code.push(VmOpcode::OP_JCOND_NO_POP);
+                    let label = c.reserve_label16();
+                    self.right.emit(c);
+                    c.fill_label16(label, (c.vm.code.len() - label) as u16);
+                },
                 //_ => panic!("not implemented: {:?}", self.op)
             }
             emit_end!(c, _smap_begin);

@@ -26,21 +26,20 @@ record JSON
         end
         r.parse_number = function(r) begin
             num = ""
-            while chars[r.i] >= "0" and chars[r.i] <= "9" begin
+            while r.i < slen and chars[r.i] >= "0" and chars[r.i] <= "9" begin
                 num += chars[r.i]
                 r.i += 1
-                if r.i == slen then return Int(num)
             end
             if chars[r.i] == "." begin
                 num += "."
                 r.i += 1
-                while chars[r.i] >= "0" and chars[r.i] <= "9" begin
+                while r.i < slen and chars[r.i] >= "0" and chars[r.i] <= "9" begin
                     num += chars[r.i]
                     r.i += 1
-                    if r.i == slen then return Float(num)
                 end
+                return Float(num)
             end
-            else return Int(num)
+            return Int(num)
         end
         r.parse_str = function(r) begin
             next('"')

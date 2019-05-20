@@ -69,7 +69,7 @@ impl<T> CArray<T> {
     // bytes
     pub fn as_bytes(&self) -> &[u8] {
         unsafe {
-            std::slice::from_raw_parts((self.data as *const u8),
+            std::slice::from_raw_parts(self.data as *const u8,
                     std::mem::size_of::<T>() * self.len)
         }
     }

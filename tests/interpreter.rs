@@ -95,6 +95,18 @@ pub mod interpreter_tests {
     }
 
     #[test]
+    fn and_op() {
+        let mut vm : Vm = eval!("y = 5 and 0");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(0));
+    }
+
+    #[test]
+    fn or_op() {
+        let mut vm : Vm = eval!("y = 5 or 0");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(5));
+    }
+
+    #[test]
     fn condexpr() {
         let mut vm : Vm = eval!("y = 1 ? 2*2 : 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(4));

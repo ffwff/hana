@@ -30,8 +30,6 @@ pub enum VmOpcode {
     OP_POP,
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
-    // logic
-    OP_AND, OP_OR,
     // unary
     OP_NEGATE, OP_NOT,
     // comparison
@@ -47,6 +45,7 @@ pub enum VmOpcode {
     OP_DEF_FUNCTION_PUSH,
     // flow control
     OP_JMP, OP_JMP_LONG, OP_JCOND, OP_JNCOND, OP_CALL, OP_RET,
+    OP_JCOND_NO_POP, OP_JNCOND_NO_POP,
     // dictionary
     OP_DICT_NEW,
     OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
@@ -420,7 +419,7 @@ impl Vm {
 
         if let Ok(mut file) = std::fs::File::open(pathobj) {
             let mut s = String::new();
-            file.read_to_string(&mut s);
+            file.read_to_string(&mut s).unwrap();
             let prog = ast::grammar::start(&s).unwrap();
             c.files.push(path.to_string());
             c.sources.push(s);
