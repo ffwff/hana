@@ -773,7 +773,6 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
                              (uint16_t)vm->code.data[vm->ip + 1];
-        vm->ip += sizeof(pos);
         LOG("FOR_IN %d\n", pos);
         struct value *top = &array_top(vm->stack);
         if (top->type == TYPE_INTERPRETER_ITERATOR) {
@@ -790,6 +789,10 @@ void vm_execute(struct vm *vm) {
                 array_push(vm->stack, array->data[idx]);
             }
         } else if (top->type == TYPE_ARRAY) {
+            if (top->as.array->length == 0) { // skip empty
+                vm->ip += pos;
+                dispatch();
+            }
             struct value val = {
                 .as.integer = 1,
                 .type = TYPE_INTERPRETER_ITERATOR
@@ -799,6 +802,7 @@ void vm_execute(struct vm *vm) {
         } else {
             ERROR(ERROR_EXPECTED_ITERABLE, 1 + sizeof(pos));
         }
+        vm->ip += sizeof(pos);
         dispatch();
     }
 

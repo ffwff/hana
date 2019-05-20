@@ -169,6 +169,15 @@ end
 ");
         assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(10));
     }
+
+    #[test]
+    fn for_in_stmt_empty() {
+        let mut vm : Vm = eval!("
+for i in [] begin
+end
+");
+        assert!(vm.global().get("i").is_none());
+    }
     // #endregion
 
     // #region continue/break

@@ -55,7 +55,7 @@ impl std::fmt::Display for VmError {
         VmError::ERROR_CONSTRUCTOR_NOT_FUNCTION => write!(f, "Cannot call record with non-function constructor"),
         VmError::ERROR_MISMATCH_ARGUMENTS       => write!(f, "Argument mismatch"),
         VmError::ERROR_EXPECTED_CALLABLE        => write!(f, "Expected value to be callable (record or function)"),
-        VmError::ERROR_CANNOT_ACCESS_NON_RECORD => write!(f, "Cannot access a literal that has no \"prototype\" key"),
+        VmError::ERROR_CANNOT_ACCESS_NON_RECORD => write!(f, "Cannot access property of a nil literal"),
         VmError::ERROR_KEY_NON_INT              => write!(f, "Index must be an integer value"),
         VmError::ERROR_RECORD_KEY_NON_STRING    => write!(f, "Record key must be an string value"),
         VmError::ERROR_UNBOUNDED_ACCESS         => write!(f, "Accessing a value that lies outside of the object's bound"),
