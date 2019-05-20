@@ -1,5 +1,12 @@
 record JSON
 
+    true = record
+        to_json = |self| "true"
+    end
+    false = record
+        to_json = |self| "false"
+    end
+
     function parse(str) begin
         chars = str.chars()
         slen = chars.length()
@@ -73,7 +80,7 @@ record JSON
                 next("l")
                 return nil
             end
-            print("expected word")
+            raise JSON::ParserError("expected word")
         end
         r.parse_value = function(r) begin
             ws()
@@ -104,7 +111,6 @@ record JSON
             key = ""
             obj = Record()
             r.i += 1
-            print("1")
             ws()
             if chars[r.i] == "}" then return obj
             while r.i < slen begin
@@ -126,6 +132,14 @@ record JSON
         return r.parse_value()
     end
 
+    function serialise(obj) begin
+        if obj of Record begin
+            if obj.to_json != nil then return obj.to_json()
+            return Record::to_json(obj)
+        end
+        return obj.to_json()
+    end
+
     // errors
     record ParserError
         function constructor(self, what?) begin
@@ -140,8 +154,9 @@ end
 Record.to_json = function(self) begin
     s = "{"
     a = []
-    for key in self.keys() begin
-        a.push(key.to_json() + ":" + self[key].to_json())
+    keys = Record::keys(self)
+    for key in keys begin
+        a.push(JSON::serialise(key) + ":" + JSON::serialise(self[key]))
     end
     s += a.join(", ")
     s += "}"
@@ -150,7 +165,7 @@ end
 
 Array.to_json = function(self) begin
     return "[" + self.map(|v| {
-        return v.to_json()
+        return JSON::serialise(v)
     }).join(", ") + "]"
 end
 

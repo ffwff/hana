@@ -791,7 +791,7 @@ void vm_execute(struct vm *vm) {
             }
         } else if (top->type == TYPE_ARRAY) {
             struct value val = {
-                .as.integer = 0,
+                .as.integer = 1,
                 .type = TYPE_INTERPRETER_ITERATOR
             };
             array_push(vm->stack, val);

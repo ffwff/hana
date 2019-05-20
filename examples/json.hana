@@ -1,1 +1,12 @@
 use "json"
+
+print(JSON::serialise(record
+    bool = JSON::true
+    int = 1000
+    float = 12.6
+    nested = record
+        array = [1,2,3]
+    end
+end), "\n")
+
+print(JSON::parse('{"int": 10}').int, "\n")

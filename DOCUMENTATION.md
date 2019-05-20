@@ -672,9 +672,9 @@ must be imported to use.
 
 ```
 JSON::parse('{"a": true}') // => record of a key = 1
-JSON::stringify(record
+(record
     a = JSON::true
-end) // => {"a": true}
+end).to_json() // => {"a": true}
 ```
 
 ## Imports

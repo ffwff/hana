@@ -109,6 +109,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     hanayo::init(&mut c.vm);
     c.vm.code.push(VmOpcode::OP_HALT);
     c.vm.execute();
+    handle_error(&c);
 }
 
 fn handle_error(c: &compiler::Compiler) {
