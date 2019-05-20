@@ -1,6 +1,6 @@
-for i = 0 to 100 begin
-    if i mod 3 == 0 and i mod 5 == 0 print("Fizzbuzz\n")
-    else if i mod 3 == 0 print("Fizz\n")
-    else if i mod 5 == 0 print("Buzz\n")
+for i=0 to 100 begin
+    if i mod 3 == 0 and i mod 5 == 0 then print("Fizzbuzz\n")
+    else if i mod 3 == 0 then print("Fizz\n")
+    else if i mod 5 == 0 then print("Buzz\n")
     else print(i, "\n")
 end
