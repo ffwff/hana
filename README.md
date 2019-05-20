@@ -5,22 +5,22 @@
 
 **hana** is a small dynamically-typed scripting language written in Rust/C
 and is inspired by Pascal, Ruby and Javascript. It primarily supports prototype-based
-object orientation and first-class functions (with closure support). The interpreter
+object orientation, dynamic arrays, first-class functions (with closure support). The interpreter
 comes useful features such as a simple mark-and-sweep garbage collector, exception handling
-and a work in progress import system.
+and an import system.
 
 **haru**, the Rust parser/runtime generates bytecode that runs on an optimised
 virtual machine written in C (about as fast as Python and Ruby!)
 
 ## Building
 
-(building was tested by using rust-nightly-2019-05-01 and gcc-8 on an x64 with Linux, mileage
+(building was tested by using rust-nightly and gcc-4.8 on an x64 with Linux, mileage
 may vary on other architectures)
 
 Just do:
 
 ```
-cargo build
+cargo build --release
 ```
 
 ## Running
@@ -35,6 +35,19 @@ Alternatively you could invoke a REPL for easier prototyping:
 
 ```
 ./main
+```
+
+For usage, pass the `-h` command:
+
+```
+usage: haru [options] [-c cmd | file | -]
+options:
+ -c cmd : execute program passed in as string
+ -d/--dump-vmcode: dumps vm bytecode to stdout
+                   (only works in interpreter mode)
+ -b/--bytecode: runs file as bytecode
+ -a/--print-ast: prints ast and without run
+ -v/--version: version
 ```
 
 ## Documentation
