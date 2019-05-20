@@ -53,20 +53,9 @@ fib(n) = fibrec(n+1, 1, 0)
 print(fib(50), "\n")
 ```
 
-## Building
-
-(building was tested by using rust-nightly and gcc-4.8 on an x64 with Linux, mileage
-may vary on other architectures)
-
-Just do:
-
-```
-cargo build --release
-```
-
 ## Running
 
-Once built, you can write hana code into a source file, then invoke the interpreter like this:
+Once built or installed, you can write hana code into a source file, then invoke the interpreter like this:
 
 ```
 haru program.hana
@@ -94,6 +83,17 @@ options:
 ## Documentation
 
 *see [DOCUMENTATION.md](https://github.com/ffwff/hana/blob/haru/DOCUMENTATION.md)*
+
+## Building
+
+(building was tested by using rust-nightly and gcc-4.8 on an x64 with Linux, mileage
+may vary on other architectures)
+
+Just do:
+
+```
+cargo build --release
+```
 
 ## License
 
