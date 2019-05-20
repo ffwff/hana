@@ -28,6 +28,12 @@ Once built, you can write hana code into a source file, then invoke the interpre
 ./main program.hana
 ```
 
+Alternatively you could invoke a REPL for easier prototyping:
+
+```
+./main
+```
+
 ## Documentation
 
 *see [DOCUMENTATION.md](/DOCUMENTATION.md)*
