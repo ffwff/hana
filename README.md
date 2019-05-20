@@ -22,6 +22,33 @@ cargo install haru
 
 The interpreter called `haru` will be installed into your PATH.
 
+## Running
+
+Once built or installed, you can write hana code into a source file, then invoke the interpreter like this:
+
+```
+haru program.hana
+```
+
+Alternatively you could invoke a REPL for easier prototyping:
+
+```
+haru
+```
+
+For usage, pass the `-h` command:
+
+```
+usage: haru [options] [-c cmd | file | -]
+options:
+ -c cmd : execute program passed in as string
+ -d/--dump-vmcode: dumps vm bytecode to stdout
+                   (only works in interpreter mode)
+ -b/--bytecode: runs file as bytecode
+ -a/--print-ast: prints ast and without run
+ -v/--version: version
+```
+
 ## Examples
 
 *see [/examples](https://github.com/ffwff/hana/tree/haru/examples) for more*
@@ -51,33 +78,6 @@ print(fib(30), "\n")
 fibrec(n, prev, curr) = n <= 0 ? curr : fibrec(n-1, prev+curr, prev)
 fib(n) = fibrec(n+1, 1, 0)
 print(fib(50), "\n")
-```
-
-## Running
-
-Once built or installed, you can write hana code into a source file, then invoke the interpreter like this:
-
-```
-haru program.hana
-```
-
-Alternatively you could invoke a REPL for easier prototyping:
-
-```
-haru
-```
-
-For usage, pass the `-h` command:
-
-```
-usage: haru [options] [-c cmd | file | -]
-options:
- -c cmd : execute program passed in as string
- -d/--dump-vmcode: dumps vm bytecode to stdout
-                   (only works in interpreter mode)
- -b/--bytecode: runs file as bytecode
- -a/--print-ast: prints ast and without run
- -v/--version: version
 ```
 
 ## Documentation
