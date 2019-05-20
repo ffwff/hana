@@ -57,6 +57,7 @@ impl NativeValue {
         _valueType::TYPE_NATIVE_OBJ => {
                 Value::NativeObj(self.data as *mut libc::c_void)
             },
+        _ => Value::Nil,
         }
     }
 
