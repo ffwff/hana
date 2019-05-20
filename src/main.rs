@@ -51,6 +51,15 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
                 c.files.push("[cmdline]".to_string());
                 cmd.to_string()
             },
+            ProcessArg::File("-") => {
+                let mut s = String::new();
+                io::stdin().read_to_string(&mut s).unwrap_or_else(|err| {
+                    println!("error reading from stdin: {}", err);
+                    std::process::exit(1);
+                });
+                c.files.push("[stdin]".to_string());
+                s
+            },
             ProcessArg::File(filename) => {
                 let mut file = std::fs::File::open(&filename).unwrap_or_else(|err| {
                     println!("error opening file: {}", err);
@@ -227,7 +236,7 @@ fn main() {
     };
     let mut cmd = false;
     for arg in args {
-        if arg.starts_with('-') {
+        if arg != "-" && arg.starts_with('-') {
             match arg.as_str() {
             "-h" | "--help" => { return help(&program); },
             "-v" | "--version" => { return version(); },
