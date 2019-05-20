@@ -25,7 +25,7 @@ fn main() {
             build.flag("-pg"); }
         if is_release { build.flag("-flto"); }
         build
-            .flag("-Wall").flag("-Werror")
+            .flag("-Wall")
             .compile("hana");
     }
 
