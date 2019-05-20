@@ -4,3 +4,4 @@ rust:
 cache: cargo
 env:
   - CC=gcc
+  - NOLOG=1

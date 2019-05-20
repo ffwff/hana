@@ -156,7 +156,7 @@ fn repl(flag: ParserFlag) {
         let readline = rl.readline(">> ");
         match readline {
             Ok(s) => {
-                rl.add_history_entry(s.as_ref());
+                rl.add_history_entry(s.as_str());
                 match ast::grammar::start(&s) {
                     Ok(prog) => {
                         if flag.print_ast {
