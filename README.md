@@ -12,51 +12,9 @@ and an import system.
 **haru**, the Rust parser/runtime generates bytecode that runs on an optimised
 virtual machine written in C (about as fast as Python and Ruby!)
 
-## Building
-
-(building was tested by using rust-nightly and gcc-4.8 on an x64 with Linux, mileage
-may vary on other architectures)
-
-Just do:
-
-```
-cargo build --release
-```
-
-## Running
-
-Once built, you can write hana code into a source file, then invoke the interpreter like this:
-
-```
-./main program.hana
-```
-
-Alternatively you could invoke a REPL for easier prototyping:
-
-```
-./main
-```
-
-For usage, pass the `-h` command:
-
-```
-usage: haru [options] [-c cmd | file | -]
-options:
- -c cmd : execute program passed in as string
- -d/--dump-vmcode: dumps vm bytecode to stdout
-                   (only works in interpreter mode)
- -b/--bytecode: runs file as bytecode
- -a/--print-ast: prints ast and without run
- -v/--version: version
-```
-
-## Documentation
-
-*see [DOCUMENTATION.md](/DOCUMENTATION.md)*
-
 ## Examples
 
-*see [/examples](/examples) for more*
+*see [/examples](https://github.com/ffwff/hana/tree/haru/examples) for more*
 
 ### Hello World
 
@@ -84,6 +42,58 @@ fibrec(n, prev, curr) = n <= 0 ? curr : fibrec(n-1, prev+curr, prev)
 fib(n) = fibrec(n+1, 1, 0)
 print(fib(50), "\n")
 ```
+
+## Installation
+
+You'll need to have the cargo package manager and rust installed. You can then do:
+
+```
+cargo install haru
+```
+
+The interpreter called `haru` will be installed into your PATH.
+
+## Building
+
+(building was tested by using rust-nightly and gcc-4.8 on an x64 with Linux, mileage
+may vary on other architectures)
+
+Just do:
+
+```
+cargo build --release
+```
+
+## Running
+
+Once built, you can write hana code into a source file, then invoke the interpreter like this:
+
+```
+haru program.hana
+```
+
+Alternatively you could invoke a REPL for easier prototyping:
+
+```
+haru
+```
+
+For usage, pass the `-h` command:
+
+```
+usage: haru [options] [-c cmd | file | -]
+options:
+ -c cmd : execute program passed in as string
+ -d/--dump-vmcode: dumps vm bytecode to stdout
+                   (only works in interpreter mode)
+ -b/--bytecode: runs file as bytecode
+ -a/--print-ast: prints ast and without run
+ -v/--version: version
+```
+
+## Documentation
+
+*see [DOCUMENTATION.md](https://github.com/ffwff/hana/blob/haru/DOCUMENTATION.md)*
 
 ## License
 
