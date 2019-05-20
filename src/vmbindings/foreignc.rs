@@ -138,17 +138,11 @@ pub unsafe extern "C" fn function_set_bound_var(fun: *mut Function, slot: u16, v
 // #region array
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc() -> *mut CArray<NativeValue> {
-    malloc(CArray::new(), |ptr| {
-        let array = &mut *(ptr as *mut CArray<NativeValue>);
-        array.drop();
-    })
+    malloc(CArray::new(), |ptr| drop::<CArray<NativeValue>>(ptr))
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue> {
-    malloc(CArray::reserve(n), |ptr| {
-        let array = &mut *(ptr as *mut CArray<NativeValue>);
-        array.drop();
-    })
+    malloc(CArray::reserve(n), |ptr| drop::<CArray<NativeValue>>(ptr))
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n: usize) -> *mut CArray<NativeValue> {
@@ -159,10 +153,7 @@ pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n:
             result[j*array.len() + i] = array[j].clone();
         }
     }
-    malloc(result, |ptr| {
-        let array = &mut *(ptr as *mut CArray<NativeValue>);
-        array.drop();
-    })
+    malloc(result, |ptr| drop::<CArray<NativeValue>>(ptr))
 }
 // #endregion
 

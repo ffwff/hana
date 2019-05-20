@@ -48,7 +48,11 @@
 				},
 				{
 					"name": "variable.other.hana",
-					"match": "\\b[\\_$a-zA-Z][\\_$a-zA-Z0-9\\?\\!]*\\b"
+					"match": "\\b[\\_$a-z][\\_$a-zA-Z0-9\\?\\!]*\\b"
+				},
+				{
+					"name": "variable.other.object.hana",
+					"match": "\\b[A-Z][\\_$a-zA-Z0-9\\?\\!]*\\b"
 				}
 			]
 		},
@@ -59,7 +63,15 @@
 					"match": "\\*\\=|\\/\\=|\\+\\=|\\-\\="
 				},
 				{
+					"name": "keyword.operator.arithmetic.hana",
+					"match": "\\+|-|\\*|\\/|mod"
+				},
+				{
 					"name": "keyword.operator.comparison.hana",
+					"match": "==|\\!="
+				},
+				{
+					"name": "keyword.operator.relational.hana",
 					"match": "\\<\\=|\\>\\=|\\<|\\>"
 				},
 				{

@@ -152,7 +152,10 @@ impl Vm {
     }
 
     // pushes
-    pub fn cpush8(&mut self, n : u8) { unsafe { vm_code_push8(self, n); } }
+    // int
+    pub fn cpush8(&mut self, n : u8) {
+         unsafe { vm_code_push8(self, n); }
+    }
     pub fn cpush16(&mut self, n : u16) {
         for byte in &n.to_be_bytes() {
             self.cpush8(*byte);
@@ -168,12 +171,15 @@ impl Vm {
             self.cpush8(*byte);
         }
     }
+
+    // other
     pub fn cpushf64(&mut self, n : f64) { unsafe { vm_code_pushf64(self, n); } }
     pub fn cpushs<T : Into<Vec<u8>>>(&mut self, s : T) {
         let cstr = CString::new(s).expect("can't turn to cstring");
         unsafe { vm_code_pushstr(self, cstr.as_ptr()); }
     }
 
+    // labels
     #[cfg_attr(tarpaulin, skip)]
     pub fn cfill_label(&mut self, pos: usize, label: usize) {
         unsafe{ vm_code_fill(self, pos as u32, label as u32); }
@@ -333,7 +339,6 @@ impl Vm {
         let mut ctx = ManuallyDrop::into_inner(ctx);
 
         // drop old
-        self.stack.drop();
         unsafe {
             use std::mem;
             use std::alloc::{dealloc, Layout};
@@ -349,8 +354,6 @@ impl Vm {
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
         }
-        // exception frames
-        self.exframes.drop();
 
         // fill in
         self.ip = ctx.ip;
@@ -454,9 +457,6 @@ impl std::ops::Drop for Vm {
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
-            // exception frames
-            self.exframes.drop();
-
             // primitive objects
             unpin(self.dstr as *mut libc::c_void);
             unpin(self.dint as *mut libc::c_void);
@@ -468,8 +468,6 @@ impl std::ops::Drop for Vm {
             if !self.globalenv.is_null() {
                 Box::from_raw(self.globalenv);
             }
-            self.code.drop();
-            self.stack.drop();
 
         }
     }

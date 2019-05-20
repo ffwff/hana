@@ -7,8 +7,7 @@ use super::{malloc, drop, pin_start, pin_end};
 use crate::vm::Value;
 
 fn alloc_free(ptr: *mut libc::c_void) {
-    let array = unsafe { &mut *(ptr as *mut CArray<NativeValue>) };
-    array.drop();
+    unsafe{ drop::<CArray<NativeValue>>(ptr); }
 }
 
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
@@ -131,13 +130,11 @@ pub extern fn map(cvm : *mut Vm, nargs : u16) {
                 if let Some(val) = vm.call(fun.wrap(), &args) {
                     new_array[i] = val;
                 } else {
-                    args.drop();
                     pin_end(p);
                     return;
                 }
                 i += 1;
             }
-            args.drop();
         },
         Value::NativeFn(fun) => {
             for val in array.iter() {
@@ -177,11 +174,9 @@ pub extern fn filter(cvm : *mut Vm, nargs : u16) {
                     }
                 } else {
                     pin_end(p);
-                    args.drop();
                     return;
                 }
             }
-            args.drop();
         },
         Value::NativeFn(fun) => {
             for val in array.iter() {
@@ -221,12 +216,10 @@ pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
                 if let Some(val) = vm.call(fun.wrap(), &args) {
                     acc = val.unwrap();
                 } else {
-                    args.drop();
                     pin_end(p);
                     return;
                 }
             }
-            args.drop();
         },
         Value::NativeFn(fun) => {
             for val in array.iter() {
@@ -249,7 +242,7 @@ fn value_eq(result: *mut NativeValue, left: NativeValue, right: NativeValue);
 }
 #[hana_function()]
 fn index(array: Value::Array, elem: Value::Any) -> Value {
-    for i in 0..array.len() {
+    for i in 0..(array.len()-1) {
         let mut val = NativeValue { data: 0, r#type: _valueType::TYPE_NIL };
         unsafe { value_eq(&mut val, array[i], elem.wrap()); }
         if val.data == 1 {

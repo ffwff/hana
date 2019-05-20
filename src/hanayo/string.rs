@@ -86,10 +86,8 @@ fn split(s: Value::Str, delim: Value::Str) -> Value {
                 &*malloc(ss.clone().to_string(), alloc_free) });
         array.push(val.wrap().pin());
     }
-    let ret = Value::Array(unsafe { &*malloc(array, |ptr| {
-        let array = &mut *(ptr as *mut CArray<NativeValue>);
-        array.drop();
-    }) });
+    let ret = Value::Array(unsafe { &*malloc(array, |ptr|
+        drop::<CArray<NativeValue>>(ptr)) });
     pin_end(p);
     ret
 }
@@ -111,10 +109,8 @@ fn chars(s: Value::Str) -> Value {
                 &*malloc(ss.clone().to_string(), alloc_free) });
         array.push(val.wrap().pin());
     }
-    let ret = Value::Array(unsafe { &*malloc(array, |ptr| {
-        let array = &mut *(ptr as *mut CArray<NativeValue>);
-        array.drop();
-    }) });
+    let ret = Value::Array(unsafe { &*malloc(array, |ptr|
+        drop::<CArray<NativeValue>>(ptr)) });
     pin_end(p);
     ret
 }

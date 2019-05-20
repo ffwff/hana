@@ -503,7 +503,7 @@ f = File('/tmp/file_write', 'wc')
 f.write('Hello World')
 f.close()
 ");
-        assert_eq!(std::str::from_utf8(&std::fs::read("/tmp/b").unwrap()).unwrap(), "Hello World");
+        assert_eq!(std::str::from_utf8(&std::fs::read("/tmp/file_write").unwrap()).unwrap(), "Hello World");
     }
     // #endregion
 

@@ -58,22 +58,6 @@ impl<T> CArray<T> {
         arr
     }
 
-    pub fn drop(&mut self) { // must be called manually
-        // this function MUST BE called by its owner
-        // for example from array_obj::drop function
-        if self.data.is_null() { return; }
-        unsafe{
-            for i in 0..self.len {
-                std::ptr::drop_in_place(self.data.add(i));
-            }
-            let layout = Layout::array::<T>(self.capacity).unwrap();
-            dealloc(self.data as *mut u8, layout)
-        };
-        self.data = null_mut();
-        self.len = 0;
-        self.capacity = 0;
-    }
-
     // to slice
     pub fn as_slice(&self) -> &[T] {
         unsafe { std::slice::from_raw_parts(self.data, self.len) }
@@ -182,6 +166,24 @@ impl<T> CArray<T> {
         }
         self.len -= nelems;
     }
+}
+
+impl<T> std::ops::Drop for CArray<T> {
+
+    fn drop(&mut self) {
+        if self.data.is_null() { return; }
+        unsafe{
+            for i in 0..self.len {
+                std::ptr::drop_in_place(self.data.add(i));
+            }
+            let layout = Layout::array::<T>(self.capacity).unwrap();
+            dealloc(self.data as *mut u8, layout)
+        };
+        self.data = null_mut();
+        self.len = 0;
+        self.capacity = 0;
+    }
+
 }
 
 // index

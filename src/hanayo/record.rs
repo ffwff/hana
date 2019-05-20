@@ -19,10 +19,8 @@ fn keys(rec: Value::Record) -> Value {
                 &*malloc(key.clone(), |ptr| drop::<String>(ptr)) });
         array.push(s.wrap().pin());
     }
-    let ret = Value::Array(unsafe { &*malloc(array, |ptr| {
-        let array = &mut *(ptr as *mut CArray<NativeValue>);
-        array.drop();
-    }) });
+    let ret = Value::Array(unsafe { &*malloc(array, |ptr|
+        drop::<CArray<NativeValue>>(ptr)) });
     pin_end(p);
     ret
 }
