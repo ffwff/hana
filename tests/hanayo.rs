@@ -73,6 +73,14 @@ y = Int('10')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
     }
+
+    #[test]
+    fn int_chr() {
+        let mut vm : Vm = eval!("
+y = (97).chr()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "a");
+    }
     // #end
 
     // #region float
@@ -422,6 +430,15 @@ y = s.chars()
         assert_eq!(arr[0].unwrap().string(), "a");
         assert_eq!(arr[1].unwrap().string(), "b");
         assert_eq!(arr[2].unwrap().string(), "c");
+    }
+
+    #[test]
+    fn string_ord() {
+        let mut vm : Vm = eval!("
+s = 'a'
+y = s.ord()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 97);
     }
     // #endregion
 

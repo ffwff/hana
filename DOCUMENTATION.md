@@ -514,19 +514,21 @@ multiline = "
 ```
 
 Strings can be indexed using the brackets (`[]`) operator, however it is a O(n) operation
-so you shouldn't do it!
+so you shouldn't do it too much! (store its characters into an array and access it)
 
 Methods:
 
 ```
 "abc".bytesize() // => 3 (number of bytes in string)
 "abc".length() // => 3 (number of characters in string)
-"".empty?() // => true (is string empty?)
-"abc".delete(1,2) // => "a" (deletes 2 characters starting from index 1)
+"abc".chars() // => ["a", "b", "c"] (characters in string into array)
+"abc".delete(1,2) // => "a" (copies and deletes 2 characters starting from index 1)
+"abc".delete!(1,2) // => "a" (deletes in place 2 characters starting from index 1)
 "abc".copy(1, 2) // => "bc" (copies 2 characters starting from index 1)
-"abc".at(1) // => "b" (character at index 1)
 "abc".index("bc") // => 1 (index of the string "bc" in "abc")
-"abc".insert(1, "bc") // => "abcbc" (inserts "bc" to "abc" in index 1)
+"abc".insert!(1, "bc") // => "abcbc" (inserts in place "bc" to "abc" in index 1)
+"a b c".split(" ") // => ["a", "b", "c"] (splits string with delimeter ' ' into array)
+"a".ord() // => 97 (turn first character of string into a unicode number)
 ```
 
 ## Numbers
@@ -536,7 +538,7 @@ Numbers are either 64-bit ints or 64-bit double precision floats.
 Methods:
 
 ```
-1.1.round() // => 1 (float only, rounds number to int)
+97.chr() // => (int only) converts 97 to equivalent unicode character ('a')
 ```
 
 ## Records

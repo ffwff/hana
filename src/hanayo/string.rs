@@ -114,3 +114,12 @@ fn chars(s: Value::Str) -> Value {
     pin_end(p);
     ret
 }
+
+#[hana_function()]
+fn ord(s: Value::Str) -> Value {
+    if let Some(ch) = s.chars().next() {
+        Value::Int(ch as i64)
+    } else {
+        Value::Int(0)
+    }
+}

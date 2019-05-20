@@ -80,6 +80,7 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "split",       Value::NativeFn(string::split));
     set_obj_var!(string, "index",       Value::NativeFn(string::index));
     set_obj_var!(string, "chars",       Value::NativeFn(string::chars));
+    set_obj_var!(string, "ord",         Value::NativeFn(string::ord));
 
     let ptr = unsafe { malloc(string, rec_free) };
     set_var!("String", Value::Record(unsafe{ &*ptr }));
@@ -91,6 +92,7 @@ pub fn init(vm : &mut Vm) {
     {
     let mut int : Record = Record::new();
     set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
+    set_obj_var!(int, "chr",         Value::NativeFn(int::chr));
 
     let ptr = unsafe { malloc(int, rec_free) };
     set_var!("Int", Value::Record(unsafe{ &*ptr }));
