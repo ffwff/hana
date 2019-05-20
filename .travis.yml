@@ -3,7 +3,7 @@ rust:
   - nightly
 cache: cargo
 env:
-  - CC=gcc NOLOG=1
+  - CC=gcc NOLOG=1 CODECOV_TOKEN="de7b33de-ce3c-495c-b44c-f6820a32f649"
 
 before_cache: |
   if [[ "$TRAVIS_RUST_VERSION" == nightly ]]; then
