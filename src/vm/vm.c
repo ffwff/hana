@@ -23,8 +23,8 @@
 #define FATAL(...) fprintf(stderr, __VA_ARGS__)
 
 void vm_execute(struct vm *vm) {
-#define ERROR(code) do { vm->error = code; return; } while(0)
-#define ERROR_EXPECT(code, expect) do { vm->error = code; vm->error_expected = expect; return; } while(0)
+#define ERROR(code, unwind) do { vm->error = code; vm->ip -= unwind; return; } while(0)
+#define ERROR_EXPECT(code, unwind, expect) do { vm->error = code; vm->ip -= unwind; vm->error_expected = expect; return; } while(0)
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
 #ifdef NOLOG
@@ -201,6 +201,7 @@ void vm_execute(struct vm *vm) {
     // arithmetic:
 #define binop(optype, fn) \
     doop(optype): { \
+        vm->ip++; \
         LOG("" #optype "\n"); \
         debug_assert(vm->stack.length >= 2); \
 \
@@ -213,8 +214,7 @@ void vm_execute(struct vm *vm) {
         struct value *result = &array_top(vm->stack); \
         fn(result, left, right); \
         if(result->type == TYPE_INTERPRETER_ERROR) { \
-            ERROR(ERROR_ ##optype); } \
-        vm->ip++; \
+            ERROR(ERROR_ ##optype, 1); } \
         dispatch(); \
     }
     binop(OP_ADD, value_add)
@@ -258,7 +258,7 @@ void vm_execute(struct vm *vm) {
             }
             array_push(vm->stack, retval);
         } else {
-            ERROR(ERROR_EXPECTED_RECORD_OF_EXPR);
+            ERROR(ERROR_EXPECTED_RECORD_OF_EXPR, 1);
         }
 
         dispatch();
@@ -342,7 +342,7 @@ void vm_execute(struct vm *vm) {
         LOG("GET GLOBAL %s\n", key);
         const struct value *val = hmap_get(vm->globalenv, key);
         if(val == NULL) {
-            ERROR(ERROR_UNDEFINED_GLOBAL_VAR);
+            ERROR(ERROR_UNDEFINED_GLOBAL_VAR, 1 + strlen(key)+1);
         } else {
             array_push(vm->stack, *val);
         }
@@ -359,10 +359,10 @@ void vm_execute(struct vm *vm) {
         vm->ip += sizeof(nargs);
         const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
                              (uint16_t)vm->code.data[vm->ip + 1];
+        vm->ip += pos;
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
         array_push(vm->stack, (struct value){0});
         value_function(&array_top(vm->stack), vm->ip + sizeof(pos), nargs, vm->localenv);
-        vm->ip += pos;
         dispatch();
     }
 
@@ -371,8 +371,8 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
                             (uint16_t)vm->code.data[vm->ip+1];
-        LOG("JMP %d\n", pos);
         vm->ip += pos;
+        LOG("JMP %d\n", pos);
         dispatch();
     }
     doop(OP_JMP_LONG): { // jmp [32-bit position]
@@ -381,8 +381,8 @@ void vm_execute(struct vm *vm) {
                              (uint32_t)vm->code.data[vm->ip+1] << 16 |
                              (uint32_t)vm->code.data[vm->ip+2] << 8  |
                              (uint32_t)vm->code.data[vm->ip+3];
-        LOG("JMP LONG %d\n", pos);
         vm->ip = pos;
+        LOG("JMP LONG %d\n", pos);
         dispatch();
     }
     doop(OP_JCOND): { // jmp if not true [32-bit position]
@@ -418,24 +418,24 @@ void vm_execute(struct vm *vm) {
             vm->exframe_fallthrough = NULL; \
         else if(vm->error) return;    \
     } while(0)
-#define JMP_INTERPRETED_FN(END_IF_NATIVE)                                    \
+#define JMP_INTERPRETED_FN(UNWIND, END_IF_NATIVE)                            \
     do {                                                                     \
         if (val.type == TYPE_DICT) {                                         \
             array_pop(vm->stack);                                            \
             const struct value *ctor = dict_get(val.as.dict, "constructor"); \
             if (ctor == NULL) {                                              \
-                ERROR(ERROR_RECORD_NO_CONSTRUCTOR);                          \
+                ERROR(ERROR_RECORD_NO_CONSTRUCTOR, UNWIND);                  \
             }                                                                \
             if (ctor->type == TYPE_NATIVE_FN) {                              \
                 LOG("NATIVE CONSTRUCTOR %d\n", nargs);                       \
                 CALL_NATIVE(ctor->as.fn);                                    \
                 do { END_IF_NATIVE } while(0);                               \
             } else if (ctor->type != TYPE_FN) {                              \
-                ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION);                       \
+                ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);               \
             }                                                                \
             ifn = ctor->as.ifn;                                              \
             if (nargs + 1 != ifn->nargs) {                                   \
-                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs);          \
+                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);  \
             }                                                                \
             struct value new_val;                                            \
             value_dict(&new_val);                                            \
@@ -445,7 +445,7 @@ void vm_execute(struct vm *vm) {
             ifn = val.as.ifn;                                                \
             array_pop(vm->stack);                                            \
             if (nargs != ifn->nargs) {                                       \
-                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs);          \
+                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);  \
             }                                                                \
         }                                                                    \
     } while (0)
@@ -466,7 +466,7 @@ void vm_execute(struct vm *vm) {
         case TYPE_FN:
         case TYPE_DICT: {
             struct function *ifn;
-            JMP_INTERPRETED_FN(
+            JMP_INTERPRETED_FN(1 + sizeof(nargs), {
                 if (vm->exframe_fallthrough != NULL) {
                     if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) {
                         assert(0);
@@ -476,13 +476,13 @@ void vm_execute(struct vm *vm) {
                     }
                 }
                 dispatch();
-            );
+            });
 
             // caller
             vm_enter_env(vm, ifn);
             break; }
         default: {
-            ERROR(ERROR_EXPECTED_CALLABLE); }
+            ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(nargs)); }
         }
         dispatch();
     }
@@ -516,7 +516,7 @@ void vm_execute(struct vm *vm) {
         struct dict *dict = NULL;
         if(val.type != TYPE_DICT) {
             if((dict = value_get_prototype(vm, val)) == NULL) {
-                ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
+                ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
             }
             if(strcmp(key, "prototype") == 0) {
                 struct value *val = &array_top(vm->stack);
@@ -526,7 +526,7 @@ void vm_execute(struct vm *vm) {
             }
         } else {
             if(val.type != TYPE_DICT) {
-                ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
+                ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
             }
             dict = val.as.dict;
             if(op == OP_MEMBER_GET) array_pop(vm->stack);
@@ -549,7 +549,7 @@ void vm_execute(struct vm *vm) {
         LOG("MEMBER_SET %s\n", key);
         struct value dval = array_top(vm->stack);
         if(dval.type != TYPE_DICT) {
-            ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
+            ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
         }
         array_pop(vm->stack);
 
@@ -592,16 +592,16 @@ void vm_execute(struct vm *vm) {
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
-                ERROR(ERROR_KEY_NON_INT);
+                ERROR(ERROR_KEY_NON_INT, 1);
             }
             const int64_t i = (int64_t)index.as.integer;
             if(!(i >= 0 && i < (int64_t)dval.as.array->length)) {
-                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, dval.as.array->length);
+                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, dval.as.array->length, 1);
             }
             array_push(vm->stack, dval.as.array->data[i]);
         } else if(dval.type == TYPE_STR) {
             if(index.type != TYPE_INT) {
-                ERROR(ERROR_KEY_NON_INT);
+                ERROR(ERROR_KEY_NON_INT, 1);
             }
             const int64_t i = index.as.integer;
             struct value val;
@@ -611,7 +611,7 @@ void vm_execute(struct vm *vm) {
             array_push(vm->stack, val);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
-                ERROR(ERROR_RECORD_KEY_NON_STRING);
+                ERROR(ERROR_RECORD_KEY_NON_STRING, 1);
             }
             const struct value *val = dict_get_str(dval.as.dict, index.as.str);
             if(val != NULL) {
@@ -620,7 +620,7 @@ void vm_execute(struct vm *vm) {
                 array_push(vm->stack, (struct value){0});
             }
         } else {
-            ERROR(ERROR_CANNOT_ACCESS_NON_RECORD);
+            ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1);
         }
         dispatch();
     }
@@ -638,20 +638,20 @@ void vm_execute(struct vm *vm) {
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {
-                ERROR(ERROR_KEY_NON_INT);
+                ERROR(ERROR_KEY_NON_INT, 1);
             }
             const int64_t i = index.as.integer;
             if (!(i >= 0 && i < (int64_t)dval.as.array->length)) {
-                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, dval.as.array->length);
+                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, dval.as.array->length, 1);
             }
             dval.as.array->data[i] = val;
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
-                ERROR(ERROR_RECORD_KEY_NON_STRING);
+                ERROR(ERROR_RECORD_KEY_NON_STRING, 1);
             }
             dict_set_str(dval.as.dict, index.as.str, val);
         } else {
-            ERROR(ERROR_EXPECTED_RECORD_ARRAY);
+            ERROR(ERROR_EXPECTED_RECORD_ARRAY, 1);
         }
         dispatch();
     }
@@ -690,7 +690,7 @@ void vm_execute(struct vm *vm) {
         while((error = array_top(vm->stack)).type != TYPE_NIL) {
             // error type
             if(error.type != TYPE_DICT) {
-                ERROR(ERROR_CASE_EXPECTS_DICT);
+                ERROR(ERROR_CASE_EXPECTS_DICT, 1);
             }
             array_pop(vm->stack);
             // val
@@ -723,9 +723,9 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
                              (uint16_t)vm->code.data[vm->ip + 1];
+        vm->ip += pos;
         LOG("EXFRAME_RET %d\n", pos);
         vm_leave_exframe(vm);
-        vm->ip += pos;
         dispatch();
     }
 
@@ -750,7 +750,7 @@ void vm_execute(struct vm *vm) {
         case TYPE_FN:
         case TYPE_DICT: {
             struct function *ifn;
-            JMP_INTERPRETED_FN(
+            JMP_INTERPRETED_FN(1 + sizeof(nargs),
                 if (vm_leave_env(vm)) {
                     LOG("return from vm_call\n");
                     return;
@@ -763,7 +763,7 @@ void vm_execute(struct vm *vm) {
             vm_enter_env_tail(vm, ifn);
             break; }
         default: {
-            ERROR(ERROR_EXPECTED_CALLABLE); }
+            ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(nargs)); }
         }
         dispatch();
     }
@@ -773,7 +773,7 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
                              (uint16_t)vm->code.data[vm->ip + 1];
-
+        vm->ip += sizeof(pos);
         LOG("FOR_IN %d\n", pos);
         struct value *top = &array_top(vm->stack);
         if (top->type == TYPE_INTERPRETER_ITERATOR) {
@@ -797,9 +797,8 @@ void vm_execute(struct vm *vm) {
             array_push(vm->stack, val);
             array_push(vm->stack, top->as.array->data[0]);
         } else {
-            ERROR(ERROR_EXPECTED_ITERABLE);
+            ERROR(ERROR_EXPECTED_ITERABLE, 1 + sizeof(pos));
         }
-        vm->ip += sizeof(pos);
         dispatch();
     }
 
