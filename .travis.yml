@@ -2,6 +2,8 @@ language: rust
 rust:
   - nightly
 cache: cargo
+env:
+  - CC=gcc-7
 matrix:
   include:
     - os: linux
@@ -13,5 +15,3 @@ matrix:
             - g++-7
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-before_install:
-    - eval "${MATRIX_EVAL}"
