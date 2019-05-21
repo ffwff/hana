@@ -12,11 +12,10 @@ fn constructor() -> Value {
 
 #[hana_function()]
 fn keys(rec: Value::Record) -> Value {
-    let mut array : CArray<NativeValue> = CArray::new();
-    let p = pin_start();
-    for (key, _) in rec.iter() {
-        let s = Value::Str(Gc::new(key.clone()));
-        array.push(s.wrap().pin());
+    let mut array = Gc::new(CArray::new());
+    let keys = rec.as_ref().iter().map(|(key, _)| Value::Str(Gc::new(key.clone()))).collect();
+    for key in keys {
+        array.as_mut().push(keys.wrap());
     }
-    Value::Array(Gc::new(array))
+    Value::Array(array)
 }

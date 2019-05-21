@@ -7,7 +7,7 @@ use super::Gc;
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
-        vm.stack.push(Value::Str(Gc::new(String::from())).wrap());
+        vm.stack.push(Value::Str(Gc::new(String::new())).wrap());
         return;
     } else {
         assert_eq!(nargs, 1);
@@ -21,21 +21,21 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
 #[hana_function()]
 fn length(s: Value::Str) -> Value {
     // NOTE: this is an O(n) operation due to utf8 decoding
-    Value::Int(s.chars().count() as i64)
+    Value::Int(s.as_ref().chars().count() as i64)
 }
 #[hana_function()]
 fn bytesize(s: Value::Str) -> Value {
-    Value::Int(s.len() as i64)
+    Value::Int(s.as_ref().len() as i64)
 }
 
 // check
 #[hana_function()]
 fn startswith(s: Value::Str, left: Value::Str) -> Value {
-    Value::Int(s.starts_with(left) as i64)
+    Value::Int(s.as_ref().starts_with(left) as i64)
 }
 #[hana_function()]
 fn endswith(s: Value::Str, left: Value::Str) -> Value {
-    Value::Int(s.ends_with(left) as i64)
+    Value::Int(s.as_ref().ends_with(left) as i64)
 }
 
 // basic manip
@@ -43,15 +43,15 @@ fn endswith(s: Value::Str, left: Value::Str) -> Value {
 fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos_u = from_pos as usize;
     let nchars_u = nchars as usize;
-    let mut new_s = s.clone();
+    let mut new_s = s.as_ref().clone();
     new_s.replace_range(from_pos_u..from_pos_u+nchars_u, "");
     Value::Str(Gc::new(new_s))
 }
 #[hana_function()]
-fn delete_(s: Value::mut_Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
+fn delete_(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos_u = from_pos as usize;
     let nchars_u = nchars as usize;
-    s.replace_range(from_pos_u..from_pos_u+nchars_u, "");
+    s.as_mut().replace_range(from_pos_u..from_pos_u+nchars_u, "");
     Value::Str(s)
 }
 
@@ -63,9 +63,9 @@ fn copy(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
 }
 
 #[hana_function()]
-fn insert_(dst: Value::mut_Str, from_pos: Value::Int, src: Value::Str) -> Value {
+fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
     let from_pos_u = from_pos as usize;
-    dst.insert_str(from_pos_u, src);
+    dst.as_mut().insert_str(from_pos_u, src);
     Value::Str(dst)
 }
 
@@ -77,12 +77,12 @@ fn split(s: Value::Str, delim: Value::Str) -> Value {
     for s in sarray {
         array.as_mut_ref().push(s.unwrap());
     }
-    array
+    Value::Array(array)
 }
 
 #[hana_function()]
 fn index(s: Value::Str, needle: Value::Str) -> Value {
-    match s.find(needle) {
+    match s.as_ref().find(needle) {
         Some(x) => Value::Int(x as i64),
         None => Value::Int(-1)
     }
@@ -90,19 +90,17 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 
 #[hana_function()]
 fn chars(s: Value::Str) -> Value {
-    let mut array : CArray<NativeValue> = CArray::new();
-    for ss in s.chars() {
-        let val = Value::Str(unsafe {
-                &*malloc(ss.clone().to_string(), alloc_free) });
-        array.push(val.wrap().pin());
+    let array = Gc::new(CArray::new());
+    let chars = s.chars().map(|s| Value::Str(Gc::new(s.clone())));
+    for ch in chars {
+        array.as_mut().push(ch);
     }
-    let ret = Value::Array(unsafe { &*malloc(array, |ptr|
-        drop::<CArray<NativeValue>>(ptr)) });
-    ret
+    Value::Array(chars)
 }
 
 #[hana_function()]
 fn ord(s: Value::Str) -> Value {
+    let s = s.as_ref();
     if let Some(ch) = s.chars().next() {
         Value::Int(ch as i64)
     } else {

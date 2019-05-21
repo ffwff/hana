@@ -39,7 +39,7 @@ fn constructor(val: Value::Any) -> Value {
 
 // inputs
 #[hana_function()]
-fn in_(cmd: Value::mut_Record, input: Value::Str) -> Value {
+fn in_(cmd: Value::Record, input: Value::Str) -> Value {
     cmd.insert("input_buffer".to_string(), Value::Str(input).wrap());
     Value::Record(cmd)
 }
@@ -58,7 +58,7 @@ fn get_output(cmd: &mut Record) -> Result<Output, std::io::Error> {
 }
 
 #[hana_function()]
-fn out(cmd: Value::mut_Record) -> Value {
+fn out(cmd: Value::Record) -> Value {
     // stdout as string
     let out = get_output(cmd).unwrap();
     Value::Str(unsafe { &*malloc(String::from_utf8(out.stdout)
@@ -67,7 +67,7 @@ fn out(cmd: Value::mut_Record) -> Value {
 }
 
 #[hana_function()]
-fn err(cmd: Value::mut_Record) -> Value {
+fn err(cmd: Value::Record) -> Value {
     // stderr as string
     let out = get_output(cmd).unwrap();
     Value::Str(unsafe { &*malloc(String::from_utf8(out.stderr)
@@ -76,7 +76,7 @@ fn err(cmd: Value::mut_Record) -> Value {
 }
 
 #[hana_function()]
-fn outputs(cmd: Value::mut_Record) -> Value {
+fn outputs(cmd: Value::Record) -> Value {
     // stderr as string
     let out = get_output(cmd).unwrap();
     let mut arr = CArray::new();

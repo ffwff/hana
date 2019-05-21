@@ -41,26 +41,26 @@ fn length(array: Value::Array) -> Value {
 }
 
 #[hana_function()]
-fn insert_(array: Value::mut_Array, pos: Value::Int, elem: Value::Any) -> Value {
+fn insert_(array: Value::Array, pos: Value::Int, elem: Value::Any) -> Value {
     array.insert(pos as usize, elem.wrap());
     Value::Int(array.len() as i64)
 }
 
 #[hana_function()]
-fn delete_(array: Value::mut_Array, from_pos: Value::Int, nelems: Value::Int) -> Value {
+fn delete_(array: Value::Array, from_pos: Value::Int, nelems: Value::Int) -> Value {
     array.delete(from_pos as usize, nelems as usize);
     Value::Int(array.len() as i64)
 }
 
 // stack manipulation
 #[hana_function()]
-fn push(array: Value::mut_Array, elem: Value::Any) -> Value {
+fn push(array: Value::Array, elem: Value::Any) -> Value {
     array.push(elem.wrap());
     Value::Nil
 }
 
 #[hana_function()]
-fn pop(array: Value::mut_Array) -> Value {
+fn pop(array: Value::Array) -> Value {
     let el = array.top().clone();
     array.pop();
     el.unwrap()
@@ -101,7 +101,7 @@ fn sort(array: Value::Array) -> Value {
     arr
 }
 #[hana_function()]
-fn sort_(array: Value::mut_Array) -> Value {
+fn sort_(array: Value::Array) -> Value {
     let slice = array.as_mut_slice();
     slice.sort_by(value_cmp);
     Value::Array(array)
