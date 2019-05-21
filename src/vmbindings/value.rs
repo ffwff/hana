@@ -53,25 +53,25 @@ impl Value {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn string(&self) -> &Gc<String> {
+    pub fn string(&self) -> &'static String {
         match self {
-            Value::Str(s) => s,
+            Value::Str(s) => unsafe { &*s.to_raw() },
             _ => { panic!("Expected string"); }
         }
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn array(&self) -> &Gc<CArray<NativeValue>> {
+    pub fn array(&self) -> &'static CArray<NativeValue> {
         match self {
-            Value::Array(s) => s,
+            Value::Array(s) => unsafe { &*s.to_raw() },
             _ => { panic!("Expected array"); }
         }
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn record(&self) -> &Gc<Record> {
+    pub fn record(&self) -> &'static Record {
         match self {
-            Value::Record(rec) => rec,
+            Value::Record(rec) => unsafe { &*rec.to_raw() },
             _ => { panic!("Expected record"); }
         }
     }

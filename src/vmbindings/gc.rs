@@ -269,8 +269,7 @@ impl<T: Sized> Gc<T> {
             }
         }
     }
-
-    pub fn into_raw(mut self) -> *mut T {
+    pub fn into_raw(self) -> *mut T {
         self.ptr
     }
 
@@ -280,7 +279,6 @@ impl<T: Sized> Gc<T> {
     pub fn to_mut_raw(&mut self) -> *mut T {
         self.ptr
     }
-
     pub fn ptr_eq(&self, right: &Gc<T>) -> bool {
         std::ptr::eq(self.ptr, right.ptr)
     }
@@ -288,7 +286,9 @@ impl<T: Sized> Gc<T> {
 
 impl<T> std::ops::Drop for Gc<T> {
     fn drop(&mut self) {
-        unpin(self.ptr as *mut libc::c_void);
+        if !self.ptr.is_null() {
+            unpin(self.ptr as *mut libc::c_void);
+        }
     }
 }
 

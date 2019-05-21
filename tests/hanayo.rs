@@ -79,7 +79,7 @@ y = Int('10')
         let mut vm : Vm = eval!("
 y = (97).chr()
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "a");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "a");
     }
     // #end
 
@@ -108,7 +108,7 @@ y = Float('10.55')
         let mut vm : Vm = eval!("
 y = Array()
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 0);
     }
 
@@ -117,7 +117,7 @@ y = Array()
         let mut vm : Vm = eval!("
 a = Array(1,2,3)
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 3);
         assert_eq!(arr[0].unwrap(), Value::Int(1));
         assert_eq!(arr[1].unwrap(), Value::Int(2));
@@ -138,7 +138,7 @@ y = [1,2,3].length()
 y = [1,2,3]
 y.delete!(1,1)
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 2);
         assert_eq!(arr[0].unwrap(), Value::Int(1));
         assert_eq!(arr[1].unwrap(), Value::Int(3));
@@ -150,7 +150,7 @@ y.delete!(1,1)
 y = [6,3,1]
 y.sort!()
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 3);
         assert_eq!(arr[0].unwrap(), Value::Int(1));
         assert_eq!(arr[1].unwrap(), Value::Int(3));
@@ -163,7 +163,7 @@ y.sort!()
 y = [6,3,1]
 x = y.sort()
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 3);
         assert_eq!(arr[0].unwrap(), Value::Int(1));
         assert_eq!(arr[1].unwrap(), Value::Int(3));
@@ -176,7 +176,7 @@ x = y.sort()
 y = []
 y.push(10)
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 1);
         assert_eq!(arr[0].unwrap(), Value::Int(10));
     }
@@ -187,7 +187,7 @@ y.push(10)
 a = [1,2]
 a.pop()
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 1);
         assert_eq!(arr[0].unwrap(), Value::Int(1));
     }
@@ -207,7 +207,7 @@ y = a.index('b')
 a = [1,2,3]
 a.insert!(1, 4)
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 4);
         assert_eq!(arr[0].unwrap(), Value::Int(1));
         assert_eq!(arr[1].unwrap(), Value::Int(4));
@@ -221,7 +221,7 @@ a.insert!(1, 4)
 a=[3,5,64,2]
 y = a.map(f(x) = x+1)
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 4);
         assert_eq!(arr[0].unwrap(), Value::Int(4));
         assert_eq!(arr[1].unwrap(), Value::Int(6));
@@ -234,7 +234,7 @@ y = a.map(f(x) = x+1)
 a=['1','2','3']
 y = a.map(Int)
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 3);
         assert_eq!(arr[0].unwrap(), Value::Int(1));
         assert_eq!(arr[1].unwrap(), Value::Int(2));
@@ -247,7 +247,7 @@ y = a.map(Int)
 a=[3,5,64,2]
 y = a.filter(f(x) = x>5)
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 1);
         assert_eq!(arr[0].unwrap(), Value::Int(64));
     }
@@ -276,7 +276,7 @@ y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)
 a=[1,2,3,4,5,6]
 y = a.join('')
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "123456");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "123456");
     }
     // #endregion
 
@@ -286,7 +286,7 @@ y = a.join('')
         let mut vm : Vm = eval!("
 y = String()
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "");
     }
 
     #[test]
@@ -294,7 +294,7 @@ y = String()
         let mut vm : Vm = eval!("
 y = String(10)
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "10");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "10");
     }
 
     #[test]
@@ -335,7 +335,7 @@ y = 'abc'.endswith?('bc')
 s = 'Honest Abe Lincoln'
 y = s.delete(7, 4)
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "Honest Lincoln");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "Honest Lincoln");
     }
     #[test]
     fn string_delete_in_place() {
@@ -343,7 +343,7 @@ y = s.delete(7, 4)
 s = 'Honest Abe Lincoln'
 s.delete!(7, 4)
 ");
-        assert_eq!(vm.global().get("s").unwrap().unwrap().string().as_ref(), "Honest Lincoln");
+        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "Honest Lincoln");
     }
 
     #[test]
@@ -352,7 +352,7 @@ s.delete!(7, 4)
 s = 'Honest Abe Lincoln'
 y = s.copy(7, 3)
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "Abe");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "Abe");
     }
 
     #[test]
@@ -370,7 +370,7 @@ y = s.index('Lincoln')
 s = 'Honest Abe Lincoln'
 s.insert!(0, 'Not So ')
 ");
-        assert_eq!(vm.global().get("s").unwrap().unwrap().string().as_ref(), "Not So Honest Abe Lincoln");
+        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "Not So Honest Abe Lincoln");
     }
 
     #[test]
@@ -379,11 +379,11 @@ s.insert!(0, 'Not So ')
 s = 'a b c'
 y = s.split(' ')
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 3);
-        assert_eq!(arr[0].unwrap().string().as_ref(), "a");
-        assert_eq!(arr[1].unwrap().string().as_ref(), "b");
-        assert_eq!(arr[2].unwrap().string().as_ref(), "c");
+        assert_eq!(arr[0].unwrap().string(), "a");
+        assert_eq!(arr[1].unwrap().string(), "b");
+        assert_eq!(arr[2].unwrap().string(), "c");
     }
 
     #[test]
@@ -392,11 +392,11 @@ y = s.split(' ')
 s = 'abc'
 y = s.chars()
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 3);
-        assert_eq!(arr[0].unwrap().string().as_ref(), "a");
-        assert_eq!(arr[1].unwrap().string().as_ref(), "b");
-        assert_eq!(arr[2].unwrap().string().as_ref(), "c");
+        assert_eq!(arr[0].unwrap().string(), "a");
+        assert_eq!(arr[1].unwrap().string(), "b");
+        assert_eq!(arr[2].unwrap().string(), "c");
     }
 
     #[test]
@@ -415,10 +415,7 @@ y = s.ord()
         let mut vm : Vm = eval!("
 y = Record()
 ");
-        assert!(match vm.global().get("y").unwrap().unwrap() {
-            Value::Record(_) => true,
-            _ => false
-        });
+        vm.global().get("y").unwrap().unwrap().record();
     }
 
     #[test]
@@ -430,7 +427,7 @@ record x
 end
 y = Record::keys(x)
 ");
-        let arr = vm.global().get("y").unwrap().unwrap().array().as_ref();
+        let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 2);
     }
     // #endregion
@@ -442,7 +439,7 @@ y = Record::keys(x)
         let mut vm : Vm = eval!("
 y = Env::get('test_key')
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "value");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "value");
     }
 
     #[test]
@@ -459,7 +456,7 @@ Env::set('test_key_set', 'value')
         let mut vm : Vm = eval!("
 y = Env::vars()['a_key']
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "value");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "value");
     }
     // #endregion
 
@@ -472,7 +469,7 @@ f = File('/tmp/file_read', 'r')
 y = f.read()
 f.close()
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "test");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "test");
     }
 
     #[test]
@@ -482,7 +479,7 @@ f.close()
 f = File('/tmp/file_read_up_to', 'r')
 y = f.read_up_to(2)
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "te");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "te");
     }
 
     #[test]
@@ -502,7 +499,7 @@ f.close()
         let mut vm : Vm = eval!("
 y = Cmd(['echo', 'hello world']).out()
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "hello world\n");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
     }
 
     #[test]
@@ -510,7 +507,7 @@ y = Cmd(['echo', 'hello world']).out()
         let mut vm : Vm = eval!("
 y = Cmd('echo hello world').out()
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "hello world\n");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
     }
 
     #[test]
@@ -518,7 +515,7 @@ y = Cmd('echo hello world').out()
         let mut vm : Vm = eval!("
 y = Cmd('echo hello world >&2').err()
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "hello world\n");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
     }
 
     #[test]
@@ -526,7 +523,7 @@ y = Cmd('echo hello world >&2').err()
         let mut vm : Vm = eval!("
 y = Cmd('cat -').in('nyaaa').out()
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string().as_ref(), "nyaaa");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "nyaaa");
     }
     // #endregion
 
