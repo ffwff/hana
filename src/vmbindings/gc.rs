@@ -59,7 +59,9 @@ impl GcManager {
     pub unsafe fn malloc<T: Sized>
         (&mut self, x: T, finalizer: GenericFinalizer) -> *mut T {
         // free up if over threshold
-        if self.bytes_allocated > self.threshold {
+        if cfg!(test) {
+            self.collect();
+        } else if self.bytes_allocated > self.threshold {
             self.collect();
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {

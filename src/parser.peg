@@ -201,7 +201,9 @@ callexpr -> std::boxed::Box<ast::AST>
                     is_namespace: false }),
             ast::CallExprArm::CallExpr(x) =>
                 left = Box::new(ast::CallExpr {
-                    _span: (left.span().0, x.last().unwrap().span().1),
+                    _span: (left.span().0,
+                        if let Some(last) = x.last() { last.span().1 }
+                        else { left.span().0 }),
                     callee: left,
                     args: x }),
             };

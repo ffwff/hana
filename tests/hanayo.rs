@@ -532,6 +532,24 @@ f.close()
     }
     // #endregion
 
+    // #region cmd
+    #[test]
+    fn cmd_constructor_array() {
+        let mut vm : Vm = eval!("
+y = Cmd(['echo', 'hello world']).out()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
+    }
+
+    #[test]
+    fn cmd_constructor_string() {
+        let mut vm : Vm = eval!("
+y = Cmd('echo hello world').out()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
+    }
+    // #endregion
+
     // #region math
     #[test]
     fn math_sqrt() {
