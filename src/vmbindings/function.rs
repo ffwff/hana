@@ -37,10 +37,4 @@ impl Function {
         }
     }
 
-    pub fn pin(&self) {
-        for val in self.bound.slots.iter() {
-            val.pin();
-        }
-    }
-
 }

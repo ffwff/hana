@@ -76,26 +76,16 @@ fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
 
 #[hana_function()]
 fn sort(array: Value::Array) -> Value {
-    unimplemented!()
-    /*
-    let new_array = array.clone();
-    let p = pin_start();
-    for val in array.iter() {
-        val.pin();
-    }
-    let slice = new_array.as_mut_slice();
+    let mut new_array = Gc::new(array.as_ref().clone());
+    let slice = new_array.as_mut().as_mut_slice();
     slice.sort_by(value_cmp);
-    let arr = Value::Array(unsafe {
-                 &*malloc(new_array, alloc_free) });
-    pin_end(p);
-    arr */
+    Value::Array(new_array)
 }
 #[hana_function()]
 fn sort_(array: Value::Array) -> Value {
-    unimplemented!()
-    /* let slice = array.as_mut_slice();
+    let slice = array.as_mut().as_mut_slice();
     slice.sort_by(value_cmp);
-    Value::Array(array) */
+    Value::Array(array)
 }
 
 // functional

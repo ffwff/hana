@@ -158,8 +158,8 @@ y.push(10)
     #[test]
     fn array_pop() {
         let mut vm : Vm = eval!("
-a = [1,2]
-a.pop()
+y = [1,2]
+y.pop()
 ");
         let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 1);
@@ -178,8 +178,8 @@ y = a.index('b')
     #[test]
     fn array_insert() {
         let mut vm : Vm = eval!("
-a = [1,2,3]
-a.insert!(1, 4)
+y = [1,2,3]
+y.insert!(1, 4)
 ");
         let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 4);
@@ -189,7 +189,6 @@ a.insert!(1, 4)
         assert_eq!(arr[3].unwrap(), Value::Int(3));
     }
 
-    /*
     #[test]
     fn array_sort_in_place() {
         let mut vm : Vm = eval!("
@@ -205,8 +204,8 @@ y.sort!()
     #[test]
     fn array_sort() {
         let mut vm : Vm = eval!("
-y = [6,3,1]
-x = y.sort()
+x = [6,3,1]
+y = x.sort()
 ");
         let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 3);
@@ -214,7 +213,7 @@ x = y.sort()
         assert_eq!(arr[1].unwrap(), Value::Int(3));
         assert_eq!(arr[2].unwrap(), Value::Int(6));
     }
-
+/*
     #[test]
     fn array_map() {
         let mut vm : Vm = eval!("

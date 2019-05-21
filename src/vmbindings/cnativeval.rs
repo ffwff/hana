@@ -68,18 +68,4 @@ impl NativeValue {
         }
     }
 
-    pub fn pin(&self) -> NativeValue {
-        /*match self.r#type {
-            _valueType::TYPE_FN   |
-            _valueType::TYPE_STR  |
-            _valueType::TYPE_DICT |
-            _valueType::TYPE_ARRAY  => {
-                if pin(self.data as *mut c_void) {
-                    self.unwrap().pin_rec(); }
-                },
-            _ => {}
-        } */
-        *self
-    }
-
 }

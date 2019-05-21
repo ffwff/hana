@@ -364,11 +364,14 @@ pub fn collect() {
     });
 }
 #[allow(dead_code)]
-pub fn pin(ptr: *mut c_void) {
-    if ptr.is_null() { return; }
+pub fn pin(ptr: *mut c_void) -> bool {
+    if ptr.is_null() { return false; }
     unsafe{
-    let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-    (*node).pinned = true; }
+        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        if (*node).pinned { return false; }
+        (*node).pinned = true;
+        true
+    }
 }
 #[allow(dead_code)]
 pub fn unpin(ptr: *mut c_void) {

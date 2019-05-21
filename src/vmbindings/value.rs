@@ -124,26 +124,6 @@ impl Value {
         } */
     }
 
-    pub fn pin_rec(&self) {
-        unimplemented!()
-        /* match &self {
-            Value::Fn(f)       => {
-                f.pin();
-            },
-            Value::Record(d)   => {
-                for (_, val) in d.iter() {
-                    val.pin();
-                }
-            },
-            Value::Array(a)    => {
-                for val in a.iter() {
-                    val.pin();
-                }
-            },
-            _ => {}
-        } */
-    }
-
     // prototype
     pub fn get_prototype(&self, vm: *const Vm) -> *const Record {
         unsafe{ value_get_prototype(vm, self.wrap()) }
