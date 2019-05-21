@@ -415,9 +415,10 @@ void vm_execute(struct vm *vm) {
             vm->exframe_fallthrough = NULL; \
         else if(vm->error) return;    \
     } while(0)
-#define JMP_INTERPRETED_FN(UNWIND, END_IF_NATIVE)                            \
+#define JMP_INTERPRETED_FN_(POP, UNWIND, END_IF_NATIVE)                      \
     do {                                                                     \
         if (val.type == TYPE_DICT) {                                         \
+            POP                                                              \
             const struct value *ctor = dict_get(val.as.dict, "constructor"); \
             if (ctor == NULL) {                                              \
                 ERROR(ERROR_RECORD_NO_CONSTRUCTOR, UNWIND);                  \
@@ -425,7 +426,9 @@ void vm_execute(struct vm *vm) {
             if (ctor->type == TYPE_NATIVE_FN) {                              \
                 LOG("NATIVE CONSTRUCTOR %d\n", nargs);                       \
                 CALL_NATIVE(ctor->as.fn);                                    \
-                do { END_IF_NATIVE } while(0);                               \
+                do {                                                         \
+                    END_IF_NATIVE                                            \
+                } while (0);                                                 \
             } else if (ctor->type != TYPE_FN) {                              \
                 ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);               \
             }                                                                \
@@ -438,12 +441,15 @@ void vm_execute(struct vm *vm) {
             dict_set(new_val.as.dict, "prototype", val);                     \
             array_push(vm->stack, new_val);                                  \
         } else {                                                             \
+            POP                                                              \
             ifn = val.as.ifn;                                                \
             if (nargs != ifn->nargs) {                                       \
                 ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);  \
             }                                                                \
         }                                                                    \
     } while (0)
+#define JMP_INTERPRETED_FN(UNWIND, END_IF_NATIVE) JMP_INTERPRETED_FN_(array_pop(vm->stack);, UNWIND, END_IF_NATIVE)
+#define JMP_INTERPRETED_FN_NO_POP(UNWIND, END_IF_NATIVE) JMP_INTERPRETED_FN_(do{}while(0);, UNWIND, END_IF_NATIVE)
     doop(OP_CALL): {
         // argument: [arg2][arg1]
         vm->ip++;
@@ -472,7 +478,6 @@ void vm_execute(struct vm *vm) {
                 }
                 dispatch();
             });
-            array_pop(vm->stack);
 
             // caller
             vm_enter_env(vm, ifn);
@@ -755,8 +760,6 @@ void vm_execute(struct vm *vm) {
                     dispatch();
                 }
             );
-            array_pop(vm->stack);
-
             // caller
             vm_enter_env_tail(vm, ifn);
             break; }
@@ -780,7 +783,7 @@ do { \
     case TYPE_FN: \
     case TYPE_DICT: { \
         struct function *ifn; \
-        JMP_INTERPRETED_FN(0 /* TODO */, { \
+        JMP_INTERPRETED_FN_NO_POP(0 /* TODO */, { \
             if (vm->exframe_fallthrough != NULL) { \
                 if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) { \
                     assert(0); \
