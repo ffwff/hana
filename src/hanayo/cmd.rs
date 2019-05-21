@@ -1,4 +1,5 @@
-use std::process::Command;
+use std::process::{Command, Stdio, Output};
+use std::io::Write;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::NativeValue;
@@ -36,13 +37,30 @@ fn constructor(val: Value::Any) -> Value {
     Value::Record(unsafe{ &*malloc(rec, |ptr| drop::<Record>(ptr)) })
 }
 
-// output
+// inputs
+#[hana_function()]
+fn in_(cmd: Value::mut_Record, input: Value::Str) -> Value {
+    cmd.insert("input_buffer".to_string(), Value::Str(input).wrap());
+    Value::Record(cmd)
+}
+
+// outputs
+fn get_output(cmd: &mut Record) -> Result<Output, std::io::Error> {
+    // TODO
+    let field = cmd.native_field.as_mut().unwrap();
+    let mut p = field.downcast_mut::<Command>().unwrap()
+        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped())
+        .spawn().unwrap();
+    if let Some(val) = cmd.get(&"input_buffer".to_string()) {
+        p.stdin.as_mut().unwrap().write_all(val.unwrap().string().as_bytes());
+    }
+    p.wait_with_output()
+}
+
 #[hana_function()]
 fn out(cmd: Value::mut_Record) -> Value {
     // stdout as string
-    let field = cmd.native_field.as_mut().unwrap();
-    let cmd = field.downcast_mut::<Command>().unwrap();
-    let out = cmd.output().unwrap();
+    let out = get_output(cmd).unwrap();
     Value::Str(unsafe { &*malloc(String::from_utf8(out.stdout)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e)),
         |ptr| drop::<String>(ptr)) })
@@ -51,9 +69,7 @@ fn out(cmd: Value::mut_Record) -> Value {
 #[hana_function()]
 fn err(cmd: Value::mut_Record) -> Value {
     // stderr as string
-    let field = cmd.native_field.as_mut().unwrap();
-    let cmd = field.downcast_mut::<Command>().unwrap();
-    let out = cmd.output().unwrap();
+    let out = get_output(cmd).unwrap();
     Value::Str(unsafe { &*malloc(String::from_utf8(out.stderr)
         .unwrap_or_else(|e| panic!("error decoding stderr: {:?}", e)),
         |ptr| drop::<String>(ptr)) })
@@ -62,9 +78,7 @@ fn err(cmd: Value::mut_Record) -> Value {
 #[hana_function()]
 fn outputs(cmd: Value::mut_Record) -> Value {
     // stderr as string
-    let field = cmd.native_field.as_mut().unwrap();
-    let cmd = field.downcast_mut::<Command>().unwrap();
-    let out = cmd.output().unwrap();
+    let out = get_output(cmd).unwrap();
     let mut arr = CArray::new();
     arr.push(Value::Str(unsafe { &*malloc(String::from_utf8(out.stdout)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e)),

@@ -145,6 +145,7 @@ pub fn init(vm : &mut Vm) {
     {
     let mut cmd : Record = Record::new();
     set_obj_var!(cmd, "constructor",  Value::NativeFn(cmd::constructor));
+    set_obj_var!(cmd, "in" ,          Value::NativeFn(cmd::in_));
     set_obj_var!(cmd, "out",          Value::NativeFn(cmd::out));
     set_obj_var!(cmd, "err",          Value::NativeFn(cmd::err));
     set_obj_var!(cmd, "outputs",      Value::NativeFn(cmd::outputs));

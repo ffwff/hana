@@ -548,6 +548,22 @@ y = Cmd('echo hello world').out()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
     }
+
+    #[test]
+    fn cmd_err() {
+        let mut vm : Vm = eval!("
+y = Cmd('echo hello world >&2').err()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
+    }
+
+    #[test]
+    fn cmd_in() {
+        let mut vm : Vm = eval!("
+y = Cmd('cat -').in('nyaaa').out()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "nyaaa");
+    }
     // #endregion
 
     // #region math
