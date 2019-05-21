@@ -36,7 +36,7 @@ fn value_is_true(left: NativeValue, vm: *const Vm) -> bool;
 impl Value {
 
     // #region coerce value to type
-    /* #[cfg_attr(tarpaulin, skip)]
+    #[cfg_attr(tarpaulin, skip)]
     pub fn int(&self) -> i64 {
         match self {
             Value::Int(s) => *s,
@@ -53,7 +53,7 @@ impl Value {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn string(&self) -> &'static String {
+    pub fn string(&self) -> &Gc<String> {
         match self {
             Value::Str(s) => s,
             _ => { panic!("Expected string"); }
@@ -61,7 +61,7 @@ impl Value {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn array(&self) -> &'static CArray<NativeValue> {
+    pub fn array(&self) -> &Gc<CArray<NativeValue>> {
         match self {
             Value::Array(s) => s,
             _ => { panic!("Expected array"); }
@@ -69,13 +69,12 @@ impl Value {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn record(&self) -> &'static Record {
+    pub fn record(&self) -> &Gc<Record> {
         match self {
             Value::Record(rec) => rec,
             _ => { panic!("Expected record"); }
         }
-    } */
-
+    }
     // #endregion
 
     // wrapper for native

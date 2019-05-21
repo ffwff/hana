@@ -113,7 +113,7 @@ pub mod vm_tests {
         vm.code.push(VmOpcode::OP_HALT);
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.top().unwrap().string(), String::from("Test"));
+        assert_eq!(*vm.stack.top().unwrap().string().as_ref(), String::from("Test"));
     }
 
     #[test]
@@ -128,7 +128,7 @@ pub mod vm_tests {
         vm.code.push(VmOpcode::OP_HALT);
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.top().unwrap().string(), String::from("TestTest"));
+        assert_eq!(*vm.stack.top().unwrap().string().as_ref(), String::from("TestTest"));
     }
 
     #[test]
@@ -143,7 +143,7 @@ pub mod vm_tests {
         vm.code.push(VmOpcode::OP_HALT);
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.top().unwrap().string(), String::from("TestTest"));
+        assert_eq!(*vm.stack.top().unwrap().string().as_ref(), String::from("TestTest"));
     }
     // #endregion
 
