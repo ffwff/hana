@@ -17,7 +17,6 @@ pub enum _valueType {
     TYPE_STR        = 5,
     TYPE_DICT       = 6,
     TYPE_ARRAY      = 7,
-    TYPE_NATIVE_OBJ = 8,
 }
 
 #[repr(C, packed)]
@@ -54,9 +53,6 @@ impl NativeValue {
         _valueType::TYPE_ARRAY      => unsafe {
                 Value::Array(&*(self.data as *const CArray<NativeValue>))
             },
-        _valueType::TYPE_NATIVE_OBJ => {
-                Value::NativeObj(self.data as *mut libc::c_void)
-            },
         }
     }
 
@@ -76,7 +72,6 @@ impl NativeValue {
         _valueType::TYPE_STR        => Value::mut_Str(self.data as *mut String),
         _valueType::TYPE_DICT       => Value::mut_Record(self.data as *mut Record),
         _valueType::TYPE_ARRAY      => Value::mut_Array(self.data as *mut CArray<NativeValue>),
-        _valueType::TYPE_NATIVE_OBJ => Value::NativeObj(self.data as *mut libc::c_void),
         }
     }
 
@@ -88,9 +83,6 @@ impl NativeValue {
             _valueType::TYPE_ARRAY  =>
                 if unsafe{ mark_reachable(self.data as *mut c_void) } {
                     self.unwrap().mark(); },
-            _valueType::TYPE_NATIVE_OBJ => unsafe {
-                    mark_reachable(self.data as *mut c_void);
-                },
             _ => {}
         }
     }
@@ -103,9 +95,6 @@ impl NativeValue {
             _valueType::TYPE_ARRAY  => {
                 if pin(self.data as *mut c_void) {
                     self.unwrap().pin_rec(); }
-                },
-            _valueType::TYPE_NATIVE_OBJ => {
-                    pin(self.data as *mut c_void);
                 },
             _ => {}
         }

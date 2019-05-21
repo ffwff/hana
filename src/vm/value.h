@@ -20,7 +20,6 @@ struct string;
 #define TYPE_STR        5
 #define TYPE_DICT       6
 #define TYPE_ARRAY      7
-#define TYPE_NATIVE_OBJ 8
 #define TYPE_INTERPRETER_ERROR    127
 #define TYPE_INTERPRETER_ITERATOR 128
 
