@@ -365,12 +365,14 @@ pub fn collect() {
 }
 #[allow(dead_code)]
 pub fn pin(ptr: *mut c_void) {
+    if ptr.is_null() { return; }
     unsafe{
     let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
     (*node).pinned = true; }
 }
 #[allow(dead_code)]
 pub fn unpin(ptr: *mut c_void) {
+    if ptr.is_null() { return; }
     unsafe{
     let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
     (*node).pinned = false; }

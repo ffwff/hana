@@ -12,21 +12,15 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
         vm.stack.push(Value::Array(Gc::new(CArray::new())).wrap());
         return;
     }
-    unimplemented!()
-
-    /* let p = pin_start();
 
     let nargs = nargs as usize;
-    let mut array : CArray<NativeValue> = CArray::reserve(nargs);
+    let mut array = Gc::new(CArray::reserve(nargs));
     for i in 0..nargs {
         let val = vm.stack.top();
-        val.pin();
-        array[i] = val.clone();
+        array.as_mut()[i] = val.clone();
         vm.stack.pop();
     }
-    vm.stack.push(Value::Array(Gc::new(array)).wrap());
-
-    pin_end(p); */
+    vm.stack.push(Value::Array(array).wrap());
 }
 
 #[hana_function()]

@@ -66,6 +66,7 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                         quote!(
                             let mut #pattern = {
                                 let val = vm.stack.top().unwrap();
+                                vm.stack.pop();
                                 match val {
                                     #match_arm,
                                     _ => panic!("expected argument {} to be type {}",
