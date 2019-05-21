@@ -39,8 +39,7 @@ pub mod interpreter_tests {
     #[test]
     fn string_literal() {
         let mut vm : Vm = eval!("y = 'test'");
-        unimplemented!()
-        //assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "test");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "test");
     }
     // #endregion
 
@@ -507,9 +506,8 @@ end
 
 a = A()
 ");
-        unimplemented!()
-        //let a = vm.global().get("a").unwrap().unwrap().record();
-        //assert_eq!(*a.get(&"prototype".to_string()).unwrap(), *vm.global().get("A").unwrap());
+        let a = vm.global().get("a").unwrap().unwrap().record();
+        assert_eq!(*a.get(&"prototype".to_string()).unwrap(), *vm.global().get("A").unwrap());
     }
 
     #[test]
