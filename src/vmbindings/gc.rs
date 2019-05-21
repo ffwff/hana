@@ -241,6 +241,40 @@ thread_local! {
         RefCell::new(GcManager::new());
 }
 
+// gc struct
+pub struct Gc<T: Sized> {
+    ptr: *mut T
+}
+
+impl<T: Sized> Gc<T> {
+    fn new(val: T) -> Gc<T> {
+        Gc {
+            ptr: unsafe {
+                let ptr = malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T));
+                pin(ptr as *mut libc::c_void);
+                ptr
+            }
+        }
+    }
+}
+
+impl<T> std::ops::Drop for Gc<T> {
+    fn drop(&mut self) {
+        unpin(self.ptr as *mut libc::c_void);
+    }
+}
+
+impl<T> std::convert::AsRef<T> for Gc<T> {
+    fn as_ref(&self) -> &T {
+        unsafe{ &*self.ptr }
+    }
+}
+impl<T> std::convert::AsMut<T> for Gc<T> {
+    fn as_mut(&mut self) -> &mut T {
+        unsafe{ &mut *self.ptr }
+    }
+}
+
 // general
 pub unsafe fn malloc<T: Sized>(x: T, finalizer: GenericFinalizer) -> *mut T {
     let mut alloced: *mut T = null_mut();
