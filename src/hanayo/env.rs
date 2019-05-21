@@ -20,7 +20,7 @@ fn set(key: Value::Str, val: Value::Str) -> Value {
 
 #[hana_function()]
 fn vars() -> Value {
-    let record = Gc::new(Record::new());
+    let mut record = Gc::new(Record::new());
     for (key, value) in env::vars() {
         record.as_mut().insert(key, Value::Str(Gc::new(value)).wrap());
     }

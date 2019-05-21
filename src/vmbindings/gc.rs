@@ -274,7 +274,10 @@ impl<T: Sized> Gc<T> {
         self.ptr
     }
 
-    pub fn to_raw(&mut self) -> *mut T {
+    pub fn to_raw(&self) -> *const T {
+        self.ptr
+    }
+    pub fn to_mut_raw(&mut self) -> *mut T {
         self.ptr
     }
 

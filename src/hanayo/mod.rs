@@ -40,12 +40,9 @@ pub fn init(vm : &mut Vm) {
     // maths
     set_var!("sqrt", Value::NativeFn(math::sqrt));
 
-    // builtin objects
-    let rec_free = |ptr| unsafe{ drop::<Record>(ptr) };
-
     // #region array
     {
-    let array = Gc::new(Record::new());
+    let mut array = Gc::new(Record::new());
     set_obj_var!(array, "constructor", Value::NativeFn(array::constructor));
     set_obj_var!(array, "length",      Value::NativeFn(array::length));
     set_obj_var!(array, "insert!",     Value::NativeFn(array::insert_));
@@ -59,14 +56,14 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(array, "reduce",      Value::NativeFn(array::reduce));
     set_obj_var!(array, "index",       Value::NativeFn(array::index));
     set_obj_var!(array, "join",        Value::NativeFn(array::join));
+    vm.darray = array.to_mut_raw(); pin(vm.darray as *mut libc::c_void);
     set_var!("Array", Value::Record(array));
-    vm.darray = array.to_raw(); pin(vm.darray as *mut libc::c_void);
     }
     // #endregion
 
     // #region string
     {
-    let string = Gc::new(Record::new());
+    let mut string = Gc::new(Record::new());
     set_obj_var!(string, "constructor", Value::NativeFn(string::constructor));
     set_obj_var!(string, "length",      Value::NativeFn(string::length));
     set_obj_var!(string, "bytesize",    Value::NativeFn(string::bytesize));
@@ -80,43 +77,43 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "index",       Value::NativeFn(string::index));
     set_obj_var!(string, "chars",       Value::NativeFn(string::chars));
     set_obj_var!(string, "ord",         Value::NativeFn(string::ord));
+    vm.dstr = string.to_mut_raw(); pin(vm.dstr as *mut libc::c_void);
     set_var!("String", Value::Record(string));
-    vm.dstr = string.to_raw(); pin(vm.dstr as *mut libc::c_void);
     }
     // #endregion
 
     // #region int
     {
-    let int = Gc::new(Record::new());
+    let mut int = Gc::new(Record::new());
     set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
     set_obj_var!(int, "chr",         Value::NativeFn(int::chr));
+    vm.dint = int.to_mut_raw(); pin(vm.dint as *mut libc::c_void);
     set_var!("Int", Value::Record(int));
-    vm.dint = int.to_raw(); pin(vm.dint as *mut libc::c_void);
     }
     // #endregion
 
     // #region float
     {
-    let float = Gc::new(Record::new());
+    let mut float = Gc::new(Record::new());
     set_obj_var!(float, "constructor", Value::NativeFn(float::constructor));
+    vm.dfloat = float.to_mut_raw(); pin(vm.dfloat as *mut libc::c_void);
     set_var!("Float", Value::Record(float));
-    vm.dfloat = float.to_raw(); pin(vm.dfloat as *mut libc::c_void);
     }
     // #endregion
 
     // #region record
     {
-    let record = Gc::new(Record::new());
+    let mut record = Gc::new(Record::new());
     set_obj_var!(record, "constructor", Value::NativeFn(record::constructor));
     set_obj_var!(record, "keys",        Value::NativeFn(record::keys));
+    vm.drec = record.to_mut_raw(); pin(vm.drec as *mut libc::c_void);
     set_var!("Record", Value::Record(record));
-    vm.drec = record.to_raw(); pin(vm.drec as *mut libc::c_void);
     }
     // #endregion
 
     // #region files
     {
-    let file = Gc::new(Record::new());
+    let mut file = Gc::new(Record::new());
     set_obj_var!(file, "constructor", Value::NativeFn(file::constructor));
     set_obj_var!(file, "close",       Value::NativeFn(file::close));
     set_obj_var!(file, "read",        Value::NativeFn(file::read));
@@ -131,7 +128,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region cmd
     {
-    let cmd = Gc::new(Record::new());
+    let mut cmd = Gc::new(Record::new());
     set_obj_var!(cmd, "constructor",  Value::NativeFn(cmd::constructor));
     set_obj_var!(cmd, "in" ,          Value::NativeFn(cmd::in_));
     set_obj_var!(cmd, "out",          Value::NativeFn(cmd::out));
@@ -143,7 +140,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region env
     {
-    let env = Gc::new(Record::new());
+    let mut env = Gc::new(Record::new());
     set_obj_var!(env, "get",  Value::NativeFn(env::get));
     set_obj_var!(env, "set",  Value::NativeFn(env::set));
     set_obj_var!(env, "vars", Value::NativeFn(env::vars));

@@ -14,7 +14,7 @@ fn constructor(val: Value::Any) -> Value {
             let arr = arr.as_ref();
             if arr.len() == 0 { panic!("expected array with at least 1 elem!"); }
             let mut cmd = Command::new(match arr[0].unwrap() {
-                              Value::Str(s) => s.as_ref(),
+                              Value::Str(s) => s.as_ref().clone(),
                               _ => unimplemented!()
                           });
             if arr.len() > 1 {
@@ -36,7 +36,7 @@ fn constructor(val: Value::Any) -> Value {
         _ => panic!("expected val to be string or array")
     };
     // cmd object
-    let rec = Gc::new(Record::new());
+    let mut rec = Gc::new(Record::new());
     // store native cmd
     rec.as_mut().native_field = Some(Box::new(cmd));
     // TODO: maybe not hardcode prototype it like this

@@ -91,7 +91,7 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 
 #[hana_function()]
 fn chars(s: Value::Str) -> Value {
-    let array = Gc::new(CArray::new());
+    let mut array = Gc::new(CArray::new());
     let chars = s.as_ref().chars().map(|s| Value::Str(Gc::new(s.to_string())));
     for ch in chars {
         array.as_mut().push(ch.wrap());
