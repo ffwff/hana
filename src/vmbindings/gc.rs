@@ -59,7 +59,7 @@ impl GcManager {
     pub unsafe fn malloc<T: Sized>
         (&mut self, x: T, finalizer: GenericFinalizer) -> *mut T {
         // free up if over threshold
-        if cfg!(test) {
+        /* if cfg!(test) {
             self.collect();
         } else if self.bytes_allocated > self.threshold {
             self.collect();
@@ -67,7 +67,7 @@ impl GcManager {
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
                 self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
             }
-        }
+        } */
         // tfw no qt malloc function
         let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
         let bytes : *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
@@ -364,22 +364,16 @@ pub fn collect() {
     });
 }
 #[allow(dead_code)]
-pub fn pin(ptr: *mut c_void) -> bool {
-    let mut pinned = false;
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        pinned = unsafe {gc_manager.pin(ptr)}
-    });
-    pinned
+pub fn pin(ptr: *mut c_void) {
+    unsafe{
+    let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+    (*node).pinned = true; }
 }
 #[allow(dead_code)]
-pub fn unpin(ptr: *mut c_void) -> bool {
-    let mut pinned = false;
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        pinned = unsafe {gc_manager.unpin(ptr)}
-    });
-    pinned
+pub fn unpin(ptr: *mut c_void) {
+    unsafe{
+    let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+    (*node).pinned = false; }
 }
 pub fn pin_start() -> usize {
     let mut p : usize = 0;

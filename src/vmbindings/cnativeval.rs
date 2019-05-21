@@ -69,7 +69,7 @@ impl NativeValue {
     }
 
     pub fn pin(&self) -> NativeValue {
-        match self.r#type {
+        /*match self.r#type {
             _valueType::TYPE_FN   |
             _valueType::TYPE_STR  |
             _valueType::TYPE_DICT |
@@ -78,7 +78,7 @@ impl NativeValue {
                     self.unwrap().pin_rec(); }
                 },
             _ => {}
-        }
+        } */
         *self
     }
 
