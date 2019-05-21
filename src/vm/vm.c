@@ -418,7 +418,6 @@ void vm_execute(struct vm *vm) {
 #define JMP_INTERPRETED_FN(UNWIND, END_IF_NATIVE)                            \
     do {                                                                     \
         if (val.type == TYPE_DICT) {                                         \
-            array_pop(vm->stack);                                            \
             const struct value *ctor = dict_get(val.as.dict, "constructor"); \
             if (ctor == NULL) {                                              \
                 ERROR(ERROR_RECORD_NO_CONSTRUCTOR, UNWIND);                  \
@@ -440,7 +439,6 @@ void vm_execute(struct vm *vm) {
             array_push(vm->stack, new_val);                                  \
         } else {                                                             \
             ifn = val.as.ifn;                                                \
-            array_pop(vm->stack);                                            \
             if (nargs != ifn->nargs) {                                       \
                 ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);  \
             }                                                                \
@@ -474,6 +472,7 @@ void vm_execute(struct vm *vm) {
                 }
                 dispatch();
             });
+            array_pop(vm->stack);
 
             // caller
             vm_enter_env(vm, ifn);
@@ -490,6 +489,7 @@ void vm_execute(struct vm *vm) {
             LOG("return from vm_call\n");
             return;
         }
+        LOG("ip = %d\n", vm->ip);
         dispatch();
     }
 
@@ -755,6 +755,7 @@ void vm_execute(struct vm *vm) {
                     dispatch();
                 }
             );
+            array_pop(vm->stack);
 
             // caller
             vm_enter_env_tail(vm, ifn);
@@ -769,61 +770,36 @@ void vm_execute(struct vm *vm) {
     doop(OP_FOR_IN): {
 #define CALL_DICT_ITERATOR_FN \
 do { \
-    switch (iterator.type) { \
-    case TYPE_NIL: { \
-        vm->ip += pos; \
-        dispatch(); \
-    } \
-    case TYPE_ARRAY: { \
-        const array_obj *array = iterator.as.array; \
-        const size_t idx = (size_t)top->as.integer; \
-        if (idx == array->length) { /* end of it */ \
-            array_pop(vm->stack); /* iterator */ \
-            array_pop(vm->stack); /* array */ \
-            vm->ip += pos; \
-            dispatch(); \
-        } else { \
-            LOG("nop!\n"); \
-            top->as.integer++; \
-            array_push(vm->stack, array->data[idx]); \
-        } \
-        break; \
-    } \
+    if(pval == NULL) ERROR(ERROR_EXPECTED_CALLABLE, 0 /* TODO */); \
+    const struct value val = *pval; \
+    const uint16_t nargs = 1; \
+    switch(val.type) { \
+    case TYPE_NATIVE_FN: { \
+        CALL_NATIVE(val.as.fn); \
+        break; } \
+    case TYPE_FN: \
     case TYPE_DICT: { \
-        const struct dict *dict = iterator.as.dict; \
-        const struct value *pval = dict_get(dict, "next"); \
-        if(pval == NULL) ERROR(ERROR_EXPECTED_CALLABLE, 0 /* TODO */); \
-        const struct value val = *pval; \
-        const uint16_t nargs = 1; \
-        switch(val.type) { \
-        case TYPE_NATIVE_FN: { \
-            CALL_NATIVE(val.as.fn); \
-            break; } \
-        case TYPE_FN: \
-        case TYPE_DICT: { \
-            struct function *ifn; \
-            JMP_INTERPRETED_FN(1 + sizeof(nargs), { \
-                if (vm->exframe_fallthrough != NULL) { \
-                    if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) { \
-                        assert(0); \
-                    } else { \
-                        return; \
-                    } \
+        struct function *ifn; \
+        JMP_INTERPRETED_FN(0 /* TODO */, { \
+            if (vm->exframe_fallthrough != NULL) { \
+                if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) { \
+                    assert(0); \
+                } else { \
+                    return; \
                 } \
-                dispatch(); \
-            }); \
-            vm_enter_env(vm, ifn); \
-            break; } \
-        default: ERROR(ERROR_EXPECTED_CALLABLE, 0 /* TODO */); \
-        } \
-    } \
-    default: ERROR(ERROR_EXPECTED_ITERABLE, 1 + sizeof(pos)); \
+            } \
+            dispatch(); \
+        }); \
+        vm_enter_env(vm, ifn); \
+        dispatch(); } \
+    default: ERROR(ERROR_EXPECTED_CALLABLE, 0 /* TODO */); \
     } \
 } while(0);
         vm->ip++;
         const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
                              (uint16_t)vm->code.data[vm->ip + 1];
         LOG("FOR_IN %d\n", pos);
+        debug_assert(vm->stack.length > 0);
         struct value *top = &array_top(vm->stack);
         switch(top->type) {
         // setup
@@ -841,27 +817,63 @@ do { \
             break; }
         case TYPE_DICT: {
             struct dict *dict = top->as.dict;
-            const struct value *nextv = dict_get(dict, "next");
-            if(nextv == NULL) {
-                struct value val = {
-                    .as.integer = 0,
-                    .type = TYPE_INTERPRETER_ITERATOR
-                };
-                array_push(vm->stack, val);
-                const struct value iterator = *nextv;
-                CALL_DICT_ITERATOR_FN
-            }
+            const struct value *pval = dict_get(dict, "next");
+            struct value val = {
+                .as.integer = 0,
+                .type = TYPE_INTERPRETER_ITERATOR
+            };
+            array_push(vm->stack, val);
+            vm->ip += sizeof(pos);
+            array_push(vm->stack, *top); // pass arg
+            CALL_DICT_ITERATOR_FN
             break; }
         // interation
         case TYPE_INTERPRETER_ITERATOR: {
-            const struct value iterator = vm->stack.data[vm->stack.length-2];CALL_DICT_ITERATOR_FN
+            debug_assert(vm->stack.length >= 2);
+            const struct value iterator = vm->stack.data[vm->stack.length-2];
+            switch (iterator.type) {
+                case TYPE_NIL: {
+                    vm->ip += pos;
+                    dispatch();
+                }
+                case TYPE_ARRAY: {
+                    const array_obj *array = iterator.as.array;
+                    const size_t idx = (size_t)top->as.integer;
+                    if (idx == array->length) { /* end of it */
+                        array_pop(vm->stack);   /* iterator */
+                        array_pop(vm->stack);   /* array */
+                        vm->ip += pos;
+                        dispatch();
+                    } else { // continuation
+                        top->as.integer++;
+                        array_push(vm->stack, array->data[idx]);
+                    }
+                    break;
+                }
+                case TYPE_DICT: {
+                    const struct dict *dict = iterator.as.dict;
+                    if (dict_get(dict, "stopped") != NULL) {
+                        array_pop(vm->stack); /* iterator */
+                        array_pop(vm->stack); /* record */
+                        vm->ip += pos;
+                        dispatch();
+                    }
+
+                    const struct value *pval = dict_get(dict, "next");
+                    vm->ip += sizeof(pos);
+                    array_push(vm->stack, iterator); // arg
+                    CALL_DICT_ITERATOR_FN
+                    break;
+                }
+                default: ERROR(ERROR_EXPECTED_ITERABLE, 1 + sizeof(pos));
+            }
             break;
         }
-        default: ERROR(ERROR_EXPECTED_ITERABLE, 1 + sizeof(pos));
+        default: ERROR(ERROR_EXPECTED_ITERABLE, sizeof(pos));
         }
         vm->ip += sizeof(pos);
         dispatch();
-    #undef CALL_DICT_ITERATOR_FN
+#undef CALL_DICT_ITERATOR_FN
     }
 
     doop(OP_SWAP): {

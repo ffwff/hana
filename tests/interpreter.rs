@@ -190,6 +190,31 @@ end
 ");
         assert!(vm.global().get("i").is_none());
     }
+
+    #[test]
+    fn for_in_stmt_record() {
+        let mut vm : Vm = eval!("
+record x
+
+    i = 1
+
+    function next(self) begin
+        self.i += 1
+        if self.i == 10 begin
+            self.stopped = 1
+        end
+        return self.i
+    end
+
+end
+
+for i in x begin
+end
+");
+        let rec = vm.global().get("x").unwrap().unwrap().record();
+        assert_eq!(rec.get(&"stopped".to_string()).unwrap().unwrap().int(), 1);
+        assert_eq!(rec.get(&"i".to_string()).unwrap().unwrap().int(), 10);
+    }
     // #endregion
 
     // #region continue/break

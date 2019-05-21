@@ -74,6 +74,14 @@ impl Value {
         }
     }
 
+    #[cfg_attr(tarpaulin, skip)]
+    pub fn record(&self) -> &'static Record {
+        match self {
+            Value::Record(rec) => rec,
+            _ => { panic!("Expected record"); }
+        }
+    }
+
     // #endregion
 
     // wrapper for native

@@ -264,6 +264,8 @@ pub unsafe extern "C" fn vm_load_module(cvm: *mut Vm, cpath: *const libc::c_char
 pub extern "C" fn value_print(val: NativeValue) {
     if (val.r#type as u8) < 127 {
         eprint!("{:?}", val.unwrap());
+    } else {
+        eprint!("[interpreter {}]", val.data);
     }
 }
 // #endregion

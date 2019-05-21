@@ -1,0 +1,17 @@
+record x
+
+    i = 1
+
+    function next(self) begin
+        self.i += 1
+        if self.i == 10 begin
+            self.stopped = true
+        end
+        return self.i
+    end
+
+end
+
+for i in x begin
+    print(i)
+end
