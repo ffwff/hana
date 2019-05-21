@@ -241,7 +241,6 @@ y = a.map(Int)
         assert_eq!(arr[2].unwrap(), Value::Int(3));
     }
 
-/*
     #[test]
     fn array_filter() {
         let mut vm : Vm = eval!("
@@ -264,12 +263,12 @@ y = a.reduce(f(x, y) = x + y, 0)
 
     #[test]
     fn array_chained_functional() {
-        /* let mut vm : Vm = eval!("
+        let mut vm : Vm = eval!("
 a=[1,2,3,5,6]
 y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(13)); */
-    }*/
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(13));
+    }
 
     #[test]
     fn array_join() {

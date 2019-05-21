@@ -117,92 +117,63 @@ fn map(array: Value::Array, fun: Value::Any) -> Value {
     Value::Array(new_array)
 }
 
-pub extern fn filter(cvm : *mut Vm, nargs : u16) {
-    unimplemented!()
-    /*assert_eq!(nargs, 2);
-    let vm = unsafe { &mut *cvm };
-
-    let p = pin_start();
-
-    let array = vm.stack.top().pin().unwrap().array();
-    vm.stack.pop();
-
-    let fun = vm.stack.top().pin().unwrap();
-    vm.stack.pop();
-
-    let mut new_array : CArray<NativeValue> = CArray::new();
+#[hana_function()]
+fn filter(array: Value::Array, fun: Value::Any) -> Value {
+    let mut new_array = Gc::new(CArray::new());
     match fun {
         Value::Fn(_) | Value::Record(_) => {
             let mut args = CArray::reserve(1);
-            for val in array.iter() {
+            let mut i = 0;
+            for val in array.as_ref().iter() {
                 args[0] = val.clone();
                 if let Some(filter) = vm.call(fun.wrap(), &args) {
                     if filter.unwrap().is_true(vm) {
-                        new_array.push(val.clone());
+                        new_array.as_mut().push(val.clone());
                     }
                 } else {
-                    pin_end(p);
-                    return;
+                    return Value::Nil;
                 }
+                i += 1;
             }
         },
         Value::NativeFn(fun) => {
-            for val in array.iter() {
+            for val in array.as_ref().iter() {
                 vm.stack.push(val.clone());
-                fun(cvm, 1);
+                fun(vm, 1);
+                unimplemented!()
             }
         }
         _ => panic!("expected fn/record/native fn")
     };
-
-    vm.stack.push(Value::Array(unsafe { &*malloc(new_array, alloc_free) }).wrap());
-
-    pin_end(p);*/
+    Value::Array(new_array)
 }
 
-pub extern fn reduce(cvm : *mut Vm, nargs : u16) {
-    unimplemented!()
-    /*assert_eq!(nargs, 3);
-    let vm = unsafe { &mut *cvm };
-
-    let p = pin_start();
-
-    let array = vm.stack.top().pin().unwrap().array();
-    vm.stack.pop();
-
-    let fun = vm.stack.top().pin().unwrap();
-    vm.stack.pop();
-
-    let mut acc = vm.stack.top().pin().unwrap();
-    vm.stack.pop();
-
+#[hana_function()]
+fn reduce(array: Value::Array, fun: Value::Any, acc: Value::Any) -> Value {
     match fun {
         Value::Fn(_) | Value::Record(_) => {
             let mut args = CArray::reserve(2);
-            for val in array.iter() {
+            for val in array.as_ref().iter() {
                 args[0] = acc.wrap().clone();
                 args[1] = val.clone();
                 if let Some(val) = vm.call(fun.wrap(), &args) {
                     acc = val.unwrap();
                 } else {
-                    pin_end(p);
-                    return;
+                    panic!("no!");
                 }
             }
         },
         Value::NativeFn(fun) => {
-            for val in array.iter() {
+            for val in array.as_ref().iter() {
                 vm.stack.push(acc.wrap().clone());
                 vm.stack.push(val.clone());
-                fun(cvm, 2);
+                fun(vm, 2);
+                unimplemented!();
             }
         }
         _ => panic!("expected fn/record/native fn")
-    };
-
-    vm.stack.push(acc.wrap());
-
-    pin_end(p);*/
+    }
+    acc
 }
 
 // search
