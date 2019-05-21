@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::vmbindings::vm::Vm;
 use crate::vm::Value;
-use super::{malloc, drop};
+use super::Gc;
 
 #[hana_function()]
 fn constructor(val: Value::Any) -> Value {
@@ -18,7 +18,7 @@ fn constructor(val: Value::Any) -> Value {
 #[hana_function()]
 fn chr(i: Value::Int) -> Value {
     if let Some(ch) = std::char::from_u32(i as u32) {
-        Value::Str(unsafe { &*malloc(ch.to_string(), |ptr| drop::<String>(ptr)) })
+        Value::Str(Gc::new(ch.to_string()))
     } else {
         Value::Nil
     }

@@ -3,7 +3,7 @@ use super::record::Record;
 use super::function::Function;
 use super::carray::CArray;
 use super::value::{Value, NativeFnData};
-use super::gc::{mark_reachable, pin};
+use super::gc::{mark_reachable, pin, Gc};
 
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
@@ -42,36 +42,17 @@ impl NativeValue {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
             },
         _valueType::TYPE_FN         => unsafe {
-                Value::Fn(&*(self.data as *const Function))
+                Value::Fn(Gc::from_raw(self.data as *mut Function))
             },
         _valueType::TYPE_STR        => unsafe {
-                Value::Str(&*(self.data as *const String))
+                Value::Str(Gc::from_raw(self.data as *mut String))
             },
         _valueType::TYPE_DICT       => unsafe {
-                Value::Record(&*(self.data as *const Record))
+                Value::Record(Gc::from_raw(self.data as *mut Record))
             },
         _valueType::TYPE_ARRAY      => unsafe {
-                Value::Array(&*(self.data as *const CArray<NativeValue>))
+                Value::Array(Gc::from_raw(self.data as *mut CArray<NativeValue>))
             },
-        }
-    }
-
-    pub fn unwrap_mut(&self) -> Value {
-        use std::mem::transmute;
-        #[allow(non_camel_case_types)]
-        match &self.r#type {
-        _valueType::TYPE_NIL        => Value::Nil,
-        _valueType::TYPE_INT        =>
-                Value::Int(self.data as i64),
-        _valueType::TYPE_FLOAT      =>
-                Value::Float(f64::from_bits(self.data)),
-        _valueType::TYPE_NATIVE_FN  => unsafe {
-                Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
-            },
-        _valueType::TYPE_FN         => Value::mut_Fn(self.data as *mut Function),
-        _valueType::TYPE_STR        => Value::mut_Str(self.data as *mut String),
-        _valueType::TYPE_DICT       => Value::mut_Record(self.data as *mut Record),
-        _valueType::TYPE_ARRAY      => Value::mut_Array(self.data as *mut CArray<NativeValue>),
         }
     }
 

@@ -2,24 +2,18 @@ use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::NativeValue;
 use crate::vm::Value;
-use super::{malloc, drop};
-
-fn alloc_free(ptr: *mut libc::c_void) {
-    unsafe { drop::<String>(ptr) };
-}
+use super::Gc;
 
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
-        vm.stack.push(Value::Str(unsafe {
-                &*malloc(String::new(), alloc_free) }).wrap());
+        vm.stack.push(Value::Str(Gc::new(String::from())).wrap());
         return;
     } else {
         assert_eq!(nargs, 1);
         let arg = vm.stack.top().clone().unwrap();
         vm.stack.pop();
-        vm.stack.push(Value::Str(unsafe {
-                &*malloc(format!("{:?}", arg).to_string(), alloc_free) }).wrap());
+        vm.stack.push(Value::Str(Gc::new(format!("{:?}", arg).to_string())).wrap());
     }
 }
 
@@ -51,7 +45,7 @@ fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let nchars_u = nchars as usize;
     let mut new_s = s.clone();
     new_s.replace_range(from_pos_u..from_pos_u+nchars_u, "");
-    Value::Str(unsafe { &*malloc(new_s, alloc_free) })
+    Value::Str(Gc::new(new_s))
 }
 #[hana_function()]
 fn delete_(s: Value::mut_Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
@@ -65,8 +59,7 @@ fn delete_(s: Value::mut_Str, from_pos: Value::Int, nchars: Value::Int) -> Value
 fn copy(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos_u = from_pos as usize;
     let nchars_u = nchars as usize;
-    let new_s = unsafe { &*malloc(s[from_pos_u..from_pos_u+nchars_u].to_string(), alloc_free) };
-    Value::Str(new_s)
+    Value::Str(Gc::new(s[from_pos_u..from_pos_u+nchars_u].to_string()))
 }
 
 #[hana_function()]
@@ -79,17 +72,12 @@ fn insert_(dst: Value::mut_Str, from_pos: Value::Int, src: Value::Str) -> Value 
 // other
 #[hana_function()]
 fn split(s: Value::Str, delim: Value::Str) -> Value {
-    let mut array : CArray<NativeValue> = CArray::new();
-    let p = pin_start();
-    for ss in s.split(delim) {
-        let val = Value::Str(unsafe {
-                &*malloc(ss.clone().to_string(), alloc_free) });
-        array.push(val.wrap().pin());
+    let mut array = Gc::new(CArray::new());
+    let sarray = s.split(delim).map(|ss| Value::Str(Gc::new(ss.clone().to_string())));
+    for s in sarray {
+        array.as_mut_ref().push(s.unwrap());
     }
-    let ret = Value::Array(unsafe { &*malloc(array, |ptr|
-        drop::<CArray<NativeValue>>(ptr)) });
-    pin_end(p);
-    ret
+    array
 }
 
 #[hana_function()]

@@ -247,7 +247,7 @@ pub struct Gc<T: Sized> {
 }
 
 impl<T: Sized> Gc<T> {
-    fn new(val: T) -> Gc<T> {
+    pub fn new(val: T) -> Gc<T> {
         Gc {
             ptr: unsafe {
                 let ptr = malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T));
@@ -255,6 +255,25 @@ impl<T: Sized> Gc<T> {
                 ptr
             }
         }
+    }
+
+    pub fn from_raw(ptr: *mut T) -> Gc<T> {
+        pin(ptr as *mut libc::c_void);
+        Gc {
+            ptr: ptr
+        }
+    }
+
+    pub fn into_raw(mut self) -> *mut T {
+        self.ptr
+    }
+
+    pub fn to_raw(&mut self) -> *mut T {
+        self.ptr
+    }
+
+    pub fn ptr_eq(&self, right: &Gc<T>) -> bool {
+        std::ptr::eq(self.ptr, right.ptr)
     }
 }
 
@@ -272,6 +291,14 @@ impl<T> std::convert::AsRef<T> for Gc<T> {
 impl<T> std::convert::AsMut<T> for Gc<T> {
     fn as_mut(&mut self) -> &mut T {
         unsafe{ &mut *self.ptr }
+    }
+}
+
+impl<T> std::clone::Clone for Gc<T> {
+    fn clone(&self) -> Self {
+        Gc {
+            ptr: self.ptr
+        }
     }
 }
 

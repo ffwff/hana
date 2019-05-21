@@ -2,12 +2,13 @@ use std::any::Any;
 use std::boxed::Box;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
+use super::gc::Gc;
 use super::value::Value;
 
 #[repr(C)]
 pub struct Record {
     data: CHashMap,
-    prototype: Option<&'static Record>,
+    prototype: Option<Gc<Record>>,
     pub native_field: Option<Box<Any>>,
 }
 
@@ -25,7 +26,7 @@ impl Record {
         if let Some(v) = self.data.get(k) {
             return Some(v);
         } else if let Some(prototype) = self.prototype {
-            return prototype.get(k);
+            return prototype.as_ref().get(k);
         }
         None
     }
