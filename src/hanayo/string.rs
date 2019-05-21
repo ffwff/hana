@@ -72,13 +72,11 @@ fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
 // other
 #[hana_function()]
 fn split(s: Value::Str, delim: Value::Str) -> Value {
-    unimplemented!()
-    /* let mut array = Gc::new(CArray::new());
-    let sarray = s.as_ref().split(delim).map(|ss| Value::Str(Gc::new(ss.clone().to_string())));
-    for s in sarray {
-        array.as_mut().push(s.unwrap());
+    let mut array = Gc::new(CArray::new());
+    for ss in s.as_ref().split(delim.as_ref()) {
+        array.as_mut().push(Value::Str(Gc::new(ss.clone().to_string())).wrap());
     }
-    Value::Array(array) */
+    Value::Array(array)
 }
 
 #[hana_function()]

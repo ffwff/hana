@@ -373,7 +373,6 @@ s.insert!(0, 'Not So ')
         assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "Not So Honest Abe Lincoln");
     }
 
-    /*
     #[test]
     fn string_split() {
         let mut vm : Vm = eval!("
@@ -385,7 +384,7 @@ y = s.split(' ')
         assert_eq!(arr[0].unwrap().string(), "a");
         assert_eq!(arr[1].unwrap().string(), "b");
         assert_eq!(arr[2].unwrap().string(), "c");
-    }*/
+    }
 
     #[test]
     fn string_chars() {
@@ -419,7 +418,6 @@ y = Record()
         vm.global().get("y").unwrap().unwrap().record();
     }
 
-    /*
     #[test]
     fn record_keys() {
         let mut vm : Vm = eval!("
@@ -431,7 +429,7 @@ y = Record::keys(x)
 ");
         let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 2);
-    }*/
+    }
     // #endregion
 
     // #region env
