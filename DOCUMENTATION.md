@@ -81,12 +81,19 @@ otherwise if `downto` is used, then `[step]` will be -1.
 Syntax:
 
 ```
-for [var] in [array] then [statement]
+for [var] in [object] then [statement]
 ```
 
-The statement evaluates `[array]`, if `[array]` is an array, it will continuously
-set the variable `[var]` to every value in the array and evaluate `[statement]`.
-If it's not an array, the interpreter will panic.
+The statement evaluates `[object]`.
+
+* If `[object]` is an array, it will continuously set the variable `[var]` to every value
+in the array and evaluate `[statement]`.
+* If `[object]` is an iterator, it will continuously evaluate the record's `next` function
+until the record has a `stopped` key set.
+* Otherwise, the interpreter will panic.
+
+An iterator is simply a record with a `next` function, and is not initialized with a `stopped`
+key.
 
 ### While
 
