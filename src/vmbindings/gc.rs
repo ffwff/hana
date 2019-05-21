@@ -243,7 +243,8 @@ thread_local! {
 
 // gc struct
 pub struct Gc<T: Sized> {
-    ptr: *mut T
+    ptr: *mut T,
+    already_pinned: bool
 }
 
 impl<T: Sized> Gc<T> {
@@ -253,14 +254,19 @@ impl<T: Sized> Gc<T> {
                 let ptr = malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T));
                 pin(ptr as *mut libc::c_void);
                 ptr
-            }
+            },
+            already_pinned: false
         }
     }
 
     pub fn from_raw(ptr: *mut T) -> Gc<T> {
         pin(ptr as *mut libc::c_void);
         Gc {
-            ptr: ptr
+            ptr: ptr,
+            already_pinned: unsafe {
+                let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+                (*node).pinned
+            }
         }
     }
 
@@ -297,7 +303,8 @@ impl<T> std::convert::AsMut<T> for Gc<T> {
 impl<T> std::clone::Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc {
-            ptr: self.ptr
+            ptr: self.ptr,
+            already_pinned: self.already_pinned
         }
     }
 }

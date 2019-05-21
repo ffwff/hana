@@ -65,6 +65,7 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                     _ => {
                         quote!(
                             let #pattern = {
+                                let val = vm.stack.top().unwrap();
                                 match val {
                                     #match_arm,
                                     _ => panic!("expected argument {} to be type {}",
@@ -92,7 +93,6 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                 vm.error = VmError::ERROR_MISMATCH_ARGUMENTS;
                 return;
             }
-            use super::{pin_start, pin_end};
             #[inline(always)]
             fn #name(vm: &mut Vm) -> Value {
                 #(#args_setup)*

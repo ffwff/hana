@@ -93,13 +93,13 @@ impl Value {
             Value::NativeFn(f) => NativeValue { r#type: _valueType::TYPE_NATIVE_FN,
                                                 data: transmute::<NativeFnData, u64>(*f) },
             Value::Fn(p)       => NativeValue { r#type: _valueType::TYPE_FN,
-                                                data: transmute::<*mut Function, u64>(p.into_raw()) },
+                                                data: transmute::<*mut Function, u64>(p.to_raw()) },
             Value::Str(p)      => NativeValue { r#type: _valueType::TYPE_STR,
-                                                data: transmute::<*mut String, u64>(p.into_raw()) },
+                                                data: transmute::<*mut String, u64>(p.to_raw()) },
             Value::Record(p)   => NativeValue { r#type: _valueType::TYPE_DICT,
-                                                data: transmute::<*mut Record, u64>(p.into_raw()) },
+                                                data: transmute::<*mut Record, u64>(p.to_raw()) },
             Value::Array(p)    => NativeValue { r#type: _valueType::TYPE_ARRAY,
-                                                data: transmute::<*mut CArray<NativeValue>, u64>(p.into_raw()) },
+                                                data: transmute::<*mut CArray<NativeValue>, u64>(p.to_raw()) },
             _ => unimplemented!()
         } }
     }

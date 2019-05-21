@@ -25,7 +25,7 @@ impl Record {
     pub fn get(&self, k: &String) -> Option<&NativeValue> {
         if let Some(v) = self.data.get(k) {
             return Some(v);
-        } else if let Some(prototype) = self.prototype {
+        } else if let Some(prototype) = &self.prototype {
             return prototype.as_ref().get(k);
         }
         None
