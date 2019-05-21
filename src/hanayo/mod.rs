@@ -2,7 +2,7 @@ use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::*;
-use crate::vmbindings::gc::{Gc, pin};
+use crate::vmbindings::gc::{Gc, ref_inc};
 
 mod io;
 mod file;
@@ -56,7 +56,7 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(array, "reduce",      Value::NativeFn(array::reduce));
     set_obj_var!(array, "index",       Value::NativeFn(array::index));
     set_obj_var!(array, "join",        Value::NativeFn(array::join));
-    vm.darray = array.to_mut_raw(); pin(vm.darray as *mut libc::c_void);
+    vm.darray = array.to_mut_raw(); ref_inc(vm.darray as *mut libc::c_void);
     set_var!("Array", Value::Record(array));
     }
     // #endregion
@@ -77,7 +77,7 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "index",       Value::NativeFn(string::index));
     set_obj_var!(string, "chars",       Value::NativeFn(string::chars));
     set_obj_var!(string, "ord",         Value::NativeFn(string::ord));
-    vm.dstr = string.to_mut_raw(); pin(vm.dstr as *mut libc::c_void);
+    vm.dstr = string.to_mut_raw(); ref_inc(vm.dstr as *mut libc::c_void);
     set_var!("String", Value::Record(string));
     }
     // #endregion
@@ -87,7 +87,7 @@ pub fn init(vm : &mut Vm) {
     let mut int = Gc::new(Record::new());
     set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
     set_obj_var!(int, "chr",         Value::NativeFn(int::chr));
-    vm.dint = int.to_mut_raw(); pin(vm.dint as *mut libc::c_void);
+    vm.dint = int.to_mut_raw(); ref_inc(vm.dint as *mut libc::c_void);
     set_var!("Int", Value::Record(int));
     }
     // #endregion
@@ -96,7 +96,7 @@ pub fn init(vm : &mut Vm) {
     {
     let mut float = Gc::new(Record::new());
     set_obj_var!(float, "constructor", Value::NativeFn(float::constructor));
-    vm.dfloat = float.to_mut_raw(); pin(vm.dfloat as *mut libc::c_void);
+    vm.dfloat = float.to_mut_raw(); ref_inc(vm.dfloat as *mut libc::c_void);
     set_var!("Float", Value::Record(float));
     }
     // #endregion
@@ -106,7 +106,7 @@ pub fn init(vm : &mut Vm) {
     let mut record = Gc::new(Record::new());
     set_obj_var!(record, "constructor", Value::NativeFn(record::constructor));
     set_obj_var!(record, "keys",        Value::NativeFn(record::keys));
-    vm.drec = record.to_mut_raw(); pin(vm.drec as *mut libc::c_void);
+    vm.drec = record.to_mut_raw(); ref_inc(vm.drec as *mut libc::c_void);
     set_var!("Record", Value::Record(record));
     }
     // #endregion

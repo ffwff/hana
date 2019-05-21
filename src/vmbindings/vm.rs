@@ -13,7 +13,7 @@ use super::exframe::ExFrame;
 use super::env::Env;
 pub use super::value::Value;
 use super::vmerror::VmError;
-use super::gc::unpin;
+use super::gc::ref_dec;
 use crate::compiler::Compiler;
 
 const CALL_STACK_SIZE : usize = 512;
@@ -457,11 +457,11 @@ impl std::ops::Drop for Vm {
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
             // primitive objects
-            unpin(self.dstr as *mut libc::c_void);
-            unpin(self.dint as *mut libc::c_void);
-            unpin(self.dfloat as *mut libc::c_void);
-            unpin(self.darray as *mut libc::c_void);
-            unpin(self.drec as *mut libc::c_void);
+            ref_dec(self.dstr as *mut libc::c_void);
+            ref_dec(self.dint as *mut libc::c_void);
+            ref_dec(self.dfloat as *mut libc::c_void);
+            ref_dec(self.darray as *mut libc::c_void);
+            ref_dec(self.drec as *mut libc::c_void);
 
             // other
             if !self.globalenv.is_null() {

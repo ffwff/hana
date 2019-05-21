@@ -3,7 +3,7 @@ use super::record::Record;
 use super::function::Function;
 use super::carray::CArray;
 use super::value::{Value, NativeFnData};
-use super::gc::{mark_reachable, pin, Gc};
+use super::gc::{mark_reachable, Gc};
 
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]

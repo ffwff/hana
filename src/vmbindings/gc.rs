@@ -10,7 +10,7 @@ struct GcNode {
     size: usize,
     unreachable: bool, // by default this is false
     // if the node is unreachable, it will be pruned (free'd)
-    pinned: bool, // don't free if it is pinned
+    pub native_refs: usize,
     finalizer: GenericFinalizer
 }
 
@@ -83,7 +83,7 @@ impl GcManager {
             (*bytes).next = null_mut();
             self.last_node = bytes;
         }
-        (*bytes).pinned = false;
+        (*bytes).native_refs = 0;
         (*bytes).finalizer = finalizer;
         (*bytes).size = GcNode::alloc_size::<T>();
         self.bytes_allocated += (*bytes).size;
@@ -141,7 +141,7 @@ impl GcManager {
             let mut node : *mut GcNode = self.first_node;
             while !node.is_null() {
                 let next : *mut GcNode = (*node).next;
-                if !(*node).pinned && (*node).unreachable {
+                if (*node).native_refs == 0 && (*node).unreachable {
                     let body = node.add(1);
 
                     // remove from ll
@@ -174,38 +174,6 @@ impl GcManager {
         if !(*node).unreachable { return false; }
         (*node).unreachable = false;
         true
-    }
-
-    // ## pin
-    pub unsafe fn pin(&mut self, ptr: *mut c_void) -> bool {
-        // => start byte
-        if ptr.is_null() { return false; }
-        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        if (*node).pinned { return false; }
-        (*node).pinned = true;
-        self.pinned.push(node);
-        true
-    }
-    pub unsafe fn unpin(&mut self, ptr: *mut c_void) -> bool {
-        // => start byte
-        if ptr.is_null() { return false; }
-        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        (*node).pinned = false;
-        self.pinned.push(node);
-        true
-    }
-    pub fn pin_start(&mut self) -> usize {
-        self.pinned.len()
-    }
-    pub fn pin_end(&mut self, from: usize) {
-        unsafe {
-            for i in from..self.pinned.len() {
-                (*self.pinned[i]).pinned = false;
-            }
-            for _ in 0..from {
-                self.pinned.pop();
-            }
-        }
     }
 
 }
@@ -243,8 +211,7 @@ thread_local! {
 
 // gc struct
 pub struct Gc<T: Sized> {
-    ptr: *mut T,
-    already_pinned: bool
+    ptr: *mut T
 }
 
 impl<T: Sized> Gc<T> {
@@ -252,27 +219,24 @@ impl<T: Sized> Gc<T> {
         Gc {
             ptr: unsafe {
                 let ptr = malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T));
-                pin(ptr as *mut libc::c_void);
+                ref_inc(ptr as *mut libc::c_void);
                 ptr
-            },
-            already_pinned: false
+            }
         }
     }
 
+    // raw
     pub fn from_raw(ptr: *mut T) -> Gc<T> {
-        pin(ptr as *mut libc::c_void);
+        ref_inc(ptr as *mut libc::c_void);
         Gc {
-            ptr: ptr,
-            already_pinned: unsafe {
-                let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-                (*node).pinned
-            }
+            ptr: ptr
         }
     }
     pub fn into_raw(self) -> *mut T {
         self.ptr
     }
 
+    // ptrs
     pub fn to_raw(&self) -> *const T {
         self.ptr
     }
@@ -287,7 +251,7 @@ impl<T: Sized> Gc<T> {
 impl<T> std::ops::Drop for Gc<T> {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
-            unpin(self.ptr as *mut libc::c_void);
+            ref_dec(self.ptr as *mut libc::c_void);
         }
     }
 }
@@ -306,8 +270,7 @@ impl<T> std::convert::AsMut<T> for Gc<T> {
 impl<T> std::clone::Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc {
-            ptr: self.ptr,
-            already_pinned: self.already_pinned
+            ptr: self.ptr
         }
     }
 }
@@ -364,36 +327,22 @@ pub fn collect() {
     });
 }
 #[allow(dead_code)]
-pub fn pin(ptr: *mut c_void) -> bool {
-    if ptr.is_null() { return false; }
+pub fn ref_inc(ptr: *mut c_void) {
+    if ptr.is_null() { return; }
     unsafe{
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        if (*node).pinned { return false; }
-        (*node).pinned = true;
-        true
+        (*node).native_refs += 1;
     }
 }
 #[allow(dead_code)]
-pub fn unpin(ptr: *mut c_void) {
+pub fn ref_dec(ptr: *mut c_void) {
     if ptr.is_null() { return; }
     unsafe{
-    let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-    (*node).pinned = false; }
+        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        (*node).native_refs -= 1;
+    }
 }
-pub fn pin_start() -> usize {
-    let mut p : usize = 0;
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        p = gc_manager.pin_start();
-    });
-    p
-}
-pub fn pin_end(from: usize) {
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        gc_manager.pin_end(from);
-    });
-}
+
 pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
     GcManager::mark_reachable(ptr)
 }

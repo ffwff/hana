@@ -213,7 +213,7 @@ y = x.sort()
         assert_eq!(arr[1].unwrap(), Value::Int(3));
         assert_eq!(arr[2].unwrap(), Value::Int(6));
     }
-/*
+
     #[test]
     fn array_map() {
         let mut vm : Vm = eval!("
@@ -227,6 +227,7 @@ y = a.map(f(x) = x+1)
         assert_eq!(arr[2].unwrap(), Value::Int(65));
         assert_eq!(arr[3].unwrap(), Value::Int(3));
     }
+
     #[test]
     fn array_map_native() {
         let mut vm : Vm = eval!("
@@ -240,6 +241,7 @@ y = a.map(Int)
         assert_eq!(arr[2].unwrap(), Value::Int(3));
     }
 
+/*
     #[test]
     fn array_filter() {
         let mut vm : Vm = eval!("
