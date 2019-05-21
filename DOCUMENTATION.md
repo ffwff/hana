@@ -673,6 +673,16 @@ f = File("/tmp/a", "w") // => opens the file /tmp/a with the writer flag
 f.write("Hello World\n") // => overwrites the file with the string "Hello World\n"
 ```
 
+### Commands
+
+```
+c = Cmd("echo Hello World") // creates a process with the shell command "echo Hello World"
+c = Cmd(["echo", "Hello World"]) // creates a process with args "echo", "Hello World"
+c.out() // => "Hello World\n" (spawns the process and gets its stdout)
+c.err() // => "" (spawns the process and gets its stderr)
+Cmd("cat -").in("hi").out() // => "" (spawns the process with "Hi" passed to its stdin and gets its stdout)
+```
+
 ## Optional libraries
 
 In addition to the standard library, Hana also comes included with some optional libraries that
