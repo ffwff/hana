@@ -1,7 +1,6 @@
 #![feature(vec_remove_item)]
 #![feature(alloc_layout_extra)]
 #![feature(ptr_offset_from)]
-#![allow(dead_code)]
 
 use std::io::{self, Read, Write};
 #[macro_use] extern crate decorator;
