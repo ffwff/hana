@@ -198,25 +198,25 @@ impl Vm {
         // globalenv
         let globalenv = self.global();
         for (_, val) in globalenv.iter() {
-            val.mark();
+            val.trace();
         }
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
-            val.mark();
+            val.trace();
         }
         // call stack
         if !self.localenv.is_null() { unsafe {
             let mut env = self.localenv_bp;
             while env != self.localenv {
                 for val in (*env).slots.as_mut_slice().iter_mut() {
-                    (*val).mark();
+                    (*val).trace();
                 }
                 env = env.add(1);
             }
             env = self.localenv;
             for val in (*env).slots.as_mut_slice().iter_mut() {
-                (*val).mark();
+                (*val).trace();
             }
         } }
     }

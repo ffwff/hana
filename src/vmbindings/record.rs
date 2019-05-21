@@ -2,7 +2,7 @@ use std::any::Any;
 use std::boxed::Box;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
-use super::gc::Gc;
+use super::gc::{Gc, GcTraceable};
 use super::value::Value;
 
 #[repr(C)]
@@ -47,6 +47,14 @@ impl Record {
 
     pub fn iter(&self) -> std::collections::hash_map::Iter<String, NativeValue> {
         self.data.iter()
+    }
+
+}
+
+impl GcTraceable for Record {
+
+    fn trace(ptr: *mut libc::c_void) {
+        unimplemented!()
     }
 
 }

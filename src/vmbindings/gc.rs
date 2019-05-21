@@ -11,7 +11,11 @@ struct GcNode {
     unreachable: bool, // by default this is false
     // if the node is unreachable, it will be pruned (free'd)
     pub native_refs: usize,
-    finalizer: GenericFinalizer
+    tracer: GenericFunction,
+    // tracer gets called sweep phased (FIXME)
+    finalizer: GenericFunction,
+    // finalizer gets called with a pointer to
+    // the data that's about to be freed
 }
 
 impl GcNode {
@@ -24,10 +28,10 @@ impl GcNode {
 
 }
 
-// finalizer
-// gets called with a pointer (represented as *void) to
-// the data that's about to be freed
-type GenericFinalizer = fn(*mut c_void);
+type GenericFunction = fn(*mut c_void);
+// a generic function that takes in some pointer
+// this might be a finalizer or a tracer function
+// TODO maybe replace this with Any
 
 // manager
 const INITIAL_THRESHOLD: usize = 100;
@@ -56,8 +60,8 @@ impl GcManager {
         }
     }
 
-    pub unsafe fn malloc<T: Sized>
-        (&mut self, x: T, finalizer: GenericFinalizer) -> *mut T {
+    pub unsafe fn malloc<T: Sized + GcTraceable>
+        (&mut self, x: T, finalizer: GenericFunction) -> *mut T {
         // free up if over threshold
         /* if cfg!(test) {
             self.collect();
@@ -84,6 +88,7 @@ impl GcManager {
             self.last_node = bytes;
         }
         (*bytes).native_refs = 0;
+        (*bytes).tracer = T::trace;
         (*bytes).finalizer = finalizer;
         (*bytes).size = GcNode::alloc_size::<T>();
         self.bytes_allocated += (*bytes).size;
@@ -213,11 +218,11 @@ thread_local! {
 }
 
 // gc struct
-pub struct Gc<T: Sized> {
+pub struct Gc<T: Sized + GcTraceable> {
     ptr: *mut T
 }
 
-impl<T: Sized> Gc<T> {
+impl<T: Sized + GcTraceable> Gc<T> {
     pub fn new(val: T) -> Gc<T> {
         Gc {
             ptr: unsafe {
@@ -251,7 +256,7 @@ impl<T: Sized> Gc<T> {
     }
 }
 
-impl<T> std::ops::Drop for Gc<T> {
+impl<T: Sized + GcTraceable> std::ops::Drop for Gc<T> {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
             ref_dec(self.ptr as *mut libc::c_void);
@@ -259,18 +264,18 @@ impl<T> std::ops::Drop for Gc<T> {
     }
 }
 
-impl<T> std::convert::AsRef<T> for Gc<T> {
+impl<T: Sized + GcTraceable> std::convert::AsRef<T> for Gc<T> {
     fn as_ref(&self) -> &T {
         unsafe{ &*self.ptr }
     }
 }
-impl<T> std::convert::AsMut<T> for Gc<T> {
+impl<T: Sized + GcTraceable> std::convert::AsMut<T> for Gc<T> {
     fn as_mut(&mut self) -> &mut T {
         unsafe{ &mut *self.ptr }
     }
 }
 
-impl<T> std::clone::Clone for Gc<T> {
+impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc {
             ptr: self.ptr
@@ -278,8 +283,17 @@ impl<T> std::clone::Clone for Gc<T> {
     }
 }
 
+pub trait GcTraceable {
+    fn trace(ptr: *mut libc::c_void);
+}
+
+// native traceables
+impl GcTraceable for String {
+    fn trace(ptr: *mut libc::c_void) {}
+}
+
 // general
-pub unsafe fn malloc<T: Sized>(x: T, finalizer: GenericFinalizer) -> *mut T {
+pub unsafe fn malloc<T: Sized + GcTraceable>(x: T, finalizer: GenericFunction) -> *mut T {
     let mut alloced: *mut T = null_mut();
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();

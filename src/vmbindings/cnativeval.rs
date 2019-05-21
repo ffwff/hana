@@ -3,7 +3,7 @@ use super::record::Record;
 use super::function::Function;
 use super::carray::CArray;
 use super::value::{Value, NativeFnData};
-use super::gc::{mark_reachable, Gc};
+use super::gc::{mark_reachable, Gc, GcTraceable};
 
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
@@ -56,16 +56,17 @@ impl NativeValue {
         }
     }
 
-    pub fn mark(&self) {
-        match self.r#type {
-            _valueType::TYPE_FN   |
-            _valueType::TYPE_STR  |
-            _valueType::TYPE_DICT |
-            _valueType::TYPE_ARRAY  =>
-                if unsafe{ mark_reachable(self.data as *mut c_void) } {
-                    self.unwrap().mark(); },
-            _ => {}
-        }
+    pub fn trace(&self) {
+        // TODO
+    }
+
+}
+
+impl GcTraceable for NativeValue {
+
+    fn trace(ptr: *mut libc::c_void) {
+        let self_ = unsafe{ &*(ptr as *mut NativeValue) };
+        unimplemented!()
     }
 
 }

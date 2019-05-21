@@ -103,27 +103,6 @@ impl Value {
         } }
     }
 
-    // gc
-    pub fn mark(&self) {
-        unimplemented!()
-        /* match &self {
-            Value::Fn(f)       => {
-                f.mark();
-            },
-            Value::Record(d)   => {
-                for (_, val) in d.iter() {
-                    val.mark();
-                }
-            },
-            Value::Array(a)    => {
-                for val in a.iter() {
-                    val.mark();
-                }
-            },
-            _ => {}
-        } */
-    }
-
     // prototype
     pub fn get_prototype(&self, vm: *const Vm) -> *const Record {
         unsafe{ value_get_prototype(vm, self.wrap()) }

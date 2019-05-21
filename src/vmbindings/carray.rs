@@ -1,5 +1,7 @@
 use std::ptr::null_mut;
 use std::alloc::{alloc_zeroed, realloc, dealloc, Layout};
+use crate::vmbindings::cnativeval::NativeValue;
+use crate::vmbindings::gc::GcTraceable;
 
 #[repr(C)]
 pub struct CArray<T> {
@@ -230,4 +232,14 @@ impl<'a, T> std::iter::Iterator for ArrayIter<'a, T> {
         self.idx += 1;
         ret
     }
+}
+
+// gc traceable
+impl GcTraceable for CArray<NativeValue> {
+
+    fn trace(ptr: *mut libc::c_void) {
+        let self_ = unsafe{ &*(ptr as *mut NativeValue) };
+        unimplemented!()
+    }
+
 }
