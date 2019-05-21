@@ -24,7 +24,7 @@ struct string;
 #define TYPE_INTERPRETER_ITERATOR 128
 
 typedef void (*value_fn)(struct vm *vm, int nargs);
-struct __attribute__((packed)) value {
+struct value {
     union {
         int64_t integer;
         double floatp;
