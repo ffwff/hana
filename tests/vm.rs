@@ -166,7 +166,7 @@ pub mod vm_tests {
     }
     // #endregion
 
-    // #region vars
+    // #region unary ops
     #[test]
     fn op_not() {
         gc::disable();
@@ -179,5 +179,32 @@ pub mod vm_tests {
         assert_eq!(vm.stack.len(), 1);
         assert_eq!(vm.stack.top().unwrap(), Value::Int(0));
     }
+
+    #[test]
+    fn negate_int() {
+        gc::disable();
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSH8);
+        vm.cpush8(1);
+        vm.code.push(VmOpcode::OP_NEGATE);
+        vm.code.push(VmOpcode::OP_HALT);
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Int(-1));
+    }
+
+    #[test]
+    fn negate_float() {
+        gc::disable();
+        let mut vm = Vm::new();
+        vm.code.push(VmOpcode::OP_PUSHF64);
+        vm.cpushf64(1.5);
+        vm.code.push(VmOpcode::OP_NEGATE);
+        vm.code.push(VmOpcode::OP_HALT);
+        vm.execute();
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack.top().unwrap(), Value::Float(-1.5));
+    }
     // #endregion
+
 }

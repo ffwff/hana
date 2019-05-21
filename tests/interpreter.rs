@@ -192,7 +192,7 @@ end
     }
 
     #[test]
-    fn for_in_stmt_record() {
+    fn for_in_stmt_iterator() {
         let mut vm : Vm = eval!("
 record x
 
@@ -443,6 +443,17 @@ end
 y = A.x
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn memexpr_indexed_record() {
+        let mut vm : Vm = eval!("
+record A
+    x = 10
+end
+y = A['x']
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
     }
 
     #[test]
