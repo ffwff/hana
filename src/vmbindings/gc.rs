@@ -136,10 +136,12 @@ impl GcManager {
             let mut node : *mut GcNode = self.first_node;
             while !node.is_null() {
                 let next : *mut GcNode = (*node).next;
-                (*node).unreachable = true;
                 if (*node).native_refs > 0 {
                     // TODO
+                    (*node).unreachable = false;
                     ((*node).tracer)(node.add(1) as *mut c_void);
+                } else {
+                    (*node).unreachable = true;
                 }
                 node = next;
             }

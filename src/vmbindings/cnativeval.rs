@@ -57,19 +57,22 @@ impl NativeValue {
     }
 
     pub fn trace(&self) {
-        unsafe{ mark_reachable(self.data as *mut libc::c_void); }
+        if self.data == 0 { return; } // uninitialized memory
         #[allow(non_camel_case_types)]
         match self.r#type {
             _valueType::TYPE_FN         => unsafe {
+                mark_reachable(self.data as *mut libc::c_void);
                 Function::trace(self.data as *mut libc::c_void)
             },
             _valueType::TYPE_STR        => unsafe {
-                String::trace(self.data as *mut libc::c_void)
+                mark_reachable(self.data as *mut libc::c_void);
             },
             _valueType::TYPE_DICT       => unsafe {
+                mark_reachable(self.data as *mut libc::c_void);
                 Record::trace(self.data as *mut libc::c_void)
             },
             _valueType::TYPE_ARRAY      => unsafe {
+                mark_reachable(self.data as *mut libc::c_void);
                 CArray::trace(self.data as *mut libc::c_void)
             },
             _ => {}
