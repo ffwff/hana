@@ -90,10 +90,11 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 #[hana_function()]
 fn chars(s: Value::Str) -> Value {
     let mut array = Gc::new(CArray::new());
-    let chars = s.as_ref().chars().map(|s| Value::Str(Gc::new(s.to_string())));
-    for ch in chars {
-        array.as_mut().push(ch.wrap());
+    let array_ref = array.as_mut();
+    for ch in s.as_ref().chars() {
+        array_ref.push(Value::Str(Gc::new(ch.to_string())).wrap());
     }
+    eprintln!("{:?}", array_ref[0].unwrap());
     Value::Array(array)
 }
 
