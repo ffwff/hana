@@ -8,11 +8,15 @@ use super::vm::{Vm, Value};
 use super::env::Env;
 use super::exframe::ExFrame;
 
+extern crate unicode_segmentation;
+use unicode_segmentation::UnicodeSegmentation;
+
+
 #[allow(unused_attributes)]
 pub mod foreignc {
 
 use std::ffi::CStr;
-use std::ptr::null;
+use std::ptr::{null, null_mut};
 use super::*;
 
 // #region hmap
@@ -111,7 +115,11 @@ pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String)
 #[no_mangle]
 pub unsafe extern "C" fn string_at(left: *const String, idx : i64) -> *mut String {
     let left : &'static String = &*left;
-    Gc::new(left.chars().nth(idx as usize).unwrap().to_string()).into_raw()
+    if let Some(ch) = left.graphemes(true).nth(idx as usize) {
+        Gc::new(ch.to_string()).into_raw()
+    } else {
+        null_mut()
+    }
 }
 
 #[no_mangle]
@@ -124,7 +132,7 @@ pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
 pub unsafe extern "C" fn string_chars(s: *const String) -> *mut CArray<NativeValue> {
     let s : &'static String = &*s;
     let chars = Gc::new(CArray::new());
-    for ch in s.chars() {
+    for ch in s.graphemes(true) {
         chars.as_mut().push(Value::Str(Gc::new(ch.to_string())).wrap());
     }
     chars.into_raw()
@@ -143,7 +151,7 @@ pub unsafe extern "C" fn string_repeat_in_place(left: *mut String, n : i64) {
     if n == 0 { left.clear(); }
     else if n == 1 { return; }
     let orig = left.clone();
-    for _ in (0..n-1) {
+    for _ in 0..n-1 {
         left.push_str(orig.as_str());
     }
 }

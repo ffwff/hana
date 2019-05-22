@@ -858,20 +858,20 @@ do { \
             };
             array_push(vm->stack, val);
             array_push(vm->stack, chars->data[0]);
-            break;
-        }
+            break; }
         case TYPE_ARRAY: {
             if (top->as.array->length == 0) { // skip empty
                 vm->ip += pos;
                 array_pop(vm->stack);
                 dispatch();
             }
+            const struct value top_copy = *top;
             struct value val = {
                 .as.integer = 1,
                 .type = TYPE_INTERPRETER_ITERATOR
             };
             array_push(vm->stack, val);
-            array_push(vm->stack, top->as.array->data[0]);
+            array_push(vm->stack, top_copy.as.array->data[0]);
             break; }
         case TYPE_DICT: {
             struct dict *dict = top->as.dict;

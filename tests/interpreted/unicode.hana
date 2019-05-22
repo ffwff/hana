@@ -1,0 +1,4 @@
+y="λκj"
+for x in y.chars() begin
+    print(x)
+end

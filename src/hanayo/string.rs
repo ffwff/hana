@@ -1,3 +1,6 @@
+extern crate unicode_segmentation;
+use unicode_segmentation::UnicodeSegmentation;
+
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vm::Value;
@@ -19,7 +22,6 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
 // length
 #[hana_function()]
 fn length(s: Value::Str) -> Value {
-    // NOTE: this is an O(n) operation due to utf8 decoding
     Value::Int(s.as_ref().chars().count() as i64)
 }
 #[hana_function()]
@@ -40,31 +42,55 @@ fn endswith(s: Value::Str, left: Value::Str) -> Value {
 // basic manip
 #[hana_function()]
 fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
-    let from_pos_u = from_pos as usize;
-    let nchars_u = nchars as usize;
-    let mut new_s = s.as_ref().clone();
-    new_s.replace_range(from_pos_u..from_pos_u+nchars_u, "");
-    Value::Str(Gc::new(new_s))
+    let from_pos = from_pos as usize;
+    let nchars = nchars as usize;
+    let ss = s.as_ref().graphemes(true)
+                .enumerate()
+                .filter_map(|(i, ch)| {
+                    if (from_pos..(from_pos+nchars)).contains(&i) { None }
+                    else { Some(ch) }
+                })
+                .collect::<String>();
+    Value::Str(Gc::new(ss))
 }
+
 #[hana_function()]
 fn delete_(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
-    let from_pos_u = from_pos as usize;
-    let nchars_u = nchars as usize;
-    s.as_mut().replace_range(from_pos_u..from_pos_u+nchars_u, "");
+    let from_pos = from_pos as usize;
+    let nchars = nchars as usize;
+    let mut it = s.as_ref().grapheme_indices(true).skip(from_pos);
+    if let Some((i, _)) = it.clone().take(1).next() {
+        println!("{}", i);
+        if let Some((j, _)) = it.skip(nchars).take(1).next() {
+            println!("{}", j);
+            s.as_mut().replace_range(i..j, "");
+        } else {
+            s.as_mut().remove(i);
+        }
+    }
     Value::Str(s)
 }
 
 #[hana_function()]
 fn copy(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
-    let from_pos_u = from_pos as usize;
-    let nchars_u = nchars as usize;
-    Value::Str(Gc::new(s.as_ref()[from_pos_u..from_pos_u+nchars_u].to_string()))
+    let from_pos = from_pos as usize;
+    let nchars = nchars as usize;
+    let ss = s.as_ref().graphemes(true)
+                .enumerate()
+                .filter_map(|(i, ch)| {
+                    if (from_pos..(from_pos+nchars)).contains(&i) { Some(ch) }
+                    else { None }
+                })
+                .collect::<String>();
+    Value::Str(Gc::new(ss))
 }
 
 #[hana_function()]
 fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
-    let from_pos_u = from_pos as usize;
-    dst.as_mut().insert_str(from_pos_u, src.as_ref().as_str());
+    let from_pos = from_pos as usize;
+    if let Some((i, _)) = dst.as_ref().grapheme_indices(true).skip(from_pos).next() {
+        dst.as_mut().insert_str(i, src.as_ref().as_str());
+    }
     Value::Str(dst)
 }
 
@@ -80,6 +106,7 @@ fn split(s: Value::Str, delim: Value::Str) -> Value {
 
 #[hana_function()]
 fn index(s: Value::Str, needle: Value::Str) -> Value {
+    // TODO port to unicode graphemes
     match s.as_ref().find(needle.as_ref()) {
         Some(x) => Value::Int(x as i64),
         None => Value::Int(-1)
@@ -90,7 +117,7 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 fn chars(s: Value::Str) -> Value {
     let array = Gc::new(CArray::new());
     let array_ref = array.as_mut();
-    for ch in s.as_ref().chars() {
+    for ch in s.as_ref().graphemes(true) {
         array_ref.push(Value::Str(Gc::new(ch.to_string())).wrap());
     }
     Value::Array(array)
