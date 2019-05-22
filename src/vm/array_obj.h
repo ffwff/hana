@@ -5,7 +5,6 @@ extern "C" {
 
 #include <stdbool.h>
 #include "array.h"
-#include "value.h"
 
 typedef array(struct value) array_obj;
 array_obj *array_obj_malloc(void);

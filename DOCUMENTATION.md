@@ -88,6 +88,8 @@ The statement evaluates `[object]`.
 
 * If `[object]` is an array, it will continuously set the variable `[var]` to every value
 in the array and evaluate `[statement]`.
+* If `[object]` is a string, it will continuously set the variable `[var]` to every character
+in the string and evaluate `[statement]`.
 * If `[object]` is an iterator, it will continuously evaluate the record's `next` function
 until the record has a `stopped` key set.
 * Otherwise, the interpreter will panic.
@@ -441,8 +443,8 @@ Note that the `$` identifier will just refer to the `$` identifier.
 
 Basic types include:
 
- * `String`: string
- * `Int`: 64-bit int
+ * `String`: UTF-8 encoded string
+ * `Int`: 64-bit signed integer
  * `Float`: 64-bit double precision floating point
  * `Function`: function
  * `Record`: records
@@ -505,7 +507,8 @@ the function.
 
 ## Strings
 
-Strings are mutable UTF-8 strings.
+Strings are mutable UTF-8 strings. Characters in hana are Unicode code points rather
+than raw bytes.
 
 ```
 name = "Alice"

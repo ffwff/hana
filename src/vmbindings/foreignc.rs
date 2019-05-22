@@ -1,10 +1,10 @@
 use super::chmap::CHashMap;
 use super::carray::CArray;
 use super::function::Function;
-use super::cnativeval::NativeValue;
 use super::record::Record;
 use super::gc::Gc;
-use super::vm::Vm;
+use super::cnativeval::NativeValue;
+use super::vm::{Vm, Value};
 use super::env::Env;
 use super::exframe::ExFrame;
 
@@ -118,6 +118,16 @@ pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut Stri
 pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
     let left : &'static String = &*s;
     left.is_empty()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn string_chars(s: *const String) -> *mut CArray<NativeValue> {
+    let s : &'static String = &*s;
+    let chars = Gc::new(CArray::new());
+    for ch in s.chars() {
+        chars.as_mut().push(Value::Str(Gc::new(ch.to_string())).wrap());
+    }
+    chars.into_raw()
 }
 // #endregion
 

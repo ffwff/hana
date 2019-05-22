@@ -1,5 +1,5 @@
 #pragma once
-#include "array.h"
+#include "array_obj.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -10,3 +10,4 @@ struct string *string_repeat(const struct string *left, int64_t n);
 bool string_is_empty(const struct string *str);
 int string_cmp(const struct string *left, const struct string *right);
 struct string *string_at(const struct string *str, int64_t n);
+array_obj *string_chars(const struct string *str);

@@ -806,9 +806,27 @@ do { \
         struct value *top = &array_top(vm->stack);
         switch(top->type) {
         // setup
+        case TYPE_STR: {
+            array_obj *chars = string_chars(top->as.str);
+            array_pop(vm->stack);
+            struct value val = {0};
+            val = (struct value){
+                .as.array = chars,
+                .type = TYPE_ARRAY
+            };
+            array_push(vm->stack, val);
+            val = (struct value){
+                .as.integer = 1,
+                .type = TYPE_INTERPRETER_ITERATOR
+            };
+            array_push(vm->stack, val);
+            array_push(vm->stack, chars->data[0]);
+            break;
+        }
         case TYPE_ARRAY: {
             if (top->as.array->length == 0) { // skip empty
                 vm->ip += pos;
+                array_pop(vm->stack);
                 dispatch();
             }
             struct value val = {

@@ -189,6 +189,18 @@ for i in [] begin
 end
 ");
         assert!(vm.global().get("i").is_none());
+        assert_eq!(vm.stack.len(), 0);
+    }
+
+    #[test]
+    fn for_in_stmt_string() {
+        let mut vm : Vm = eval!("
+y = 0
+for i in 'abcd' begin
+    y += 1
+end
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(4));
     }
 
     #[test]
