@@ -63,6 +63,7 @@ impl GcManager {
     pub unsafe fn malloc<T: Sized + GcTraceable>
         (&mut self, x: T, finalizer: GenericFunction) -> *mut T {
         // free up if over threshold
+        self.collect(); // TODO FIXME
         /* if cfg!(test) {
             self.collect();
         } else if self.bytes_allocated > self.threshold {
@@ -138,6 +139,7 @@ impl GcManager {
                 (*node).unreachable = true;
                 if (*node).native_refs > 0 {
                     // TODO
+                    ((*node).tracer)(node.add(1) as *mut c_void);
                 }
                 node = next;
             }
@@ -348,6 +350,7 @@ pub fn ref_inc(ptr: *mut c_void) {
     if ptr.is_null() { return; }
     unsafe{
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        eprintln!("INC {:p}", node);
         (*node).native_refs += 1;
     }
 }
@@ -356,6 +359,7 @@ pub fn ref_dec(ptr: *mut c_void) {
     if ptr.is_null() { return; }
     unsafe{
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        eprintln!("DEC {:p}", node);
         (*node).native_refs -= 1;
     }
 }

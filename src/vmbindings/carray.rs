@@ -238,8 +238,10 @@ impl<'a, T> std::iter::Iterator for ArrayIter<'a, T> {
 impl GcTraceable for CArray<NativeValue> {
 
     fn trace(ptr: *mut libc::c_void) {
-        let self_ = unsafe{ &*(ptr as *mut NativeValue) };
-        unimplemented!()
+        let self_ = unsafe{ &*(ptr as *mut Self) };
+        for val in self_.iter() {
+            val.trace();
+        }
     }
 
 }

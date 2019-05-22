@@ -57,16 +57,23 @@ impl NativeValue {
     }
 
     pub fn trace(&self) {
-        // TODO
-    }
-
-}
-
-impl GcTraceable for NativeValue {
-
-    fn trace(ptr: *mut libc::c_void) {
-        let self_ = unsafe{ &*(ptr as *mut NativeValue) };
-        unimplemented!()
+        unsafe{ mark_reachable(self.data as *mut libc::c_void); }
+        #[allow(non_camel_case_types)]
+        match self.r#type {
+            _valueType::TYPE_FN         => unsafe {
+                Function::trace(self.data as *mut libc::c_void)
+            },
+            _valueType::TYPE_STR        => unsafe {
+                String::trace(self.data as *mut libc::c_void)
+            },
+            _valueType::TYPE_DICT       => unsafe {
+                Record::trace(self.data as *mut libc::c_void)
+            },
+            _valueType::TYPE_ARRAY      => unsafe {
+                CArray::trace(self.data as *mut libc::c_void)
+            },
+            _ => {}
+        }
     }
 
 }
