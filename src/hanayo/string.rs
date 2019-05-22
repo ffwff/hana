@@ -74,8 +74,7 @@ fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
 fn split(s: Value::Str, delim: Value::Str) -> Value {
     let mut array = Gc::new(CArray::new());
     for ss in s.as_ref().split(delim.as_ref()) {
-        let gc = Gc::new(ss.clone().to_string());
-        array.as_mut().push(Value::Str(gc).wrap());
+        array.as_mut().push(Value::Str(Gc::new(ss.clone().to_string())).wrap());
     }
     Value::Array(array)
 }
@@ -91,7 +90,6 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 #[hana_function()]
 fn chars(s: Value::Str) -> Value {
     let mut array = Gc::new(CArray::new());
-    eprintln!("CHARS ARRAY {:p}", array.as_ref());
     let array_ref = array.as_mut();
     for ch in s.as_ref().chars() {
         array_ref.push(Value::Str(Gc::new(ch.to_string())).wrap());
