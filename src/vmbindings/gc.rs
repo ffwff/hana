@@ -63,8 +63,10 @@ impl GcManager {
     pub unsafe fn malloc<T: Sized + GcTraceable>
         (&mut self, x: T, finalizer: GenericFunction) -> *mut T {
         // free up if over threshold
-        self.collect();
-        /* else if self.bytes_allocated > self.threshold {
+        self.collect(); // TODO FIXME
+        /* if cfg!(test) {
+            self.collect();
+        } else if self.bytes_allocated > self.threshold {
             self.collect();
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
@@ -136,7 +138,8 @@ impl GcManager {
                 let next : *mut GcNode = (*node).next;
                 (*node).unreachable = true;
                 if (*node).native_refs > 0 {
-                    ((*node).tracer)(node.add(1) as *mut libc::c_void);
+                    // TODO
+                    ((*node).tracer)(node.add(1) as *mut c_void);
                 }
                 node = next;
             }
