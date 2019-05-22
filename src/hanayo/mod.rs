@@ -2,7 +2,7 @@ use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::*;
-use crate::vmbindings::gc::*;
+use crate::vmbindings::gc::{Gc, ref_inc};
 
 mod io;
 mod file;
@@ -23,7 +23,7 @@ pub fn init(vm : &mut Vm) {
         ($x:literal, $y:expr) => (globalenv.insert($x.to_string(), $y.wrap()));
     }
     macro_rules! set_obj_var {
-        ($o: expr, $x:literal, $y:expr) => ($o.insert($x.to_string(), $y.wrap()));
+        ($o: expr, $x:literal, $y:expr) => ($o.as_mut().insert($x.to_string(), $y.wrap()));
     }
     // constants
     set_var!("nil", Value::Nil);
@@ -40,12 +40,9 @@ pub fn init(vm : &mut Vm) {
     // maths
     set_var!("sqrt", Value::NativeFn(math::sqrt));
 
-    // builtin objects
-    let rec_free = |ptr| unsafe{ drop::<Record>(ptr) };
-
     // #region array
     {
-    let mut array : Record = Record::new();
+    let mut array = Gc::new(Record::new());
     set_obj_var!(array, "constructor", Value::NativeFn(array::constructor));
     set_obj_var!(array, "length",      Value::NativeFn(array::length));
     set_obj_var!(array, "insert!",     Value::NativeFn(array::insert_));
@@ -59,16 +56,14 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(array, "reduce",      Value::NativeFn(array::reduce));
     set_obj_var!(array, "index",       Value::NativeFn(array::index));
     set_obj_var!(array, "join",        Value::NativeFn(array::join));
-
-    let ptr = unsafe { malloc(array, rec_free) };
-    set_var!("Array", Value::Record(unsafe{ &*ptr }));
-    vm.darray = ptr; pin(ptr as *mut libc::c_void);
+    vm.darray = array.to_mut_raw(); ref_inc(vm.darray as *mut libc::c_void);
+    set_var!("Array", Value::Record(array));
     }
     // #endregion
 
     // #region string
     {
-    let mut string : Record = Record::new();
+    let mut string = Gc::new(Record::new());
     set_obj_var!(string, "constructor", Value::NativeFn(string::constructor));
     set_obj_var!(string, "length",      Value::NativeFn(string::length));
     set_obj_var!(string, "bytesize",    Value::NativeFn(string::bytesize));
@@ -82,51 +77,43 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(string, "index",       Value::NativeFn(string::index));
     set_obj_var!(string, "chars",       Value::NativeFn(string::chars));
     set_obj_var!(string, "ord",         Value::NativeFn(string::ord));
-
-    let ptr = unsafe { malloc(string, rec_free) };
-    set_var!("String", Value::Record(unsafe{ &*ptr }));
-    vm.dstr = ptr; pin(ptr as *mut libc::c_void);
+    vm.dstr = string.to_mut_raw(); ref_inc(vm.dstr as *mut libc::c_void);
+    set_var!("String", Value::Record(string));
     }
     // #endregion
 
     // #region int
     {
-    let mut int : Record = Record::new();
+    let mut int = Gc::new(Record::new());
     set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
     set_obj_var!(int, "chr",         Value::NativeFn(int::chr));
-
-    let ptr = unsafe { malloc(int, rec_free) };
-    set_var!("Int", Value::Record(unsafe{ &*ptr }));
-    vm.dint = ptr; pin(ptr as *mut libc::c_void);
+    vm.dint = int.to_mut_raw(); ref_inc(vm.dint as *mut libc::c_void);
+    set_var!("Int", Value::Record(int));
     }
     // #endregion
 
     // #region float
     {
-    let mut float : Record = Record::new();
+    let mut float = Gc::new(Record::new());
     set_obj_var!(float, "constructor", Value::NativeFn(float::constructor));
-
-    let ptr = unsafe { malloc(float, rec_free) };
-    set_var!("Float", Value::Record(unsafe{ &*ptr }));
-    vm.dfloat = ptr; pin(ptr as *mut libc::c_void);
+    vm.dfloat = float.to_mut_raw(); ref_inc(vm.dfloat as *mut libc::c_void);
+    set_var!("Float", Value::Record(float));
     }
     // #endregion
 
     // #region record
     {
-    let mut record : Record = Record::new();
+    let mut record = Gc::new(Record::new());
     set_obj_var!(record, "constructor", Value::NativeFn(record::constructor));
     set_obj_var!(record, "keys",        Value::NativeFn(record::keys));
-
-    let ptr = unsafe { malloc(record, rec_free) };
-    set_var!("Record", Value::Record(unsafe{ &*ptr }));
-    vm.drec = ptr; pin(ptr as *mut libc::c_void);
+    vm.drec = record.to_mut_raw(); ref_inc(vm.drec as *mut libc::c_void);
+    set_var!("Record", Value::Record(record));
     }
     // #endregion
 
     // #region files
     {
-    let mut file : Record = Record::new();
+    let mut file = Gc::new(Record::new());
     set_obj_var!(file, "constructor", Value::NativeFn(file::constructor));
     set_obj_var!(file, "close",       Value::NativeFn(file::close));
     set_obj_var!(file, "read",        Value::NativeFn(file::read));
@@ -135,35 +122,29 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(file, "seek",        Value::NativeFn(file::seek));
     set_obj_var!(file, "seek_from_start", Value::NativeFn(file::seek_from_start));
     set_obj_var!(file, "seek_from_end",   Value::NativeFn(file::seek_from_end));
-
-    let ptr = unsafe { malloc(file, rec_free) };
-    set_var!("File", Value::Record(unsafe{ &*ptr }));
+    set_var!("File", Value::Record(file));
     }
     // #endregion
 
     // #region cmd
     {
-    let mut cmd : Record = Record::new();
+    let mut cmd = Gc::new(Record::new());
     set_obj_var!(cmd, "constructor",  Value::NativeFn(cmd::constructor));
     set_obj_var!(cmd, "in" ,          Value::NativeFn(cmd::in_));
     set_obj_var!(cmd, "out",          Value::NativeFn(cmd::out));
     set_obj_var!(cmd, "err",          Value::NativeFn(cmd::err));
     set_obj_var!(cmd, "outputs",      Value::NativeFn(cmd::outputs));
-
-    let ptr = unsafe { malloc(cmd, rec_free) };
-    set_var!("Cmd", Value::Record(unsafe{ &*ptr }));
+    set_var!("Cmd", Value::Record(cmd));
     }
     // #endregion
 
     // #region env
     {
-    let mut env : Record = Record::new();
+    let mut env = Gc::new(Record::new());
     set_obj_var!(env, "get",  Value::NativeFn(env::get));
     set_obj_var!(env, "set",  Value::NativeFn(env::set));
     set_obj_var!(env, "vars", Value::NativeFn(env::vars));
-
-    let ptr = unsafe { malloc(env, rec_free) };
-    set_var!("Env", Value::Record(unsafe{ &*ptr }));
+    set_var!("Env", Value::Record(env));
     }
     // #endregion
 

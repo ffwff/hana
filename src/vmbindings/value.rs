@@ -3,6 +3,7 @@ use super::carray::CArray;
 use super::function::Function;
 use super::vm::Vm;
 use super::cnativeval::{NativeValue, _valueType};
+use super::gc::Gc;
 extern crate libc;
 
 pub type NativeFnData = extern fn(*mut Vm, u16);
@@ -20,16 +21,10 @@ pub enum Value {
     Int(i64),
     Float(f64),
     NativeFn(NativeFnData),
-    Fn(&'static Function),
-    Str(&'static String),
-    Record(&'static Record),
-    Array(&'static CArray<NativeValue>),
-
-    // mut wrappers
-    mut_Fn(*mut Function),
-    mut_Str(*mut String),
-    mut_Record(*mut Record),
-    mut_Array(*mut CArray<NativeValue>),
+    Fn(Gc<Function>),
+    Str(Gc<String>),
+    Record(Gc<Record>),
+    Array(Gc<CArray<NativeValue>>),
 }
 
 #[allow(improper_ctypes)]
@@ -60,7 +55,7 @@ impl Value {
     #[cfg_attr(tarpaulin, skip)]
     pub fn string(&self) -> &'static String {
         match self {
-            Value::Str(s) => s,
+            Value::Str(s) => unsafe { &*s.to_raw() },
             _ => { panic!("Expected string"); }
         }
     }
@@ -68,7 +63,7 @@ impl Value {
     #[cfg_attr(tarpaulin, skip)]
     pub fn array(&self) -> &'static CArray<NativeValue> {
         match self {
-            Value::Array(s) => s,
+            Value::Array(s) => unsafe { &*s.to_raw() },
             _ => { panic!("Expected array"); }
         }
     }
@@ -76,11 +71,10 @@ impl Value {
     #[cfg_attr(tarpaulin, skip)]
     pub fn record(&self) -> &'static Record {
         match self {
-            Value::Record(rec) => rec,
+            Value::Record(rec) => unsafe { &*rec.to_raw() },
             _ => { panic!("Expected record"); }
         }
     }
-
     // #endregion
 
     // wrapper for native
@@ -97,55 +91,16 @@ impl Value {
                                                 data: transmute::<f64, u64>(*n)             },
             Value::NativeFn(f) => NativeValue { r#type: _valueType::TYPE_NATIVE_FN,
                                                 data: transmute::<NativeFnData, u64>(*f) },
-            Value::Fn(f)       => NativeValue { r#type: _valueType::TYPE_FN,
-                                                data: transmute::<*const Function, u64>(*f) },
-            Value::Str(s)      => NativeValue { r#type: _valueType::TYPE_STR,
-                                                data: transmute::<*const String, u64>(*s) },
-            Value::Record(d)   => NativeValue { r#type: _valueType::TYPE_DICT,
-                                                data: transmute::<*const Record, u64>(*d) },
-            Value::Array(a)    => NativeValue { r#type: _valueType::TYPE_ARRAY,
-                                                data: transmute::<*const CArray<NativeValue>, u64>(*a) },
+            Value::Fn(p)       => NativeValue { r#type: _valueType::TYPE_FN,
+                                                data: transmute::<*const Function, u64>(p.to_raw()) },
+            Value::Str(p)      => NativeValue { r#type: _valueType::TYPE_STR,
+                                                data: transmute::<*const String, u64>(p.to_raw()) },
+            Value::Record(p)   => NativeValue { r#type: _valueType::TYPE_DICT,
+                                                data: transmute::<*const Record, u64>(p.to_raw()) },
+            Value::Array(p)    => NativeValue { r#type: _valueType::TYPE_ARRAY,
+                                                data: transmute::<*const CArray<NativeValue>, u64>(p.to_raw()) },
             _ => unimplemented!()
         } }
-    }
-
-    // gc
-    pub fn mark(&self) {
-        match &self {
-            Value::Fn(f)       => {
-                f.mark();
-            },
-            Value::Record(d)   => {
-                for (_, val) in d.iter() {
-                    val.mark();
-                }
-            },
-            Value::Array(a)    => {
-                for val in a.iter() {
-                    val.mark();
-                }
-            },
-            _ => {}
-        }
-    }
-
-    pub fn pin_rec(&self) {
-        match &self {
-            Value::Fn(f)       => {
-                f.pin();
-            },
-            Value::Record(d)   => {
-                for (_, val) in d.iter() {
-                    val.pin();
-                }
-            },
-            Value::Array(a)    => {
-                for val in a.iter() {
-                    val.pin();
-                }
-            },
-            _ => {}
-        }
     }
 
     // prototype
@@ -171,8 +126,8 @@ impl PartialEq for Value {
             (Value::Int(x),    Value::Int(y))          => x == y,
             (Value::Float(x),  Value::Float(y))        => x == y,
             (Value::NativeFn(x), Value::NativeFn(y))   => std::ptr::eq(x, y),
-            (Value::Fn(x),     Value::Fn(y))           => std::ptr::eq(x, y),
-            (Value::Str(x),    Value::Str(y))          => x == y,
+            (Value::Fn(x),     Value::Fn(y))           => x.ptr_eq(y),
+            (Value::Str(x),    Value::Str(y))          => x.as_ref() == y.as_ref(),
             (Value::Record(_), Value::Record(_))       => false,
             (Value::Array(_),  Value::Array(_))        => false,
             _ => false
@@ -189,9 +144,9 @@ impl fmt::Debug for Value {
             Value::Float(n)     => write!(f, "{}", n),
             Value::NativeFn(_)  => write!(f, "[native fn]"),
             Value::Fn(_)        => write!(f, "[fn]"),
-            Value::Str(s)       => write!(f, "{}", s),
-            Value::Record(p)    => write!(f, "[record {:p}]", p),
-            Value::Array(p)     => write!(f, "[array {:p}]", p),
+            Value::Str(p)       => write!(f, "{}", p.as_ref()),
+            Value::Record(p)    => write!(f, "[record]"),
+            Value::Array(p)     => write!(f, "[array]"),
             _ => write!(f, "[unk]")
         }
     }

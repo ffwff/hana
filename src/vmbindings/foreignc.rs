@@ -3,7 +3,7 @@ use super::carray::CArray;
 use super::function::Function;
 use super::cnativeval::NativeValue;
 use super::record::Record;
-use super::gc::{malloc, drop};
+use super::gc::Gc;
 use super::vm::Vm;
 use super::env::Env;
 use super::exframe::ExFrame;
@@ -38,7 +38,7 @@ pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char,
 // #region dict
 #[no_mangle]
 pub unsafe extern "C" fn dict_malloc() -> *mut Record {
-    malloc(Record::new(), |ptr| drop::<Record>(ptr))
+    Gc::new(Record::new()).into_raw()
 }
 
 #[no_mangle]
@@ -81,7 +81,7 @@ pub unsafe extern "C" fn dict_set_str(cr: *mut Record, ckey: *const String, val:
 #[no_mangle]
 pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char) -> *mut String {
     let s = CStr::from_ptr(cstr).to_str().unwrap();
-    malloc(String::from(s), |ptr| drop::<String>(ptr))
+    Gc::new(String::from(s)).into_raw()
 }
 
 #[no_mangle]
@@ -90,13 +90,13 @@ pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const Stri
     let right : &'static String = &*cright;
     let mut newleft = left.clone();
     newleft += right;
-    malloc(newleft, |ptr| drop::<String>(ptr))
+    Gc::new(newleft).into_raw()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn string_repeat(cleft: *const String, n : i64) -> *mut String {
     let left : &'static String = &*cleft;
-    malloc(left.repeat(n as usize), |ptr| drop::<String>(ptr))
+    Gc::new(left.repeat(n as usize)).into_raw()
 }
 
 #[no_mangle]
@@ -112,7 +112,7 @@ pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String)
 pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut String {
     let left : &'static String = &*cleft;
     let to = idx as usize;
-    malloc(left[to..=to].to_string(), |ptr| drop::<String>(ptr))
+    Gc::new(left[to..=to].to_string()).into_raw()
 }
 
 #[no_mangle]
@@ -125,7 +125,7 @@ pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
 // #region function
 #[no_mangle]
 pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env) -> *mut Function {
-    malloc(Function::new(addr, nargs, env), |ptr| drop::<Function>(ptr))
+    Gc::new(Function::new(addr, nargs, env)).into_raw()
 }
 
 #[no_mangle]
@@ -138,11 +138,11 @@ pub unsafe extern "C" fn function_set_bound_var(fun: *mut Function, slot: u16, v
 // #region array
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc() -> *mut CArray<NativeValue> {
-    malloc(CArray::new(), |ptr| drop::<CArray<NativeValue>>(ptr))
+    Gc::new(CArray::new()).into_raw()
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue> {
-    malloc(CArray::reserve(n), |ptr| drop::<CArray<NativeValue>>(ptr))
+    Gc::new(CArray::reserve(n)).into_raw()
 }
 #[no_mangle]
 pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n: usize) -> *mut CArray<NativeValue> {
@@ -153,7 +153,7 @@ pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n:
             result[j*array.len() + i] = array[j].clone();
         }
     }
-    malloc(result, |ptr| drop::<CArray<NativeValue>>(ptr))
+    Gc::new(result).into_raw()
 }
 // #endregion
 

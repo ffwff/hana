@@ -13,7 +13,7 @@ use super::exframe::ExFrame;
 use super::env::Env;
 pub use super::value::Value;
 use super::vmerror::VmError;
-use super::gc::unpin;
+use super::gc::ref_dec;
 use crate::compiler::Compiler;
 
 const CALL_STACK_SIZE : usize = 512;
@@ -198,25 +198,25 @@ impl Vm {
         // globalenv
         let globalenv = self.global();
         for (_, val) in globalenv.iter() {
-            val.mark();
+            val.trace();
         }
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
-            val.mark();
+            val.trace();
         }
         // call stack
         if !self.localenv.is_null() { unsafe {
             let mut env = self.localenv_bp;
             while env != self.localenv {
                 for val in (*env).slots.as_mut_slice().iter_mut() {
-                    (*val).mark();
+                    (*val).trace();
                 }
                 env = env.add(1);
             }
             env = self.localenv;
             for val in (*env).slots.as_mut_slice().iter_mut() {
-                (*val).mark();
+                (*val).trace();
             }
         } }
     }
@@ -457,11 +457,11 @@ impl std::ops::Drop for Vm {
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
             // primitive objects
-            unpin(self.dstr as *mut libc::c_void);
-            unpin(self.dint as *mut libc::c_void);
-            unpin(self.dfloat as *mut libc::c_void);
-            unpin(self.darray as *mut libc::c_void);
-            unpin(self.drec as *mut libc::c_void);
+            ref_dec(self.dstr as *mut libc::c_void);
+            ref_dec(self.dint as *mut libc::c_void);
+            ref_dec(self.dfloat as *mut libc::c_void);
+            ref_dec(self.darray as *mut libc::c_void);
+            ref_dec(self.drec as *mut libc::c_void);
 
             // other
             if !self.globalenv.is_null() {

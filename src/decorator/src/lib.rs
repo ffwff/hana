@@ -50,27 +50,22 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                                     quote::__rt::Span::call_site());
                 let argname = syn::LitStr::new(pattern.ident.to_string().as_str(),
                                     quote::__rt::Span::call_site());
-                let unwrap_tok =
-                        if atype.starts_with("mut_") { quote!(unwrap_mut) }
-                        else { quote!(unwrap) };
                 let match_arm = match atype.as_str() {
                     "Int" | "Float" | "NativeFn" | "Fn" | "Str" | "Record" | "Array"
                         => quote!(#path(x) => x),
-                    "mut_Fn" | "mut_Str" | "mut_Record" | "mut_Array"
-                        => quote!(#path(x) => unsafe { &mut *x }),
                     "Any" => quote!(#path => x),
-                    _ => panic!("unknown type!")
+                    _ => panic!("unknown type {}!", atype)
                 };
                 args_setup.push(match atype.as_str() {
-                    "Any" => quote!(let #pattern = {
-                        let val = vm.stack.top().pin().unwrap();
+                    "Any" => quote!(let mut #pattern = {
+                        let val = vm.stack.top().unwrap();
                         vm.stack.pop();
                         val
                     };),
                     _ => {
                         quote!(
-                            let #pattern = {
-                                let val = vm.stack.top().pin().#unwrap_tok();
+                            let mut #pattern = {
+                                let val = vm.stack.top().unwrap();
                                 vm.stack.pop();
                                 match val {
                                     #match_arm,
@@ -99,8 +94,6 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                 vm.error = VmError::ERROR_MISMATCH_ARGUMENTS;
                 return;
             }
-            use super::{pin_start, pin_end};
-            let _p = pin_start();
             #[inline(always)]
             fn #name(vm: &mut Vm) -> Value {
                 #(#args_setup)*
@@ -108,7 +101,6 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
             }
             let result : Value = #name(vm);
             vm.stack.push(result.wrap());
-            pin_end(_p);
         }
     ).into()
 }

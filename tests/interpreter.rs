@@ -408,10 +408,7 @@ end
 record A
 end
 ");
-        assert!(match vm.global().get("A").unwrap().unwrap() {
-            Value::Record(_) => true,
-            _ => false
-        });
+        vm.global().get("A").unwrap().unwrap().record();
     }
 
     #[test]
@@ -424,10 +421,7 @@ record A
     end
 end
 ");
-        let rec = match vm.global().get("A").unwrap().unwrap() {
-            Value::Record(x) => x,
-            _ => panic!("expected record")
-        };
+        let rec = vm.global().get("A").unwrap().unwrap().record();
         assert_eq!(rec.get(&"y".to_string()).unwrap().unwrap(), Value::Int(0));
         assert!(match rec.get(&"x".to_string()).unwrap().unwrap() {
             Value::Fn(_) => true,
@@ -467,10 +461,7 @@ function x() begin
 end
 x()
 ");
-        let rec = match vm.global().get("A").unwrap().unwrap() {
-            Value::Record(x) => x,
-            _ => panic!("expected record")
-        };
+        let rec = vm.global().get("A").unwrap().unwrap().record();
         assert_eq!(rec.get(&"y".to_string()).unwrap().unwrap(), Value::Int(1));
     }
 
@@ -485,10 +476,7 @@ function x() begin
 end
 x()
 ");
-        let rec = match vm.global().get("A").unwrap().unwrap() {
-            Value::Record(x) => x,
-            _ => panic!("expected record")
-        };
+        let rec = vm.global().get("A").unwrap().unwrap().record();
         assert_eq!(rec.get(&"y".to_string()).unwrap().unwrap(), Value::Int(1));
     }
 
@@ -503,10 +491,7 @@ function x() begin
 end
 x()
 ");
-        let rec = match vm.global().get("A").unwrap().unwrap() {
-            Value::Record(x) => x,
-            _ => panic!("expected record")
-        };
+        let rec = vm.global().get("A").unwrap().unwrap().record();
         assert_eq!(*rec.get(&"y".to_string()).unwrap().unwrap().string(), "ab".to_string());
     }
 
@@ -521,10 +506,7 @@ end
 
 a = A()
 ");
-        let a = match vm.global().get("a").unwrap().unwrap() {
-            Value::Record(x) => x,
-            _ => panic!("expected record")
-        };
+        let a = vm.global().get("a").unwrap().unwrap().record();
         assert_eq!(*a.get(&"prototype".to_string()).unwrap(), *vm.global().get("A").unwrap());
     }
 
@@ -554,10 +536,7 @@ y = a.test()
         let mut vm : Vm = eval!("
 a = []
 ");
-        assert!(match vm.global().get("a").unwrap().unwrap() {
-            Value::Array(_) => true,
-            _ => false
-        });
+        vm.global().get("a").unwrap().unwrap().array();
     }
 
     #[test]
@@ -574,10 +553,7 @@ a = [1]*5
         let mut vm : Vm = eval!("
 a = ['a', 'b']
 ");
-        let arr = match vm.global().get("a").unwrap().unwrap() {
-            Value::Array(x) => x,
-            _ => panic!("expected array")
-        };
+        let arr = vm.global().get("a").unwrap().unwrap().array();
         assert_eq!(arr.len(), 2);
         assert_eq!(arr[0].unwrap().string(), &"a".to_string());
         assert_eq!(arr[1].unwrap().string(), &"b".to_string());

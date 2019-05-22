@@ -6,6 +6,7 @@ use crate::compiler::Compiler;
 
 #[hana_function()]
 fn eval(s: Value::Str) -> Value {
+    let s = s.as_ref();
     if let Ok(prog) = ast::grammar::start(&s) {
         let target_ip = vm.code.len() as u32;
         let mut c = Compiler::new_append_vm(vm);
