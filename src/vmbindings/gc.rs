@@ -129,7 +129,6 @@ impl GcManager {
     // gc algorithm
     pub fn collect(&mut self) {
         if !self.enabled { return; }
-        eprintln!("COLLECT");
         // mark phase:
         unsafe {
             let mut node : *mut GcNode = self.first_node;
@@ -159,7 +158,6 @@ impl GcManager {
                 let next : *mut GcNode = (*node).next;
                 if (*node).native_refs == 0 && (*node).unreachable {
                     let body = node.add(1);
-                    eprintln!("FREE {:?}", body);
 
                     // remove from ll
                     if (*node).prev.is_null() { self.first_node = (*node).next; }
