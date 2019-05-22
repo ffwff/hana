@@ -63,8 +63,7 @@ impl GcManager {
     pub unsafe fn malloc<T: Sized + GcTraceable>
         (&mut self, x: T, finalizer: GenericFunction) -> *mut T {
         // free up if over threshold
-        self.collect(); // TODO FIXME
-        /* if cfg!(test) {
+        if cfg!(test) {
             self.collect();
         } else if self.bytes_allocated > self.threshold {
             self.collect();
@@ -72,7 +71,7 @@ impl GcManager {
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
                 self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
             }
-        } */
+        }
         // tfw no qt malloc function
         let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
         let bytes : *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
@@ -130,18 +129,23 @@ impl GcManager {
     // gc algorithm
     pub fn collect(&mut self) {
         if !self.enabled { return; }
-
+        eprintln!("COLLECT");
         // mark phase:
-        unsafe { // reset all nodes
+        unsafe {
             let mut node : *mut GcNode = self.first_node;
+            // reset all nodes
+            while !node.is_null() {
+                let next : *mut GcNode = (*node).next;
+                (*node).unreachable = true;
+                node = next;
+            }
+            // make nodes with a native reference reachable
+            node = self.first_node;
             while !node.is_null() {
                 let next : *mut GcNode = (*node).next;
                 if (*node).native_refs > 0 {
-                    // TODO
                     (*node).unreachable = false;
                     ((*node).tracer)(node.add(1) as *mut c_void);
-                } else {
-                    (*node).unreachable = true;
                 }
                 node = next;
             }
@@ -155,6 +159,7 @@ impl GcManager {
                 let next : *mut GcNode = (*node).next;
                 if (*node).native_refs == 0 && (*node).unreachable {
                     let body = node.add(1);
+                    eprintln!("FREE {:?}", body);
 
                     // remove from ll
                     if (*node).prev.is_null() { self.first_node = (*node).next; }
@@ -353,7 +358,7 @@ pub fn ref_inc(ptr: *mut c_void) {
     if ptr.is_null() { return; }
     unsafe{
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        eprintln!("INC {:p} {}", ptr, (*node).native_refs);
+        //eprintln!("INC {:p} {}", ptr, (*node).native_refs);
         (*node).native_refs += 1;
     }
 }
@@ -362,7 +367,7 @@ pub fn ref_dec(ptr: *mut c_void) {
     if ptr.is_null() { return; }
     unsafe{
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        eprintln!("DEC {:p} {}", ptr, (*node).native_refs);
+        //eprintln!("DEC {:p} {}", ptr, (*node).native_refs);
         (*node).native_refs -= 1;
     }
 }
