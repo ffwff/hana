@@ -129,6 +129,14 @@ pub unsafe extern "C" fn string_chars(s: *const String) -> *mut CArray<NativeVal
     }
     chars.into_raw()
 }
+
+// void string_append_in_place(struct string *left, const struct string *right);
+#[no_mangle]
+pub unsafe extern "C" fn string_append_in_place(left: *mut String, right: *const String) {
+    let left = &mut *left;
+    let right = &*right;
+    left.push_str(right.as_str());
+}
 // #endregion
 
 // #region function

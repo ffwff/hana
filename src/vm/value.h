@@ -54,6 +54,9 @@ void value_mul(struct value *result, const struct value left, const struct value
 void value_div(struct value *result, const struct value left, const struct value right);
 void value_mod(struct value *result, const struct value left, const struct value right);
 
+int value_iadd(struct value left, const struct value right);
+int value_imul(struct value left, const struct value right);
+
 void value_lt(struct value  *result, const struct value left, const struct value right);
 void value_leq(struct value *result, const struct value left, const struct value right);
 void value_gt(struct value  *result, const struct value left, const struct value right);

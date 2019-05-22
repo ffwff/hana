@@ -50,6 +50,7 @@ void vm_execute(struct vm *vm) {
         X(OP_POP),
         // arith
         X(OP_ADD), X(OP_SUB), X(OP_MUL), X(OP_DIV), X(OP_MOD),
+        X(OP_IADD), X(OP_IMUL),
         // unary
         X(OP_NEGATE), X(OP_NOT),
         // comparison
@@ -198,29 +199,62 @@ void vm_execute(struct vm *vm) {
 
     // binary ops: perform binary operations on the 2 top values of the stack
     // arithmetic:
-#define binop(optype, fn) \
-    doop(optype): { \
-        vm->ip++; \
-        LOG("" #optype "\n"); \
-        debug_assert(vm->stack.length >= 2); \
-\
-        struct value right = array_top(vm->stack); \
-        array_pop(vm->stack); \
-        struct value left = array_top(vm->stack); \
-        array_pop(vm->stack); \
-\
-        array_push(vm->stack, (struct value){0}); \
+#define binop(optype, fn)                             \
+    doop(optype) : {                                  \
+        vm->ip++;                                     \
+        LOG(#optype "\n");                            \
+        debug_assert(vm->stack.length >= 2);          \
+                                                      \
+        struct value right = array_top(vm->stack);    \
+        array_pop(vm->stack);                         \
+        struct value left = array_top(vm->stack);     \
+        array_pop(vm->stack);                         \
+                                                      \
+        array_push(vm->stack, (struct value){0});     \
         struct value *result = &array_top(vm->stack); \
-        fn(result, left, right); \
-        if(result->type == TYPE_INTERPRETER_ERROR) { \
-            ERROR(ERROR_ ##optype, 1); } \
-        dispatch(); \
+        fn(result, left, right);                      \
+        if (result->type == TYPE_INTERPRETER_ERROR) { \
+            ERROR(ERROR_##optype, 1);                 \
+        }                                             \
+        dispatch();                                   \
     }
     binop(OP_ADD, value_add)
     binop(OP_SUB, value_sub)
     binop(OP_MUL, value_mul)
     binop(OP_DIV, value_div)
     binop(OP_MOD, value_mod)
+
+    // in place arithmetic
+    // does regular arith and jumps out of fallback if CAN do it in place (for primitives)
+    // else just does the fallback (copying and setting variable)
+    // add
+#define binop_inplace(optype, errortype, fn, fallback)      \
+    doop(optype) : {                                        \
+        vm->ip++;                                           \
+        LOG(#optype "\n");                                  \
+        debug_assert(vm->stack.length >= 2);                \
+        const uint8_t pos = (uint8_t)vm->code.data[vm->ip]; \
+                                                            \
+        struct value right = array_top(vm->stack);          \
+        array_pop(vm->stack);                               \
+        struct value left = array_top(vm->stack);           \
+        array_pop(vm->stack);                               \
+        if (fn(left, right)) {                              \
+            vm->ip += pos;                                  \
+            dispatch();                                     \
+        }                                                   \
+                                                            \
+        array_push(vm->stack, (struct value){0});           \
+        struct value *result = &array_top(vm->stack);       \
+        fallback(result, left, right);                      \
+        if (result->type == TYPE_INTERPRETER_ERROR)         \
+            ERROR(errortype, 1);                            \
+        vm->ip++;                                           \
+        dispatch();                                         \
+    }
+
+    binop_inplace(OP_IADD, ERROR_OP_ADD, value_iadd, value_add)
+    binop_inplace(OP_IMUL, ERROR_OP_MUL, value_imul, value_mul)
 
     // comparison
     binop(OP_LT,  value_lt)
@@ -364,18 +398,18 @@ void vm_execute(struct vm *vm) {
     // flow control
     doop(OP_JMP): { // jmp [32-bit position]
         vm->ip++;
-        const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
-                            (uint16_t)vm->code.data[vm->ip+1];
+        const int16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
+                            (uint16_t)vm->code.data[vm->ip + 1];
         vm->ip += pos;
         LOG("JMP %d\n", pos);
         dispatch();
     }
     doop(OP_JMP_LONG): { // jmp [32-bit position]
         vm->ip++;
-        const uint32_t pos = (uint32_t)vm->code.data[vm->ip+0] << 24 |
-                             (uint32_t)vm->code.data[vm->ip+1] << 16 |
-                             (uint32_t)vm->code.data[vm->ip+2] << 8  |
-                             (uint32_t)vm->code.data[vm->ip+3];
+        const uint32_t pos = (uint32_t)vm->code.data[vm->ip + 0] << 24 |
+                             (uint32_t)vm->code.data[vm->ip + 1] << 16 |
+                             (uint32_t)vm->code.data[vm->ip + 2] << 8 |
+                             (uint32_t)vm->code.data[vm->ip + 3];
         vm->ip = pos;
         LOG("JMP LONG %d\n", pos);
         dispatch();

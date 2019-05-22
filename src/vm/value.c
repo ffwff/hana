@@ -129,6 +129,25 @@ void value_mod(struct value *result, const struct value left, const struct value
         result->type = TYPE_INTERPRETER_ERROR;
 }
 
+// in place
+// returns 1 if it CAN do it in place
+int value_iadd(struct value left, const struct value right) {
+    switch (left.type) {
+        case TYPE_STR: {
+            switch(right.type) {
+            case TYPE_STR: {
+                string_append_in_place(left.as.str, right.as.str);
+                return 1; } }
+            return 0;
+        }
+    }
+    return 0;
+}
+
+int value_imul(struct value left, const struct value right) {
+    return 0;
+}
+
 // comparison
 #define strcmp_op(cond) \
     case TYPE_STR: \

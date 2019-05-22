@@ -16,6 +16,7 @@ enum vm_opcode {
     OP_POP,
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
+    OP_IADD, OP_IMUL,
     // unary
     OP_NEGATE, OP_NOT,
     // comparison
