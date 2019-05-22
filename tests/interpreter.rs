@@ -122,12 +122,44 @@ a += 1
     }
 
     #[test]
-    fn adds_ordering() {
+    fn adds_in_place() {
         let mut vm : Vm = eval!("
 a = 'a'
 a += 'b'
 ");
         assert_eq!(*vm.global().get("a").unwrap().unwrap().string(), "ab".to_string());
+    }
+
+    #[test]
+    fn adds_indexed() {
+        let mut vm : Vm = eval!("
+a = ['b','c']
+y = 'a'
+y += a[0]
+");
+        assert_eq!(*vm.global().get("y").unwrap().unwrap().string(), "ab".to_string());
+    }
+
+    #[test]
+    fn adds_to_array_indexed_in_place() {
+        let mut vm : Vm = eval!("
+a = ['a','c']
+a[0] += 'b'
+y = a[0]
+");
+        assert_eq!(*vm.global().get("y").unwrap().unwrap().string(), "ab".to_string());
+    }
+
+    #[test]
+    fn adds_to_record_indexed_in_place() {
+        let mut vm : Vm = eval!("
+record a
+    y = 'a'
+end
+a.y += 'b'
+y = a.y
+");
+        assert_eq!(*vm.global().get("y").unwrap().unwrap().string(), "ab".to_string());
     }
 
     #[test]

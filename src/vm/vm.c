@@ -621,13 +621,13 @@ void vm_execute(struct vm *vm) {
     doop(OP_INDEX_GET_NO_POP): {
         const enum vm_opcode op = vm->code.data[vm->ip];
         vm->ip++;
-        LOG("INDEX_GET\n");
+        LOG(op == OP_INDEX_GET ? "INDEX_GET\n" : "INDEX_GET_NO_POP\n");
 
         const struct value index = array_top(vm->stack);
         array_pop(vm->stack);
 
         const struct value dval = array_top(vm->stack);
-        if (op == OP_INDEX_GET_NO_POP) array_pop(vm->stack);
+        if (op == OP_INDEX_GET) array_pop(vm->stack);
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {

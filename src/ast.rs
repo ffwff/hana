@@ -551,15 +551,23 @@ pub mod ast {
                                 },
                             _ => {}
                         };
-                        c.vm.code.push(VmOpcode::OP_SWAP);
                         // epilogue
+                        if in_place_addr != std::usize::MAX {
+                            // jmp here if we can do it in place
+                            c.vm.code.as_mut_bytes()[in_place_addr]
+                                = (c.vm.code.len() - in_place_addr) as u8;
+                        }
                         if val.is_some() && !memexpr.is_expr {
+                            c.vm.code.push(VmOpcode::OP_SWAP);
                             c.vm.code.push(VmOpcode::OP_MEMBER_SET);
                             c.vm.cpushs(val.unwrap().clone());
                         } else { // otherwise, do OP_INDEX_SET as normal
+                            c.vm.code.push(VmOpcode::OP_SWAP);
                             memexpr.right.emit(c);
                             c.vm.code.push(VmOpcode::OP_INDEX_SET);
                         }
+                        emit_end!(c, _smap_begin);
+                        return;
                     } else {
                         panic!("Invalid left hand side expression!");
                     }
