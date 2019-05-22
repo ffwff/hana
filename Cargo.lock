@@ -164,11 +164,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "haru"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "ansi_term 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cc 1.0.36 (registry+https://github.com/rust-lang/crates.io-index)",
- "haru-decorator 0.1.0",
+ "haru-decorator 0.2.0",
  "libc 0.2.54 (registry+https://github.com/rust-lang/crates.io-index)",
  "peg 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustyline 4.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -176,7 +176,7 @@ dependencies = [
 
 [[package]]
 name = "haru-decorator"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2 0.4.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",

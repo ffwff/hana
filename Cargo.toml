@@ -1,7 +1,7 @@
 [package]
 name = "haru"
 description = "A fast general purpose scripting language"
-version = "0.21.0"
+version = "0.22.0"
 authors = ["ffwff <mogamiriver@tuta.io>"]
 documentation = "https://github.com/ffwff/hana"
 homepage = "https://github.com/ffwff/hana"
@@ -21,7 +21,7 @@ path = "src/main.rs"
 name = "haru"
 
 [dependencies]
-haru-decorator = { version = "0.1.0", path = "./src/decorator/" }
+haru-decorator = { version = "0.2.0", path = "./src/decorator/" }
 libc = "0.2.0"
 ansi_term = "0.11"
 rustyline = "4.1.0"

@@ -724,4 +724,8 @@ understand.
 Hana uses garbage collection to manage memory. All values that are not referenced in the value stack or are not
 referenced by any of the global objects will be automatically collected and free'd by the garbage collector.
 
+For values on the native stack, the interpreter uses reference counting to track references. All heap-allocated values
+that have a reference count of more than 0 will be considered a GC root (its childrens will not be marked as unreachable).
+Otherwise the garbage collector will handle it as normal.
+
 Upon exit the virtual machine will release all memory that is managed by the garbage collector.
