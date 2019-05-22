@@ -5,11 +5,12 @@ use crate::vmbindings::value::*;
 use crate::vmbindings::gc::{Gc, ref_inc};
 
 mod io;
+mod eval;
+mod math;
 mod file;
 mod cmd;
 mod env;
-mod eval;
-mod math;
+mod time;
 
 mod array;
 mod string;
@@ -145,6 +146,19 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(env, "set",  Value::NativeFn(env::set));
     set_obj_var!(env, "vars", Value::NativeFn(env::vars));
     set_var!("Env", Value::Record(env));
+    }
+    // #endregion
+
+    // #region time
+    {
+    let time = Gc::new(Record::new());
+    set_obj_var!(time, "constructor",  Value::NativeFn(time::constructor));
+    set_obj_var!(time, "since",        Value::NativeFn(time::since));
+    set_obj_var!(time, "secs",         Value::NativeFn(time::secs));
+    set_obj_var!(time, "millis",       Value::NativeFn(time::millis));
+    set_obj_var!(time, "micros",       Value::NativeFn(time::micros));
+    set_obj_var!(time, "nanos",        Value::NativeFn(time::nanos));
+    set_var!("Time", Value::Record(time));
     }
     // #endregion
 
