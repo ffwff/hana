@@ -316,10 +316,12 @@ pub mod ast {
         ast_impl!();
         fn emit(&self, c : &mut compiler::Compiler) {
             emit_begin!(self, c); let _smap_begin = c.smap.len() - 1;
+            self.val.emit(c);
             match self.op {
-                UnaryOp::Not => unimplemented!(),
+                UnaryOp::Not => {
+                    c.vm.code.push(VmOpcode::OP_NOT);
+                },
                 UnaryOp::Neg => {
-                    self.val.emit(c);
                     c.vm.code.push(VmOpcode::OP_NEGATE);
                 }
             }

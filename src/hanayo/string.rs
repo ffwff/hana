@@ -1,6 +1,5 @@
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
-use crate::vmbindings::cnativeval::NativeValue;
 use crate::vm::Value;
 use super::Gc;
 
@@ -72,7 +71,7 @@ fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
 // other
 #[hana_function()]
 fn split(s: Value::Str, delim: Value::Str) -> Value {
-    let mut array = Gc::new(CArray::new());
+    let array = Gc::new(CArray::new());
     for ss in s.as_ref().split(delim.as_ref()) {
         array.as_mut().push(Value::Str(Gc::new(ss.clone().to_string())).wrap());
     }
@@ -89,7 +88,7 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 
 #[hana_function()]
 fn chars(s: Value::Str) -> Value {
-    let mut array = Gc::new(CArray::new());
+    let array = Gc::new(CArray::new());
     let array_ref = array.as_mut();
     for ch in s.as_ref().chars() {
         array_ref.push(Value::Str(Gc::new(ch.to_string())).wrap());

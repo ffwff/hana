@@ -113,7 +113,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region files
     {
-    let mut file = Gc::new(Record::new());
+    let file = Gc::new(Record::new());
     set_obj_var!(file, "constructor", Value::NativeFn(file::constructor));
     set_obj_var!(file, "close",       Value::NativeFn(file::close));
     set_obj_var!(file, "read",        Value::NativeFn(file::read));
@@ -128,7 +128,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region cmd
     {
-    let mut cmd = Gc::new(Record::new());
+    let cmd = Gc::new(Record::new());
     set_obj_var!(cmd, "constructor",  Value::NativeFn(cmd::constructor));
     set_obj_var!(cmd, "in" ,          Value::NativeFn(cmd::in_));
     set_obj_var!(cmd, "out",          Value::NativeFn(cmd::out));
@@ -140,7 +140,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region env
     {
-    let mut env = Gc::new(Record::new());
+    let env = Gc::new(Record::new());
     set_obj_var!(env, "get",  Value::NativeFn(env::get));
     set_obj_var!(env, "set",  Value::NativeFn(env::set));
     set_obj_var!(env, "vars", Value::NativeFn(env::vars));

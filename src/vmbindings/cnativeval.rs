@@ -1,4 +1,3 @@
-use libc::c_void;
 use super::record::Record;
 use super::function::Function;
 use super::carray::CArray;
@@ -41,18 +40,14 @@ impl NativeValue {
             _valueType::TYPE_NATIVE_FN  => unsafe {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
             },
-            _valueType::TYPE_FN         => unsafe {
-                Value::Fn(Gc::from_raw(self.data as *mut Function))
-            },
-            _valueType::TYPE_STR        => unsafe {
-                Value::Str(Gc::from_raw(self.data as *mut String))
-            },
-            _valueType::TYPE_DICT       => unsafe {
-                Value::Record(Gc::from_raw(self.data as *mut Record))
-            },
-            _valueType::TYPE_ARRAY      => unsafe {
-                Value::Array(Gc::from_raw(self.data as *mut CArray<NativeValue>))
-            },
+            _valueType::TYPE_FN         =>
+                Value::Fn(Gc::from_raw(self.data as *mut Function)),
+            _valueType::TYPE_STR        =>
+                Value::Str(Gc::from_raw(self.data as *mut String)),
+            _valueType::TYPE_DICT       =>
+                Value::Record(Gc::from_raw(self.data as *mut Record)),
+            _valueType::TYPE_ARRAY      =>
+                Value::Array(Gc::from_raw(self.data as *mut CArray<NativeValue>)),
         }
     }
 

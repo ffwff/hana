@@ -1,6 +1,5 @@
 use super::env::Env;
 use std::ptr::null_mut;
-use crate::vmbindings::cnativeval::NativeValue;
 use crate::vmbindings::gc::GcTraceable;
 
 // functions

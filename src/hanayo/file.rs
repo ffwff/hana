@@ -24,7 +24,7 @@ fn constructor(path : Value::Str, mode: Value::Str) -> Value {
     }
 
     // file object
-    let mut rec = Gc::new(Record::new());
+    let rec = Gc::new(Record::new());
     // store native file
     rec.as_mut().native_field = Some(Box::new(options.open(path.as_ref()).unwrap()));
     // TODO: maybe not hardcode prototype it like this
@@ -46,7 +46,7 @@ fn close(file: Value::Record) -> Value {
 fn read(file: Value::Record) -> Value {
     let field = file.as_mut().native_field.as_mut().unwrap();
     let file = field.downcast_mut::<File>().unwrap();
-    let mut s = Gc::new(String::new());
+    let s = Gc::new(String::new());
     file.read_to_string(s.as_mut());
     Value::Str(s)
 }

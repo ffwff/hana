@@ -2,7 +2,7 @@ use std::any::Any;
 use std::boxed::Box;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
-use super::gc::{Gc, GcTraceable};
+use super::gc::GcTraceable;
 use super::value::Value;
 
 #[repr(C)]

@@ -39,7 +39,6 @@ const USED_SPACE_RATIO: f64 = 0.7;
 struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
-    pinned: Vec<*mut GcNode>,
     root: *mut Vm,
     bytes_allocated: usize,
     threshold: usize,
@@ -52,7 +51,6 @@ impl GcManager {
         GcManager {
             first_node: null_mut(),
             last_node: null_mut(),
-            pinned: Vec::new(),
             root: null_mut(),
             bytes_allocated: 0,
             threshold: INITIAL_THRESHOLD,
@@ -283,7 +281,7 @@ impl<T: Sized + GcTraceable> std::convert::AsRef<T> for Gc<T> {
 impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc {
-            ptr: unsafe {
+            ptr: {
                 ref_inc(self.ptr as *mut libc::c_void);
                 self.ptr
             }

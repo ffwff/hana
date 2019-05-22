@@ -2,7 +2,6 @@ use std::process::{Command, Stdio, Output};
 use std::io::Write;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
-use crate::vmbindings::cnativeval::NativeValue;
 use crate::vmbindings::record::Record;
 use crate::vm::Value;
 use super::Gc;
@@ -36,7 +35,7 @@ fn constructor(val: Value::Any) -> Value {
         _ => panic!("expected val to be string or array")
     };
     // cmd object
-    let mut rec = Gc::new(Record::new());
+    let rec = Gc::new(Record::new());
     // store native cmd
     rec.as_mut().native_field = Some(Box::new(cmd));
     // TODO: maybe not hardcode prototype it like this
@@ -88,15 +87,11 @@ fn err(cmd: Value::Record) -> Value {
 #[hana_function()]
 fn outputs(cmd: Value::Record) -> Value {
     // stderr as string
-    unimplemented!()
-    /* let out = get_output(cmd).unwrap();
-    let mut arr = CArray::new();
-    arr.push(Value::Str(unsafe { &*malloc(String::from_utf8(out.stdout)
-        .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e)),
-        |ptr| drop::<String>(ptr)) }).wrap().pin());
-    arr.push(Value::Str(Gc::new(malloc(String::from_utf8(out.stderr)
-        .unwrap_or_else(|e| panic!("error decoding stderr: {:?}", e)),
-        |ptr| drop::<String>(ptr)) }).wrap().pin());
-    Value::Array(unsafe { &*malloc(arr, |ptr|
-        drop::<CArray<NativeValue>>(ptr)) }) */
+    let out = get_output(cmd.as_mut()).unwrap();
+    let arr = Gc::new(CArray::new());
+    arr.as_mut().push(Value::Str(Gc::new(String::from_utf8(out.stdout)
+        .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e)))).wrap());
+    arr.as_mut().push(Value::Str(Gc::new(String::from_utf8(out.stderr)
+        .unwrap_or_else(|e| panic!("error decoding stderr: {:?}", e)))).wrap());
+    Value::Array(arr)
 }

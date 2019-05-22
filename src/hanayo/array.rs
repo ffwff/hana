@@ -14,7 +14,7 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     }
 
     let nargs = nargs as usize;
-    let mut array = Gc::new(CArray::reserve(nargs));
+    let array = Gc::new(CArray::reserve(nargs));
     for i in 0..nargs {
         let val = vm.stack.top();
         array.as_mut()[i] = val.clone();
@@ -76,7 +76,7 @@ fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
 
 #[hana_function()]
 fn sort(array: Value::Array) -> Value {
-    let mut new_array = Gc::new(array.as_ref().clone());
+    let new_array = Gc::new(array.as_ref().clone());
     let slice = new_array.as_mut().as_mut_slice();
     slice.sort_by(value_cmp);
     Value::Array(new_array)
@@ -91,7 +91,7 @@ fn sort_(array: Value::Array) -> Value {
 // functional
 #[hana_function()]
 fn map(array: Value::Array, fun: Value::Any) -> Value {
-    let mut new_array = Gc::new(CArray::reserve(array.as_ref().len()));
+    let new_array = Gc::new(CArray::reserve(array.as_ref().len()));
     match fun {
         Value::Fn(_) | Value::Record(_) => {
             let mut args = CArray::reserve(1);
@@ -119,11 +119,10 @@ fn map(array: Value::Array, fun: Value::Any) -> Value {
 
 #[hana_function()]
 fn filter(array: Value::Array, fun: Value::Any) -> Value {
-    let mut new_array = Gc::new(CArray::new());
+    let new_array = Gc::new(CArray::new());
     match fun {
         Value::Fn(_) | Value::Record(_) => {
             let mut args = CArray::reserve(1);
-            let mut i = 0;
             for val in array.as_ref().iter() {
                 args[0] = val.clone();
                 if let Some(filter) = vm.call(fun.wrap(), &args) {
@@ -133,7 +132,6 @@ fn filter(array: Value::Array, fun: Value::Any) -> Value {
                 } else {
                     return Value::Nil;
                 }
-                i += 1;
             }
         },
         Value::NativeFn(fun) => {
