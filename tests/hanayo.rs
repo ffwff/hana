@@ -332,45 +332,45 @@ y = 'abc'.endswith?('bc')
     #[test]
     fn string_delete() {
         let mut vm : Vm = eval!("
-s = 'Honest Abe Lincoln'
-y = s.delete(7, 4)
+s = 'λκj'
+y = s.delete(1,1)
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "Honest Lincoln");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "λj");
     }
     #[test]
     fn string_delete_in_place() {
         let mut vm : Vm = eval!("
-s = 'Honest Abe Lincoln'
-s.delete!(7, 4)
+s = 'λκj'
+s.delete!(1,1)
 ");
-        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "Honest Lincoln");
+        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "λj");
     }
 
     #[test]
     fn string_copy() {
         let mut vm : Vm = eval!("
-s = 'Honest Abe Lincoln'
-y = s.copy(7, 3)
+s = 'λκj'
+y = s.copy(1,2)
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "Abe");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "κj");
     }
 
     #[test]
     fn string_index() {
         let mut vm : Vm = eval!("
-s = 'Honest Abe Lincoln'
-y = s.index('Lincoln')
+s = 'λκj'
+y = s.index('κ')
 ");
-        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(11));
+        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
 
     #[test]
     fn string_insert() {
         let mut vm : Vm = eval!("
-s = 'Honest Abe Lincoln'
-s.insert!(0, 'Not So ')
+s = 'λκj'
+s.insert!(1,'a')
 ");
-        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "Not So Honest Abe Lincoln");
+        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "λaκj");
     }
 
     #[test]
@@ -389,14 +389,14 @@ y = s.split(' ')
     #[test]
     fn string_chars() {
         let mut vm : Vm = eval!("
-s = 'abc'
+s = 'λκj'
 y = s.chars()
 ");
         let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 3);
-        assert_eq!(arr[0].unwrap().string(), "a");
-        assert_eq!(arr[1].unwrap().string(), "b");
-        assert_eq!(arr[2].unwrap().string(), "c");
+        assert_eq!(arr[0].unwrap().string(), "λ");
+        assert_eq!(arr[1].unwrap().string(), "κ");
+        assert_eq!(arr[2].unwrap().string(), "j");
     }
 
     #[test]

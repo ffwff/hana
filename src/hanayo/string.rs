@@ -58,7 +58,7 @@ fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
 fn delete_(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos = from_pos as usize;
     let nchars = nchars as usize;
-    let mut it = s.as_ref().grapheme_indices(true).skip(from_pos);
+    let it = s.as_ref().grapheme_indices(true).skip(from_pos);
     if let Some((i, _)) = it.clone().take(1).next() {
         println!("{}", i);
         if let Some((j, _)) = it.skip(nchars).take(1).next() {
@@ -106,9 +106,18 @@ fn split(s: Value::Str, delim: Value::Str) -> Value {
 
 #[hana_function()]
 fn index(s: Value::Str, needle: Value::Str) -> Value {
-    // TODO port to unicode graphemes
-    match s.as_ref().find(needle.as_ref()) {
-        Some(x) => Value::Int(x as i64),
+    let s = s.as_ref();
+    match s.find(needle.as_ref()) {
+        Some(x) => Value::Int({
+                let mut idx_grapheme = 0;
+                if let Some((i, _)) = s.grapheme_indices(true)
+                                    .filter(|(i, _)| {idx_grapheme += 1; *i == x})
+                                    .next() {
+                    (idx_grapheme - 1) as i64
+                } else {
+                    -1
+                }
+            }),
         None => Value::Int(-1)
     }
 }
