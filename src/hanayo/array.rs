@@ -149,7 +149,8 @@ fn filter(array: Value::Array, fun: Value::Any) -> Value {
 }
 
 #[hana_function()]
-fn reduce(array: Value::Array, fun: Value::Any, acc: Value::Any) -> Value {
+fn reduce(array: Value::Array, fun: Value::Any, acc_: Value::Any) -> Value {
+    let mut acc = acc_.clone();
     match fun {
         Value::Fn(_) | Value::Record(_) => {
             let mut args = CArray::reserve(2);

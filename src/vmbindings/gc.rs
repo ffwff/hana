@@ -259,6 +259,11 @@ impl<T: Sized + GcTraceable> Gc<T> {
     pub fn ptr_eq(&self, right: &Gc<T>) -> bool {
         std::ptr::eq(self.ptr, right.ptr)
     }
+
+    // refs with interior mutability
+    pub fn as_mut(&self) -> &mut T {
+        unsafe{ &mut *self.ptr }
+    }
 }
 
 impl<T: Sized + GcTraceable> std::ops::Drop for Gc<T> {
@@ -272,11 +277,6 @@ impl<T: Sized + GcTraceable> std::ops::Drop for Gc<T> {
 impl<T: Sized + GcTraceable> std::convert::AsRef<T> for Gc<T> {
     fn as_ref(&self) -> &T {
         unsafe{ &*self.ptr }
-    }
-}
-impl<T: Sized + GcTraceable> std::convert::AsMut<T> for Gc<T> {
-    fn as_mut(&mut self) -> &mut T {
-        unsafe{ &mut *self.ptr }
     }
 }
 

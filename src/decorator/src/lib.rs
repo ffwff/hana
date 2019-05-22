@@ -57,14 +57,14 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                     _ => panic!("unknown type {}!", atype)
                 };
                 args_setup.push(match atype.as_str() {
-                    "Any" => quote!(let mut #pattern = {
+                    "Any" => quote!(let #pattern = {
                         let val = vm.stack.top().unwrap();
                         vm.stack.pop();
                         val
                     };),
                     _ => {
                         quote!(
-                            let mut #pattern = {
+                            let #pattern = {
                                 let val = vm.stack.top().unwrap();
                                 vm.stack.pop();
                                 match val {
