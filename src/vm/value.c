@@ -145,6 +145,15 @@ int value_iadd(struct value left, const struct value right) {
 }
 
 int value_imul(struct value left, const struct value right) {
+    switch (left.type) {
+        case TYPE_STR: {
+            switch(right.type) {
+            case TYPE_INT: {
+                string_repeat_in_place(left.as.str, right.as.integer);
+                return 1; } }
+            return 0;
+        }
+    }
     return 0;
 }
 

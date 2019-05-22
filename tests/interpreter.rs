@@ -129,6 +129,15 @@ a += 'b'
 ");
         assert_eq!(*vm.global().get("a").unwrap().unwrap().string(), "ab".to_string());
     }
+
+    #[test]
+    fn muls_in_place() {
+        let mut vm : Vm = eval!("
+x = 'a'
+x *= 3
+");
+        assert_eq!(vm.global().get("x").unwrap().unwrap().string(), &"aaa".to_string());
+    }
     // #endregion
 
     // #region if statement

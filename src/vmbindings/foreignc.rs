@@ -109,8 +109,8 @@ pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut String {
-    let left : &'static String = &*cleft;
+pub unsafe extern "C" fn string_at(left: *const String, idx : i64) -> *mut String {
+    let left : &'static String = &*left;
     Gc::new(left.chars().nth(idx as usize).unwrap().to_string()).into_raw()
 }
 
@@ -130,12 +130,22 @@ pub unsafe extern "C" fn string_chars(s: *const String) -> *mut CArray<NativeVal
     chars.into_raw()
 }
 
-// void string_append_in_place(struct string *left, const struct string *right);
 #[no_mangle]
 pub unsafe extern "C" fn string_append_in_place(left: *mut String, right: *const String) {
     let left = &mut *left;
     let right = &*right;
     left.push_str(right.as_str());
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn string_repeat_in_place(left: *mut String, n : i64) {
+    let left = &mut *left;
+    if n == 0 { left.clear(); }
+    else if n == 1 { return; }
+    let orig = left.clone();
+    for _ in (0..n-1) {
+        left.push_str(orig.as_str());
+    }
 }
 // #endregion
 

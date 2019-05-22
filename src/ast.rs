@@ -501,7 +501,7 @@ pub mod ast {
                     let opcode = match self.op {
                         BinOp::Adds => VmOpcode::OP_IADD,
                         BinOp::Subs => VmOpcode::OP_SUB,
-                        BinOp::Muls => VmOpcode::OP_MUL,
+                        BinOp::Muls => VmOpcode::OP_IMUL,
                         BinOp::Divs => VmOpcode::OP_DIV,
                         BinOp::Mods => VmOpcode::OP_MOD,
                         _ => unreachable!()
