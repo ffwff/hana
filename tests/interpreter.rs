@@ -113,6 +113,15 @@ pub mod interpreter_tests {
     }
 
     #[test]
+    fn adds_not_in_place() {
+        let mut vm : Vm = eval!("
+a = 0
+a += 1
+");
+        assert_eq!(vm.global().get("a").unwrap().unwrap().int(), 1);
+    }
+
+    #[test]
     fn adds_ordering() {
         let mut vm : Vm = eval!("
 a = 'a'

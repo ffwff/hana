@@ -60,6 +60,12 @@ impl<T> CArray<T> {
                     std::mem::size_of::<T>() * self.len)
         }
     }
+    pub fn as_mut_bytes(&mut self) -> &mut [u8] {
+        unsafe {
+            std::slice::from_raw_parts_mut(self.data as *mut u8,
+                    std::mem::size_of::<T>() * self.len)
+        }
+    }
 
     // clone
     pub fn clone(&self) -> CArray<T> {

@@ -20,7 +20,7 @@ const CALL_STACK_SIZE : usize = 512;
 
 //
 #[repr(u8)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 #[allow(non_camel_case_types)]
 pub enum VmOpcode {
     OP_HALT,
@@ -51,7 +51,7 @@ pub enum VmOpcode {
     OP_DICT_NEW,
     OP_MEMBER_GET, OP_MEMBER_GET_NO_POP,
     OP_MEMBER_SET, OP_DICT_LOAD, OP_ARRAY_LOAD,
-    OP_INDEX_GET, OP_INDEX_SET,
+    OP_INDEX_GET, OP_INDEX_GET_NO_POP, OP_INDEX_SET,
     // exceptions
     OP_TRY, OP_RAISE, OP_EXFRAME_RET,
     // tail calls

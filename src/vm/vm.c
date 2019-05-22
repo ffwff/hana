@@ -71,7 +71,7 @@ void vm_execute(struct vm *vm) {
         X(OP_DICT_NEW),
         X(OP_MEMBER_GET), X(OP_MEMBER_GET_NO_POP),
         X(OP_MEMBER_SET), X(OP_DICT_LOAD), X(OP_ARRAY_LOAD),
-        X(OP_INDEX_GET), X(OP_INDEX_SET),
+        X(OP_INDEX_GET), X(OP_INDEX_GET_NO_POP), X(OP_INDEX_SET),
         // exceptions
         X(OP_TRY), X(OP_RAISE), X(OP_EXFRAME_RET),
         // tail calls
@@ -225,8 +225,8 @@ void vm_execute(struct vm *vm) {
     binop(OP_MOD, value_mod)
 
     // in place arithmetic
-    // does regular arith and jumps out of fallback if CAN do it in place (for primitives)
-    // else just does the fallback (copying and setting variable)
+    // does regular arith, returns lhs on stack and jumps out of fallback if CAN do it in place (for primitives)
+    // else just does the fallback (copying and setting variable manually)
     // add
 #define binop_inplace(optype, errortype, fn, fallback)      \
     doop(optype) : {                                        \
@@ -238,11 +238,12 @@ void vm_execute(struct vm *vm) {
         struct value right = array_top(vm->stack);          \
         array_pop(vm->stack);                               \
         struct value left = array_top(vm->stack);           \
-        array_pop(vm->stack);                               \
         if (fn(left, right)) {                              \
+            LOG("did in place!\n");                         \
             vm->ip += pos;                                  \
             dispatch();                                     \
         }                                                   \
+        array_pop(vm->stack);                               \
                                                             \
         array_push(vm->stack, (struct value){0});           \
         struct value *result = &array_top(vm->stack);       \
@@ -616,7 +617,9 @@ void vm_execute(struct vm *vm) {
         dispatch();
     }
     // array
-    doop(OP_INDEX_GET): {
+    doop(OP_INDEX_GET):
+    doop(OP_INDEX_GET_NO_POP): {
+        const enum vm_opcode op = vm->code.data[vm->ip];
         vm->ip++;
         LOG("INDEX_GET\n");
 
@@ -624,7 +627,7 @@ void vm_execute(struct vm *vm) {
         array_pop(vm->stack);
 
         const struct value dval = array_top(vm->stack);
-        array_pop(vm->stack);
+        if (op == OP_INDEX_GET_NO_POP) array_pop(vm->stack);
 
         if(dval.type == TYPE_ARRAY) {
             if(index.type != TYPE_INT) {

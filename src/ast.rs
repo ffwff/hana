@@ -499,7 +499,7 @@ pub mod ast {
                 },
                 BinOp::Adds | BinOp::Subs | BinOp::Muls | BinOp::Divs | BinOp::Mods => {
                     let opcode = match self.op {
-                        BinOp::Adds => VmOpcode::OP_ADD,
+                        BinOp::Adds => VmOpcode::OP_IADD,
                         BinOp::Subs => VmOpcode::OP_SUB,
                         BinOp::Muls => VmOpcode::OP_MUL,
                         BinOp::Divs => VmOpcode::OP_DIV,
@@ -507,10 +507,19 @@ pub mod ast {
                         _ => unreachable!()
                     };
                     let any = self.left.as_any();
+                    let mut in_place_addr = std::usize::MAX;
                     if let Some(id) = any.downcast_ref::<Identifier>() {
                         c.emit_get_var(id.val.clone());
                         self.right.emit(c);
-                        c.vm.code.push(opcode);
+                        c.vm.code.push(opcode.clone());
+                        match opcode {
+                            VmOpcode::OP_IADD | VmOpcode::OP_IMUL
+                                => {
+                                    in_place_addr = c.vm.code.len();
+                                    c.vm.cpush8(0);
+                                },
+                            _ => {}
+                        };
                         c.emit_set_var(id.val.clone());
                     } else if let Some(memexpr) = any.downcast_ref::<MemExpr>() {
                         memexpr.left.emit(c);
@@ -523,30 +532,41 @@ pub mod ast {
                             { Some(&str.val) }
                             else { None }
                         };
+                        // prologue
                         if val.is_some() && !memexpr.is_expr {
-                            let val = val.unwrap();
                             c.vm.code.push(VmOpcode::OP_MEMBER_GET_NO_POP);
-                            c.vm.cpushs(val.clone());
-                            self.right.emit(c);
-                            c.vm.code.push(opcode);
-                            c.vm.code.push(VmOpcode::OP_SWAP);
-                            c.vm.code.push(VmOpcode::OP_MEMBER_SET);
-                            c.vm.cpushs(val.clone());
-                        } else { // otherwise, do OP_INDEX_SET as normal
-                            unimplemented!()
-                        /*
+                            c.vm.cpushs(val.unwrap().clone());
+                        } else {
                             memexpr.right.emit(c);
-                            c.vm.code.push(VmOpcode::OP_INDEX_GET);
-                            self.right.emit(c);
-                            c.vm.code.push(opcode);
-                            c.vm.code.push(VmOpcode::OP_SWAP);
-                            memexpr.left.emit(c);
+                            c.vm.code.push(VmOpcode::OP_INDEX_GET_NO_POP);
+                        }
+                        // body
+                        self.right.emit(c);
+                        c.vm.code.push(opcode.clone());
+                        match opcode {
+                            VmOpcode::OP_IADD | VmOpcode::OP_IMUL
+                                => {
+                                    in_place_addr = c.vm.code.len();
+                                    c.vm.cpush8(0);
+                                },
+                            _ => {}
+                        };
+                        c.vm.code.push(VmOpcode::OP_SWAP);
+                        // epilogue
+                        if val.is_some() && !memexpr.is_expr {
+                            c.vm.code.push(VmOpcode::OP_MEMBER_SET);
+                            c.vm.cpushs(val.unwrap().clone());
+                        } else { // otherwise, do OP_INDEX_SET as normal
                             memexpr.right.emit(c);
                             c.vm.code.push(VmOpcode::OP_INDEX_SET);
-                            */
                         }
                     } else {
                         panic!("Invalid left hand side expression!");
+                    }
+                    if in_place_addr != std::usize::MAX {
+                        // jmp here if we can do it in place
+                        c.vm.code.as_mut_bytes()[in_place_addr]
+                            = (c.vm.code.len() - in_place_addr) as u8;
                     }
                 },
                 // basic manip operators
