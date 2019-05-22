@@ -8,7 +8,8 @@ use super::value::Value;
 #[repr(C)]
 pub struct Record {
     data: CHashMap,
-    prototype: Option<Gc<Record>>,
+    prototype: Option<&'static Record>,
+    // it says static but it lasts as long as Record, see below!
     pub native_field: Option<Box<Any>>,
 }
 
@@ -25,8 +26,8 @@ impl Record {
     pub fn get(&self, k: &String) -> Option<&NativeValue> {
         if let Some(v) = self.data.get(k) {
             return Some(v);
-        } else if let Some(prototype) = &self.prototype {
-            return prototype.as_ref().get(k);
+        } else if let Some(prototype) = self.prototype {
+            return prototype.get(k);
         }
         None
     }
@@ -34,7 +35,9 @@ impl Record {
     pub fn insert(&mut self, k: String, v: NativeValue) {
         if k == "prototype" {
             self.prototype = match v.unwrap() {
-                Value::Record(x) => Some(x),
+                // since the borrow checker doesn't know that self.prototype
+                // can last as long as self, we'll have to use unsafe
+                Value::Record(x) => Some(unsafe{ &*x.to_raw() }),
                 _ => None
             };
         }

@@ -21,7 +21,7 @@ fn constructor(val: Value::Any) -> Value {
                 let slice = &arr.as_slice()[1..];
                 for val in slice {
                     match val.unwrap() {
-                        Value::Str(s) => { cmd.arg(s.as_ref()); },
+                        Value::Str(s) => { cmd.arg(s.as_ref().clone()); },
                         _ => { unimplemented!(); }
                     }
                 }
@@ -30,7 +30,7 @@ fn constructor(val: Value::Any) -> Value {
         },
         Value::Str(scmd) => {
             let mut cmd = Command::new("sh");
-            cmd.arg("-c").arg(scmd.as_ref());
+            cmd.arg("-c").arg(scmd.as_ref().clone());
             cmd
         },
         _ => panic!("expected val to be string or array")

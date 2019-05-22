@@ -360,7 +360,7 @@ pub fn ref_inc(ptr: *mut c_void) {
         (*node).native_refs += 1;
     }
 }
-#[allow(dead_code)]
+
 pub fn ref_dec(ptr: *mut c_void) {
     if ptr.is_null() { return; }
     unsafe{
@@ -372,13 +372,4 @@ pub fn ref_dec(ptr: *mut c_void) {
 
 pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
     GcManager::mark_reachable(ptr)
-}
-
-// helpers
-#[allow(dead_code)]
-pub fn no_finalizer(_ : *mut c_void) {}
-
-#[allow(dead_code)]
-pub unsafe fn drop<T>(ptr: *mut c_void) {
-    drop_in_place::<T>(ptr as *mut T);
 }
