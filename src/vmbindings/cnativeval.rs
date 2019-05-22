@@ -56,19 +56,22 @@ impl NativeValue {
         #[allow(non_camel_case_types)]
         match self.r#type {
             _valueType::TYPE_FN         => {
-                mark_reachable(self.data as *mut libc::c_void);
-                Function::trace(self.data as *mut libc::c_void)
+                if mark_reachable(self.data as *mut libc::c_void) {
+                    Function::trace(self.data as *mut libc::c_void)
+                }
             },
             _valueType::TYPE_STR        => {
                 mark_reachable(self.data as *mut libc::c_void);
             },
             _valueType::TYPE_DICT       => {
-                mark_reachable(self.data as *mut libc::c_void);
-                Record::trace(self.data as *mut libc::c_void)
+                if mark_reachable(self.data as *mut libc::c_void) {
+                    Record::trace(self.data as *mut libc::c_void)
+                }
             },
             _valueType::TYPE_ARRAY      => {
-                mark_reachable(self.data as *mut libc::c_void);
-                CArray::trace(self.data as *mut libc::c_void)
+                if mark_reachable(self.data as *mut libc::c_void) {
+                    CArray::trace(self.data as *mut libc::c_void)
+                }
             },
             _ => {}
         }
