@@ -603,6 +603,7 @@ pub mod ast {
                     self.left.emit(c);
                     c.vm.code.push(VmOpcode::OP_JCOND_NO_POP);
                     let label = c.reserve_label16();
+                    c.vm.code.push(VmOpcode::OP_POP);
                     self.right.emit(c);
                     c.fill_label16(label, (c.vm.code.len() - label) as u16);
                 },

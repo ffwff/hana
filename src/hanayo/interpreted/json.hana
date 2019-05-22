@@ -30,7 +30,7 @@ record JSON
                 num += chars[r.i]
                 r.i += 1
             end
-            if chars[r.i] == "." begin
+            if r.i < slen and chars[r.i] == "." begin
                 num += "."
                 r.i += 1
                 while r.i < slen and chars[r.i] >= "0" and chars[r.i] <= "9" begin
@@ -94,7 +94,7 @@ record JSON
             L = []
             next("[")
             ws()
-            if chars[r.i] == "]" then return obj
+            if chars[r.i] == "]" then return L
             while r.i < slen begin
                 L.push(r.parse_value())
                 ws()
@@ -128,7 +128,7 @@ record JSON
                 ws()
             end
         end
-        return r.parse_value()
+        return r.parse_object()
     end
 
     function serialise(obj) begin

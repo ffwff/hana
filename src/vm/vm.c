@@ -422,7 +422,7 @@ void vm_execute(struct vm *vm) {
                             (uint16_t)vm->code.data[vm->ip+1];
         struct value val = array_top(vm->stack);
         if(op == OP_JCOND) array_pop(vm->stack);
-        LOG("JCOND %d\n", pos);
+        LOG(op == OP_JCOND ? "JCOND %d\n" : "JCOND_NO_POP %d\n", pos);
         if(value_is_true(val)) vm->ip += pos;
         else vm->ip += sizeof(pos);
         dispatch();
@@ -434,7 +434,7 @@ void vm_execute(struct vm *vm) {
                             (uint16_t)vm->code.data[vm->ip+1];
         struct value val = array_top(vm->stack);
         if(op == OP_JNCOND) array_pop(vm->stack);
-        LOG("JNCOND %d\n", pos);
+        LOG(op == OP_JNCOND ? "JNCOND %d\n" : "JNCOND_NO_POP %d\n", pos);
         if(!value_is_true(val)) vm->ip += pos;
         else vm->ip += sizeof(pos);
         dispatch();
