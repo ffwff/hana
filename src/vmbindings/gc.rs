@@ -63,9 +63,8 @@ impl GcManager {
     pub unsafe fn malloc<T: Sized + GcTraceable>
         (&mut self, x: T, finalizer: GenericFunction) -> *mut T {
         // free up if over threshold
-        /* if cfg!(test) {
-            self.collect();
-        } else if self.bytes_allocated > self.threshold {
+        self.collect();
+        /* else if self.bytes_allocated > self.threshold {
             self.collect();
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
@@ -87,7 +86,7 @@ impl GcManager {
             (*bytes).next = null_mut();
             self.last_node = bytes;
         }
-        (*bytes).native_refs = 0;
+        (*bytes).native_refs = 1;
         (*bytes).tracer = T::trace;
         (*bytes).finalizer = finalizer;
         (*bytes).size = GcNode::alloc_size::<T>();
@@ -137,7 +136,7 @@ impl GcManager {
                 let next : *mut GcNode = (*node).next;
                 (*node).unreachable = true;
                 if (*node).native_refs > 0 {
-                    // TODO
+                    ((*node).tracer)(node.add(1) as *mut libc::c_void);
                 }
                 node = next;
             }
@@ -226,9 +225,7 @@ impl<T: Sized + GcTraceable> Gc<T> {
     pub fn new(val: T) -> Gc<T> {
         Gc {
             ptr: unsafe {
-                let ptr = malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T));
-                ref_inc(ptr as *mut libc::c_void);
-                ptr
+                malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T))
             }
         }
     }
@@ -278,7 +275,10 @@ impl<T: Sized + GcTraceable> std::convert::AsMut<T> for Gc<T> {
 impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc {
-            ptr: self.ptr
+            ptr: unsafe {
+                ref_inc(self.ptr as *mut libc::c_void);
+                self.ptr
+            }
         }
     }
 }
@@ -348,6 +348,7 @@ pub fn ref_inc(ptr: *mut c_void) {
     if ptr.is_null() { return; }
     unsafe{
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        eprintln!("INC {:p} {}", ptr, (*node).native_refs);
         (*node).native_refs += 1;
     }
 }
@@ -356,6 +357,7 @@ pub fn ref_dec(ptr: *mut c_void) {
     if ptr.is_null() { return; }
     unsafe{
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+        eprintln!("DEC {:p} {}", ptr, (*node).native_refs);
         (*node).native_refs -= 1;
     }
 }

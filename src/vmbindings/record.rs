@@ -54,7 +54,10 @@ impl Record {
 impl GcTraceable for Record {
 
     fn trace(ptr: *mut libc::c_void) {
-        unimplemented!()
+        let self_ = unsafe{ &*(ptr as *mut Self) };
+        for (_, val) in self_.iter() {
+            val.trace();
+        }
     }
 
 }

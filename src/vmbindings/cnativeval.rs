@@ -32,25 +32,25 @@ impl NativeValue {
         use std::mem::transmute;
         #[allow(non_camel_case_types)]
         match &self.r#type {
-        _valueType::TYPE_NIL        => Value::Nil,
-        _valueType::TYPE_INT        => unsafe {
+            _valueType::TYPE_NIL        => Value::Nil,
+            _valueType::TYPE_INT        => unsafe {
                 Value::Int(transmute::<u64, i64>(self.data))
             },
-        _valueType::TYPE_FLOAT      =>
+            _valueType::TYPE_FLOAT      =>
                 Value::Float(f64::from_bits(self.data)),
-        _valueType::TYPE_NATIVE_FN  => unsafe {
+            _valueType::TYPE_NATIVE_FN  => unsafe {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
             },
-        _valueType::TYPE_FN         => unsafe {
+            _valueType::TYPE_FN         => unsafe {
                 Value::Fn(Gc::from_raw(self.data as *mut Function))
             },
-        _valueType::TYPE_STR        => unsafe {
+            _valueType::TYPE_STR        => unsafe {
                 Value::Str(Gc::from_raw(self.data as *mut String))
             },
-        _valueType::TYPE_DICT       => unsafe {
+            _valueType::TYPE_DICT       => unsafe {
                 Value::Record(Gc::from_raw(self.data as *mut Record))
             },
-        _valueType::TYPE_ARRAY      => unsafe {
+            _valueType::TYPE_ARRAY      => unsafe {
                 Value::Array(Gc::from_raw(self.data as *mut CArray<NativeValue>))
             },
         }
@@ -65,8 +65,25 @@ impl NativeValue {
 impl GcTraceable for NativeValue {
 
     fn trace(ptr: *mut libc::c_void) {
-        let self_ = unsafe{ &*(ptr as *mut NativeValue) };
-        unimplemented!()
+        let self_ = unsafe{ &*(ptr as *mut Self) };
+        let data = self_.data as *mut libc::c_void;
+        unsafe{ mark_reachable(data); }
+        #[allow(non_camel_case_types)]
+        match &self_.r#type {
+            _valueType::TYPE_FN         => unsafe {
+                Function::trace(data)
+            },
+            _valueType::TYPE_STR        => unsafe {
+                String::trace(data)
+            },
+            _valueType::TYPE_DICT       => unsafe {
+                Record::trace(data)
+            },
+            _valueType::TYPE_ARRAY      => unsafe {
+                CArray::trace(data)
+            },
+            _ => {}
+        }
     }
 
 }

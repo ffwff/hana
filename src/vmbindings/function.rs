@@ -39,13 +39,10 @@ impl Function {
 impl GcTraceable for Function {
 
     fn trace(ptr: *mut libc::c_void) {
-        let self_ = unsafe{ &*(ptr as *mut NativeValue) };
-        unimplemented!()
-        /* pub fn mark(&self) {
-            for val in self.bound.slots.iter() {
-                val.mark();
-            }
-        } */
+        let self_ = unsafe{ &*(ptr as *mut Self) };
+        for val in self_.bound.slots.iter() {
+            val.trace();
+        }
     }
 
 }
