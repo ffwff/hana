@@ -22,7 +22,7 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
 // length
 #[hana_function()]
 fn length(s: Value::Str) -> Value {
-    Value::Int(s.as_ref().chars().count() as i64)
+    Value::Int(s.as_ref().graphemes(true).count() as i64)
 }
 #[hana_function()]
 fn bytesize(s: Value::Str) -> Value {
