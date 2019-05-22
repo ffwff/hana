@@ -68,7 +68,7 @@ pub struct Vm {
     // pointer to current stack frame
     pub localenv_bp : *mut Env, // rust owns this, so drop it pls
     // pointer to start of pool of stack frames
-    pub globalenv  : *mut CHashMap,
+    pub globalenv   : *mut CHashMap,
     // global environment, all unscoped variables/variables
     // starting with '$' should be stored here
     pub exframes   : CArray<ExFrame>, // exception frame
@@ -107,7 +107,6 @@ extern "C" {
     fn vm_code_push8  (vm: *mut Vm, n : u8);
     fn vm_code_pushstr(vm: *mut Vm, s : *const libc::c_char);
     fn vm_code_pushf64(vm: *mut Vm, n : f64);
-    fn vm_code_fill(vm: *mut Vm, pos : u32, len : u32);
     fn vm_code_fill16(vm: *mut Vm, pos : u32, len : u16);
 }
 
@@ -128,6 +127,28 @@ impl Vm {
             exframes: CArray::new(),
             code: CArray::new(),
             stack: CArray::new(),
+            dstr: null_mut(),
+            dint: null_mut(),
+            dfloat: null_mut(),
+            darray: null_mut(),
+            drec: null_mut(),
+            error: VmError::ERROR_NO_ERROR,
+            error_expected: 0,
+            exframe_fallthrough: null_mut(),
+            native_call_depth: 0,
+            compiler: None
+        }
+    }
+
+    pub fn new_nil() -> Vm {
+        Vm{
+            ip: 0,
+            localenv: null_mut(),
+            localenv_bp: null_mut(),
+            globalenv: null_mut(),
+            exframes: CArray::new_nil(),
+            code: CArray::new_nil(),
+            stack: CArray::new_nil(),
             dstr: null_mut(),
             dint: null_mut(),
             dfloat: null_mut(),
@@ -179,10 +200,6 @@ impl Vm {
     }
 
     // labels
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn cfill_label(&mut self, pos: usize, label: usize) {
-        unsafe{ vm_code_fill(self, pos as u32, label as u32); }
-    }
     pub fn cfill_label16(&mut self, pos: usize, label: u16) {
         unsafe{ vm_code_fill16(self, pos as u32, label); }
     }
@@ -194,7 +211,7 @@ impl Vm {
     }
 
     // gc
-    pub fn mark(&mut self) {
+    pub unsafe fn mark(&mut self) {
         // globalenv
         let globalenv = self.global();
         for (_, val) in globalenv.iter() {

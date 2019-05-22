@@ -33,19 +33,20 @@ impl Record {
     }
 
     pub fn insert(&mut self, k: String, v: NativeValue) {
+        let v = v.unwrap();
+        if v == Value::Nil {
+            self.data.remove(&k);
+            return;
+        }
         if k == "prototype" {
-            self.prototype = match v.unwrap() {
+            self.prototype = match &v {
                 // since the borrow checker doesn't know that self.prototype
                 // can last as long as self, we'll have to use unsafe
                 Value::Record(x) => Some(unsafe{ &*x.to_raw() }),
                 _ => None
             };
         }
-        self.data.insert(k, v);
-    }
-
-    pub fn remove(&mut self, k: &String) -> Option<NativeValue> {
-        self.data.remove(k)
+        self.data.insert(k, v.wrap());
     }
 
     pub fn iter(&self) -> std::collections::hash_map::Iter<String, NativeValue> {
@@ -57,9 +58,11 @@ impl Record {
 impl GcTraceable for Record {
 
     fn trace(ptr: *mut libc::c_void) {
-        let self_ = unsafe{ &*(ptr as *mut Self) };
-        for (_, val) in self_.iter() {
-            val.trace();
+        unsafe {
+            let self_ = &*(ptr as *mut Self);
+            for (_, val) in self_.iter() {
+                val.trace();
+            }
         }
     }
 

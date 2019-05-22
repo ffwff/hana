@@ -42,11 +42,6 @@ pub mod ast {
         fn span(&self) -> &Span;
         fn emit(&self, c : &mut compiler::Compiler);
     }
-    pub struct AstBox {
-        pub data: std::boxed::Box<AST>,
-        pub start: usize,
-        pub end: usize
-    }
 
     // # values
     // ## identifier

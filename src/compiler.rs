@@ -62,24 +62,10 @@ impl Compiler {
             modules_loaded: std::collections::HashSet::new(),
             symbol: HashMap::new(),
             sources: Vec::new(),
-            vm: Vm {
-                ip: 0,
-                localenv: null_mut(),
-                localenv_bp: null_mut(),
-                globalenv: null_mut(),
-                exframes: CArray::new_nil(),
-                code: vm.code.deref(),
-                stack: CArray::new_nil(),
-                dstr: null_mut(),
-                dint: null_mut(),
-                dfloat: null_mut(),
-                darray: null_mut(),
-                drec: null_mut(),
-                error: VmError::ERROR_NO_ERROR,
-                error_expected:0,
-                exframe_fallthrough: null_mut(),
-                native_call_depth:0,
-                compiler: None,
+            vm: {
+                let mut vm_ = Vm::new_nil();
+                vm_.code = vm.code.deref();
+                vm_
             }
         }
     }
@@ -190,11 +176,6 @@ impl Compiler {
         self.vm.cpush32(0xdeadbeef);
         pos
     }
-
-    pub fn fill_label(&mut self, pos: usize, label: usize) {
-        self.vm.cfill_label(pos, label);
-    }
-
     pub fn reserve_label16(&mut self) -> usize {
         let pos = self.vm.code.len();
         self.vm.cpush16(0);

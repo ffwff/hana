@@ -6,12 +6,8 @@ use crate::vmbindings::gc::GcTraceable;
 #[repr(C)]
 pub struct CArray<T> {
     // structure for arrays that can be used with c through ffi
-    // NOTE: extreme precautions must be taken to use this!!
 
     data: *mut T,
-    // NOTE: this won't be freed using ops::Drop due to c interop
-    // the owner SHOULD automatically call array_free
-
     len: usize,
     capacity: usize,
 }
@@ -34,17 +30,6 @@ impl<T> CArray<T> {
             },
             len: 0,
             capacity: 2
-        }
-    }
-
-    pub fn new_static(arr: &mut [T]) -> CArray<T> {
-        // convenient wrapper for statically allocated
-        // (stack-allocated) arrays, use this for storing function
-        // arguments that will be passed to Vm::call
-        CArray::<T> {
-            data: &mut arr[0] as *mut T,
-            len: arr.len(),
-            capacity: arr.len()
         }
     }
 
@@ -238,9 +223,11 @@ impl<'a, T> std::iter::Iterator for ArrayIter<'a, T> {
 impl GcTraceable for CArray<NativeValue> {
 
     fn trace(ptr: *mut libc::c_void) {
-        let self_ = unsafe{ &*(ptr as *mut Self) };
-        for val in self_.iter() {
-            val.trace();
+        unsafe {
+            let self_ = &*(ptr as *mut Self);
+            for val in self_.iter() {
+                val.trace();
+            }
         }
     }
 

@@ -95,26 +95,6 @@ impl GcManager {
         bytes.add(1) as *mut T
     }
 
-    pub unsafe fn free<T: Sized>(&mut self, x: *mut T) {
-        // => start byte
-        let node : *mut GcNode = (x as *mut GcNode).sub(1);
-
-        if (*node).prev.is_null() { self.first_node = (*node).next; }
-        else { (*(*node).prev).next = (*node).next; }
-
-        if (*node).next.is_null() { self.last_node = (*node).prev; }
-        else { (*(*node).next).prev = (*node).prev; }
-
-        self.bytes_allocated -= (*node).size;
-
-        // call finalizer
-        let finalizer = (*node).finalizer;
-        finalizer(x as *mut c_void);
-        // free memory
-        let layout = Layout::from_size_align((*node).size, 2).unwrap();
-        dealloc(node as *mut u8, layout);
-    }
-
     // roots
     pub fn set_root(&mut self, root: *mut Vm) {
         self.root = root;
@@ -125,57 +105,54 @@ impl GcManager {
     pub fn disable(&mut self) { self.enabled = false; }
 
     // gc algorithm
-    pub fn collect(&mut self) {
+    unsafe fn collect(&mut self) {
         if !self.enabled { return; }
         // mark phase:
-        unsafe {
-            let mut node : *mut GcNode = self.first_node;
-            // reset all nodes
-            while !node.is_null() {
-                let next : *mut GcNode = (*node).next;
-                (*node).unreachable = true;
-                node = next;
-            }
-            // make nodes with a native reference reachable
-            node = self.first_node;
-            while !node.is_null() {
-                let next : *mut GcNode = (*node).next;
-                if (*node).native_refs > 0 {
-                    (*node).unreachable = false;
-                    ((*node).tracer)(node.add(1) as *mut c_void);
-                }
-                node = next;
-            }
+        let mut node : *mut GcNode = self.first_node;
+        // reset all nodes
+        while !node.is_null() {
+            let next : *mut GcNode = (*node).next;
+            (*node).unreachable = true;
+            node = next;
         }
-        let vm = unsafe { &mut *self.root };
+        // mark make nodes with at least one native reference
+        node = self.first_node;
+        while !node.is_null() {
+            let next : *mut GcNode = (*node).next;
+            if (*node).native_refs > 0 {
+                (*node).unreachable = false;
+                ((*node).tracer)(node.add(1) as *mut c_void);
+            }
+            node = next;
+        }
+        // mark from root
+        let vm = &mut *self.root;
         vm.mark();
         // sweep phase:
-        unsafe {
-            let mut node : *mut GcNode = self.first_node;
-            while !node.is_null() {
-                let next : *mut GcNode = (*node).next;
-                if (*node).native_refs == 0 && (*node).unreachable {
-                    let body = node.add(1);
+        let mut node : *mut GcNode = self.first_node;
+        while !node.is_null() {
+            let next : *mut GcNode = (*node).next;
+            if (*node).native_refs == 0 && (*node).unreachable {
+                let body = node.add(1);
 
-                    // remove from ll
-                    if (*node).prev.is_null() { self.first_node = (*node).next; }
-                    else { (*(*node).prev).next = (*node).next; }
+                // remove from ll
+                if (*node).prev.is_null() { self.first_node = (*node).next; }
+                else { (*(*node).prev).next = (*node).next; }
 
-                    if (*node).next.is_null() { self.last_node = (*node).prev; }
-                    else { (*(*node).next).prev = (*node).prev; }
+                 if (*node).next.is_null() { self.last_node = (*node).prev; }
+                 else { (*(*node).next).prev = (*node).prev; }
 
-                    self.bytes_allocated -= (*node).size;
+                self.bytes_allocated -= (*node).size;
 
-                    // call finalizer
-                    let finalizer = (*node).finalizer;
-                    finalizer(body as *mut c_void);
+                // call finalizer
+                let finalizer = (*node).finalizer;
+                finalizer(body as *mut c_void);
 
-                    // free memory
-                    let layout = Layout::from_size_align((*node).size, 2).unwrap();
-                    dealloc(node as *mut u8, layout);
-                }
-                node = next;
+                // free memory
+                let layout = Layout::from_size_align((*node).size, 2).unwrap();
+                dealloc(node as *mut u8, layout);
             }
+            node = next;
         }
     }
 
@@ -238,7 +215,7 @@ impl<T: Sized + GcTraceable> Gc<T> {
 
     // raw
     pub fn from_raw(ptr: *mut T) -> Gc<T> {
-        ref_inc(ptr as *mut libc::c_void);
+        unsafe{ ref_inc(ptr as *mut libc::c_void); }
         Gc {
             ptr: ptr
         }
@@ -266,8 +243,10 @@ impl<T: Sized + GcTraceable> Gc<T> {
 
 impl<T: Sized + GcTraceable> std::ops::Drop for Gc<T> {
     fn drop(&mut self) {
-        if !self.ptr.is_null() {
-            ref_dec(self.ptr as *mut libc::c_void);
+        unsafe {
+            if !self.ptr.is_null() {
+                ref_dec(self.ptr as *mut libc::c_void);
+            }
         }
     }
 }
@@ -281,7 +260,7 @@ impl<T: Sized + GcTraceable> std::convert::AsRef<T> for Gc<T> {
 impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc {
-            ptr: {
+            ptr: unsafe {
                 ref_inc(self.ptr as *mut libc::c_void);
                 self.ptr
             }
@@ -295,25 +274,17 @@ pub trait GcTraceable {
 
 // native traceables
 impl GcTraceable for String {
-    fn trace(ptr: *mut libc::c_void) {}
+    fn trace(_: *mut libc::c_void) {}
 }
 
 // general
-pub unsafe fn malloc<T: Sized + GcTraceable>(x: T, finalizer: GenericFunction) -> *mut T {
+unsafe fn malloc<T: Sized + GcTraceable>(x: T, finalizer: GenericFunction) -> *mut T {
     let mut alloced: *mut T = null_mut();
     GC_MANAGER.with(|gc_manager| {
         let mut gc_manager = gc_manager.borrow_mut();
         alloced = gc_manager.malloc(x, finalizer);
     });
     alloced
-}
-
-#[allow(dead_code)]
-pub unsafe fn free<T: Sized>(x: *mut T) {
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        gc_manager.free(x);
-    });
 }
 
 // roots
@@ -342,30 +313,16 @@ pub fn disable() {
 }
 
 // collect
-#[allow(dead_code)]
-pub fn collect() {
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        gc_manager.collect();
-    });
-}
-#[allow(dead_code)]
-pub fn ref_inc(ptr: *mut c_void) {
+pub unsafe fn ref_inc(ptr: *mut c_void) {
     if ptr.is_null() { return; }
-    unsafe{
-        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        //eprintln!("INC {:p} {}", ptr, (*node).native_refs);
-        (*node).native_refs += 1;
-    }
+    let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+    (*node).native_refs += 1;
 }
 
-pub fn ref_dec(ptr: *mut c_void) {
+pub unsafe fn ref_dec(ptr: *mut c_void) {
     if ptr.is_null() { return; }
-    unsafe{
-        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        //eprintln!("DEC {:p} {}", ptr, (*node).native_refs);
-        (*node).native_refs -= 1;
-    }
+    let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+    (*node).native_refs -= 1;
 }
 
 pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
