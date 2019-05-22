@@ -111,8 +111,7 @@ pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String)
 #[no_mangle]
 pub unsafe extern "C" fn string_at(cleft: *const String, idx : i64) -> *mut String {
     let left : &'static String = &*cleft;
-    let to = idx as usize;
-    Gc::new(left[to..=to].to_string()).into_raw()
+    Gc::new(left.chars().nth(idx as usize).unwrap().to_string()).into_raw()
 }
 
 #[no_mangle]
