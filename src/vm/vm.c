@@ -964,7 +964,12 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
 
     struct function *ifn = NULL;
 
-    if(fn.type == TYPE_DICT) {
+    if (fn.type == TYPE_NATIVE_FN) {
+        for (int64_t i = args->length - 1; i >= 0; i--) {
+            array_push(vm->stack, args->data[i]);
+        }
+        fn.as.fn(vm, args->length);
+    } else if(fn.type == TYPE_DICT) {
         const struct value *ctor = dict_get(fn.as.dict, "constructor");
         if(ctor == NULL) {
             FATAL("expected record to have constructor\n");

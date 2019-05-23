@@ -108,7 +108,7 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
     match s.find(needle.as_ref()) {
         Some(x) => Value::Int({
                 let mut idx_grapheme = 0;
-                if let Some((i, _)) = s.grapheme_indices(true)
+                if let Some(_) = s.grapheme_indices(true)
                                     .filter(|(i, _)| {idx_grapheme += 1; *i == x})
                                     .next() {
                     (idx_grapheme - 1) as i64
