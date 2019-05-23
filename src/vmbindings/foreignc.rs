@@ -146,14 +146,20 @@ pub unsafe extern "C" fn string_append_in_place(left: *mut String, right: *const
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn string_repeat_in_place(left: *mut String, n : i64) {
-    let left = &mut *left;
-    if n == 0 { left.clear(); }
+pub unsafe extern "C" fn string_repeat_in_place(s: *mut String, n : i64) {
+    let s = &mut *s;
+    if n == 0 { s.clear(); }
     else if n == 1 { return; }
-    let orig = left.clone();
+    let orig = s.clone();
     for _ in 0..n-1 {
-        left.push_str(orig.as_str());
+        s.push_str(orig.as_str());
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn string_len(s: *const String) -> usize {
+    let s = &*s;
+    s.graphemes(true).count()
 }
 // #endregion
 

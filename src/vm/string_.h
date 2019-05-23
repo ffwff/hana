@@ -13,3 +13,4 @@ bool string_is_empty(const struct string *str);
 int string_cmp(const struct string *left, const struct string *right);
 struct string *string_at(const struct string *str, int64_t n);
 array_obj *string_chars(const struct string *str);
+size_t string_len(struct string *str);

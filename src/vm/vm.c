@@ -635,7 +635,7 @@ void vm_execute(struct vm *vm) {
             }
             const int64_t i = (int64_t)index.as.integer;
             if(!(i >= 0 && i < (int64_t)dval.as.array->length)) {
-                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, dval.as.array->length, 1);
+                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, dval.as.array->length);
             }
             array_push(vm->stack, dval.as.array->data[i]);
         } else if(dval.type == TYPE_STR) {
@@ -646,7 +646,9 @@ void vm_execute(struct vm *vm) {
             struct value val;
             val.type = TYPE_STR;
             val.as.str = string_at(dval.as.str, i);
-            // TODO bounds check
+            if (val.as.str == NULL) {
+                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, string_len(dval.as.str));
+            }
             array_push(vm->stack, val);
         } else if(dval.type == TYPE_DICT) {
             if(index.type != TYPE_STR) {
