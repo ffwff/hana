@@ -1,5 +1,6 @@
 use std::ptr::null_mut;
 use std::alloc::{alloc_zeroed, realloc, dealloc, Layout};
+use rayon::prelude::*;
 use crate::vmbindings::cnativeval::NativeValue;
 use crate::vmbindings::gc::GcTraceable;
 
@@ -230,10 +231,8 @@ impl GcTraceable for CArray<NativeValue> {
 
     fn trace(ptr: *mut libc::c_void) {
         unsafe {
-            let self_ = &*(ptr as *mut Self);
-            for val in self_.iter() {
-                val.trace();
-            }
+            let self_ = &*(ptr as *const Self);
+            self_.as_slice().par_iter().for_each(|val| val.trace());
         }
     }
 

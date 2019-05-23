@@ -1,5 +1,6 @@
 use std::ptr::{null_mut, drop_in_place};
 use std::alloc::{alloc_zeroed, dealloc, Layout};
+use std::sync::atomic::{AtomicBool, Ordering};
 pub use libc::c_void;
 use super::vm::Vm;
 
@@ -8,7 +9,7 @@ struct GcNode {
     prev: *mut GcNode,
     next: *mut GcNode,
     size: usize,
-    unreachable: bool, // by default this is false
+    unreachable: AtomicBool, // by default this is false
     // if the node is unreachable, it will be pruned (free'd)
     pub native_refs: usize,
     tracer: GenericFunction,
@@ -61,7 +62,7 @@ impl GcManager {
     pub unsafe fn malloc<T: Sized + GcTraceable>
         (&mut self, x: T, finalizer: GenericFunction) -> *mut T {
         // free up if over threshold
-        if cfg!(test) {
+        if cfg!(test) || cfg!(debug) {
             self.collect();
         } else if self.bytes_allocated > self.threshold {
             self.collect();
@@ -86,6 +87,7 @@ impl GcManager {
             self.last_node = bytes;
         }
         (*bytes).native_refs = 1;
+        (*bytes).unreachable = AtomicBool::new(true);
         (*bytes).tracer = T::trace;
         (*bytes).finalizer = finalizer;
         (*bytes).size = GcNode::alloc_size::<T>();
@@ -112,7 +114,7 @@ impl GcManager {
         // reset all nodes
         while !node.is_null() {
             let next : *mut GcNode = (*node).next;
-            (*node).unreachable = true;
+            (*node).unreachable.store(true, Ordering::Relaxed);
             node = next;
         }
         // mark make nodes with at least one native reference
@@ -120,7 +122,7 @@ impl GcManager {
         while !node.is_null() {
             let next : *mut GcNode = (*node).next;
             if (*node).native_refs > 0 {
-                (*node).unreachable = false;
+                (*node).unreachable.store(false, Ordering::Relaxed);
                 ((*node).tracer)(node.add(1) as *mut c_void);
             }
             node = next;
@@ -132,8 +134,11 @@ impl GcManager {
         let mut node : *mut GcNode = self.first_node;
         while !node.is_null() {
             let next : *mut GcNode = (*node).next;
-            if (*node).native_refs == 0 && (*node).unreachable {
+            if  (*node).native_refs == 0 &&
+                (*node).unreachable.load(Ordering::Relaxed) {
                 let body = node.add(1);
+
+                //eprintln!("[FREE {:p}]", body);
 
                 // remove from ll
                 if (*node).prev.is_null() { self.first_node = (*node).next; }
@@ -161,9 +166,12 @@ impl GcManager {
         // => start byte
         if ptr.is_null() { return false; }
         let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        if !(*node).unreachable { return false; }
-        (*node).unreachable = false;
-        true
+        // if unreachable == true => unreachable = false
+        if (*node).unreachable.compare_and_swap(true, false, Ordering::AcqRel) {
+            true
+        } else {
+            false
+        }
     }
 
 }

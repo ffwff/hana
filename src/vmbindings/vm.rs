@@ -2,6 +2,7 @@ use std::ptr::null_mut;
 use std::mem::ManuallyDrop;
 use std::ffi::CString;
 use std::path::Path;
+use rayon::prelude::*;
 extern crate libc;
 
 use super::carray::CArray;
@@ -215,9 +216,7 @@ impl Vm {
     pub unsafe fn mark(&mut self) {
         // globalenv
         let globalenv = self.global();
-        for (_, val) in globalenv.iter() {
-            val.trace();
-        }
+        globalenv.par_iter().for_each(|(_, val)| val.trace());
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
