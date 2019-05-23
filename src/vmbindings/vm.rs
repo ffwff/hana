@@ -124,7 +124,7 @@ impl Vm {
                 let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
-            globalenv: Box::into_raw(Box::new(CHashMap::new())),
+            globalenv: Box::into_raw(Box::new(Default::default())),
             exframes: CArray::new(),
             code: CArray::new(),
             stack: CArray::new(),

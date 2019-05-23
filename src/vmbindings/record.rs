@@ -1,5 +1,6 @@
 use std::any::Any;
 use std::boxed::Box;
+use rayon::prelude::*;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
 use super::gc::GcTraceable;
@@ -17,7 +18,7 @@ impl Record {
 
     pub fn new() -> Record {
         Record {
-            data: std::collections::HashMap::new(),
+            data: Default::default(),
             prototype: None,
             native_field: None
         }
