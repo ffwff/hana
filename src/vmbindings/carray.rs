@@ -232,7 +232,7 @@ impl GcTraceable for CArray<NativeValue> {
     fn trace(ptr: *mut libc::c_void) {
         unsafe {
             let self_ = &*(ptr as *const Self);
-            self_.as_slice().par_iter().for_each(|val| val.trace());
+            self_.as_slice().iter().for_each(|val| val.trace());
         }
     }
 

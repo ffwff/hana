@@ -219,22 +219,16 @@ impl Vm {
         globalenv.par_iter().for_each(|(_, val)| val.trace());
         // stack
         let stack = &self.stack;
-        for val in stack.iter() {
-            val.trace();
-        }
+        stack.as_slice().par_iter().for_each(|val| val.trace());
         // call stack
         if !self.localenv.is_null() { unsafe {
             let mut env = self.localenv_bp;
             while env != self.localenv {
-                for val in (*env).slots.as_mut_slice().iter_mut() {
-                    (*val).trace();
-                }
+                (*env).slots.as_slice().par_iter().for_each(|val| val.trace());
                 env = env.add(1);
             }
             env = self.localenv;
-            for val in (*env).slots.as_mut_slice().iter_mut() {
-                (*val).trace();
-            }
+            (*env).slots.as_slice().par_iter().for_each(|val| val.trace());
         } }
     }
 

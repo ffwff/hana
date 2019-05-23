@@ -61,7 +61,7 @@ impl GcTraceable for Record {
     fn trace(ptr: *mut libc::c_void) {
         unsafe {
             let self_ = &*(ptr as *const Self);
-            self_.data.par_iter().for_each(|(_, val)| val.trace());
+            self_.data.iter().for_each(|(_, val)| val.trace());
         }
     }
 
