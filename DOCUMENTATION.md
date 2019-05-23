@@ -507,8 +507,8 @@ the function.
 
 ## Strings
 
-Strings are mutable UTF-8 strings. Characters in hana are Unicode code points rather
-than raw bytes.
+Strings are mutable UTF-8 strings. Characters in hana are Unicode grapheme clusters
+(actual characters) rather than bytes.
 
 ```
 name = "Alice"
@@ -538,7 +538,7 @@ Methods:
 "abc".index("bc") // => 1 (index of the string "bc" in "abc")
 "abc".insert!(1, "bc") // => "abcbc" (inserts in place "bc" to "abc" in index 1)
 "a b c".split(" ") // => ["a", "b", "c"] (splits string with delimeter ' ' into array)
-"a".ord() // => 97 (turn first character of string into a unicode number)
+"a".ord() // => 97 (turn first character of string into a number)
 ```
 
 ## Numbers
