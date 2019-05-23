@@ -5,7 +5,6 @@ use super::vm::Vm;
 
 // node
 struct GcNode {
-    prev: *mut GcNode,
     next: *mut GcNode,
     size: usize,
     unreachable: bool, // by default this is false
@@ -77,11 +76,9 @@ impl GcManager {
         if self.first_node.is_null() {
             self.first_node = bytes;
             self.last_node = bytes;
-            (*bytes).prev = null_mut();
             (*bytes).next = null_mut();
         } else {
             (*self.last_node).next = bytes;
-            (*bytes).prev = self.last_node;
             (*bytes).next = null_mut();
             self.last_node = bytes;
         }
@@ -130,17 +127,17 @@ impl GcManager {
         vm.mark();
         // sweep phase:
         let mut node : *mut GcNode = self.first_node;
+        let mut prev : *mut GcNode = null_mut();
         while !node.is_null() {
             let next : *mut GcNode = (*node).next;
+            let mut freed = false;
             if (*node).native_refs == 0 && (*node).unreachable {
+                freed = true;
                 let body = node.add(1);
 
                 // remove from ll
-                if (*node).prev.is_null() { self.first_node = (*node).next; }
-                else { (*(*node).prev).next = (*node).next; }
-
-                 if (*node).next.is_null() { self.last_node = (*node).prev; }
-                 else { (*(*node).next).prev = (*node).prev; }
+                if prev.is_null() { self.first_node = (*node).next; }
+                else { (*prev).next = (*node).next; }
 
                 self.bytes_allocated -= (*node).size;
 
@@ -152,6 +149,7 @@ impl GcManager {
                 let layout = Layout::from_size_align((*node).size, 2).unwrap();
                 dealloc(node as *mut u8, layout);
             }
+            if !freed { prev = node; }
             node = next;
         }
     }
