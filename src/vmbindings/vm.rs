@@ -15,6 +15,7 @@ pub use super::value::Value;
 use super::vmerror::VmError;
 use super::gc::ref_dec;
 use crate::compiler::Compiler;
+use crate::hanayo::HanayoCtx;
 
 const CALL_STACK_SIZE : usize = 512;
 
@@ -95,6 +96,7 @@ pub struct Vm {
     pub compiler   : Option<*mut Compiler>,
     // store compiler here for import modules
     // TODO: rethink the design and use RC
+    pub stdlib     : Option<HanayoCtx>,
 }
 
 #[link(name="hana", kind="static")]
@@ -137,7 +139,8 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: null_mut(),
             native_call_depth: 0,
-            compiler: None
+            compiler: None,
+            stdlib: None
         }
     }
 
@@ -159,7 +162,8 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: null_mut(),
             native_call_depth: 0,
-            compiler: None
+            compiler: None,
+            stdlib: None
         }
     }
 
@@ -337,6 +341,7 @@ impl Vm {
             exframe_fallthrough: self.exframe_fallthrough,
             native_call_depth: self.native_call_depth,
             compiler: None,
+            stdlib: None
         };
         // create new ctx
         self.ip = 0;

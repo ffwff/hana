@@ -1,4 +1,5 @@
 use std::time::*;
+use std::thread::sleep as nsleep;
 use crate::vmbindings::vm::Vm;
 use crate::vm::Value;
 use crate::vmbindings::record::Record;
@@ -7,8 +8,8 @@ use super::Gc;
 fn duration_to_record(vm: &mut Vm, duration: Duration) -> Value {
     let rec = Gc::new(Record::new());
     rec.as_mut().native_field = Some(Box::new(duration));
-    // TODO: maybe not hardcode prototype it like this
-    rec.as_mut().insert("prototype".to_string(), *vm.global().get(&"Time".to_string()).unwrap());
+    rec.as_mut().insert("prototype".to_string(),
+        Value::Record(vm.stdlib.as_ref().unwrap().time_rec.clone()).wrap());
     Value::Record(rec)
 }
 
@@ -52,4 +53,19 @@ fn nanos(time: Value::Record) -> Value {
     let tref = time.as_ref().native_field.as_ref().unwrap();
     let time = tref.downcast_ref::<Duration>().unwrap();
     Value::Int(time.as_nanos() as i64)
+}
+
+// other
+#[hana_function()]
+fn sleep(time: Value::Any) -> Value {
+    match time {
+        Value::Int(x) => { nsleep(Duration::from_secs(x as u64)); },
+        Value::Record(time) => {
+            let tref = time.as_ref().native_field.as_ref().unwrap();
+            let time = tref.downcast_ref::<Duration>().unwrap();
+            nsleep(time.clone());
+        },
+        _ => panic!("invalid argument")
+    }
+    Value::Nil
 }

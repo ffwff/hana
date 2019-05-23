@@ -38,8 +38,8 @@ fn constructor(val: Value::Any) -> Value {
     let rec = Gc::new(Record::new());
     // store native cmd
     rec.as_mut().native_field = Some(Box::new(cmd));
-    // TODO: maybe not hardcode prototype it like this
-    rec.as_mut().insert("prototype".to_string(), *vm.global().get(&"Cmd".to_string()).unwrap());
+    rec.as_mut().insert("prototype".to_string(),
+        Value::Record(vm.stdlib.as_ref().unwrap().cmd_rec.clone()).wrap());
     Value::Record(rec)
 }
 

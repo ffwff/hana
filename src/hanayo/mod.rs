@@ -18,6 +18,12 @@ mod int;
 mod float;
 mod record;
 
+pub struct HanayoCtx {
+    pub file_rec: Gc<Record>,
+    pub cmd_rec: Gc<Record>,
+    pub time_rec: Gc<Record>,
+}
+
 pub fn init(vm : &mut Vm) {
     let globalenv = unsafe { &mut *vm.globalenv };
     macro_rules! set_var {
@@ -113,7 +119,6 @@ pub fn init(vm : &mut Vm) {
     // #endregion
 
     // #region files
-    {
     let file = Gc::new(Record::new());
     set_obj_var!(file, "constructor", Value::NativeFn(file::constructor));
     set_obj_var!(file, "close",       Value::NativeFn(file::close));
@@ -123,43 +128,43 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(file, "seek",        Value::NativeFn(file::seek));
     set_obj_var!(file, "seek_from_start", Value::NativeFn(file::seek_from_start));
     set_obj_var!(file, "seek_from_end",   Value::NativeFn(file::seek_from_end));
-    set_var!("File", Value::Record(file));
-    }
+    set_var!("File", Value::Record(file.clone()));
     // #endregion
 
     // #region cmd
-    {
     let cmd = Gc::new(Record::new());
     set_obj_var!(cmd, "constructor",  Value::NativeFn(cmd::constructor));
     set_obj_var!(cmd, "in" ,          Value::NativeFn(cmd::in_));
     set_obj_var!(cmd, "out",          Value::NativeFn(cmd::out));
     set_obj_var!(cmd, "err",          Value::NativeFn(cmd::err));
     set_obj_var!(cmd, "outputs",      Value::NativeFn(cmd::outputs));
-    set_var!("Cmd", Value::Record(cmd));
-    }
+    set_var!("Cmd", Value::Record(cmd.clone()));
     // #endregion
 
     // #region env
-    {
     let env = Gc::new(Record::new());
     set_obj_var!(env, "get",  Value::NativeFn(env::get));
     set_obj_var!(env, "set",  Value::NativeFn(env::set));
     set_obj_var!(env, "vars", Value::NativeFn(env::vars));
-    set_var!("Env", Value::Record(env));
-    }
+    set_var!("Env", Value::Record(env.clone()));
     // #endregion
 
     // #region time
-    {
     let time = Gc::new(Record::new());
     set_obj_var!(time, "constructor",  Value::NativeFn(time::constructor));
+    set_obj_var!(time, "sleep",        Value::NativeFn(time::sleep));
     set_obj_var!(time, "since",        Value::NativeFn(time::since));
     set_obj_var!(time, "secs",         Value::NativeFn(time::secs));
     set_obj_var!(time, "millis",       Value::NativeFn(time::millis));
     set_obj_var!(time, "micros",       Value::NativeFn(time::micros));
     set_obj_var!(time, "nanos",        Value::NativeFn(time::nanos));
-    set_var!("Time", Value::Record(time));
-    }
+    set_var!("Time", Value::Record(time.clone()));
     // #endregion
+
+    vm.stdlib = Some(HanayoCtx {
+        file_rec: file,
+        cmd_rec: cmd,
+        time_rec: time
+    });
 
 }
