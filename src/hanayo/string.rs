@@ -60,9 +60,7 @@ fn delete_(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let nchars = nchars as usize;
     let it = s.as_ref().grapheme_indices(true).skip(from_pos);
     if let Some((i, _)) = it.clone().take(1).next() {
-        println!("{}", i);
         if let Some((j, _)) = it.skip(nchars).take(1).next() {
-            println!("{}", j);
             s.as_mut().replace_range(i..j, "");
         } else {
             s.as_mut().remove(i);
