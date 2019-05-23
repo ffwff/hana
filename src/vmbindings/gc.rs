@@ -139,6 +139,8 @@ impl GcManager {
                 if prev.is_null() { self.first_node = (*node).next; }
                 else { (*prev).next = (*node).next; }
 
+                if (*node).next.is_null() { self.last_node = prev; }
+
                 self.bytes_allocated -= (*node).size;
 
                 // call finalizer
