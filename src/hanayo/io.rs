@@ -7,7 +7,7 @@ pub extern fn print(cvm : *mut Vm, nargs : u16) {
     let vm = unsafe { &mut *cvm };
     for _ in 0..nargs {
         let val = vm.stack.top().unwrap();
-        std::print!("{:?}", val);
+        std::print!("{}", val);
         vm.stack.pop();
     }
     std::io::stdout().flush().unwrap();

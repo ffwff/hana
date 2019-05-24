@@ -115,9 +115,6 @@ impl Value {
 
 }
 
-// NOTE: you can't implement a trait for a specific variant
-// in rust, neither can you implement a trait for a type alias, so I have
-// to implement PartialEq by hand instead of deriving it for Value
 use std::cmp::PartialEq;
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool {
@@ -136,6 +133,23 @@ impl PartialEq for Value {
 }
 
 use std::fmt;
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Value::Nil          => write!(f, "[nil]"),
+            Value::True         => write!(f, "1"),
+            Value::False        => write!(f, "0"),
+            Value::Int(n)       => write!(f, "{}", n),
+            Value::Float(n)     => write!(f, "{}", n),
+            Value::NativeFn(_)  => write!(f, "[native fn]"),
+            Value::Fn(_)        => write!(f, "[fn]"),
+            Value::Str(p)       => write!(f, "{}", p.as_ref()),
+            Value::Record(p)    => write!(f, "[record {:p}]", p.to_raw()),
+            Value::Array(p)     => write!(f, "[array {:p}]", p.to_raw())
+        }
+    }
+}
+
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -144,7 +158,17 @@ impl fmt::Debug for Value {
             Value::Float(n)     => write!(f, "{}", n),
             Value::NativeFn(_)  => write!(f, "[native fn]"),
             Value::Fn(_)        => write!(f, "[fn]"),
-            Value::Str(p)       => write!(f, "{}", p.as_ref()),
+            Value::Str(p)       => {
+                let mut s = String::new();
+                for ch in p.as_ref().chars() {
+                    match ch {
+                        '\n' => { s += "\\n"; },
+                        '"' => { s.push('"'); },
+                        _ => { s.push(ch); }
+                    }
+                }
+                write!(f, "\"{}\"", s)
+            },
             Value::Record(p)    => write!(f, "[record {:p}]", p.to_raw()),
             Value::Array(p)     => write!(f, "[array {:p}]", p.to_raw()),
             _ => write!(f, "[unk]")
