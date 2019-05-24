@@ -9,7 +9,7 @@ use crate::vm::Value;
 #[hana_function()]
 fn in_(process: Value::Record, input: Value::Str) -> Value {
     let field = process.as_mut().native_field.as_mut().unwrap();
-    let mut p = field.downcast_mut::<Child>().unwrap();
+    let p = field.downcast_mut::<Child>().unwrap();
     p.stdin.as_mut().unwrap().write_all(input.as_ref().as_bytes());
     Value::Record(process)
 }

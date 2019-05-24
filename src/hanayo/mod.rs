@@ -51,7 +51,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region array
     {
-    let mut array = vm.malloc(Record::new());
+    let array = vm.malloc(Record::new());
     set_obj_var!(array, "constructor", Value::NativeFn(array::constructor));
     set_obj_var!(array, "length",      Value::NativeFn(array::length));
     set_obj_var!(array, "insert!",     Value::NativeFn(array::insert_));
@@ -72,7 +72,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region string
     {
-    let mut string = vm.malloc(Record::new());
+    let string = vm.malloc(Record::new());
     set_obj_var!(string, "constructor", Value::NativeFn(string::constructor));
     set_obj_var!(string, "length",      Value::NativeFn(string::length));
     set_obj_var!(string, "bytesize",    Value::NativeFn(string::bytesize));
@@ -93,7 +93,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region int
     {
-    let mut int = vm.malloc(Record::new());
+    let int = vm.malloc(Record::new());
     set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
     set_obj_var!(int, "chr",         Value::NativeFn(int::chr));
     vm.dint = int.clone();
@@ -103,7 +103,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region float
     {
-    let mut float = vm.malloc(Record::new());
+    let float = vm.malloc(Record::new());
     set_obj_var!(float, "constructor", Value::NativeFn(float::constructor));
     vm.dfloat = float.clone();
     set_var!("Float", Value::Record(float));
@@ -112,7 +112,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region record
     {
-    let mut record = vm.malloc(Record::new());
+    let record = vm.malloc(Record::new());
     set_obj_var!(record, "constructor", Value::NativeFn(record::constructor));
     set_obj_var!(record, "keys",        Value::NativeFn(record::keys));
     vm.drec = record.clone();
