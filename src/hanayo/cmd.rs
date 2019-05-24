@@ -125,8 +125,8 @@ fn outputs(cmd: Value::Record) -> Value {
 fn spawn(cmd: Value::Record) -> Value {
     let p = get_output(cmd.as_mut(), false).as_process();
     let prec = vm.malloc(Record::new());
+    prec.as_mut().native_field = Some(Box::new(p));
     prec.as_mut().insert("prototype".to_string(),
         Value::Record(vm.stdlib.as_ref().unwrap().proc_rec.clone()).wrap());
-    prec.as_mut().insert("pid".to_string(), Value::Int(p.id() as i64).wrap());
     Value::Record(prec)
 }

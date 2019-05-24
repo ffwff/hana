@@ -8,7 +8,7 @@ pub mod hanayo_tests {
     use haru::vm::Vm;
     use haru::vm::VmOpcode;
     use haru::vm::Value;
-    
+
     use haru::hanayo;
     use std::rc::Rc;
 
@@ -529,6 +529,46 @@ y = Cmd('echo hello world >&2').err()
 y = Cmd('cat -').in('nyaaa').out()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "nyaaa");
+    }
+
+    #[test]
+    fn cmd_outputs() {
+        let vm : Vm = eval!("
+y = Cmd('echo hello world').outputs()
+");
+        let arr = vm.global().get("y").unwrap().unwrap().array();
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0].unwrap().string(), "hello world\n");
+        assert_eq!(arr[1].unwrap().string(), "");
+    }
+    // #endregion
+
+    // #region proc
+    #[test]
+    fn proc_err() {
+        let vm : Vm = eval!("
+y = Cmd('echo hello world >&2').spawn().err()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
+    }
+
+    #[test]
+    fn proc_in() {
+        let vm : Vm = eval!("
+y = Cmd('cat -').spawn().in('nyaaa').out()
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "nyaaa");
+    }
+
+    #[test]
+    fn proc_outputs() {
+        let vm : Vm = eval!("
+y = Cmd('echo hello world').spawn().outputs()
+");
+        let arr = vm.global().get("y").unwrap().unwrap().array();
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0].unwrap().string(), "hello world\n");
+        assert_eq!(arr[1].unwrap().string(), "");
     }
     // #endregion
 

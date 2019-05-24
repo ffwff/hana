@@ -5,15 +5,11 @@ use crate::vmbindings::carray::CArray;
 use crate::vmbindings::vm::Vm;
 use crate::vm::Value;
 
-#[hana_function()]
-fn constructor(_val: Value::Any) -> Value {
-    unimplemented!()
-}
-
 // inputs
 #[hana_function()]
 fn in_(process: Value::Record, input: Value::Str) -> Value {
-    let mut p = *process.as_mut().native_field.take().unwrap().downcast::<Child>().unwrap();
+    let field = process.as_mut().native_field.as_mut().unwrap();
+    let mut p = field.downcast_mut::<Child>().unwrap();
     p.stdin.as_mut().unwrap().write_all(input.as_ref().as_bytes());
     Value::Record(process)
 }
@@ -34,7 +30,7 @@ fn err(process: Value::Record) -> Value {
     let p = *process.as_mut().native_field.take().unwrap().downcast::<Child>().unwrap();
     let out = p.wait_with_output().unwrap();
     Value::Str(vm.malloc(String::from_utf8(out.stderr)
-        .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e))))
+        .unwrap_or_else(|e| panic!("error decoding stderr: {:?}", e))))
 }
 
 #[hana_function()]

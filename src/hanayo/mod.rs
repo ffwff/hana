@@ -140,12 +140,12 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(cmd, "out",          Value::NativeFn(cmd::out));
     set_obj_var!(cmd, "err",          Value::NativeFn(cmd::err));
     set_obj_var!(cmd, "outputs",      Value::NativeFn(cmd::outputs));
+    set_obj_var!(cmd, "spawn",        Value::NativeFn(cmd::spawn));
     set_var!("Cmd", Value::Record(cmd.clone()));
     // #endregion
 
     // #region cmd
     let proc = vm.malloc(Record::new());
-    set_obj_var!(proc, "constructor",  Value::NativeFn(proc::constructor));
     set_obj_var!(proc, "in" ,          Value::NativeFn(proc::in_));
     set_obj_var!(proc, "out",          Value::NativeFn(proc::out));
     set_obj_var!(proc, "err",          Value::NativeFn(proc::err));
