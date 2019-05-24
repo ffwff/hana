@@ -14,8 +14,23 @@ pub mod foreignc {
 
 use std::ffi::CStr;
 use std::ptr::{null, null_mut};
+use std::alloc::{alloc_zeroed, realloc, Layout};
 use unicode_segmentation::UnicodeSegmentation;
 use super::*;
+
+// #region memory allocation
+#[no_mangle]
+pub unsafe extern "C" fn rcalloc(nelems: usize, size: usize) -> *mut u8 {
+    let layout = Layout::from_size_align(nelems*size, 2).unwrap();
+    alloc_zeroed(layout)
+}
+#[no_mangle]
+pub unsafe extern "C" fn rrealloc(ptr: *mut u8, nelems: usize, size: usize, new_size: usize) -> *mut u8 {
+    let layout = Layout::from_size_align(nelems*size, 2).unwrap();
+    realloc(ptr, layout, new_size)
+}
+
+// #endregion
 
 // #region hmap
 #[no_mangle]

@@ -2,6 +2,12 @@
 #![feature(alloc_layout_extra)]
 #![feature(ptr_offset_from)]
 
+#[cfg(feature="jemalloc")]
+extern crate jemallocator;
+#[global_allocator]
+#[cfg(feature="jemalloc")]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 use std::io::{self, Read, Write};
 #[macro_use] extern crate decorator;
 extern crate ansi_term;
