@@ -95,7 +95,7 @@ impl GcManager {
     }
 
     pub fn malloc<T: Sized + GcTraceable>(&mut self, val: T) -> Gc<T> {
-        self.malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T))
+        self.malloc(val)
     }
 
     // state

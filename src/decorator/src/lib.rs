@@ -88,14 +88,14 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
 
     quote!(
         pub extern "C" fn #name(cvm : *mut Vm, nargs : u16) {
-            let vm = unsafe { &*cvm };
+            let vm = unsafe { &mut *cvm };
             if nargs != #arglen {
                 use super::VmError;
                 vm.error = VmError::ERROR_MISMATCH_ARGUMENTS;
                 return;
             }
             #[inline(always)]
-            fn #name(vm: &Vm) -> Value {
+            fn #name(vm: &mut Vm) -> Value {
                 #(#args_setup)*
                 #body
             }

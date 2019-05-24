@@ -15,7 +15,6 @@ mod vmbindings;
 use vmbindings::vm;
 use vmbindings::vmerror::VmError;
 use vmbindings::vm::VmOpcode;
-use vmbindings::gc::set_root;
 mod hanayo;
 
 fn print_error(s: &String,
@@ -96,25 +95,25 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     for stmt in prog {
         stmt.emit(&mut c);
     }
+    c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
 
     // dump bytecode if asked
     if flag.dump_bytecode {
-        io::stdout().write(c.vm.code.as_bytes()).unwrap();
+        io::stdout().write(c.vm.borrow().code.as_bytes()).unwrap();
         return;
     }
 
     // execute!
-    c.vm.compiler = Some(&mut c);
+    //c.vm.borrow_mut().compiler = Some(&mut c);
     c.sources.push(s);
-    set_root(&mut c.vm);
-    hanayo::init(&mut c.vm);
-    c.vm.code.push(VmOpcode::OP_HALT);
-    c.vm.execute();
+    hanayo::init(&mut c.vm.borrow_mut());
+    c.vm.borrow_mut().execute();
     handle_error(&c);
 }
 
 fn handle_error(c: &compiler::Compiler) {
-    if c.vm.error != VmError::ERROR_NO_ERROR {
+    unimplemented!()
+    /* if c.vm.error != VmError::ERROR_NO_ERROR {
         {
             let smap = c.lookup_smap(c.vm.ip as usize).unwrap();
             let src = &c.sources[smap.fileno];
@@ -141,12 +140,13 @@ fn handle_error(c: &compiler::Compiler) {
                 env = unsafe { env.sub(1) };
             }
         }
-    }
+    } */
 }
 
 // repl
 fn repl(flag: ParserFlag) {
-    let mut rl = Editor::<()>::new();
+    unimplemented!()
+    /* let mut rl = Editor::<()>::new();
     let mut c = compiler::Compiler::new();
     c.files.push("[repl]".to_string());
     c.sources.push(String::new());
@@ -196,7 +196,7 @@ fn repl(flag: ParserFlag) {
                 break
             }
         }
-    }
+    } */
 }
 
 // CLI specific

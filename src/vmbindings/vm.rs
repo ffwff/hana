@@ -225,7 +225,7 @@ impl Vm {
 
     // gc
     pub fn malloc<T: Sized + GcTraceable>(&self, val: T) -> Gc<T> {
-        self.gc_manager.unwrap().borrow_mut().malloc(val)
+        self.gc_manager.as_ref().unwrap().borrow_mut().malloc(val)
     }
 
     pub unsafe fn mark(&mut self) {
