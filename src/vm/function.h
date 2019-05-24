@@ -11,8 +11,9 @@ struct function {
     uint16_t nargs;
     // ... (additional rust properties)
 };
+struct vm;
 
-struct function *function_malloc(uint32_t addr, uint16_t nargs, struct env *env);
+struct function *function_malloc(uint32_t addr, uint16_t nargs, struct env *env, const struct vm *vm);
 void function_set_bound_var(struct function *, uint16_t n, struct value val);
 
 #ifdef __cplusplus

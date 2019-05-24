@@ -155,7 +155,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += strlen(str)+1;
         LOG("PUSH %s\n", str);
         array_push(vm->stack, (struct value){0});
-        value_str(&array_top(vm->stack), str);
+        value_str(&array_top(vm->stack), str, vm);
         dispatch();
     }
 
@@ -212,7 +212,7 @@ void vm_execute(struct vm *vm) {
                                                       \
         array_push(vm->stack, (struct value){0});     \
         struct value *result = &array_top(vm->stack); \
-        fn(result, left, right);                      \
+        fn(result, left, right, vm);                  \
         if (result->type == TYPE_INTERPRETER_ERROR) { \
             ERROR(ERROR_##optype, 1);                 \
         }                                             \
@@ -247,7 +247,7 @@ void vm_execute(struct vm *vm) {
                                                             \
         array_push(vm->stack, (struct value){0});           \
         struct value *result = &array_top(vm->stack);       \
-        fallback(result, left, right);                      \
+        fallback(result, left, right, vm);                  \
         if (result->type == TYPE_INTERPRETER_ERROR)         \
             ERROR(errortype, 1);                            \
         vm->ip++;                                           \
@@ -391,7 +391,7 @@ void vm_execute(struct vm *vm) {
                              (uint16_t)vm->code.data[vm->ip + 1];
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
         array_push(vm->stack, (struct value){0});
-        value_function(&array_top(vm->stack), vm->ip + sizeof(pos), nargs, vm->localenv);
+        value_function(&array_top(vm->stack), vm->ip + sizeof(pos), nargs, vm->localenv, vm);
         vm->ip += pos;
         dispatch();
     }
@@ -472,7 +472,7 @@ void vm_execute(struct vm *vm) {
                 ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);  \
             }                                                                \
             struct value new_val;                                            \
-            value_dict(&new_val);                                            \
+            value_dict(&new_val, vm);                                        \
             dict_set(new_val.as.dict, "prototype", val);                     \
             array_push(vm->stack, new_val);                                  \
         } else {                                                             \
@@ -538,7 +538,7 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         LOG("DICT_NEW\n");
         array_push(vm->stack, (struct value){0});
-        value_dict(&array_top(vm->stack));
+        value_dict(&array_top(vm->stack), vm);
         dispatch();
     }
     doop(OP_MEMBER_GET):
@@ -599,7 +599,7 @@ void vm_execute(struct vm *vm) {
         LOG("dict load\n");
         vm->ip++;
         struct value dval;
-        value_dict(&dval);
+        value_dict(&dval, vm);
 
         struct value key = {0};
         while((key = array_top(vm->stack)).type != TYPE_NIL) {
@@ -707,9 +707,9 @@ void vm_execute(struct vm *vm) {
 
         struct value aval;
         if(length == 0) {
-            value_array(&aval);
+            value_array(&aval, vm);
         } else {
-            value_array_n(&aval, length);
+            value_array_n(&aval, length, vm);
             aval.as.array->length = length;
             while(length--) {
                 aval.as.array->data[length] = array_top(vm->stack);

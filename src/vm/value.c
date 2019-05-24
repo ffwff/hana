@@ -16,30 +16,30 @@ void value_float(struct value *val, double data) {
     val->as.floatp = data;
 }
 // non-primitives
-void value_str(struct value *val, const char *data) {
+void value_str(struct value *val, const char *data, const struct vm *vm) {
     val->type = TYPE_STR;
-    val->as.str = string_malloc(data);
+    val->as.str = string_malloc(data, vm);
 }
-void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *env) {
+void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *env, const struct vm *vm) {
     val->type = TYPE_FN;
-    val->as.ifn = function_malloc(ip, nargs, env);
+    val->as.ifn = function_malloc(ip, nargs, env, vm);
 }
-void value_dict(struct value *val) {
+void value_dict(struct value *val, const struct vm *vm) {
     val->type = TYPE_DICT;
-    val->as.dict = dict_malloc();
+    val->as.dict = dict_malloc(vm);
 }
-void value_array(struct value *val) {
+void value_array(struct value *val, const struct vm *vm) {
     val->type = TYPE_ARRAY;
-    val->as.array = array_obj_malloc();
+    val->as.array = array_obj_malloc(vm);
 }
-void value_array_n(struct value *val, size_t n) {
+void value_array_n(struct value *val, size_t n, const struct vm *vm) {
     val->type = TYPE_ARRAY;
-    val->as.array = array_obj_malloc_n(n);
+    val->as.array = array_obj_malloc_n(n, vm);
 }
 
 // arith
 #define arith_op(name, op, custom) \
-void value_ ## name (struct value *result, const struct value left, const struct value right) { \
+void value_ ## name (struct value *result, const struct value left, const struct value right, const struct vm *vm) { \
     switch(left.type) { \
     case TYPE_INT: { \
         switch(right.type) { \
@@ -71,7 +71,7 @@ arith_op(add, +,
             return;
         }
         result->type = TYPE_STR;
-        result->as.str = string_append(left.as.str, right.as.str);
+        result->as.str = string_append(left.as.str, right.as.str, vm);
         break; }
 )
 arith_op(sub, -,)
@@ -79,10 +79,10 @@ arith_op(mul, *,
     case TYPE_STR: {
         if(right.type == TYPE_INT) {
             if(right.as.integer == 0) {
-                value_str(result, "");
+                value_str(result, "", vm);
             } else {
                 result->type = TYPE_STR;
-                result->as.str = string_repeat(left.as.str, right.as.integer);
+                result->as.str = string_repeat(left.as.str, right.as.integer, vm);
             }
         }
         else
@@ -91,13 +91,14 @@ arith_op(mul, *,
     case TYPE_ARRAY: {
         if(right.type == TYPE_INT) {
             result->type = TYPE_ARRAY;
-            result->as.array = array_obj_repeat(left.as.array, (size_t)right.as.integer);
+            result->as.array = array_obj_repeat(left.as.array, (size_t)right.as.integer, vm);
         }
         else
             result->type = TYPE_INTERPRETER_ERROR;
         break; }
 )
-void value_div(struct value *result, const struct value left, const struct value right) {
+
+void value_div(struct value *result, const struct value left, const struct value right, const struct vm *_) {
     switch(left.type) {
     case TYPE_INT: {
         switch(right.type) {
@@ -122,7 +123,7 @@ void value_div(struct value *result, const struct value left, const struct value
     }
     default: result->type = TYPE_INTERPRETER_ERROR; }
 }
-void value_mod(struct value *result, const struct value left, const struct value right) {
+void value_mod(struct value *result, const struct value left, const struct value right, const struct vm *_) {
     if(left.type == TYPE_INT && right.type == TYPE_INT) {
         value_int(result, left.as.integer % right.as.integer);
     } else

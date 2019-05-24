@@ -26,6 +26,7 @@ fn main() {
         if is_release { build.flag("-flto"); }
         build
             .flag("-Wall")
+            .flag("-Wno-unused-parameter")
             .flag("-std=c11")
             .compile("hana");
     }

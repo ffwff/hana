@@ -39,30 +39,30 @@ struct __attribute__((packed)) value {
 
 void value_int(struct value*, int64_t);
 void value_float(struct value*, double);
-void value_str(struct value*, const char*);
+void value_str(struct value*, const char*, const struct vm*);
 struct env;
-void value_function(struct value*, uint32_t ip, uint16_t nargs, struct env *env);
-void value_dict(struct value*);
-void value_array(struct value*);
-void value_array_n(struct value*, size_t n);
+void value_function(struct value *, uint32_t ip, uint16_t nargs, struct env *env, const struct vm *);
+void value_dict(struct value *, const struct vm *);
+void value_array(struct value *, const struct vm *);
+void value_array_n(struct value *, size_t n, const struct vm *);
 
 void value_print(struct value);
 
-void value_add(struct value *result, const struct value left, const struct value right);
-void value_sub(struct value *result, const struct value left, const struct value right);
-void value_mul(struct value *result, const struct value left, const struct value right);
-void value_div(struct value *result, const struct value left, const struct value right);
-void value_mod(struct value *result, const struct value left, const struct value right);
+void value_add(struct value *result, const struct value left, const struct value right, const struct vm *);
+void value_sub(struct value *result, const struct value left, const struct value right, const struct vm *);
+void value_mul(struct value *result, const struct value left, const struct value right, const struct vm *);
+void value_div(struct value *result, const struct value left, const struct value right, const struct vm *);
+void value_mod(struct value *result, const struct value left, const struct value right, const struct vm *);
 
 int value_iadd(struct value left, const struct value right);
 int value_imul(struct value left, const struct value right);
 
-void value_lt(struct value  *result, const struct value left, const struct value right);
-void value_leq(struct value *result, const struct value left, const struct value right);
-void value_gt(struct value  *result, const struct value left, const struct value right);
-void value_geq(struct value *result, const struct value left, const struct value right);
-void value_eq(struct value  *result, const struct value left, const struct value right);
-void value_neq(struct value *result, const struct value left, const struct value right);
+void value_lt(struct value  *result, const struct value left, const struct value right, const struct vm*);
+void value_leq(struct value *result, const struct value left, const struct value right, const struct vm*);
+void value_gt(struct value  *result, const struct value left, const struct value right, const struct vm*);
+void value_geq(struct value *result, const struct value left, const struct value right, const struct vm*);
+void value_eq(struct value  *result, const struct value left, const struct value right, const struct vm*);
+void value_neq(struct value *result, const struct value left, const struct value right, const struct vm*);
 
 bool value_is_true(const struct value);
 struct dict *value_get_prototype(const struct vm *vm, const struct value val);

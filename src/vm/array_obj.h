@@ -7,9 +7,10 @@ extern "C" {
 #include "array.h"
 
 typedef array(struct value) array_obj;
-array_obj *array_obj_malloc(void);
-array_obj *array_obj_malloc_n(size_t n);
-array_obj *array_obj_repeat(array_obj *array, size_t times);
+struct vm;
+array_obj *array_obj_malloc(const struct vm *vm);
+array_obj *array_obj_malloc_n(size_t n, const struct vm *vm);
+array_obj *array_obj_repeat(array_obj *array, size_t times, const struct vm *vm);
 
 #ifdef __cplusplus
 }
