@@ -1,7 +1,7 @@
 use std::ptr::{null_mut, drop_in_place};
 use std::alloc::{alloc_zeroed, dealloc, Layout};
 use std::rc::Weak;
-use debug_cell::RefCell;
+use std::cell::RefCell;
 pub use libc::c_void;
 use super::vm::Vm;
 

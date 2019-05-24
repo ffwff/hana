@@ -1,7 +1,6 @@
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::carray::CArray;
-use super::Gc;
 use crate::vm::Value;
 
 #[hana_function()]

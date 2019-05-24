@@ -1,7 +1,6 @@
 use std::env;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::vm::Vm;
-use super::Gc;
 use crate::vm::Value;
 
 #[hana_function()]

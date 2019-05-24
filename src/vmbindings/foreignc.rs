@@ -2,21 +2,19 @@ use super::chmap::CHashMap;
 use super::carray::CArray;
 use super::function::Function;
 use super::record::Record;
-use super::gc::Gc;
 use super::cnativeval::NativeValue;
 use super::vm::{Vm, Value};
 use super::env::Env;
 use super::exframe::ExFrame;
 
 extern crate unicode_segmentation;
-use unicode_segmentation::UnicodeSegmentation;
-
 
 #[allow(unused_attributes)]
 pub mod foreignc {
 
 use std::ffi::CStr;
 use std::ptr::{null, null_mut};
+use unicode_segmentation::UnicodeSegmentation;
 use super::*;
 
 // #region hmap

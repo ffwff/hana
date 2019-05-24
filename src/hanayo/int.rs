@@ -1,8 +1,6 @@
 use std::str::FromStr;
-
 use crate::vmbindings::vm::Vm;
 use crate::vm::Value;
-use super::Gc;
 
 #[hana_function()]
 fn constructor(val: Value::Any) -> Value {

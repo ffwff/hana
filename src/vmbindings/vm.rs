@@ -3,7 +3,7 @@ use std::mem::ManuallyDrop;
 use std::ffi::CString;
 use std::path::Path;
 use std::rc::Rc;
-use debug_cell::RefCell;
+use std::cell::RefCell;
 extern crate libc;
 
 use super::carray::CArray;
@@ -423,7 +423,7 @@ impl Vm {
         use crate::ast;
         use std::io::Read;
 
-        let mut c = unsafe{ &mut *self.compiler.unwrap() };
+        let c = unsafe{ &mut *self.compiler.unwrap() };
 
         let pathobj =
             if path.starts_with("./") {

@@ -543,13 +543,13 @@ y = sqrt(4.0)
     // #endregion
 
     // #region other
-    /*#[test]
+    #[test]
     fn eval() {
         let mut vm : Vm = eval!("
 eval('y = 10')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
-    }*/
+    }
     // #endregion
 
 }

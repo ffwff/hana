@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use debug_cell::RefCell;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use crate::vm::Vm;
 use crate::vm::VmOpcode;
@@ -77,7 +77,7 @@ impl Compiler {
         }
     }
 
-    pub fn deref_vm_code(mut self) -> CArray<VmOpcode> {
+    pub fn deref_vm_code(self) -> CArray<VmOpcode> {
         bvm!(self).code.deref()
     }
 

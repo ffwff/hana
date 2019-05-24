@@ -4,7 +4,6 @@ use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
 use crate::vm::Value;
-use super::Gc;
 
 #[hana_function()]
 fn constructor(val: Value::Any) -> Value {

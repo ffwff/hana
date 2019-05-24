@@ -3,7 +3,6 @@ use std::cmp::Ordering;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::cnativeval::{_valueType, NativeValue};
-use super::Gc;
 use crate::vm::Value;
 
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {

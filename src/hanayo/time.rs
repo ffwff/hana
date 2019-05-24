@@ -3,7 +3,6 @@ use std::thread::sleep as nsleep;
 use crate::vmbindings::vm::Vm;
 use crate::vm::Value;
 use crate::vmbindings::record::Record;
-use super::Gc;
 
 fn duration_to_record(vm: &Vm, duration: Duration) -> Value {
     let rec = vm.malloc(Record::new());
