@@ -105,7 +105,7 @@ void value_div(struct value *result, const struct value left, const struct value
         case TYPE_FLOAT: {
             value_float(result, (double)left.as.integer / right.as.floatp); break; }
         case TYPE_INT: {
-            value_int(result, (double)left.as.integer / (double)right.as.integer);
+            value_float(result, (double)left.as.integer / (double)right.as.integer);
             break; }
         default:
             result->type = TYPE_INTERPRETER_ERROR; }
