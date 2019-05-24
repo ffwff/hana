@@ -7,7 +7,7 @@ pub mod interpreter_tests {
     use haru::compiler;
     use haru::vm::{Vm, VmOpcode, Value};
     use haru::vmbindings::vmerror::VmError;
-    use haru::gc;
+    
     use std::rc::Rc;
 
     macro_rules! eval {
@@ -30,19 +30,19 @@ pub mod interpreter_tests {
     // #region vars
     #[test]
     fn int_literal() {
-        let mut vm : Vm = eval!("y = 10");
+        let vm : Vm = eval!("y = 10");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
     }
 
     #[test]
     fn float_literal() {
-        let mut vm : Vm = eval!("y = 420.69");
+        let vm : Vm = eval!("y = 420.69");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Float(420.69));
     }
 
     #[test]
     fn string_literal() {
-        let mut vm : Vm = eval!("y = 'test'");
+        let vm : Vm = eval!("y = 'test'");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "test");
     }
     // #endregion
@@ -50,13 +50,13 @@ pub mod interpreter_tests {
     // #region vars
     #[test]
     fn global_var() {
-        let mut vm : Vm = eval!("y = 10");
+        let vm : Vm = eval!("y = 10");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
     }
 
     #[test]
     fn global_var_dollar() {
-        let mut vm : Vm = eval!("$y = 10");
+        let vm : Vm = eval!("$y = 10");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));
     }
     // #endregion
@@ -64,61 +64,61 @@ pub mod interpreter_tests {
     // #region operators
     #[test]
     fn basic_arith() {
-        let mut vm : Vm = eval!("y = 2*(3+5)");
+        let vm : Vm = eval!("y = 2*(3+5)");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(16));
     }
 
     #[test]
     fn cmp_gt() {
-        let mut vm : Vm = eval!("y = 1 > 0");
+        let vm : Vm = eval!("y = 1 > 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
 
     #[test]
     fn cmp_lt() {
-        let mut vm : Vm = eval!("y = 1 < 0");
+        let vm : Vm = eval!("y = 1 < 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(0));
     }
 
     #[test]
     fn cmp_gte() {
-        let mut vm : Vm = eval!("y = 0 >= 0");
+        let vm : Vm = eval!("y = 0 >= 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
 
     #[test]
     fn cmp_lte() {
-        let mut vm : Vm = eval!("y = 0 <= 0");
+        let vm : Vm = eval!("y = 0 <= 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
 
     #[test]
     fn cmp_eq() {
-        let mut vm : Vm = eval!("y = 0 == 0");
+        let vm : Vm = eval!("y = 0 == 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));
     }
 
     #[test]
     fn and_op() {
-        let mut vm : Vm = eval!("y = 5 and 0");
+        let vm : Vm = eval!("y = 5 and 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(0));
     }
 
     #[test]
     fn or_op() {
-        let mut vm : Vm = eval!("y = 5 or 0");
+        let vm : Vm = eval!("y = 5 or 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(5));
     }
 
     #[test]
     fn condexpr() {
-        let mut vm : Vm = eval!("y = 1 ? 2*2 : 0");
+        let vm : Vm = eval!("y = 1 ? 2*2 : 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(4));
     }
 
     #[test]
     fn adds_not_in_place() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = 0
 a += 1
 ");
@@ -127,7 +127,7 @@ a += 1
 
     #[test]
     fn adds_in_place() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = 'a'
 a += 'b'
 ");
@@ -136,7 +136,7 @@ a += 'b'
 
     #[test]
     fn adds_indexed() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = ['b','c']
 y = 'a'
 y += a[0]
@@ -146,7 +146,7 @@ y += a[0]
 
     #[test]
     fn adds_to_array_indexed_in_place() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = ['a','c']
 a[0] += 'b'
 y = a[0]
@@ -156,7 +156,7 @@ y = a[0]
 
     #[test]
     fn adds_to_record_indexed_in_place() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record a
     y = 'a'
 end
@@ -168,7 +168,7 @@ y = a.y
 
     #[test]
     fn muls_in_place() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 x = 'a'
 x *= 3
 ");
@@ -179,7 +179,7 @@ x *= 3
     // #region if statement
     #[test]
     fn if_stmt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 if 0 then y = 1
 ");
         assert!(vm.global().get("y").is_none());
@@ -187,7 +187,7 @@ if 0 then y = 1
 
     #[test]
     fn if_else_stmt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 if 0 then y = 1
 else y = 2
 ");
@@ -198,7 +198,7 @@ else y = 2
     // #region while statement
     #[test]
     fn while_stmt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 i = 0
 while i < 10 begin
 i = i + 1
@@ -211,7 +211,7 @@ end
     // #region for statement
     #[test]
     fn for_stmt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 for i=0 to 10 begin
 end
 ");
@@ -220,7 +220,7 @@ end
 
     #[test]
     fn for_downto_stmt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 for i=10 downto 0 begin
 end
 ");
@@ -229,7 +229,7 @@ end
 
     #[test]
     fn for_in_stmt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 for i in [1,2,3,10] begin
 end
 ");
@@ -238,7 +238,7 @@ end
 
     #[test]
     fn for_in_stmt_empty() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 for i in [] begin
 end
 ");
@@ -248,7 +248,7 @@ end
 
     #[test]
     fn for_in_stmt_string() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = 0
 for i in 'abcd' begin
     y += 1
@@ -259,7 +259,7 @@ end
 
     #[test]
     fn for_in_stmt_iterator() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record x
 
     i = 1
@@ -286,7 +286,7 @@ end
     // #region continue/break
     #[test]
     fn break_stmt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 for i=0 to 10 begin
 if i == 5 then break
 end
@@ -298,7 +298,7 @@ end
     // #region functions
     #[test]
     fn function_stmt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 function A() begin
 end
 ");
@@ -309,7 +309,7 @@ end
     }
     #[test]
     fn function_stmt_call() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 function A() begin
 return 10
 end
@@ -319,7 +319,7 @@ y = A()
     }
     #[test]
     fn function_stmt_call_args() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 function A(x) begin
 return 10+x
 end
@@ -330,7 +330,7 @@ y = A(10)
     }
     #[test]
     fn function_stmt_scope() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 $x = 1
 function outer() begin
     x = 2
@@ -349,7 +349,7 @@ outer()
     }
     #[test]
     fn function_stmt_scope_up() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 (function() begin
 
     a = 10
@@ -367,7 +367,7 @@ end)()
     }
     #[test]
     fn function_stmt_iife() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 (function() begin
 $y = 0
 end)()
@@ -376,7 +376,7 @@ end)()
     }
     #[test]
     fn function_expr() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 fib(n) = n <= 1 ? 1 : fib(n-1) + fib(n-2)
 ");
         assert!(match vm.global().get("fib").unwrap().unwrap() {
@@ -386,7 +386,7 @@ fib(n) = n <= 1 ? 1 : fib(n-1) + fib(n-2)
     }
     #[test]
     fn function_return() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 function a() begin
     return 1
     $y = 0
@@ -398,7 +398,7 @@ y = a()
     }
     #[test]
     fn function_tco() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = 0
 function a() begin
     if $y == 1000 then return
@@ -411,7 +411,7 @@ a()
     }
     #[test]
     fn function_tco_short() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a(x) = x == 1000 ? x : a(x+1)
 y = a(0)
 ");
@@ -433,7 +433,7 @@ end
     // #region exceptions
     #[test]
     fn try_stmt_simple() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 try
     y = 10
 end
@@ -451,7 +451,7 @@ raise 0
 
     #[test]
     fn try_stmt_handled_raise() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
     function constructor(self) begin
         return self
@@ -470,7 +470,7 @@ end
     // #region record
     #[test]
     fn record_stmt_simple() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
 end
 ");
@@ -479,7 +479,7 @@ end
 
     #[test]
     fn record_stmt_with_body() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
     y = 0
     function x() begin
@@ -497,7 +497,7 @@ end
 
     #[test]
     fn memexpr_get_unk() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
 end
 y = A.x
@@ -507,7 +507,7 @@ y = A.x
 
     #[test]
     fn memexpr_indexed_record() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
     x = 10
 end
@@ -518,7 +518,7 @@ y = A['x']
 
     #[test]
     fn memexpr_set() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
     y = 0
 end
@@ -533,7 +533,7 @@ x()
 
     #[test]
     fn memexpr_adds() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
     y = 0
 end
@@ -548,7 +548,7 @@ x()
 
     #[test]
     fn memexpr_adds_ordering() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
     y = 'a'
 end
@@ -563,7 +563,7 @@ x()
 
     #[test]
     fn record_stmt_constructor() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
     function constructor(self) begin
         return self
@@ -578,7 +578,7 @@ a = A()
 
     #[test]
     fn record_stmt_prototype_method() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record A
     function constructor(self) begin
         return self
@@ -599,7 +599,7 @@ y = a.test()
     // #region array
     #[test]
     fn array_simple() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = []
 ");
         vm.global().get("a").unwrap().unwrap().array();
@@ -607,7 +607,7 @@ a = []
 
     #[test]
     fn array_repeat() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = [1]*5
 ");
         let arr = vm.global().get("a").unwrap().unwrap().array();
@@ -616,7 +616,7 @@ a = [1]*5
 
     #[test]
     fn array_multiple() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = ['a', 'b']
 ");
         let arr = vm.global().get("a").unwrap().unwrap().array();
@@ -627,7 +627,7 @@ a = ['a', 'b']
 
     #[test]
     fn array_index() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = ['a', 'b']
 y = a[0]
 ");
@@ -636,7 +636,7 @@ y = a[0]
 
     #[test]
     fn array_index_set() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = ['a', 'b']
 a[0] = 'x'
 y = a[0]
@@ -648,7 +648,7 @@ y = a[0]
     // #region string
     #[test]
     fn string_index() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = 'abcdef'
 y = a[0]
 ");

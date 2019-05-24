@@ -8,7 +8,7 @@ pub mod hanayo_tests {
     use haru::vm::Vm;
     use haru::vm::VmOpcode;
     use haru::vm::Value;
-    use haru::gc;
+    
     use haru::hanayo;
     use std::rc::Rc;
 
@@ -34,7 +34,7 @@ pub mod hanayo_tests {
     // #region vm extensions
     #[test]
     fn of_expr_simple() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = 1 of Int
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
@@ -42,7 +42,7 @@ y = 1 of Int
 
     #[test]
     fn of_expr_record() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record Y
 end
 record X
@@ -55,7 +55,7 @@ y = X of Y
 
     #[test]
     fn literal_prototype() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = (10).prototype == Int
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
@@ -65,7 +65,7 @@ y = (10).prototype == Int
     // #region int
     #[test]
     fn int_constructor() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Int(1)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
@@ -73,7 +73,7 @@ y = Int(1)
 
     #[test]
     fn int_constructor_str() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Int('10')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
@@ -81,7 +81,7 @@ y = Int('10')
 
     #[test]
     fn int_chr() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = (97).chr()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "a");
@@ -91,7 +91,7 @@ y = (97).chr()
     // #region float
     #[test]
     fn float_constructor() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Float(1)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().float(), 1.0);
@@ -99,7 +99,7 @@ y = Float(1)
 
     #[test]
     fn float_constructor_str() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Float('10.55')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().float(), 10.55);
@@ -110,7 +110,7 @@ y = Float('10.55')
     // #region array
     #[test]
     fn array_constructor_no_args() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Array()
 ");
         let arr = vm.global().get("y").unwrap().unwrap().array();
@@ -119,7 +119,7 @@ y = Array()
 
     #[test]
     fn array_constructor() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Array(1,2,3)
 ");
         let arr = vm.global().get("y").unwrap().unwrap().array();
@@ -131,7 +131,7 @@ y = Array(1,2,3)
 
     #[test]
     fn array_length() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = [1,2,3].length()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 3);
@@ -139,7 +139,7 @@ y = [1,2,3].length()
 
     #[test]
     fn array_delete() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = [1,2,3]
 y.delete!(1,1)
 ");
@@ -151,7 +151,7 @@ y.delete!(1,1)
 
     #[test]
     fn array_push() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = []
 y.push(10)
 ");
@@ -162,7 +162,7 @@ y.push(10)
 
     #[test]
     fn array_pop() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = [1,2]
 y.pop()
 ");
@@ -173,7 +173,7 @@ y.pop()
 
     #[test]
     fn array_index() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a = ['a', 'b', 'c']
 y = a.index('b')
 ");
@@ -182,7 +182,7 @@ y = a.index('b')
 
     #[test]
     fn array_insert() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = [1,2,3]
 y.insert!(1, 4)
 ");
@@ -196,7 +196,7 @@ y.insert!(1, 4)
 
     #[test]
     fn array_sort_in_place() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = [6,3,1]
 y.sort!()
 ");
@@ -208,7 +208,7 @@ y.sort!()
     }
     #[test]
     fn array_sort() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 x = [6,3,1]
 y = x.sort()
 ");
@@ -221,7 +221,7 @@ y = x.sort()
 
     #[test]
     fn array_map() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a=[3,5,64,2]
 y = a.map(f(x) = x+1)
 ");
@@ -235,7 +235,7 @@ y = a.map(f(x) = x+1)
 
     #[test]
     fn array_map_native() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a=['1','2','3']
 y = a.map(Int)
 ");
@@ -248,7 +248,7 @@ y = a.map(Int)
 
     #[test]
     fn array_filter() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a=[3,5,64,2]
 y = a.filter(f(x) = x>5)
 ");
@@ -259,7 +259,7 @@ y = a.filter(f(x) = x>5)
 
     #[test]
     fn array_reduce() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a=[1,2,3,4,5]
 y = a.reduce(f(x, y) = x + y, 0)
 ");
@@ -268,7 +268,7 @@ y = a.reduce(f(x, y) = x + y, 0)
 
     #[test]
     fn array_chained_functional() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a=[1,2,3,5,6]
 y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)
 ");
@@ -277,7 +277,7 @@ y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)
 
     #[test]
     fn array_join() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 a=[1,2,3,4,5,6]
 y = a.join('')
 ");
@@ -288,7 +288,7 @@ y = a.join('')
     // #region string
     #[test]
     fn string_constructor_no_args() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = String()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "");
@@ -296,7 +296,7 @@ y = String()
 
     #[test]
     fn string_constructor() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = String(10)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "10");
@@ -304,7 +304,7 @@ y = String(10)
 
     #[test]
     fn string_length() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = '日本'.length()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 2);
@@ -312,7 +312,7 @@ y = '日本'.length()
 
     #[test]
     fn string_bytesize() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = '日本'.bytesize()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 6);
@@ -320,7 +320,7 @@ y = '日本'.bytesize()
 
     #[test]
     fn string_startswith() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = 'abc'.startswith?('a')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
@@ -328,7 +328,7 @@ y = 'abc'.startswith?('a')
 
     #[test]
     fn string_endswith() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = 'abc'.endswith?('bc')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
@@ -336,7 +336,7 @@ y = 'abc'.endswith?('bc')
 
     #[test]
     fn string_delete() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 s = 'λκj'
 y = s.delete(1,1)
 ");
@@ -344,7 +344,7 @@ y = s.delete(1,1)
     }
     #[test]
     fn string_delete_in_place() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 s = 'λκj'
 s.delete!(1,1)
 ");
@@ -353,7 +353,7 @@ s.delete!(1,1)
 
     #[test]
     fn string_copy() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 s = 'λκj'
 y = s.copy(1,2)
 ");
@@ -362,7 +362,7 @@ y = s.copy(1,2)
 
     #[test]
     fn string_index() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 s = 'λκj'
 y = s.index('κ')
 ");
@@ -371,7 +371,7 @@ y = s.index('κ')
 
     #[test]
     fn string_insert() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 s = 'λκj'
 s.insert!(1,'a')
 ");
@@ -380,7 +380,7 @@ s.insert!(1,'a')
 
     #[test]
     fn string_split() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 s = 'a b c'
 y = s.split(' ')
 ");
@@ -393,7 +393,7 @@ y = s.split(' ')
 
     #[test]
     fn string_chars() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 s = 'λκj'
 y = s.chars()
 ");
@@ -406,7 +406,7 @@ y = s.chars()
 
     #[test]
     fn string_ord() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 s = 'a'
 y = s.ord()
 ");
@@ -417,7 +417,7 @@ y = s.ord()
     // #region record
     #[test]
     fn record_new() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Record()
 ");
         vm.global().get("y").unwrap().unwrap().record();
@@ -425,7 +425,7 @@ y = Record()
 
     #[test]
     fn record_keys() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 record x
     a = 10
     b = 10
@@ -441,7 +441,7 @@ y = Record::keys(x)
     #[test]
     fn env_get() {
         std::env::set_var("test_key", "value");
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Env::get('test_key')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "value");
@@ -458,7 +458,7 @@ Env::set('test_key_set', 'value')
     #[test]
     fn env_vars() {
         std::env::set_var("a_key", "value");
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Env::vars()['a_key']
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "value");
@@ -469,7 +469,7 @@ y = Env::vars()['a_key']
     #[test]
     fn file_read() {
         std::fs::write("/tmp/file_read", "test");
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 f = File('/tmp/file_read', 'r')
 y = f.read()
 f.close()
@@ -480,7 +480,7 @@ f.close()
     #[test]
     fn file_read_up_to() {
         std::fs::write("/tmp/file_read_up_to", "test");
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 f = File('/tmp/file_read_up_to', 'r')
 y = f.read_up_to(2)
 ");
@@ -501,7 +501,7 @@ f.close()
     // #region cmd
     #[test]
     fn cmd_constructor_array() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Cmd(['echo', 'hello world']).out()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
@@ -509,7 +509,7 @@ y = Cmd(['echo', 'hello world']).out()
 
     #[test]
     fn cmd_constructor_string() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Cmd('echo hello world').out()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
@@ -517,7 +517,7 @@ y = Cmd('echo hello world').out()
 
     #[test]
     fn cmd_err() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Cmd('echo hello world >&2').err()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "hello world\n");
@@ -525,7 +525,7 @@ y = Cmd('echo hello world >&2').err()
 
     #[test]
     fn cmd_in() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = Cmd('cat -').in('nyaaa').out()
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "nyaaa");
@@ -535,7 +535,7 @@ y = Cmd('cat -').in('nyaaa').out()
     // #region math
     #[test]
     fn math_sqrt() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 y = sqrt(4.0)
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Float(2.0));
@@ -545,7 +545,7 @@ y = sqrt(4.0)
     // #region other
     #[test]
     fn eval() {
-        let mut vm : Vm = eval!("
+        let vm : Vm = eval!("
 eval('y = 10')
 ");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(10));

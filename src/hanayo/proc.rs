@@ -1,12 +1,12 @@
-use std::process::{Child, Stdio, Output};
+use std::process::{Child};
 use std::io::Write;
 use crate::vmbindings::carray::CArray;
-use crate::vmbindings::record::Record;
+
 use crate::vmbindings::vm::Vm;
 use crate::vm::Value;
 
 #[hana_function()]
-fn constructor(val: Value::Any) -> Value {
+fn constructor(_val: Value::Any) -> Value {
     unimplemented!()
 }
 
@@ -22,7 +22,7 @@ fn in_(process: Value::Record, input: Value::Str) -> Value {
 #[hana_function()]
 fn out(process: Value::Record) -> Value {
     // stdout as string
-    let mut p = *process.as_mut().native_field.take().unwrap().downcast::<Child>().unwrap();
+    let p = *process.as_mut().native_field.take().unwrap().downcast::<Child>().unwrap();
     let out = p.wait_with_output().unwrap();
     Value::Str(vm.malloc(String::from_utf8(out.stdout)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e))))
@@ -31,7 +31,7 @@ fn out(process: Value::Record) -> Value {
 #[hana_function()]
 fn err(process: Value::Record) -> Value {
     // stderr as string
-    let mut p = *process.as_mut().native_field.take().unwrap().downcast::<Child>().unwrap();
+    let p = *process.as_mut().native_field.take().unwrap().downcast::<Child>().unwrap();
     let out = p.wait_with_output().unwrap();
     Value::Str(vm.malloc(String::from_utf8(out.stderr)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e))))
@@ -40,7 +40,7 @@ fn err(process: Value::Record) -> Value {
 #[hana_function()]
 fn outputs(process: Value::Record) -> Value {
     // array of [stdout, stderr] outputs
-    let mut p = *process.as_mut().native_field.take().unwrap().downcast::<Child>().unwrap();
+    let p = *process.as_mut().native_field.take().unwrap().downcast::<Child>().unwrap();
     let out = p.wait_with_output().unwrap();
     let arr = vm.malloc(CArray::new());
     arr.as_mut().push(Value::Str(vm.malloc(String::from_utf8(out.stdout)
@@ -59,7 +59,7 @@ fn wait(process: Value::Record) -> Value {
         Ok(e) =>
             if let Some(code) = e.code() { Value::Int(code as i64) }
             else { Value::Int(0) },
-        Err(err) => Value::Nil
+        Err(_) => Value::Nil
     }
 }
 
@@ -69,6 +69,6 @@ fn kill(process: Value::Record) -> Value {
     let p = field.downcast_mut::<Child>().unwrap();
     match p.kill() {
         Ok(()) => Value::Int(1),
-        Err(err) => Value::Int(0)
+        Err(_) => Value::Int(0)
     }
 }

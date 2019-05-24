@@ -124,7 +124,6 @@ fn outputs(cmd: Value::Record) -> Value {
 #[hana_function()]
 fn spawn(cmd: Value::Record) -> Value {
     let p = get_output(cmd.as_mut(), false).as_process();
-    let arr = vm.malloc(CArray::new());
     let prec = vm.malloc(Record::new());
     prec.as_mut().insert("prototype".to_string(),
         Value::Record(vm.stdlib.as_ref().unwrap().proc_rec.clone()).wrap());
