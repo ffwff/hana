@@ -28,7 +28,7 @@ pub struct SourceMap {
     pub fileno: usize,
 }
 
-macro_rules! bvm {
+macro_rules! vm {
     ($c:ident) => ($c.vm.borrow_mut());
 }
 
@@ -78,7 +78,7 @@ impl Compiler {
     }
 
     pub fn deref_vm_code(self) -> CArray<VmOpcode> {
-        bvm!(self).code.deref()
+        vm!(self).code.deref()
     }
 
     // scopes
@@ -111,8 +111,8 @@ impl Compiler {
     pub fn emit_set_var(&mut self, var : String) {
         if var.starts_with("$") || self.scopes.len() == 0 {
             // set global
-            bvm!(self).code.push(VmOpcode::OP_SET_GLOBAL);
-            bvm!(self).cpushs(if var.starts_with("$") { &var[1..] }
+            vm!(self).code.push(VmOpcode::OP_SET_GLOBAL);
+            vm!(self).cpushs(if var.starts_with("$") { &var[1..] }
                            else { var.as_str() });
         } else if let Some(local) = self.get_local(&var) {
             // set existing local
@@ -122,20 +122,20 @@ impl Compiler {
                 let local = self.set_local(var.clone()).unwrap();
                 slot = local.0;
             }
-            bvm!(self).code.push(VmOpcode::OP_SET_LOCAL);
-            bvm!(self).cpush16(slot);
+            vm!(self).code.push(VmOpcode::OP_SET_LOCAL);
+            vm!(self).cpush16(slot);
         } else {
             let local = self.set_local(var.clone()).unwrap();
             let slot = local.0;
-            bvm!(self).code.push(VmOpcode::OP_SET_LOCAL);
-            bvm!(self).cpush16(slot);
+            vm!(self).code.push(VmOpcode::OP_SET_LOCAL);
+            vm!(self).cpush16(slot);
         }
     }
     pub fn emit_set_var_fn(&mut self, var : String) {
         if var.starts_with("$") || self.scopes.len() == 0 {
             // set global
-            bvm!(self).code.push(VmOpcode::OP_SET_GLOBAL);
-            bvm!(self).cpushs(if var.starts_with("$") { &var[1..] }
+            vm!(self).code.push(VmOpcode::OP_SET_GLOBAL);
+            vm!(self).cpushs(if var.starts_with("$") { &var[1..] }
                            else { var.as_str() });
         } else if let Some(local) = self.get_local(&var) {
             // set existing local
@@ -145,13 +145,13 @@ impl Compiler {
                 let local = self.set_local(var.clone()).unwrap();
                 slot = local.0;
             }
-            bvm!(self).code.push(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
-            bvm!(self).cpush16(slot);
+            vm!(self).code.push(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            vm!(self).cpush16(slot);
         } else {
             let local = self.set_local(var.clone()).unwrap();
             let slot = local.0;
-            bvm!(self).code.push(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
-            bvm!(self).cpush16(slot);
+            vm!(self).code.push(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            vm!(self).cpush16(slot);
         }
     }
 
@@ -159,37 +159,37 @@ impl Compiler {
         let local = self.get_local(&var);
         if var.starts_with("$") || !local.is_some() {
             // set global
-            bvm!(self).code.push(VmOpcode::OP_GET_GLOBAL);
-            bvm!(self).cpushs(if var.starts_with("$") { &var[1..] }
+            vm!(self).code.push(VmOpcode::OP_GET_GLOBAL);
+            vm!(self).cpushs(if var.starts_with("$") { &var[1..] }
                            else { var.as_str() });
         } else {
             let local = local.unwrap();
             let slot = local.0;
             let relascope = local.1;
             if relascope == 0 {
-                bvm!(self).code.push(VmOpcode::OP_GET_LOCAL);
-                bvm!(self).cpush16(slot);
+                vm!(self).code.push(VmOpcode::OP_GET_LOCAL);
+                vm!(self).cpush16(slot);
             } else {
-                bvm!(self).code.push(VmOpcode::OP_GET_LOCAL_UP);
-                bvm!(self).cpush16(slot);
-                bvm!(self).cpush16(relascope);
+                vm!(self).code.push(VmOpcode::OP_GET_LOCAL_UP);
+                vm!(self).cpush16(slot);
+                vm!(self).cpush16(relascope);
             }
         }
     }
 
     // labels
     pub fn reserve_label(&mut self) -> usize {
-        let pos = bvm!(self).code.len();
-        bvm!(self).cpush32(0xdeadbeef);
+        let pos = vm!(self).code.len();
+        vm!(self).cpush32(0xdeadbeef);
         pos
     }
     pub fn reserve_label16(&mut self) -> usize {
-        let pos = bvm!(self).code.len();
-        bvm!(self).cpush16(0);
+        let pos = vm!(self).code.len();
+        vm!(self).cpush16(0);
         pos
     }
     pub fn fill_label16(&mut self, pos: usize, label: u16) {
-        bvm!(self).cfill_label16(pos, label);
+        vm!(self).cfill_label16(pos, label);
     }
 
     // scopes
