@@ -104,7 +104,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     }
 
     // execute!
-    //c.vm.borrow_mut().compiler = Some(&mut c);
+    c.vm.borrow_mut().compiler = Some(&mut c);
     c.sources.push(s);
     hanayo::init(&mut c.vm.borrow_mut());
     c.vm.borrow_mut().gc_enable();
@@ -146,14 +146,12 @@ fn handle_error(c: &compiler::Compiler) {
 
 // repl
 fn repl(flag: ParserFlag) {
-    unimplemented!()
-    /* let mut rl = Editor::<()>::new();
+    let mut rl = Editor::<()>::new();
     let mut c = compiler::Compiler::new();
     c.files.push("[repl]".to_string());
     c.sources.push(String::new());
-    c.vm.compiler = Some(&mut c);
-    set_root(&mut c.vm);
-    hanayo::init(&mut c.vm);
+    c.vm.borrow_mut().compiler = Some(&mut c);
+    hanayo::init(&mut c.vm.borrow_mut());
     loop {
         let readline = rl.readline(">> ");
         match readline {
@@ -165,14 +163,18 @@ fn repl(flag: ParserFlag) {
                             println!("{:?}", prog);
                             continue;
                         }
-                        c.vm.error = VmError::ERROR_NO_ERROR;
+                        {
+                            // setup
+                            let mut vm = c.vm.borrow_mut();
+                            vm.error = VmError::ERROR_NO_ERROR;
+                            vm.ip = vm.code.len() as u32;
+                        }
                         c.sources[0] = s.clone();
-                        c.vm.ip = c.vm.code.len() as u32;
                         for stmt in prog {
                             stmt.emit(&mut c);
                         }
-                        c.vm.code.push(VmOpcode::OP_HALT);
-                        c.vm.execute();
+                        c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
+                        c.vm.borrow().execute();
                         handle_error(&c);
                     }
                     Err(err) => {
@@ -197,7 +199,7 @@ fn repl(flag: ParserFlag) {
                 break
             }
         }
-    } */
+    }
 }
 
 // CLI specific
