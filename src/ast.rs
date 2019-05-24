@@ -235,7 +235,8 @@ pub mod ast {
             }
             self.stmt.emit(c);
             if self.id.is_some() {
-                c.symbol.insert(bvm!(c).code.len() - 1, self.id.as_ref().unwrap().clone());
+                let len = bvm!(c).code.len() - 1;
+                c.symbol.insert(len, self.id.as_ref().unwrap().clone());
             }
 
             // default return
@@ -571,8 +572,9 @@ pub mod ast {
                         // epilogue
                         if in_place_addr != std::usize::MAX {
                             // jmp here if we can do it in place
+                            let len = bvm!(c).code.len();
                             bvm!(c).code.as_mut_bytes()[in_place_addr]
-                                = (bvm!(c).code.len() - in_place_addr) as u8;
+                                = (len - in_place_addr) as u8;
                         }
                         if val.is_some() && !memexpr.is_expr {
                             bvm!(c).code.push(VmOpcode::OP_SWAP);

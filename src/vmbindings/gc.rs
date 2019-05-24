@@ -130,7 +130,7 @@ impl GcManager {
         // mark from root
         {
             let rootcell = self.root.upgrade().unwrap();
-            rootcell.borrow_mut().mark();
+            rootcell.borrow().mark();
         }
         // sweep phase:
         let mut node : *mut GcNode = self.first_node;

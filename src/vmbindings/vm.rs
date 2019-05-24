@@ -235,9 +235,9 @@ impl Vm {
         self.gc_manager.as_ref().unwrap().borrow_mut().enable()
     }
 
-    pub unsafe fn mark(&mut self) {
+    pub unsafe fn mark(&self) {
         // globalenv
-        let globalenv = self.global();
+        let globalenv = &*self.globalenv;
         for (_, val) in globalenv.iter() {
             val.trace();
         }
