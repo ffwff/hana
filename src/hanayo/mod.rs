@@ -49,7 +49,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region array
     {
-    let mut array = Gc::new(Record::new());
+    let mut array = vm.malloc(Record::new());
     set_obj_var!(array, "constructor", Value::NativeFn(array::constructor));
     set_obj_var!(array, "length",      Value::NativeFn(array::length));
     set_obj_var!(array, "insert!",     Value::NativeFn(array::insert_));
@@ -70,7 +70,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region string
     {
-    let mut string = Gc::new(Record::new());
+    let mut string = vm.malloc(Record::new());
     set_obj_var!(string, "constructor", Value::NativeFn(string::constructor));
     set_obj_var!(string, "length",      Value::NativeFn(string::length));
     set_obj_var!(string, "bytesize",    Value::NativeFn(string::bytesize));
@@ -91,7 +91,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region int
     {
-    let mut int = Gc::new(Record::new());
+    let mut int = vm.malloc(Record::new());
     set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
     set_obj_var!(int, "chr",         Value::NativeFn(int::chr));
     vm.dint = int.to_mut_raw(); unsafe { ref_inc(vm.dint as *mut libc::c_void); }
@@ -101,7 +101,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region float
     {
-    let mut float = Gc::new(Record::new());
+    let mut float = vm.malloc(Record::new());
     set_obj_var!(float, "constructor", Value::NativeFn(float::constructor));
     vm.dfloat = float.to_mut_raw(); unsafe { ref_inc(vm.dfloat as *mut libc::c_void); }
     set_var!("Float", Value::Record(float));
@@ -110,7 +110,7 @@ pub fn init(vm : &mut Vm) {
 
     // #region record
     {
-    let mut record = Gc::new(Record::new());
+    let mut record = vm.malloc(Record::new());
     set_obj_var!(record, "constructor", Value::NativeFn(record::constructor));
     set_obj_var!(record, "keys",        Value::NativeFn(record::keys));
     vm.drec = record.to_mut_raw(); unsafe { ref_inc(vm.drec as *mut libc::c_void); }
@@ -119,7 +119,7 @@ pub fn init(vm : &mut Vm) {
     // #endregion
 
     // #region files
-    let file = Gc::new(Record::new());
+    let file = vm.malloc(Record::new());
     set_obj_var!(file, "constructor", Value::NativeFn(file::constructor));
     set_obj_var!(file, "close",       Value::NativeFn(file::close));
     set_obj_var!(file, "read",        Value::NativeFn(file::read));
@@ -132,7 +132,7 @@ pub fn init(vm : &mut Vm) {
     // #endregion
 
     // #region cmd
-    let cmd = Gc::new(Record::new());
+    let cmd = vm.malloc(Record::new());
     set_obj_var!(cmd, "constructor",  Value::NativeFn(cmd::constructor));
     set_obj_var!(cmd, "in" ,          Value::NativeFn(cmd::in_));
     set_obj_var!(cmd, "out",          Value::NativeFn(cmd::out));
@@ -142,7 +142,7 @@ pub fn init(vm : &mut Vm) {
     // #endregion
 
     // #region env
-    let env = Gc::new(Record::new());
+    let env = vm.malloc(Record::new());
     set_obj_var!(env, "get",  Value::NativeFn(env::get));
     set_obj_var!(env, "set",  Value::NativeFn(env::set));
     set_obj_var!(env, "vars", Value::NativeFn(env::vars));
@@ -150,7 +150,7 @@ pub fn init(vm : &mut Vm) {
     // #endregion
 
     // #region time
-    let time = Gc::new(Record::new());
+    let time = vm.malloc(Record::new());
     set_obj_var!(time, "constructor",  Value::NativeFn(time::constructor));
     set_obj_var!(time, "sleep",        Value::NativeFn(time::sleep));
     set_obj_var!(time, "since",        Value::NativeFn(time::since));

@@ -1,7 +1,9 @@
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use crate::vm::Vm;
 use crate::vm::VmOpcode;
 use crate::vmbindings::carray::CArray;
-use std::collections::HashMap;
 
 // private
 struct Scope {
@@ -34,7 +36,7 @@ pub struct Compiler {
     pub modules_loaded: std::collections::HashSet<std::path::PathBuf>,
     pub symbol: HashMap<usize, String>,
     pub sources: Vec<String>,
-    pub vm : Vm
+    pub vm : Rc<RefCell<Vm>>
 }
 impl Compiler {
     pub fn new() -> Compiler {
@@ -62,11 +64,11 @@ impl Compiler {
             modules_loaded: std::collections::HashSet::new(),
             symbol: HashMap::new(),
             sources: Vec::new(),
-            vm: {
+            vm: Rc::new(RefCell::new({
                 let mut vm_ = Vm::new_nil();
                 vm_.code = vm.code.deref();
                 vm_
-            }
+            }))
         }
     }
 

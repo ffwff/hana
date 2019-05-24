@@ -7,7 +7,7 @@ use crate::vm::Value;
 #[hana_function()]
 fn get(key: Value::Str) -> Value {
     match env::var(key.as_ref()) {
-        Ok(value) => Value::Str(Gc::new(value)),
+        Ok(value) => Value::Str(vm.malloc(value)),
         Err(_) => Value::Nil
     }
 }
@@ -20,9 +20,9 @@ fn set(key: Value::Str, val: Value::Str) -> Value {
 
 #[hana_function()]
 fn vars() -> Value {
-    let record = Gc::new(Record::new());
+    let record = vm.malloc(Record::new());
     for (key, value) in env::vars() {
-        record.as_mut().insert(key, Value::Str(Gc::new(value)).wrap());
+        record.as_mut().insert(key, Value::Str(vm.malloc(value)).wrap());
     }
     Value::Record(record)
 }

@@ -41,8 +41,8 @@ pub unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char,
 
 // #region dict
 #[no_mangle]
-pub unsafe extern "C" fn dict_malloc() -> *mut Record {
-    Gc::new(Record::new()).into_raw()
+pub unsafe extern "C" fn dict_malloc(vm: *const Vm) -> *mut Record {
+    (&*vm).malloc(Record::new()).into_raw()
 }
 
 #[no_mangle]
@@ -83,24 +83,24 @@ pub unsafe extern "C" fn dict_set_str(cr: *mut Record, ckey: *const String, val:
 
 // #region string
 #[no_mangle]
-pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char) -> *mut String {
+pub unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char, vm: *const Vm) -> *mut String {
     let s = CStr::from_ptr(cstr).to_str().unwrap();
-    Gc::new(String::from(s)).into_raw()
+    (&*vm).malloc(String::from(s)).into_raw()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const String) -> *mut String {
+pub unsafe extern "C" fn string_append(cleft: *const String, cright: *const String, vm: *const Vm) -> *mut String {
     let left : &'static String = &*cleft;
     let right : &'static String = &*cright;
     let mut newleft = left.clone();
     newleft += right;
-    Gc::new(newleft).into_raw()
+    (&*vm).malloc(newleft).into_raw()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn string_repeat(cleft: *const String, n : i64) -> *mut String {
+pub unsafe extern "C" fn string_repeat(cleft: *const String, n : i64, vm: *const Vm) -> *mut String {
     let left : &'static String = &*cleft;
-    Gc::new(left.repeat(n as usize)).into_raw()
+    (&*vm).malloc(left.repeat(n as usize)).into_raw()
 }
 
 #[no_mangle]
@@ -113,10 +113,10 @@ pub unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn string_at(left: *const String, idx : i64) -> *mut String {
+pub unsafe extern "C" fn string_at(left: *const String, idx : i64, vm: *const Vm) -> *mut String {
     let left : &'static String = &*left;
     if let Some(ch) = left.graphemes(true).nth(idx as usize) {
-        Gc::new(ch.to_string()).into_raw()
+        (&*vm).malloc(ch.to_string()).into_raw()
     } else {
         null_mut()
     }
@@ -129,11 +129,12 @@ pub unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn string_chars(s: *const String) -> *mut CArray<NativeValue> {
+pub unsafe extern "C" fn string_chars(s: *const String, vm: *const Vm) -> *mut CArray<NativeValue> {
     let s : &'static String = &*s;
-    let chars = Gc::new(CArray::new());
+    let vm = &*vm;
+    let chars = vm.malloc(CArray::new());
     for ch in s.graphemes(true) {
-        chars.as_mut().push(Value::Str(Gc::new(ch.to_string())).wrap());
+        chars.as_mut().push(Value::Str(vm.malloc(ch.to_string())).wrap());
     }
     chars.into_raw()
 }
@@ -165,8 +166,8 @@ pub unsafe extern "C" fn string_len(s: *const String) -> usize {
 
 // #region function
 #[no_mangle]
-pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env) -> *mut Function {
-    Gc::new(Function::new(addr, nargs, env)).into_raw()
+pub unsafe extern "C" fn function_malloc(addr: u32, nargs: u16, env: *const Env, vm: *const Vm) -> *mut Function {
+    (&*vm).malloc(Function::new(addr, nargs, env)).into_raw()
 }
 
 #[no_mangle]
@@ -178,15 +179,15 @@ pub unsafe extern "C" fn function_set_bound_var(fun: *mut Function, slot: u16, v
 
 // #region array
 #[no_mangle]
-pub unsafe extern "C" fn array_obj_malloc() -> *mut CArray<NativeValue> {
-    Gc::new(CArray::new()).into_raw()
+pub unsafe extern "C" fn array_obj_malloc(vm: *const Vm) -> *mut CArray<NativeValue> {
+    (&*vm).malloc(CArray::new()).into_raw()
 }
 #[no_mangle]
-pub unsafe extern "C" fn array_obj_malloc_n(n: usize) -> *mut CArray<NativeValue> {
-    Gc::new(CArray::reserve(n)).into_raw()
+pub unsafe extern "C" fn array_obj_malloc_n(n: usize, vm: *const Vm) -> *mut CArray<NativeValue> {
+    (&*vm).malloc(CArray::reserve(n)).into_raw()
 }
 #[no_mangle]
-pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n: usize) -> *mut CArray<NativeValue> {
+pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n: usize, vm: *const Vm) -> *mut CArray<NativeValue> {
     let array = &*carray;
     let mut result : CArray<NativeValue> = CArray::reserve(n);
     for i in 0..n {
@@ -194,7 +195,7 @@ pub unsafe extern "C" fn array_obj_repeat(carray: *const CArray<NativeValue>, n:
             result[j*array.len() + i] = array[j].clone();
         }
     }
-    Gc::new(result).into_raw()
+    (&*vm).malloc(result).into_raw()
 }
 // #endregion
 

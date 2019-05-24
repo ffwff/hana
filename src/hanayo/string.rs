@@ -9,13 +9,13 @@ use super::Gc;
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
-        vm.stack.push(Value::Str(Gc::new(String::new())).wrap());
+        vm.stack.push(Value::Str(vm.malloc(String::new())).wrap());
         return;
     } else {
         assert_eq!(nargs, 1);
         let arg = vm.stack.top().clone().unwrap();
         vm.stack.pop();
-        vm.stack.push(Value::Str(Gc::new(format!("{:?}", arg).to_string())).wrap());
+        vm.stack.push(Value::Str(vm.malloc(format!("{:?}", arg).to_string())).wrap());
     }
 }
 
@@ -51,7 +51,7 @@ fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
                     else { Some(ch) }
                 })
                 .collect::<String>();
-    Value::Str(Gc::new(ss))
+    Value::Str(vm.malloc(ss))
 }
 
 #[hana_function()]
@@ -80,7 +80,7 @@ fn copy(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
                     else { None }
                 })
                 .collect::<String>();
-    Value::Str(Gc::new(ss))
+    Value::Str(vm.malloc(ss))
 }
 
 #[hana_function()]
@@ -95,9 +95,9 @@ fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
 // other
 #[hana_function()]
 fn split(s: Value::Str, delim: Value::Str) -> Value {
-    let array = Gc::new(CArray::new());
+    let array = vm.malloc(CArray::new());
     for ss in s.as_ref().split(delim.as_ref()) {
-        array.as_mut().push(Value::Str(Gc::new(ss.clone().to_string())).wrap());
+        array.as_mut().push(Value::Str(vm.malloc(ss.clone().to_string())).wrap());
     }
     Value::Array(array)
 }
@@ -122,10 +122,10 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 
 #[hana_function()]
 fn chars(s: Value::Str) -> Value {
-    let array = Gc::new(CArray::new());
+    let array = vm.malloc(CArray::new());
     let array_ref = array.as_mut();
     for ch in s.as_ref().graphemes(true) {
-        array_ref.push(Value::Str(Gc::new(ch.to_string())).wrap());
+        array_ref.push(Value::Str(vm.malloc(ch.to_string())).wrap());
     }
     Value::Array(array)
 }

@@ -2,6 +2,8 @@ use std::ptr::null_mut;
 use std::mem::ManuallyDrop;
 use std::ffi::CString;
 use std::path::Path;
+use std::rc::Rc;
+use std::cell::RefCell;
 extern crate libc;
 
 use super::carray::CArray;
@@ -13,7 +15,7 @@ use super::exframe::ExFrame;
 use super::env::Env;
 pub use super::value::Value;
 use super::vmerror::VmError;
-use super::gc::ref_dec;
+use super::gc::*;
 use crate::compiler::Compiler;
 use crate::hanayo::HanayoCtx;
 
@@ -97,6 +99,7 @@ pub struct Vm {
     // store compiler here for import modules
     // TODO: rethink the design and use RC
     pub stdlib     : Option<HanayoCtx>,
+    gc_manager     : Option<RefCell<GcManager>>,
 }
 
 #[link(name="hana", kind="static")]
@@ -116,8 +119,8 @@ extern "C" {
 impl Vm {
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new() -> Vm {
-        Vm{
+    pub fn new() -> Rc<RefCell<Vm>> {
+        let vm = Rc::new(RefCell::new(Vm{
             ip: 0,
             localenv: null_mut(),
             localenv_bp: {
@@ -140,8 +143,12 @@ impl Vm {
             exframe_fallthrough: null_mut(),
             native_call_depth: 0,
             compiler: None,
-            stdlib: None
-        }
+            stdlib: None,
+            gc_manager: None
+        }));
+        let weakref = Rc::downgrade(&vm);
+        vm.borrow_mut().gc_manager = Some(RefCell::new(GcManager::new(weakref)));
+        vm
     }
 
     pub fn new_nil() -> Vm {
@@ -163,7 +170,8 @@ impl Vm {
             exframe_fallthrough: null_mut(),
             native_call_depth: 0,
             compiler: None,
-            stdlib: None
+            stdlib: None,
+            gc_manager: None
         }
     }
 
@@ -216,6 +224,10 @@ impl Vm {
     }
 
     // gc
+    pub fn malloc<T: Sized + GcTraceable>(&self, val: T) -> Gc<T> {
+        self.gc_manager.unwrap().borrow_mut().malloc(val)
+    }
+
     pub unsafe fn mark(&mut self) {
         // globalenv
         let globalenv = self.global();
@@ -341,7 +353,8 @@ impl Vm {
             exframe_fallthrough: self.exframe_fallthrough,
             native_call_depth: self.native_call_depth,
             compiler: None,
-            stdlib: None
+            stdlib: None,
+            gc_manager: None
         };
         // create new ctx
         self.ip = 0;

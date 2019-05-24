@@ -9,12 +9,12 @@ use crate::vm::Value;
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
-        vm.stack.push(Value::Array(Gc::new(CArray::new())).wrap());
+        vm.stack.push(Value::Array(vm.malloc(CArray::new())).wrap());
         return;
     }
 
     let nargs = nargs as usize;
-    let array = Gc::new(CArray::reserve(nargs));
+    let array = vm.malloc(CArray::reserve(nargs));
     for i in 0..nargs {
         let val = vm.stack.top();
         array.as_mut()[i] = val.clone();
@@ -76,7 +76,7 @@ fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
 
 #[hana_function()]
 fn sort(array: Value::Array) -> Value {
-    let new_array = Gc::new(array.as_ref().clone());
+    let new_array = vm.malloc(array.as_ref().clone());
     let slice = new_array.as_mut().as_mut_slice();
     slice.sort_by(value_cmp);
     Value::Array(new_array)
@@ -91,7 +91,7 @@ fn sort_(array: Value::Array) -> Value {
 // functional
 #[hana_function()]
 fn map(array: Value::Array, fun: Value::Any) -> Value {
-    let new_array = Gc::new(CArray::reserve(array.as_ref().len()));
+    let new_array = vm.malloc(CArray::reserve(array.as_ref().len()));
     let mut args = CArray::reserve(1);
     let mut i = 0;
     for val in array.as_ref().iter() {
@@ -108,7 +108,7 @@ fn map(array: Value::Array, fun: Value::Any) -> Value {
 
 #[hana_function()]
 fn filter(array: Value::Array, fun: Value::Any) -> Value {
-    let new_array = Gc::new(CArray::new());
+    let new_array = vm.malloc(CArray::new());
     let mut args = CArray::reserve(1);
     for val in array.as_ref().iter() {
         args[0] = val.clone();
@@ -172,5 +172,5 @@ fn join(array: Value::Array, delim: Value::Str) -> Value {
             i += 1;
         }
     }
-    Value::Str(Gc::new(s))
+    Value::Str(vm.malloc(s))
 }

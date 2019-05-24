@@ -17,7 +17,7 @@ pub extern fn print(cvm : *mut Vm, nargs : u16) {
 
 #[hana_function()]
 fn input() -> Value {
-    let buffer = Gc::new(String::new());
+    let buffer = vm.malloc(String::new());
     std::io::stdin().read_line(buffer.as_mut()).unwrap();
     buffer.as_mut().pop(); // remove newline
     Value::Str(buffer)

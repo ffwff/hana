@@ -18,7 +18,7 @@ fn constructor(val: Value::Any) -> Value {
 #[hana_function()]
 fn chr(i: Value::Int) -> Value {
     if let Some(ch) = std::char::from_u32(i as u32) {
-        Value::Str(Gc::new(ch.to_string()))
+        Value::Str(vm.malloc(ch.to_string()))
     } else {
         Value::Nil
     }

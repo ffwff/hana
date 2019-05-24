@@ -6,14 +6,14 @@ use crate::vm::Value;
 
 #[hana_function()]
 fn constructor() -> Value {
-    Value::Record(Gc::new(Record::new()))
+    Value::Record(vm.malloc(Record::new()))
 }
 
 #[hana_function()]
 fn keys(rec: Value::Record) -> Value {
-    let array = Gc::new(CArray::new());
+    let array = vm.malloc(CArray::new());
     for (key, _) in rec.as_ref().iter() {
-        array.as_mut().push(Value::Str(Gc::new(key.clone())).wrap());
+        array.as_mut().push(Value::Str(vm.malloc(key.clone())).wrap());
     }
     Value::Array(array)
 }

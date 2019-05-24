@@ -5,8 +5,8 @@ use crate::vm::Value;
 use crate::vmbindings::record::Record;
 use super::Gc;
 
-fn duration_to_record(vm: &mut Vm, duration: Duration) -> Value {
-    let rec = Gc::new(Record::new());
+fn duration_to_record(vm: &Vm, duration: Duration) -> Value {
+    let rec = vm.malloc(Record::new());
     rec.as_mut().native_field = Some(Box::new(duration));
     rec.as_mut().insert("prototype".to_string(),
         Value::Record(vm.stdlib.as_ref().unwrap().time_rec.clone()).wrap());

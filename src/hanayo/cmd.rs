@@ -35,7 +35,7 @@ fn constructor(val: Value::Any) -> Value {
         _ => panic!("expected val to be string or array")
     };
     // cmd object
-    let rec = Gc::new(Record::new());
+    let rec = vm.malloc(Record::new());
     // store native cmd
     rec.as_mut().native_field = Some(Box::new(cmd));
     rec.as_mut().insert("prototype".to_string(),
@@ -72,7 +72,7 @@ fn get_output(cmd: &mut Record) -> Result<Output, std::io::Error> {
 fn out(cmd: Value::Record) -> Value {
     // stdout as string
     let out = get_output(cmd.as_mut()).unwrap();
-    Value::Str(Gc::new(String::from_utf8(out.stdout)
+    Value::Str(vm.malloc(String::from_utf8(out.stdout)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e))))
 }
 
@@ -80,7 +80,7 @@ fn out(cmd: Value::Record) -> Value {
 fn err(cmd: Value::Record) -> Value {
     // stderr as string
     let out = get_output(cmd.as_mut()).unwrap();
-    Value::Str(Gc::new(String::from_utf8(out.stderr)
+    Value::Str(vm.malloc(String::from_utf8(out.stderr)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e))))
 }
 
@@ -88,10 +88,10 @@ fn err(cmd: Value::Record) -> Value {
 fn outputs(cmd: Value::Record) -> Value {
     // stderr as string
     let out = get_output(cmd.as_mut()).unwrap();
-    let arr = Gc::new(CArray::new());
-    arr.as_mut().push(Value::Str(Gc::new(String::from_utf8(out.stdout)
+    let arr = vm.malloc(CArray::new());
+    arr.as_mut().push(Value::Str(vm.malloc(String::from_utf8(out.stdout)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e)))).wrap());
-    arr.as_mut().push(Value::Str(Gc::new(String::from_utf8(out.stderr)
+    arr.as_mut().push(Value::Str(vm.malloc(String::from_utf8(out.stderr)
         .unwrap_or_else(|e| panic!("error decoding stderr: {:?}", e)))).wrap());
     Value::Array(arr)
 }

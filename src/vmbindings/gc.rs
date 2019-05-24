@@ -1,5 +1,7 @@
 use std::ptr::{null_mut, drop_in_place};
 use std::alloc::{alloc_zeroed, dealloc, Layout};
+use std::rc::Weak;
+use std::cell::RefCell;
 pub use libc::c_void;
 use super::vm::Vm;
 
@@ -35,10 +37,10 @@ type GenericFunction = fn(*mut c_void);
 // manager
 const INITIAL_THRESHOLD: usize = 100;
 const USED_SPACE_RATIO: f64 = 0.7;
-struct GcManager {
+pub struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
-    root: *mut Vm,
+    root: Weak<RefCell<Vm>>,
     bytes_allocated: usize,
     threshold: usize,
     enabled: bool
@@ -46,18 +48,18 @@ struct GcManager {
 
 impl GcManager {
 
-    pub fn new() -> GcManager {
+    pub fn new(root: Weak<RefCell<Vm>>) -> GcManager {
         GcManager {
             first_node: null_mut(),
             last_node: null_mut(),
-            root: null_mut(),
+            root: root,
             bytes_allocated: 0,
             threshold: INITIAL_THRESHOLD,
             enabled: true
         }
     }
 
-    pub unsafe fn malloc<T: Sized + GcTraceable>
+    unsafe fn malloc_raw<T: Sized + GcTraceable>
         (&mut self, x: T, finalizer: GenericFunction) -> *mut T {
         // free up if over threshold
         if cfg!(test) {
@@ -92,9 +94,8 @@ impl GcManager {
         bytes.add(1) as *mut T
     }
 
-    // roots
-    pub fn set_root(&mut self, root: *mut Vm) {
-        self.root = root;
+    pub fn malloc<T: Sized + GcTraceable>(&mut self, val: T) -> Gc<T> {
+        self.malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T))
     }
 
     // state
@@ -123,8 +124,10 @@ impl GcManager {
             node = next;
         }
         // mark from root
-        let vm = &mut *self.root;
-        vm.mark();
+        {
+            let rootcell = self.root.upgrade().unwrap();
+            rootcell.borrow_mut().mark();
+        }
         // sweep phase:
         let mut node : *mut GcNode = self.first_node;
         let mut prev : *mut GcNode = null_mut();
@@ -156,16 +159,6 @@ impl GcManager {
         }
     }
 
-    // ## marking
-    pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
-        // => start byte
-        if ptr.is_null() { return false; }
-        let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
-        if !(*node).unreachable { return false; }
-        (*node).unreachable = false;
-        true
-    }
-
 }
 
 unsafe impl std::marker::Send for GcManager {}
@@ -192,27 +185,12 @@ impl std::ops::Drop for GcManager {
 
 }
 
-// static allocator
-use std::cell::RefCell;
-thread_local! {
-    static GC_MANAGER : RefCell<GcManager> =
-        RefCell::new(GcManager::new());
-}
-
 // gc struct
 pub struct Gc<T: Sized + GcTraceable> {
-    ptr: *mut T
+    ptr: *mut T,
 }
 
 impl<T: Sized + GcTraceable> Gc<T> {
-    pub fn new(val: T) -> Gc<T> {
-        Gc {
-            ptr: unsafe {
-                malloc(val, |ptr| drop_in_place::<T>(ptr as *mut T))
-            }
-        }
-    }
-
     // raw
     pub fn from_raw(ptr: *mut T) -> Gc<T> {
         unsafe{ ref_inc(ptr as *mut libc::c_void); }
@@ -277,41 +255,6 @@ impl GcTraceable for String {
     fn trace(_: *mut libc::c_void) {}
 }
 
-// general
-unsafe fn malloc<T: Sized + GcTraceable>(x: T, finalizer: GenericFunction) -> *mut T {
-    let mut alloced: *mut T = null_mut();
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        alloced = gc_manager.malloc(x, finalizer);
-    });
-    alloced
-}
-
-// roots
-pub fn set_root(vm: *mut Vm) {
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        gc_manager.set_root(vm);
-    });
-}
-
-// state
-#[allow(dead_code)]
-pub fn enable() {
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        gc_manager.enable();
-    });
-}
-
-#[allow(dead_code)]
-pub fn disable() {
-    GC_MANAGER.with(|gc_manager| {
-        let mut gc_manager = gc_manager.borrow_mut();
-        gc_manager.disable();
-    });
-}
-
 // collect
 pub unsafe fn ref_inc(ptr: *mut c_void) {
     if ptr.is_null() { return; }
@@ -326,5 +269,10 @@ pub unsafe fn ref_dec(ptr: *mut c_void) {
 }
 
 pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
-    GcManager::mark_reachable(ptr)
+    // => start byte
+    if ptr.is_null() { return false; }
+    let node : *mut GcNode = (ptr as *mut GcNode).sub(1);
+    if !(*node).unreachable { return false; }
+    (*node).unreachable = false;
+    true
 }
