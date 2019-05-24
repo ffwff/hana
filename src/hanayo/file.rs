@@ -26,10 +26,10 @@ fn constructor(path : Value::Str, mode: Value::Str) -> Value {
     let rec = vm.malloc(Record::new());
     // store native file
     rec.as_mut().native_field = Some(Box::new(options.open(path.as_ref()).unwrap()));
-    rec.as_mut().insert("prototype".to_string(),
+    rec.as_mut().insert("prototype",
         Value::Record(vm.stdlib.as_ref().unwrap().file_rec.clone()).wrap());
-    rec.as_mut().insert("path".to_string(), Value::Str(path).wrap());
-    rec.as_mut().insert("mode".to_string(), Value::Str(mode).wrap());
+    rec.as_mut().insert("path", Value::Str(path).wrap());
+    rec.as_mut().insert("mode", Value::Str(mode).wrap());
     Value::Record(rec)
 }
 

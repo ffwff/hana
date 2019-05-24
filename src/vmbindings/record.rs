@@ -1,5 +1,7 @@
 use std::any::Any;
 use std::boxed::Box;
+use std::hash::Hash;
+use std::borrow::Borrow;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
 use super::gc::GcTraceable;
@@ -23,7 +25,9 @@ impl Record {
         }
     }
 
-    pub fn get(&self, k: &String) -> Option<&NativeValue> {
+    pub fn get<T: ?Sized>(&self, k: &T) -> Option<&NativeValue>
+        where String: Borrow<T>,
+              T: Hash + Eq {
         if let Some(v) = self.data.get(k) {
             return Some(v);
         } else if let Some(prototype) = self.prototype {
@@ -32,7 +36,9 @@ impl Record {
         None
     }
 
-    pub fn insert(&mut self, k: String, v: NativeValue) {
+    pub fn insert<K>(&mut self, k: K, v: NativeValue)
+        where K: std::string::ToString + Hash + Eq {
+        let k : String = k.to_string();
         let v = v.unwrap();
         if v == Value::Nil {
             self.data.remove(&k);

@@ -37,7 +37,7 @@ fn constructor(val: Value::Any) -> Value {
     let rec = vm.malloc(Record::new());
     // store native cmd
     rec.as_mut().native_field = Some(Box::new(cmd));
-    rec.as_mut().insert("prototype".to_string(),
+    rec.as_mut().insert("prototype",
         Value::Record(vm.stdlib.as_ref().unwrap().cmd_rec.clone()).wrap());
     Value::Record(rec)
 }
@@ -45,7 +45,7 @@ fn constructor(val: Value::Any) -> Value {
 // inputs
 #[hana_function()]
 fn in_(cmd: Value::Record, input: Value::Str) -> Value {
-    cmd.as_mut().insert("input_buffer".to_string(), Value::Str(input).wrap());
+    cmd.as_mut().insert("input_buffer", Value::Str(input).wrap());
     Value::Record(cmd)
 }
 
@@ -126,7 +126,7 @@ fn spawn(cmd: Value::Record) -> Value {
     let p = get_output(cmd.as_mut(), false).as_process();
     let prec = vm.malloc(Record::new());
     prec.as_mut().native_field = Some(Box::new(p));
-    prec.as_mut().insert("prototype".to_string(),
+    prec.as_mut().insert("prototype",
         Value::Record(vm.stdlib.as_ref().unwrap().proc_rec.clone()).wrap());
     Value::Record(prec)
 }

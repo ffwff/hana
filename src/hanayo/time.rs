@@ -7,7 +7,7 @@ use crate::vmbindings::record::Record;
 fn duration_to_record(vm: &Vm, duration: Duration) -> Value {
     let rec = vm.malloc(Record::new());
     rec.as_mut().native_field = Some(Box::new(duration));
-    rec.as_mut().insert("prototype".to_string(),
+    rec.as_mut().insert("prototype",
         Value::Record(vm.stdlib.as_ref().unwrap().time_rec.clone()).wrap());
     Value::Record(rec)
 }
