@@ -657,40 +657,38 @@ y = a[0]
     // #endregion
 
     // #region modules
-    /* #[test]
+    #[test]
     fn module_absolute_import() {
-        gc::disable();
         std::fs::write("/tmp/module_absolute_import", "$y = 10").unwrap();
         let prog = grammar::start("
 use '/tmp/module_absolute_import'
         ").unwrap();
         let mut c = compiler::Compiler::new();
         c.files.push("/tmp/x".to_string());
-        c.vm.compiler = Some(&mut c);
+        c.vm.borrow_mut().compiler = Some(&mut c);
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        c.vm.code.push(VmOpcode::OP_HALT);
-        c.vm.execute();
-        assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
+        c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
+        c.vm.borrow().execute();
+        assert_eq!(c.vm.borrow().global().get("y").unwrap().unwrap().int(), 10);
     }
 
     #[test]
     fn module_relative_import() {
-        gc::disable();
         std::fs::write("/tmp/module_relative_import", "$y = 10").unwrap();
         let prog = grammar::start("
 use './module_relative_import'
         ").unwrap();
         let mut c = compiler::Compiler::new();
         c.files.push("/tmp/x".to_string());
-        c.vm.compiler = Some(&mut c);
+        c.vm.borrow_mut().compiler = Some(&mut c);
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        c.vm.code.push(VmOpcode::OP_HALT);
-        c.vm.execute();
-        assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
-    } */
+        c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
+        c.vm.borrow().execute();
+        assert_eq!(c.vm.borrow().global().get("y").unwrap().unwrap().int(), 10);
+    }
     // #endregion
 }

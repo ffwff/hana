@@ -78,8 +78,7 @@ impl Compiler {
     }
 
     pub fn deref_vm_code(mut self) -> CArray<VmOpcode> {
-        unimplemented!()
-        // bvm!(self).try_unwrap().unwrap().code.deref()
+        bvm!(self).code.deref()
     }
 
     // scopes

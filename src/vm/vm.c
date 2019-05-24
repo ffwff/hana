@@ -950,6 +950,7 @@ do { \
     doop(OP_USE): {
         vm->ip++;
         char *str = (char *)&vm->code.data[vm->ip]; // must be null terminated
+        LOG("USE %s\n", str);
         vm->ip += strlen(str)+1;
         vm_load_module(vm, str);
         dispatch();

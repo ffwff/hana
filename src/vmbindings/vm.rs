@@ -218,7 +218,12 @@ impl Vm {
     }
 
     // globals
-    pub fn global(&mut self) -> &mut CHashMap {
+    pub fn global(&self) -> &CHashMap {
+        if self.globalenv.is_null() { panic!("accessing nil ptr"); }
+        unsafe{ &*self.globalenv }
+    }
+
+    pub fn mut_global(&self) -> &mut CHashMap {
         if self.globalenv.is_null() { panic!("accessing nil ptr"); }
         unsafe{ &mut *self.globalenv }
     }
@@ -413,6 +418,7 @@ impl Vm {
 
     // imports
     pub fn load_module(&mut self, path: &str) {
+        eprintln!("load module\n");
         // loads module, jumps to the module then jump back to OP_USE
         use crate::ast;
         use std::io::Read;
@@ -469,11 +475,15 @@ impl Vm {
 
             let importer_ip = self.ip;
             let imported_ip = self.code.len();
-            for stmt in prog {
-                stmt.emit(&mut c);
+            {
+                let mut c = Compiler::new_append_vm(self);
+                for stmt in prog {
+                    stmt.emit(&mut c);
+                }
+                self.code = c.deref_vm_code();
+                self.code.push(VmOpcode::OP_JMP_LONG);
+                self.cpush32(importer_ip);
             }
-            self.code.push(VmOpcode::OP_JMP_LONG);
-            self.cpush32(importer_ip);
             self.ip = imported_ip as u32;
         } else {
             return;
