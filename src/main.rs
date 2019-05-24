@@ -107,25 +107,26 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     //c.vm.borrow_mut().compiler = Some(&mut c);
     c.sources.push(s);
     hanayo::init(&mut c.vm.borrow_mut());
-    c.vm.borrow_mut().execute();
+    c.vm.borrow_mut().gc_enable();
+    c.vm.borrow().execute();
     handle_error(&c);
 }
 
 fn handle_error(c: &compiler::Compiler) {
-    unimplemented!()
-    /* if c.vm.error != VmError::ERROR_NO_ERROR {
+    let vm = c.vm.borrow();
+    if vm.error != VmError::ERROR_NO_ERROR {
         {
-            let smap = c.lookup_smap(c.vm.ip as usize).unwrap();
+            let smap = c.lookup_smap(vm.ip as usize).unwrap();
             let src = &c.sources[smap.fileno];
             let (line, col) = ast::pos_to_line(&src, smap.file.0);
             let (line_end, col_end) = ast::pos_to_line(&src, smap.file.1);
-            let message = format!("{} at {}:{}:{}", c.vm.error, c.files[smap.fileno], line, col);
+            let message = format!("{} at {}:{}:{}", vm.error, c.files[smap.fileno], line, col);
             print_error(&src, line, col, line_end, col_end, "interpreter error:", &message);
         }
-        if !c.vm.localenv.is_null() {
+        if !vm.localenv.is_null() {
             eprintln!("{}", ac::Red.bold().paint("backtrace:"));
-            let mut env = c.vm.localenv;
-            while env != unsafe{ c.vm.localenv_bp.sub(1) } {
+            let mut env = vm.localenv;
+            while env != unsafe{ vm.localenv_bp.sub(1) } {
                 let ip = unsafe{ &*env }.retip as usize;
                 if let Some(smap) = c.lookup_smap(ip) {
                     let src = &c.sources[smap.fileno];
@@ -140,7 +141,7 @@ fn handle_error(c: &compiler::Compiler) {
                 env = unsafe { env.sub(1) };
             }
         }
-    } */
+    }
 }
 
 // repl

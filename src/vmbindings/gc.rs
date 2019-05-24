@@ -1,7 +1,7 @@
 use std::ptr::{null_mut, drop_in_place};
 use std::alloc::{alloc_zeroed, dealloc, Layout};
 use std::rc::Weak;
-use std::cell::RefCell;
+use debug_cell::RefCell;
 pub use libc::c_void;
 use super::vm::Vm;
 
@@ -55,7 +55,7 @@ impl GcManager {
             root: root,
             bytes_allocated: 0,
             threshold: INITIAL_THRESHOLD,
-            enabled: true
+            enabled: false
         }
     }
 
@@ -95,7 +95,11 @@ impl GcManager {
     }
 
     pub fn malloc<T: Sized + GcTraceable>(&mut self, val: T) -> Gc<T> {
-        self.malloc(val)
+        Gc {
+            ptr: unsafe {
+                self.malloc_raw(val, |ptr| drop_in_place::<T>(ptr as *mut T))
+            }
+        }
     }
 
     // state

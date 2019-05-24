@@ -645,7 +645,7 @@ void vm_execute(struct vm *vm) {
             const int64_t i = index.as.integer;
             struct value val;
             val.type = TYPE_STR;
-            val.as.str = string_at(dval.as.str, i);
+            val.as.str = string_at(dval.as.str, i, vm);
             if (val.as.str == NULL) {
                 ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, string_len(dval.as.str));
             }
@@ -846,7 +846,7 @@ do { \
         switch(top->type) {
         // setup
         case TYPE_STR: {
-            array_obj *chars = string_chars(top->as.str);
+            array_obj *chars = string_chars(top->as.str, vm);
             array_pop(vm->stack);
             struct value val = {0};
             val = (struct value){

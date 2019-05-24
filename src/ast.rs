@@ -239,13 +239,16 @@ pub mod ast {
             }
 
             // default return
-            match bvm!(c).code.top() {
-                VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {},
-                _ => {
-                    bvm!(c).code.push(VmOpcode::OP_PUSH_NIL);
-                    bvm!(c).code.push(VmOpcode::OP_RET);
-                }
-            };
+            {
+                let mut bvm = bvm!(c);
+                match bvm.code.top() {
+                    VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {},
+                    _ => {
+                        bvm.code.push(VmOpcode::OP_PUSH_NIL);
+                        bvm.code.push(VmOpcode::OP_RET);
+                    }
+                };
+            }
 
             // end
             let nslots = c.unscope();
@@ -587,8 +590,9 @@ pub mod ast {
                     }
                     if in_place_addr != std::usize::MAX {
                         // jmp here if we can do it in place
+                        let len = bvm!(c).code.len();
                         bvm!(c).code.as_mut_bytes()[in_place_addr]
-                            = (bvm!(c).code.len() - in_place_addr) as u8;
+                            = (len - in_place_addr) as u8;
                     }
                 },
                 // basic manip operators

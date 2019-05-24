@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::cell::RefCell;
+use debug_cell::RefCell;
 use std::collections::HashMap;
 use crate::vm::Vm;
 use crate::vm::VmOpcode;

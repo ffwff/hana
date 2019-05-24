@@ -3,7 +3,7 @@ use std::mem::ManuallyDrop;
 use std::ffi::CString;
 use std::path::Path;
 use std::rc::Rc;
-use std::cell::RefCell;
+use debug_cell::RefCell;
 extern crate libc;
 
 use super::carray::CArray;
@@ -105,7 +105,7 @@ pub struct Vm {
 #[link(name="hana", kind="static")]
 #[allow(improper_ctypes)]
 extern "C" {
-    fn vm_execute(vm: *mut Vm);
+    fn vm_execute(vm: *const Vm);
     fn vm_print_stack(vm: *const Vm);
     fn vm_call(vm: *mut Vm, fun: NativeValue, args: *const CArray<NativeValue>)
         -> NativeValue;
@@ -180,7 +180,7 @@ impl Vm {
         unsafe { vm_print_stack(self); }
     }
 
-    pub fn execute(&mut self) {
+    pub fn execute(&self) {
         unsafe { vm_execute(self); }
     }
 
@@ -226,6 +226,13 @@ impl Vm {
     // gc
     pub fn malloc<T: Sized + GcTraceable>(&self, val: T) -> Gc<T> {
         self.gc_manager.as_ref().unwrap().borrow_mut().malloc(val)
+    }
+
+    pub fn gc_disable(&mut self) {
+        self.gc_manager.as_ref().unwrap().borrow_mut().disable()
+    }
+    pub fn gc_enable(&mut self) {
+        self.gc_manager.as_ref().unwrap().borrow_mut().enable()
     }
 
     pub unsafe fn mark(&mut self) {
