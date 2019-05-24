@@ -190,11 +190,18 @@ impl std::ops::Drop for GcManager {
 }
 
 // gc struct
+#[repr(transparent)]
 pub struct Gc<T: Sized + GcTraceable> {
     ptr: *mut T,
 }
 
 impl<T: Sized + GcTraceable> Gc<T> {
+    pub fn new_nil() -> Gc<T> {
+        Gc {
+            ptr: null_mut()
+        }
+    }
+
     // raw
     pub fn from_raw(ptr: *mut T) -> Gc<T> {
         unsafe{ ref_inc(ptr as *mut libc::c_void); }

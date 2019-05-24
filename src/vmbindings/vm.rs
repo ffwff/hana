@@ -80,11 +80,11 @@ pub struct Vm {
     pub stack      : CArray<NativeValue>, // stack
 
     // prototype types for primitive values
-    pub dstr       : *mut Record,
-    pub dint       : *mut Record,
-    pub dfloat     : *mut Record,
-    pub darray     : *mut Record,
-    pub drec       : *mut Record,
+    pub dstr       : Gc<Record>,
+    pub dint       : Gc<Record>,
+    pub dfloat     : Gc<Record>,
+    pub darray     : Gc<Record>,
+    pub drec       : Gc<Record>,
 
     pub error      : VmError,
     // whether the interpreter raised an unhandled error
@@ -133,11 +133,11 @@ impl Vm {
             exframes: CArray::new(),
             code: CArray::new(),
             stack: CArray::new(),
-            dstr: null_mut(),
-            dint: null_mut(),
-            dfloat: null_mut(),
-            darray: null_mut(),
-            drec: null_mut(),
+            dstr:   Gc::new_nil(),
+            dint:   Gc::new_nil(),
+            dfloat: Gc::new_nil(),
+            darray: Gc::new_nil(),
+            drec:   Gc::new_nil(),
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
             exframe_fallthrough: null_mut(),
@@ -160,11 +160,11 @@ impl Vm {
             exframes: CArray::new_nil(),
             code: CArray::new_nil(),
             stack: CArray::new_nil(),
-            dstr: null_mut(),
-            dint: null_mut(),
-            dfloat: null_mut(),
-            darray: null_mut(),
-            drec: null_mut(),
+            dstr:   Gc::new_nil(),
+            dint:   Gc::new_nil(),
+            dfloat: Gc::new_nil(),
+            darray: Gc::new_nil(),
+            drec:   Gc::new_nil(),
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
             exframe_fallthrough: null_mut(),
@@ -354,11 +354,11 @@ impl Vm {
             code: CArray::new_nil(), // shared
             stack: self.stack.deref(),
             // types don't need to be saved:
-            dstr: null_mut(),
-            dint: null_mut(),
-            dfloat: null_mut(),
-            darray: null_mut(),
-            drec: null_mut(),
+            dstr:   Gc::new_nil(),
+            dint:   Gc::new_nil(),
+            dfloat: Gc::new_nil(),
+            darray: Gc::new_nil(),
+            drec:   Gc::new_nil(),
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
@@ -508,13 +508,6 @@ impl std::ops::Drop for Vm {
             }
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
-
-            // primitive objects
-            ref_dec(self.dstr as *mut libc::c_void);
-            ref_dec(self.dint as *mut libc::c_void);
-            ref_dec(self.dfloat as *mut libc::c_void);
-            ref_dec(self.darray as *mut libc::c_void);
-            ref_dec(self.drec as *mut libc::c_void);
 
             // other
             if !self.globalenv.is_null() {
