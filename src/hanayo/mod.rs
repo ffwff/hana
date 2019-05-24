@@ -8,6 +8,7 @@ mod io;
 mod eval;
 mod math;
 mod file;
+mod proc;
 mod cmd;
 mod env;
 mod time;
@@ -21,6 +22,7 @@ mod record;
 pub struct HanayoCtx {
     pub file_rec: Gc<Record>,
     pub cmd_rec: Gc<Record>,
+    pub proc_rec: Gc<Record>,
     pub time_rec: Gc<Record>,
 }
 
@@ -141,6 +143,18 @@ pub fn init(vm : &mut Vm) {
     set_var!("Cmd", Value::Record(cmd.clone()));
     // #endregion
 
+    // #region cmd
+    let proc = vm.malloc(Record::new());
+    set_obj_var!(proc, "constructor",  Value::NativeFn(proc::constructor));
+    set_obj_var!(proc, "in" ,          Value::NativeFn(proc::in_));
+    set_obj_var!(proc, "out",          Value::NativeFn(proc::out));
+    set_obj_var!(proc, "err",          Value::NativeFn(proc::err));
+    set_obj_var!(proc, "outputs",      Value::NativeFn(proc::outputs));
+    set_obj_var!(proc, "wait",         Value::NativeFn(proc::wait));
+    set_obj_var!(proc, "kill",         Value::NativeFn(proc::kill));
+    set_var!("Process", Value::Record(proc.clone()));
+    // #endregion
+
     // #region env
     let env = vm.malloc(Record::new());
     set_obj_var!(env, "get",  Value::NativeFn(env::get));
@@ -164,6 +178,7 @@ pub fn init(vm : &mut Vm) {
     vm.stdlib = Some(HanayoCtx {
         file_rec: file,
         cmd_rec: cmd,
+        proc_rec: proc,
         time_rec: time
     });
 

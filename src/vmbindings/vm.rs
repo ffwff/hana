@@ -252,7 +252,7 @@ impl Vm {
             val.trace();
         }
         // call stack
-        if !self.localenv.is_null() { unsafe {
+        if !self.localenv.is_null() {
             let mut env = self.localenv_bp;
             while env != self.localenv {
                 for val in (*env).slots.as_mut_slice().iter_mut() {
@@ -264,7 +264,7 @@ impl Vm {
             for val in (*env).slots.as_mut_slice().iter_mut() {
                 (*val).trace();
             }
-        } }
+        }
     }
 
     // call stack

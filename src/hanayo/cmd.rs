@@ -1,4 +1,4 @@
-use std::process::{Command, Stdio, Output};
+use std::process::{Command, Child, Stdio, Output};
 use std::io::Write;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
@@ -50,8 +50,31 @@ fn in_(cmd: Value::Record, input: Value::Str) -> Value {
 }
 
 // outputs
-fn get_output(cmd: &mut Record) -> Result<Output, std::io::Error> {
-    // TODO
+// helper class
+enum OutputResult {
+    Process(Child),
+    Output(Result<Output, std::io::Error>)
+}
+
+impl OutputResult {
+
+    fn as_process(self) -> Child {
+        match self {
+            OutputResult::Process(x) => x,
+            _ => unreachable!()
+        }
+    }
+
+    fn as_output(self) -> Result<Output, std::io::Error> {
+        match self {
+            OutputResult::Output(x) => x,
+            _ => unreachable!()
+        }
+    }
+
+}
+
+fn get_output(cmd: &mut Record, wait: bool) -> OutputResult {
     let field = cmd.native_field.as_mut().unwrap();
     let mut p = field.downcast_mut::<Command>().unwrap()
         .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped())
@@ -64,13 +87,15 @@ fn get_output(cmd: &mut Record) -> Result<Output, std::io::Error> {
             _ => unimplemented!()
         }
     }
-    p.wait_with_output()
+    if wait { OutputResult::Output(p.wait_with_output()) }
+    else { OutputResult::Process(p) }
 }
 
+// impls
 #[hana_function()]
 fn out(cmd: Value::Record) -> Value {
     // stdout as string
-    let out = get_output(cmd.as_mut()).unwrap();
+    let out = get_output(cmd.as_mut(), true).as_output().unwrap();
     Value::Str(vm.malloc(String::from_utf8(out.stdout)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e))))
 }
@@ -78,19 +103,31 @@ fn out(cmd: Value::Record) -> Value {
 #[hana_function()]
 fn err(cmd: Value::Record) -> Value {
     // stderr as string
-    let out = get_output(cmd.as_mut()).unwrap();
+    let out = get_output(cmd.as_mut(), true).as_output().unwrap();
     Value::Str(vm.malloc(String::from_utf8(out.stderr)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e))))
 }
 
 #[hana_function()]
 fn outputs(cmd: Value::Record) -> Value {
-    // stderr as string
-    let out = get_output(cmd.as_mut()).unwrap();
+    // array of [stdout, stderr] outputs
+    let out = get_output(cmd.as_mut(), true).as_output().unwrap();
     let arr = vm.malloc(CArray::new());
     arr.as_mut().push(Value::Str(vm.malloc(String::from_utf8(out.stdout)
         .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e)))).wrap());
     arr.as_mut().push(Value::Str(vm.malloc(String::from_utf8(out.stderr)
         .unwrap_or_else(|e| panic!("error decoding stderr: {:?}", e)))).wrap());
     Value::Array(arr)
+}
+
+// spawn
+#[hana_function()]
+fn spawn(cmd: Value::Record) -> Value {
+    let p = get_output(cmd.as_mut(), false).as_process();
+    let arr = vm.malloc(CArray::new());
+    let prec = vm.malloc(Record::new());
+    prec.as_mut().insert("prototype".to_string(),
+        Value::Record(vm.stdlib.as_ref().unwrap().proc_rec.clone()).wrap());
+    prec.as_mut().insert("pid".to_string(), Value::Int(p.id() as i64).wrap());
+    Value::Record(prec)
 }
