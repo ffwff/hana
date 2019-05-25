@@ -18,7 +18,7 @@ use rustyline::error::ReadlineError;
 mod compiler;
 #[macro_use] mod ast;
 mod vmbindings;
-use vmbindings::vm;
+
 use vmbindings::vmerror::VmError;
 use vmbindings::vm::VmOpcode;
 mod hanayo;
