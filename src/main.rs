@@ -1,12 +1,17 @@
 #![feature(vec_remove_item)]
 #![feature(alloc_layout_extra)]
 #![feature(ptr_offset_from)]
+#![feature(core_intrinsics)]
 
-#[cfg(feature="jemalloc")]
-extern crate jemallocator;
-#[global_allocator]
-#[cfg(feature="jemalloc")]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+#[macro_use] extern crate cfg_if;
+
+cfg_if! {
+    if #[cfg(jemalloc)] {
+        extern crate jemallocator;
+        #[global_allocator]
+        static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+    }
+}
 
 use std::io::{self, Read, Write};
 #[macro_use] extern crate decorator;

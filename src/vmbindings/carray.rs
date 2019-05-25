@@ -67,6 +67,11 @@ impl<T> CArray<T> {
         }
     }
 
+    // ptr
+    pub unsafe fn as_ptr(&self) -> *const u8 {
+        self.data as *const u8
+    }
+
     // clone
     pub fn clone(&self) -> CArray<T> {
         CArray::<T> {
