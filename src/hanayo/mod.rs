@@ -45,6 +45,7 @@ pub fn init(vm : &mut Vm) {
     // builtin functions
     set_var!("print", Value::NativeFn(io::print));
     set_var!("input", Value::NativeFn(io::input));
+    set_var!("exit", Value::NativeFn(io::exit));
     set_var!("eval", Value::NativeFn(eval::eval));
 
     // maths
