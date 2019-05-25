@@ -1,9 +1,22 @@
+//! Provides parser and abstract syntax tree structures.
+//!
+//! The parser exports the function `ast::grammar::start`
+//! used to generate a vector of abstract syntax trees
+//! representing statements. The AST can then be used to
+//! emit raw bytecode to a `Compiler`.
+//!
+//! ```
+//! use haru::ast::{ast, grammar};
+//! let prog = grammar::start("print('Hello World');").unwrap();
+//! ```
+
 use crate::compiler;
 use crate::vmbindings::vm::VmOpcode;
 
 // ast
 #[allow(unused_variables)]
 pub mod ast {
+    //! Provides abstract syntax trees for language blocks.
     use std::fmt;
     use std::any::Any;
     use super::compiler;
@@ -40,7 +53,9 @@ pub mod ast {
 
     // #endregion
 
+    /// Span of the AST node, represented by a tuple of (from, to) indexes
     pub type Span = (usize, usize);
+    /// Generic abstract syntax tree
     pub trait AST : fmt::Debug {
         fn as_any(&self) -> &dyn Any;
         fn span(&self) -> &Span;
@@ -48,7 +63,7 @@ pub mod ast {
     }
 
     // # values
-    // ## identifier
+    /// Identifier node
     pub struct Identifier {
         pub _span : Span,
         pub val : String
@@ -67,7 +82,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ## strings
+    /// String literal
     pub struct StrLiteral {
         pub _span : Span,
         pub val : String,
@@ -110,7 +125,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ## ints
+    /// Integer literal
     pub struct IntLiteral {
         pub _span : Span,
         pub val : i64
@@ -148,7 +163,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ## floats
+    /// Float literal
     pub struct FloatLiteral {
         pub _span : Span,
         pub val : f64
@@ -168,7 +183,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ## arrays
+    /// Array literals
     pub struct ArrayExpr {
         pub _span : Span,
         pub exprs : Vec<std::boxed::Box<AST>>
@@ -190,7 +205,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ### fn def
+    /// Function expression
     pub struct FunctionDefinition {
         pub _span : Span,
         pub id : Option<String>,
@@ -259,7 +274,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ### record def
+    /// Record expression
     pub struct RecordDefinition {
         pub _span : Span,
         pub id : Option<String>,
@@ -301,10 +316,11 @@ pub mod ast {
     }
 
     // # expressions
-    // ## unary expr
+    /// Unary operations
     pub enum UnaryOp {
         Not, Neg
     }
+    /// Unary expressions
     pub struct UnaryExpr {
         pub _span : Span,
         pub op : UnaryOp,
@@ -332,7 +348,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ## cond expr
+    /// Conditional expressions
     pub struct CondExpr {
         pub _span : Span,
         pub cond : std::boxed::Box<AST>,
@@ -400,7 +416,7 @@ pub mod ast {
             self._emit(c, false)
         }
     }
-    // ## binexpr
+    /// Binary operators
     #[derive(Debug, PartialEq)]
     pub enum BinOp {
         Add, Sub, Mul, Div, Mod,
@@ -409,6 +425,7 @@ pub mod ast {
         Assign, Adds, Subs, Muls, Divs, Mods,
         Of,
     }
+    /// Binary expressions
     pub struct BinExpr {
         pub _span : Span,
         pub left : std::boxed::Box<AST>,
@@ -635,7 +652,7 @@ pub mod ast {
         }
     }
 
-    // ## member expr
+    /// Member expressions
     pub struct MemExpr {
         pub _span : Span,
         pub left : std::boxed::Box<AST>,
@@ -682,7 +699,7 @@ pub mod ast {
         }
     }
 
-    // ## call expr
+    /// Call expressions
     pub struct CallExpr {
         pub _span : Span,
         pub callee : std::boxed::Box<AST>,
@@ -726,7 +743,7 @@ pub mod ast {
             self._emit(c, false);
         }
     }
-    // util for parser
+    /// Call expression arm (for internal usage)
     pub enum CallExprArm {
         MemExprIden(std::boxed::Box<AST>),
         MemExprNs(std::boxed::Box<AST>),
@@ -736,7 +753,7 @@ pub mod ast {
 
     // #region statement
     // ## control flows
-    // ### if
+    /// If statements
     pub struct IfStatement {
         pub _span : Span,
         pub expr : std::boxed::Box<AST>,
@@ -789,7 +806,7 @@ pub mod ast {
         }
     }
 
-    // ### while
+    /// While statements
     pub struct WhileStatement {
         pub _span : Span,
         pub expr : std::boxed::Box<AST>,
@@ -839,7 +856,7 @@ pub mod ast {
         }
     }
 
-    // ### for
+    /// For statements
     pub struct ForStatement {
         pub _span : Span,
         pub id    : String,
@@ -922,7 +939,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ### for in
+    /// For..in statements
     pub struct ForInStatement {
         pub _span : Span,
         pub id    : String,
@@ -974,7 +991,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ### continue statement
+    /// Continue statements
     pub struct ContinueStatement {
         pub _span : Span,
     }
@@ -993,7 +1010,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // ### break
+    /// Break statement
     pub struct BreakStatement {
         pub _span : Span,
     }
@@ -1014,7 +1031,7 @@ pub mod ast {
     }
 
     // ## other
-    // #### fn
+    /// Function definition statement
     pub struct FunctionStatement {
         pub _span : Span,
         def: FunctionDefinition
@@ -1044,7 +1061,7 @@ pub mod ast {
             vm!(c).code.push(VmOpcode::OP_POP);
         }
     }
-    // #### return
+    /// Return statement
     pub struct ReturnStatement {
         pub _span : Span,
         pub expr : Option<std::boxed::Box<AST>>,
@@ -1079,7 +1096,7 @@ pub mod ast {
         }
     }
 
-    // ### record statement
+    /// Record definition statement
     pub struct RecordStatement {
         pub _span : Span,
         def: RecordDefinition
@@ -1110,7 +1127,7 @@ pub mod ast {
         }
     }
 
-    // ### try
+    /// Try statement
     pub struct TryStatement {
         pub _span : Span,
         pub stmts : Vec<std::boxed::Box<AST>>,
@@ -1163,7 +1180,7 @@ pub mod ast {
             emit_end!(c, vm!(c), _smap_begin);
         }
     }
-    // #### case
+    /// Case statement
     pub struct CaseStatement {
         pub _span : Span,
         pub etype : std::boxed::Box<AST>,
@@ -1183,7 +1200,7 @@ pub mod ast {
             unreachable!()
         }
     }
-    // #### raise
+    /// Exception raise statement
     pub struct RaiseStatement {
         pub _span : Span,
         pub expr : std::boxed::Box<AST>,
@@ -1202,7 +1219,7 @@ pub mod ast {
         }
     }
 
-    // ### expr
+    /// Expression statement
     pub struct ExprStatement {
         pub _span : Span,
         pub expr : std::boxed::Box<AST>,
@@ -1224,7 +1241,7 @@ pub mod ast {
         }
     }
 
-    // ### use statement
+    /// Module use statement
     pub struct UseStatement {
         pub _span : Span,
         pub path : String,
@@ -1245,7 +1262,7 @@ pub mod ast {
         }
     }
 
-    // ### block
+    /// Block statement
     pub struct BlockStatement {
         pub _span : Span,
         pub stmts : Vec<std::boxed::Box<AST>>,
@@ -1271,7 +1288,7 @@ pub mod ast {
 
 }
 
-// parser
+/// Parser implementation
 pub mod grammar {
     macro_rules! boxed {
         ($x:ident, $ps:expr, $pe:expr, $($key:ident: $value:expr),*) => (
@@ -1284,7 +1301,7 @@ pub mod grammar {
     include!(concat!(env!("OUT_DIR"), "/parser.rs"));
 }
 
-// utils
+/// Converts a index in string to a tuple of (line, col) position information.
 pub fn pos_to_line(input: &str, pos: usize) -> (usize, usize) {
     let before = &input[..pos];
     let line = before.as_bytes().iter().filter(|&&c| c == b'\n').count() + 1;
