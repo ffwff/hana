@@ -1,7 +1,7 @@
 [package]
 name = "haru"
 description = "A fast general purpose scripting language"
-version = "0.23.5"
+version = "0.23.51"
 authors = ["ffwff <mogamiriver@tuta.io>"]
 documentation = "https://github.com/ffwff/hana"
 homepage = "https://github.com/ffwff/hana"

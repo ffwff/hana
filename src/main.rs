@@ -223,7 +223,7 @@ options:
 
 fn version() {
 println!(
-"haru: interpreter implemententation forthe hana programming language (alpha).
+"haru: interpreter implemententation for the hana programming language.
 version {}
 
 This program is free software: you can redistribute it
