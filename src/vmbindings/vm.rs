@@ -67,15 +67,15 @@ pub enum VmOpcode {
 
 #[repr(C)]
 pub struct Vm {
-    pub ip          : u32, // current instruction pointer
+    ip              : u32, // current instruction pointer
     pub localenv    : *mut Env,
     // pointer to current stack frame
     pub localenv_bp : *mut Env, // rust owns this, so drop it pls
     // pointer to start of pool of stack frames
-    pub globalenv   : *mut CHashMap,
+    globalenv      : *mut CHashMap,
     // global environment, all unscoped variables/variables
-    // starting with '$' should be stored here
-    pub exframes   : CArray<ExFrame>, // exception frame
+    // starting with '$' should also be stored here without '$'
+    exframes       : CArray<ExFrame>, // exception frame
     pub code       : CArray<VmOpcode>, // where all the code is
     pub stack      : CArray<NativeValue>, // stack
 
@@ -91,8 +91,8 @@ pub struct Vm {
     pub error_expected: u32,
 
     // for handling exceptions inside of interpreted functions called by native functions
-    pub exframe_fallthrough: *const ExFrame,
-    pub native_call_depth: usize,
+    exframe_fallthrough: *const ExFrame,
+    native_call_depth: usize,
 
     // rust-specific fields
     pub compiler   : Option<*mut Compiler>,
@@ -414,6 +414,15 @@ impl Vm {
         // prevent double freeing:
         ctx.localenv = null_mut();
         ctx.localenv_bp = null_mut();
+    }
+
+    // instruction pointer
+    pub fn ip(&self) -> u32 {
+        self.ip
+    }
+    pub fn jmp(&mut self, ip: u32) {
+        assert!(ip < self.code.len() as u32);
+        self.ip = ip;
     }
 
     // imports

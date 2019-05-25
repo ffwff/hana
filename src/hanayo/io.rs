@@ -21,3 +21,8 @@ fn input() -> Value {
     buffer.as_mut().pop(); // remove newline
     Value::Str(buffer)
 }
+
+#[hana_function()]
+fn exit(code: Value::Int) -> Value {
+    std::process::exit(code as i32);
+}

@@ -122,7 +122,7 @@ fn handle_error(c: &compiler::Compiler) {
     let vm = c.vm.borrow();
     if vm.error != VmError::ERROR_NO_ERROR {
         {
-            let smap = c.lookup_smap(vm.ip as usize).unwrap();
+            let smap = c.lookup_smap(vm.ip() as usize).unwrap();
             let src = &c.sources[smap.fileno];
             let (line, col) = ast::pos_to_line(&src, smap.file.0);
             let (line_end, col_end) = ast::pos_to_line(&src, smap.file.1);
@@ -173,7 +173,8 @@ fn repl(flag: ParserFlag) {
                             // setup
                             let mut vm = c.vm.borrow_mut();
                             vm.error = VmError::ERROR_NO_ERROR;
-                            vm.ip = vm.code.len() as u32;
+                            let len = vm.code.len() as u32;
+                            vm.jmp(len);
                         }
                         c.sources[0] = s.clone();
                         for stmt in prog {

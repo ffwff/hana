@@ -29,9 +29,8 @@ pub struct HanayoCtx {
 }
 
 pub fn init(vm : &mut Vm) {
-    let globalenv = unsafe { &mut *vm.globalenv };
     macro_rules! set_var {
-        ($x:literal, $y:expr) => (globalenv.insert($x.to_string(), $y.wrap()));
+        ($x:literal, $y:expr) => (vm.mut_global().insert($x.to_string(), $y.wrap()));
     }
     macro_rules! set_obj_var {
         ($o: expr, $x:literal, $y:expr) => ($o.as_mut().insert($x.to_string(), $y.wrap()));

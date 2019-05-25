@@ -18,7 +18,7 @@ fn eval(s: Value::Str) -> Value {
         vm.code.push(VmOpcode::OP_HALT);
         // save current evaluation context
         let ctx = vm.new_exec_ctx();
-        vm.ip = target_ip;
+        vm.jmp(target_ip);
         vm.execute();
         vm.restore_exec_ctx(ctx);
         return Value::True;
