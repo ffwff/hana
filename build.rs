@@ -28,6 +28,7 @@ fn main() {
             .flag("-Wall")
             .flag("-Wno-unused-parameter")
             .flag("-std=c11")
+            .shared_flag(true).static_flag(true)
             .compile("hana");
     }
 
