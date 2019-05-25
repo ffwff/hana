@@ -13,7 +13,7 @@ pub struct CArray<T> {
 }
 
 impl<T> CArray<T> {
-    pub fn new_nil() -> CArray<T> {
+    pub unsafe fn new_nil() -> CArray<T> {
         CArray::<T> {
             data: null_mut(),
             len: 0,

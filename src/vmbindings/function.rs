@@ -28,8 +28,8 @@ impl Function {
         }
     }
 
-    pub unsafe fn get_bound_ptr(&mut self) -> *mut Env {
-        &mut self.bound
+    pub unsafe fn get_bound_ptr(&self) -> *const Env {
+        &self.bound
     }
 
 }

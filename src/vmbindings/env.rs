@@ -12,7 +12,7 @@ pub struct Env {
     pub nargs : u16,
     // cached number of args the function was called with
 
-    pub lexical_parent : *mut Env,
+    pub lexical_parent : *const Env,
     // lexical parents are the parent of the function's lexical scopes
     // this should be set to (struct function*)->bound
 
@@ -22,7 +22,7 @@ pub struct Env {
 impl Env {
 
     pub fn new(retip: u32,
-              lexical_parent: *mut Env,
+              lexical_parent: *const Env,
               nargs: u16) -> Env {
         Env {
             slots: Vec::new(),
@@ -45,7 +45,7 @@ impl Env {
         self.slots.get_unchecked(idx as usize).clone()
     }
     pub unsafe fn get_up(&self, up: u16, idx: u16) -> NativeValue {
-        let mut env : *mut Env = self.lexical_parent;
+        let mut env = self.lexical_parent;
         for _ in 1..up {
             env = (*env).lexical_parent;
         }

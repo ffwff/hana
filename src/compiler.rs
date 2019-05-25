@@ -70,9 +70,7 @@ impl Compiler {
     }
 
     // constructor for execution ctx
-    pub fn new_append_vm(vm: &mut Vm) -> Compiler {
-
-
+    pub unsafe fn new_append_vm(vm: &mut Vm) -> Compiler {
         Compiler{
             scopes: Vec::new(),
             loop_stmts: Vec::new(),

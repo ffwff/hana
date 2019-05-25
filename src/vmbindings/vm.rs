@@ -151,7 +151,7 @@ impl Vm {
         vm
     }
 
-    pub fn new_nil() -> Vm {
+    pub unsafe fn new_nil() -> Vm {
         Vm{
             ip: 0,
             localenv: null_mut(),
@@ -268,7 +268,7 @@ impl Vm {
     }
 
     // call stack
-    pub fn enter_env(&mut self, fun: &'static mut Function) {
+    pub fn enter_env(&mut self, fun: &'static Function) {
         if self.localenv.is_null() {
             self.localenv = self.localenv_bp;
         } else {
@@ -281,7 +281,7 @@ impl Vm {
         self.ip = fun.ip;
     }
 
-    pub fn enter_env_tail(&mut self, fun: &'static mut Function) {
+    pub fn enter_env_tail(&mut self, fun: &'static Function) {
         let env = unsafe{ &mut *self.localenv };
         env.nargs = fun.nargs;
         env.lexical_parent = unsafe{ fun.get_bound_ptr() };
@@ -373,7 +373,7 @@ impl Vm {
             localenv_bp: self.localenv_bp,
             globalenv: null_mut(), // shared
             exframes: self.exframes.deref(),
-            code: CArray::new_nil(), // shared
+            code: unsafe{ CArray::new_nil() }, // shared
             stack: self.stack.deref(),
             // types don't need to be saved:
             dstr:   Gc::new_nil(),
@@ -399,7 +399,7 @@ impl Vm {
             let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
             unsafe { alloc_zeroed(layout.unwrap()) as *mut Env }
         };
-        self.exframes = CArray::new_nil();
+        self.exframes = unsafe{ CArray::new_nil() };
         self.stack = CArray::reserve(2);
         ManuallyDrop::new(current_ctx)
     }
@@ -507,7 +507,7 @@ impl Vm {
             let importer_ip = self.ip;
             let imported_ip = self.code.len();
             {
-                let mut c = Compiler::new_append_vm(self);
+                let mut c = unsafe{ Compiler::new_append_vm(self) };
                 for stmt in prog {
                     stmt.emit(&mut c);
                 }
