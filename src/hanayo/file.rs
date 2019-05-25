@@ -81,7 +81,7 @@ fn seek(file: Value::Record, pos: Value::Int) -> Value {
     let file = file.as_mut();
     if let Some(field) = file.native_field.as_mut() {
         let file = field.downcast_mut::<File>().unwrap();
-        if let Result::Ok(result) = file.seek(SeekFrom::Current(pos)) {
+        if let Ok(result) = file.seek(SeekFrom::Current(pos)) {
             Value::Int(result as i64)
         } else {
             Value::Int(-1)
@@ -94,7 +94,7 @@ fn seek_from_start(file: Value::Record, pos: Value::Int) -> Value {
     let file = file.as_mut();
     if let Some(field) = file.native_field.as_mut() {
         let file = field.downcast_mut::<File>().unwrap();
-        if let Result::Ok(result) = file.seek(SeekFrom::Start(pos as u64)) {
+        if let Ok(result) = file.seek(SeekFrom::Start(pos as u64)) {
             Value::Int(result as i64)
         } else {
             Value::Int(-1)
@@ -107,7 +107,7 @@ fn seek_from_end(file: Value::Record, pos: Value::Int) -> Value {
     let file = file.as_mut();
     if let Some(field) = file.native_field.as_mut() {
         let file = field.downcast_mut::<File>().unwrap();
-        if let Result::Ok(result) = file.seek(SeekFrom::End(pos)) {
+        if let Ok(result) = file.seek(SeekFrom::End(pos)) {
             Value::Int(result as i64)
         } else {
             Value::Int(-1)
