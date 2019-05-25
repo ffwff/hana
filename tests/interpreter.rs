@@ -18,8 +18,12 @@ pub mod interpreter_tests {
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-            c.vm.borrow().execute();
+            {
+                let mut vm = c.vm.borrow_mut();
+                vm.code.push(VmOpcode::OP_HALT);
+                vm.gc_enable();
+                vm.execute();
+            }
             if let Ok(vm) = Rc::try_unwrap(c.vm) {
                 vm.into_inner()
             } else {
@@ -671,7 +675,7 @@ use '/tmp/module_absolute_import'
             stmt.emit(&mut c);
         }
         c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        c.vm.borrow().execute();
+        c.vm.borrow_mut().execute();
         assert_eq!(c.vm.borrow().global().get("y").unwrap().unwrap().int(), 10);
     }
 
@@ -688,7 +692,7 @@ use './module_relative_import'
             stmt.emit(&mut c);
         }
         c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        c.vm.borrow().execute();
+        c.vm.borrow_mut().execute();
         assert_eq!(c.vm.borrow().global().get("y").unwrap().unwrap().int(), 10);
     }
     // #endregion

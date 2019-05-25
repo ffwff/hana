@@ -112,9 +112,10 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     // execute!
     c.vm.borrow_mut().compiler = Some(&mut c);
     c.sources.push(s);
-    hanayo::init(&mut c.vm.borrow_mut());
-    c.vm.borrow_mut().gc_enable();
-    c.vm.borrow().execute();
+    let mut vm = c.vm.borrow_mut();
+    hanayo::init(&mut vm);
+    vm.gc_enable();
+    vm.execute();
     handle_error(&c);
 }
 
@@ -167,8 +168,8 @@ fn repl(flag: ParserFlag) {
                             println!("{:?}", prog);
                             continue;
                         }
+                        // setup
                         {
-                            // setup
                             let mut vm = c.vm.borrow_mut();
                             vm.error = VmError::ERROR_NO_ERROR;
                             let len = vm.code.len() as u32;
@@ -178,8 +179,11 @@ fn repl(flag: ParserFlag) {
                         for stmt in prog {
                             stmt.emit(&mut c);
                         }
-                        c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-                        c.vm.borrow().execute();
+                        {
+                            let mut vm = c.vm.borrow_mut();
+                            vm.code.push(VmOpcode::OP_HALT);
+                            vm.execute();
+                        }
                         handle_error(&c);
                     }
                     Err(err) => {

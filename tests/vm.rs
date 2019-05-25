@@ -13,7 +13,7 @@ pub mod vm_tests {
         let vm = Vm::new();
         vm.borrow_mut().code.push(VmOpcode::OP_PUSH16);
         vm.borrow_mut().cpush16(40000);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Int(40000));
     }
@@ -23,7 +23,7 @@ pub mod vm_tests {
         let vm = Vm::new();
         vm.borrow_mut().code.push(VmOpcode::OP_PUSH32);
         vm.borrow_mut().cpush32(100000);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Int(100000));
     }
@@ -33,7 +33,7 @@ pub mod vm_tests {
         let vm = Vm::new();
         vm.borrow_mut().code.push(VmOpcode::OP_PUSHF64);
         vm.borrow_mut().cpushf64(0.645);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(0.645));
     }
@@ -47,7 +47,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpush8(11);
         vm.borrow_mut().code.push(VmOpcode::OP_ADD);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Int(21));
     }
@@ -61,7 +61,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpushf64(1.5);
         vm.borrow_mut().code.push(VmOpcode::OP_ADD);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(3.0));
     }
@@ -75,7 +75,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpushf64(1.1);
         vm.borrow_mut().code.push(VmOpcode::OP_DIV);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(1.5/1.1));
     }
@@ -89,7 +89,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpush64(15);
         vm.borrow_mut().code.push(VmOpcode::OP_DIV);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(1.5/15.0));
     }
@@ -102,7 +102,7 @@ pub mod vm_tests {
         vm.borrow_mut().code.push(VmOpcode::OP_PUSHSTR);
         vm.borrow_mut().cpushs("Test");
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(*vm.borrow().stack.top().unwrap().string(), String::from("Test"));
     }
@@ -116,7 +116,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpushs("Test");
         vm.borrow_mut().code.push(VmOpcode::OP_ADD);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(*vm.borrow().stack.top().unwrap().string(), String::from("TestTest"));
     }
@@ -130,7 +130,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpush8(2);
         vm.borrow_mut().code.push(VmOpcode::OP_MUL);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(*vm.borrow().stack.top().unwrap().string(), String::from("TestTest"));
     }
@@ -148,7 +148,7 @@ pub mod vm_tests {
         vm.borrow_mut().code.push(VmOpcode::OP_GET_GLOBAL);
         vm.borrow_mut().cpushs("abc");
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Int(42));
     }
@@ -162,7 +162,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpush8(42);
         vm.borrow_mut().code.push(VmOpcode::OP_NOT);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Int(0));
     }
@@ -174,7 +174,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpush8(1);
         vm.borrow_mut().code.push(VmOpcode::OP_NEGATE);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Int(-1));
     }
@@ -186,7 +186,7 @@ pub mod vm_tests {
         vm.borrow_mut().cpushf64(1.5);
         vm.borrow_mut().code.push(VmOpcode::OP_NEGATE);
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        vm.borrow().execute();
+        vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
         assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(-1.5));
     }

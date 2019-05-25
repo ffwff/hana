@@ -60,12 +60,12 @@ impl GcManager {
     }
 
     unsafe fn malloc_raw<T: Sized + GcTraceable>
-        (&mut self, x: T, finalizer: GenericFunction) -> *mut T {
+        (&mut self, vm: &Vm, x: T, finalizer: GenericFunction) -> *mut T {
         // free up if over threshold
         if cfg!(test) {
-            self.collect();
+            self.collect(vm);
         } else if self.bytes_allocated > self.threshold {
-            self.collect();
+            self.collect(vm);
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
                 self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
@@ -94,10 +94,10 @@ impl GcManager {
         bytes.add(1) as *mut T
     }
 
-    pub fn malloc<T: Sized + GcTraceable>(&mut self, val: T) -> Gc<T> {
+    pub fn malloc<T: Sized + GcTraceable>(&mut self, vm: &Vm, val: T) -> Gc<T> {
         Gc {
             ptr: unsafe {
-                self.malloc_raw(val, |ptr| drop_in_place::<T>(ptr as *mut T))
+                self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T))
             }
         }
     }
@@ -107,7 +107,7 @@ impl GcManager {
     pub fn disable(&mut self) { self.enabled = false; }
 
     // gc algorithm
-    unsafe fn collect(&mut self) {
+    unsafe fn collect(&mut self, vm: &Vm) {
         if !self.enabled { return; }
         // mark phase:
         let mut node : *mut GcNode = self.first_node;
@@ -128,10 +128,7 @@ impl GcManager {
             node = next;
         }
         // mark from root
-        {
-            let rootcell = self.root.upgrade().unwrap();
-            rootcell.borrow().mark();
-        }
+        vm.mark();
         // sweep phase:
         let mut node : *mut GcNode = self.first_node;
         let mut prev : *mut GcNode = null_mut();

@@ -15,13 +15,16 @@ pub mod hanayo_tests {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
             let mut c = compiler::Compiler::new();
-            hanayo::init(&mut c.vm.borrow_mut());
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-            c.vm.borrow_mut().gc_enable();
-            c.vm.borrow().execute();
+            {
+                let mut vm = c.vm.borrow_mut();
+                hanayo::init(&mut vm);
+                vm.code.push(VmOpcode::OP_HALT);
+                vm.gc_enable();
+                vm.execute();
+            }
             if let Ok(vm) = Rc::try_unwrap(c.vm) {
                 vm.into_inner()
             } else {
