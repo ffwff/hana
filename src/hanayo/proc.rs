@@ -3,7 +3,7 @@ use std::io::Write;
 use crate::vmbindings::carray::CArray;
 
 use crate::vmbindings::vm::Vm;
-use crate::vm::Value;
+use crate::vmbindings::value::Value;
 
 // inputs
 #[hana_function()]

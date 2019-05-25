@@ -1,7 +1,7 @@
 use std::env;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::vm::Vm;
-use crate::vm::Value;
+use crate::vmbindings::value::Value;
 
 #[hana_function()]
 fn get(key: Value::Str) -> Value {

@@ -8,5 +8,3 @@ pub mod compiler;
 #[macro_use] pub mod ast;
 pub mod hanayo;
 pub mod vmbindings; // TODO
-pub use vmbindings::gc;
-pub use vmbindings::vm;

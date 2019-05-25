@@ -3,7 +3,7 @@ use std::io::Write;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
-use crate::vm::Value;
+use crate::vmbindings::value::Value;
 
 #[hana_function()]
 fn constructor(val: Value::Any) -> Value {

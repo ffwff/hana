@@ -3,7 +3,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
-use crate::vm::Value;
+use crate::vmbindings::value::Value;
 
 pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     let vm = unsafe { &mut *cvm };

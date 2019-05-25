@@ -5,9 +5,8 @@ pub mod hanayo_tests {
 
     use haru::ast::grammar;
     use haru::compiler;
-    use haru::vm::Vm;
-    use haru::vm::VmOpcode;
-    use haru::vm::Value;
+    use haru::vmbindings::vm::{Vm, VmOpcode};
+    use haru::vmbindings::value::Value;
 
     use haru::hanayo;
     use std::rc::Rc;

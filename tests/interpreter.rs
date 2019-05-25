@@ -5,9 +5,10 @@ pub mod interpreter_tests {
 
     use haru::ast::grammar;
     use haru::compiler;
-    use haru::vm::{Vm, VmOpcode, Value};
+    use haru::vmbindings::vm::{Vm, VmOpcode};
+    use haru::vmbindings::value::Value;
     use haru::vmbindings::vmerror::VmError;
-    
+
     use std::rc::Rc;
 
     macro_rules! eval {

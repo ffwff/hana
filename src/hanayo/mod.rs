@@ -4,20 +4,20 @@ use crate::vmbindings::record::Record;
 use crate::vmbindings::value::*;
 use crate::vmbindings::gc::Gc;
 
-mod io;
-mod eval;
-mod math;
-mod file;
-mod proc;
-mod cmd;
-mod env;
-mod time;
+pub mod io;
+pub mod eval;
+pub mod math;
+pub mod file;
+pub mod proc;
+pub mod cmd;
+pub mod env;
+pub mod time;
 
-mod array;
-mod string;
-mod int;
-mod float;
-mod record;
+pub mod array;
+pub mod string;
+pub mod int;
+pub mod float;
+pub mod record;
 
 pub struct HanayoCtx {
     pub file_rec: Gc<Record>,

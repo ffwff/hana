@@ -1,7 +1,7 @@
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vm::VmOpcode;
 use crate::ast;
-use crate::vm::Value;
+use crate::vmbindings::value::Value;
 use crate::compiler::Compiler;
 
 #[hana_function()]

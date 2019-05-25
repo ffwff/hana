@@ -1,8 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use crate::vm::Vm;
-use crate::vm::VmOpcode;
+use crate::vmbindings::vm::{Vm, VmOpcode};
 use crate::vmbindings::carray::CArray;
 
 // private
@@ -59,8 +58,8 @@ impl Compiler {
 
     // constructor for execution ctx
     pub fn new_append_vm(vm: &mut Vm) -> Compiler {
-        
-        
+
+
         Compiler{
             scopes: Vec::new(),
             loop_stmts: Vec::new(),

@@ -1,7 +1,7 @@
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::carray::CArray;
-use crate::vm::Value;
+use crate::vmbindings::value::Value;
 
 #[hana_function()]
 fn constructor() -> Value {
