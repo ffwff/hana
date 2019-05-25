@@ -129,11 +129,10 @@ fn handle_error(c: &compiler::Compiler) {
             let message = format!("{} at {}:{}:{}", vm.error, c.files[smap.fileno], line, col);
             print_error(&src, line, col, line_end, col_end, "interpreter error:", &message);
         }
-        if !vm.localenv.is_null() {
+        if !vm.localenv_is_null() {
             eprintln!("{}", ac::Red.bold().paint("backtrace:"));
-            let mut env = vm.localenv;
-            while env != unsafe{ vm.localenv_bp.sub(1) } {
-                let ip = unsafe{ &*env }.retip as usize;
+            for env in vm.localenv_to_vec() {
+                let ip = env.retip as usize;
                 if let Some(smap) = c.lookup_smap(ip) {
                     let src = &c.sources[smap.fileno];
                     let (line, col) = ast::pos_to_line(&src, smap.file.0);
@@ -144,7 +143,6 @@ fn handle_error(c: &compiler::Compiler) {
                 } else {
                     eprintln!(" from bytecode index {}", ip);
                 }
-                env = unsafe { env.sub(1) };
             }
         }
     }

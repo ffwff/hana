@@ -68,9 +68,9 @@ pub enum VmOpcode {
 #[repr(C)]
 pub struct Vm {
     ip              : u32, // current instruction pointer
-    pub localenv    : *mut Env,
+    localenv    : *mut Env,
     // pointer to current stack frame
-    pub localenv_bp : *mut Env, // rust owns this, so drop it pls
+    localenv_bp : *mut Env, // rust owns this, so drop it pls
     // pointer to start of pool of stack frames
     globalenv      : *mut CHashMap,
     // global environment, all unscoped variables/variables
@@ -301,6 +301,28 @@ impl Vm {
                 self.localenv = self.localenv.sub(1);
             }
         }
+    }
+
+    // accessors
+    pub unsafe fn localenv(&self) -> *mut Env {
+        self.localenv
+    }
+    pub fn localenv_is_null(&self) -> bool {
+        self.localenv.is_null()
+    }
+    pub unsafe fn localenv_bp(&self) -> *mut Env {
+        self.localenv_bp
+    }
+    pub fn localenv_to_vec(&self) -> Vec<Env> {
+        // used for error handling and such
+        if self.localenv.is_null() { return Vec::new(); }
+        let mut env = self.localenv;
+        let mut vec = Vec::new();
+        while env != unsafe{ self.localenv_bp.sub(1) } {
+            vec.push(unsafe{ &*env }.clone());
+            env = unsafe { env.sub(1) };
+        }
+        vec
     }
 
     // exceptions
