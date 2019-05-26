@@ -17,6 +17,9 @@ pub mod time;
 cfg_if! {
     if #[cfg(feature="cffi")] {
         pub mod cffi;
+        use cffi::load as cffi_load;
+    } else {
+        fn cffi_load(vm: &mut Vm) {}
     }
 }
 
@@ -181,6 +184,8 @@ pub fn init(vm : &mut Vm) {
     set_obj_var!(time, "nanos",        Value::NativeFn(time::nanos));
     set_var!("Time", Value::Record(time.clone()));
     // #endregion
+
+    cffi_load(vm);
 
     vm.stdlib = Some(HanayoCtx {
         file_rec: file,

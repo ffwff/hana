@@ -4,18 +4,10 @@ use std::ptr::{null, null_mut};
 use libc::c_void;
 use std::ffi::{CString, CStr};
 use crate::vmbindings::vm::Vm;
+use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
-
-struct FFI_Function {
-    sym: Option<unsafe extern fn()>,
-    cif: ffi_cif,
-    argtypes: CArray<FFI_Type>,
-    ffi_argtypes: CArray<*mut ffi_type>,
-    rettype: FFI_Type,
-    ffi_rettype: *mut ffi_type,
-}
 
 // #region ffi type
 #[repr(i64)]
@@ -70,6 +62,19 @@ impl FFI_Type {
 }
 // #endregion
 
+pub mod function {
+
+use super::*;
+
+struct FFI_Function {
+    sym: Option<unsafe extern fn()>,
+    cif: ffi_cif,
+    argtypes: CArray<FFI_Type>,
+    ffi_argtypes: CArray<*mut ffi_type>,
+    rettype: FFI_Type,
+    ffi_rettype: *mut ffi_type,
+}
+
 #[hana_function()]
 fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) -> Value {
     // argtypes
@@ -114,6 +119,8 @@ fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) ->
 
     let rec = vm.malloc(Record::new());
     rec.as_mut().native_field = Some(Box::new(ffi_fn));
+    rec.as_mut().insert("prototype",
+        vm.global().get("Cffi").unwrap().unwrap().record().get("Function").unwrap().clone());
     Value::Record(rec)
 }
 
@@ -165,4 +172,46 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
         FFI_Type::String  => &mut ffi_type_pointer,
         FFI_Type::Void    => &mut ffi_type_void*/
     }
+}
+
+}
+
+#[no_mangle]
+pub extern fn debug(x: i64) {
+    eprintln!("{}", x);
+}
+
+// exports
+pub fn load(vm: &mut Vm) {
+    macro_rules! set_var {
+        ($x:literal, $y:expr) => (vm.mut_global().insert($x.to_string(), $y.wrap()));
+    }
+    macro_rules! set_obj_var {
+        ($o: expr, $x:literal, $y:expr) => ($o.as_mut().insert($x.to_string(), $y.wrap()));
+    }
+
+    let cffi_mod = vm.malloc(Record::new());
+
+    // types
+    set_obj_var!(cffi_mod, "UInt8",   Value::Int(FFI_Type::UInt8 as i64));
+    set_obj_var!(cffi_mod, "Int8",    Value::Int(FFI_Type::Int8 as i64));
+    set_obj_var!(cffi_mod, "UInt16",  Value::Int(FFI_Type::UInt16 as i64));
+    set_obj_var!(cffi_mod, "Int16",   Value::Int(FFI_Type::Int16 as i64));
+    set_obj_var!(cffi_mod, "UInt32",  Value::Int(FFI_Type::UInt32 as i64));
+    set_obj_var!(cffi_mod, "Int32",   Value::Int(FFI_Type::Int32 as i64));
+    set_obj_var!(cffi_mod, "UInt64",  Value::Int(FFI_Type::UInt64 as i64));
+    set_obj_var!(cffi_mod, "Int64",   Value::Int(FFI_Type::Int64 as i64));
+    set_obj_var!(cffi_mod, "Float32", Value::Int(FFI_Type::Float32 as i64));
+    set_obj_var!(cffi_mod, "Float64", Value::Int(FFI_Type::Float64 as i64));
+    set_obj_var!(cffi_mod, "Pointer", Value::Int(FFI_Type::Pointer as i64));
+    set_obj_var!(cffi_mod, "String",  Value::Int(FFI_Type::String as i64));
+    set_obj_var!(cffi_mod, "Void",    Value::Int(FFI_Type::Void as i64));
+
+    // function
+    let cffi_function = vm.malloc(Record::new());
+    set_obj_var!(cffi_function, "constructor", Value::NativeFn(function::constructor));
+    set_obj_var!(cffi_function, "call",        Value::NativeFn(function::call));
+    set_obj_var!(cffi_mod, "Function", Value::Record(cffi_function));
+
+    set_var!("Cffi", Value::Record(cffi_mod));
 }

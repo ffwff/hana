@@ -1,6 +1,7 @@
 abs = Cffi::Function("abs", [Cffi.Int64], Cffi.Int64)
 print(Cffi::call(abs, -10), "\n")
 
+/*
 sin = Cffi::Function("sin", [Cffi.Float64], Cffi.Float64)
 print(Cffi::call(sin, 1.5), "\n")
 
@@ -18,3 +19,4 @@ fptr = Cffi::RcPointer(Cffi::call(fopen, "/tmp/a", "r"), fclose)
 buffer = String::reserve(6)
 Cffi::call(fread, buffer, 1, 6, fptr.pointer!)
 print(buffer)
+*/
