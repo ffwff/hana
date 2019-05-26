@@ -160,21 +160,39 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
         }
     }
 
-    match &ffi_fn.rettype {
+    unsafe { match &ffi_fn.rettype {
         FFI_Type::UInt8 | FFI_Type::Int8 | FFI_Type::UInt16 | FFI_Type::Int16  | FFI_Type::UInt32 | FFI_Type::Int32 | FFI_Type::UInt64 | FFI_Type::Int64
-            => unsafe {
-                let mut rvalue = std::intrinsics::uninit::<i64>();
+            => {
+                let mut rvalue = 0;
                 ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&i64, *mut c_void>(&rvalue), aref.as_mut_ptr());
                 Value::Int(rvalue)
             },
-        _ => unimplemented!()
-        /*
-        FFI_Type::Float32 => &mut ffi_type_float,
-        FFI_Type::Float64 => &mut ffi_type_double,
-        FFI_Type::Pointer => &mut ffi_type_pointer,
-        FFI_Type::String  => &mut ffi_type_pointer,
-        FFI_Type::Void    => &mut ffi_type_void*/
-    }
+        FFI_Type::Float32
+            => {
+                let mut rvalue = 0;
+                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&f32, *mut c_void>(&rvalue), aref.as_mut_ptr());
+                Value::Float(rvalue)
+            },
+        FFI_Type::Float64
+            => {
+                let mut rvalue = 0;
+                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&f64, *mut c_void>(&rvalue), aref.as_mut_ptr());
+                Value::Float(rvalue)
+            },
+        FFI_Type::Pointer
+            => {
+                unimplemented!()
+            },
+        FFI_Type::String
+            => {
+                unimplemented!()
+            },
+        FFI_Type::Void
+            => {
+                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, null_mut(), aref.as_mut_ptr());
+                Value::Nil
+            }
+    } }
 }
 
 }

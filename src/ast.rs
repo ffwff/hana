@@ -270,21 +270,18 @@ pub mod ast {
             }
 
             // default return
-            {
-                match c.vm.code.top() {
-                    VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {}
-                    _ => {
-                        c.vm.code.push(VmOpcode::OP_PUSH_NIL);
-                        c.vm.code.push(VmOpcode::OP_RET);
-                    }
-                };
-            }
+            match c.vm.code.top() {
+                VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {}
+                _ => {
+                    c.vm.code.push(VmOpcode::OP_PUSH_NIL);
+                    c.vm.code.push(VmOpcode::OP_RET);
+                }
+            };
 
             // end
             let nslots = c.unscope();
             c.fill_label16(nslot_label, nslots);
-            let len = c.vm.code.len();
-            c.fill_label16(function_end, (len - function_end) as u16);
+            c.fill_label16(function_end, (c.vm.code.len() - function_end) as u16);
             emit_end!(c, c.vm, _smap_begin);
         }
     }
@@ -404,10 +401,7 @@ pub mod ast {
 
             c.vm.code.push(VmOpcode::OP_JMP);
             let done_label = c.reserve_label16();
-            {
-                let len = c.vm.code.len();
-                c.fill_label16(else_label, (len - else_label) as u16);
-            }
+            c.fill_label16(else_label, (c.vm.code.len() - else_label) as u16);
 
             if is_tail {
                 if let Some(expr) = self.alt.as_any().downcast_ref::<CallExpr>() {
@@ -421,10 +415,7 @@ pub mod ast {
                 self.alt.emit(c);
             }
 
-            {
-                let len = c.vm.code.len();
-                c.fill_label16(done_label, (len - done_label) as u16);
-            }
+            c.fill_label16(done_label, (c.vm.code.len() - done_label) as u16);
             emit_end!(c, c.vm, _smap_begin);
         }
     }
@@ -593,10 +584,7 @@ pub mod ast {
                         // end
                         let nslots = c.unscope();
                         c.fill_label16(nslot_label, nslots);
-                        {
-                            let len = c.vm.code.len();
-                            c.fill_label16(function_end, (len - function_end) as u16);
-                        }
+                        c.fill_label16(function_end, (c.vm.code.len() - function_end) as u16);
 
                         let id = &callexpr
                             .callee
@@ -713,8 +701,7 @@ pub mod ast {
                     let label = c.reserve_label16();
                     c.vm.code.push(VmOpcode::OP_POP);
                     self.right.emit(c);
-                    let len = c.vm.code.len();
-                    c.fill_label16(label, (len - label) as u16);
+                    c.fill_label16(label, (c.vm.code.len() - label) as u16);
                 }
                 BinOp::Or => {
                     self.left.emit(c);
@@ -722,8 +709,7 @@ pub mod ast {
                     let label = c.reserve_label16();
                     c.vm.code.push(VmOpcode::OP_POP);
                     self.right.emit(c);
-                    let len = c.vm.code.len();
-                    c.fill_label16(label, (len - label) as u16);
+                    c.fill_label16(label, (c.vm.code.len() - label) as u16);
                 } //_ => panic!("not implemented: {:?}", self.op)
             }
             emit_end!(c, c.vm, _smap_begin);
@@ -893,16 +879,11 @@ pub mod ast {
             if let Some(alt) = &self.alt {
                 c.vm.code.push(VmOpcode::OP_JMP);
                 let done_label = c.reserve_label16();
-                {
-                    let len = c.vm.code.len();
-                    c.fill_label16(else_label, (len as isize - else_label as isize) as u16);
-                }
+                c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
                 alt.emit(c);
-                let len = c.vm.code.len();
-                c.fill_label16(done_label, (len - done_label) as u16);
+                c.fill_label16(done_label, (c.vm.code.len() - done_label) as u16);
             } else {
-                let len = c.vm.code.len();
-                c.fill_label16(else_label, (len as isize - else_label as isize) as u16);
+                c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
             }
             emit_end!(c, c.vm, _smap_begin);
         }
@@ -941,23 +922,13 @@ pub mod ast {
             c.loop_start();
             self.then.emit(c);
 
-            {
-                let len = c.vm.code.len();
-                c.fill_label16(begin_label, (len - begin_label) as u16);
-            }
+            c.fill_label16(begin_label, (c.vm.code.len() - begin_label) as u16);
 
             let next_it_pos = c.vm.code.len();
             self.expr.emit(c);
             c.vm.code.push(VmOpcode::OP_JCOND);
-            {
-                let len = c.vm.code.len();
-                c.vm.cpush16((then_label as isize - len as isize) as u16);
-            }
-
-            {
-                let len = c.vm.code.len();
-                c.loop_end(next_it_pos, len);
-            }
+            c.vm.cpush16((then_label as isize - c.vm.code.len() as isize) as u16);
+            c.loop_end(next_it_pos, c.vm.code.len());
             emit_end!(c, c.vm, _smap_begin);
         }
     }
@@ -1028,10 +999,7 @@ pub mod ast {
             c.emit_set_var(self.id.clone());
             c.vm.code.push(VmOpcode::OP_POP);
 
-            {
-                let len = c.vm.code.len();
-                c.fill_label16(begin_label, (len - begin_label) as u16);
-            }
+            c.fill_label16(begin_label, (c.vm.code.len() - begin_label) as u16);
 
             // condition
             let next_it_pos = c.vm.code.len();
@@ -1043,15 +1011,9 @@ pub mod ast {
                 VmOpcode::OP_GT
             });
             c.vm.code.push(VmOpcode::OP_JCOND);
-            {
-                let len = c.vm.code.len();
-                c.vm.cpush16((then_label as isize - len as isize) as u16);
-            }
+            c.vm.cpush16((then_label as isize - c.vm.code.len() as isize) as u16);
 
-            {
-                let len = c.vm.code.len();
-                c.loop_end(next_it_pos, len);
-            }
+            c.loop_end(next_it_pos, c.vm.code.len());
             emit_end!(c, c.vm, _smap_begin);
         }
     }
@@ -1099,14 +1061,8 @@ pub mod ast {
             c.vm.code.push(VmOpcode::OP_POP);
             self.stmt.emit(c);
             c.vm.code.push(VmOpcode::OP_JMP);
-            {
-                let len = c.vm.code.len();
-                c.vm.cpush16((next_it_label as isize - len as isize) as u16);
-            }
-            {
-                let len = c.vm.code.len();
-                c.fill_label16(end_label, (len - end_label) as u16);
-            }
+            c.vm.cpush16((next_it_label as isize - c.vm.code.len() as isize) as u16);
+            c.fill_label16(end_label, (c.vm.code.len() - end_label) as u16);
 
             emit_end!(c, c.vm, _smap_begin);
         }
@@ -1298,8 +1254,7 @@ pub mod ast {
                 c.vm.code.push(VmOpcode::OP_EXFRAME_RET);
                 cases_to_fill.push(c.reserve_label16());
                 // end
-                let len = c.vm.code.len();
-                c.fill_label16(body_start, (len - body_start) as u16);
+                c.fill_label16(body_start, (c.vm.code.len() - body_start) as u16);
                 // exception type
                 case.etype.emit(c);
             }
@@ -1308,8 +1263,7 @@ pub mod ast {
                 s.emit(c);
             }
             for hole in cases_to_fill {
-                let len = c.vm.code.len();
-                c.fill_label16(hole, (len - hole) as u16);
+                c.fill_label16(hole, (c.vm.code.len() - hole) as u16);
             }
             emit_end!(c, c.vm, _smap_begin);
         }

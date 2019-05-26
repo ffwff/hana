@@ -22,13 +22,11 @@ fn constructor(val: Value::Any) -> Value {
                 let slice = &arr.as_slice()[1..];
                 for val in slice {
                     match val.unwrap() {
-                        Value::Str(s) => {
-                            cmd.arg(s.as_ref().clone());
-                        }
+                        Value::Str(s) => cmd.arg(s.as_ref().clone()),
                         _ => {
                             unimplemented!();
                         }
-                    }
+                    };
                 }
             }
             cmd
