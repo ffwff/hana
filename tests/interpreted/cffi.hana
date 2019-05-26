@@ -1,5 +1,5 @@
-abs = Cffi::Function("abs", [Cffi.Int64], Cffi.Int64)
-print(Cffi::call(abs, -10), "\n")
+debug = Cffi::Function("getuid", [], Cffi.Int64)
+print(debug.call([]), "\n")
 
 /*
 sin = Cffi::Function("sin", [Cffi.Float64], Cffi.Float64)

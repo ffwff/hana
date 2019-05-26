@@ -23,22 +23,22 @@ enum FFI_Type {
 }
 
 impl FFI_Type {
-    fn from_i64(value: i64) -> Self {
+    fn from_i64(value: i64) -> Option<Self> {
         match value {
-            0  => FFI_Type::UInt8,
-            1  => FFI_Type::Int8,
-            2  => FFI_Type::UInt16,
-            3  => FFI_Type::Int16,
-            4  => FFI_Type::UInt32,
-            5  => FFI_Type::Int32,
-            6  => FFI_Type::UInt64,
-            7  => FFI_Type::Int64,
-            8  => FFI_Type::Float32,
-            9  => FFI_Type::Float64,
-            10 => FFI_Type::Pointer,
-            11 => FFI_Type::String,
-            12 => FFI_Type::Void,
-            _ => panic!("wrong type!")
+            0  => Some(FFI_Type::UInt8),
+            1  => Some(FFI_Type::Int8),
+            2  => Some(FFI_Type::UInt16),
+            3  => Some(FFI_Type::Int16),
+            4  => Some(FFI_Type::UInt32),
+            5  => Some(FFI_Type::Int32),
+            6  => Some(FFI_Type::UInt64),
+            7  => Some(FFI_Type::Int64),
+            8  => Some(FFI_Type::Float32),
+            9  => Some(FFI_Type::Float64),
+            10 => Some(FFI_Type::Pointer),
+            11 => Some(FFI_Type::String),
+            12 => Some(FFI_Type::Void),
+            _ => None
         }
     }
 
@@ -79,34 +79,36 @@ struct FFI_Function {
 fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) -> Value {
     // argtypes
     let argtypes = argtypes.as_ref();
-    let mut inst_argtypes = CArray::reserve(argtypes.len());
-    let mut ffi_argtypes = CArray::reserve(argtypes.len());
+    let mut inst_argtypes = CArray::new();
+    let mut ffi_argtypes : CArray<*mut ffi_type> = CArray::new();
     for arg in argtypes.iter() {
-        let ffi_type = FFI_Type::from_i64(arg.unwrap().int());
+        let ffi_type = FFI_Type::from_i64(arg.unwrap().int()).unwrap();
         ffi_argtypes.push(unsafe{ ffi_type.to_libffi_type() });
         inst_argtypes.push(ffi_type);
     }
-    ffi_argtypes.push(null_mut());
 
     // rettype
-    let rettype = FFI_Type::from_i64(rettype);
-    let ffi_rettype = unsafe{ rettype.to_libffi_type() };
+    let rettype = FFI_Type::from_i64(rettype).unwrap();
 
     // create
     let ffi_fn = unsafe {
         // cif
-        let mut cif = std::intrinsics::init::<ffi_cif>();
+        let mut cif: ffi_cif = Default::default();
+        let ffi_rettype = unsafe{ rettype.to_libffi_type() };
+        eprintln!("{:?}", ffi_argtypes);
         ffi_prep_cif(&mut cif, ffi_abi_FFI_DEFAULT_ABI,
             argtypes.len() as u32,
             ffi_rettype,
-            ffi_argtypes.as_ptr() as *mut *mut ffi_type);
+            ffi_argtypes.as_mut_ptr());
 
         // ffi fn
         let dl = libc::dlopen(null(), libc::RTLD_LAZY);
         FFI_Function {
             sym: {
-                let sym = libc::dlsym(dl, name.as_ref().as_ptr() as *const i8);
-                if sym.is_null() { None }
+                let cstr = CString::new(name.as_ref().clone()).unwrap();
+                let sym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
+                eprintln!("{:?}", cstr);
+                if sym.is_null() { panic!("is nul!") }
                 else { Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(sym)) }
             },
             cif,
@@ -126,8 +128,8 @@ fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) ->
 
 #[hana_function()]
 fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
-    let field = ffi_fn_rec.as_ref().native_field.as_ref().unwrap();
-    let mut ffi_fn = field.downcast_ref::<FFI_Function>().clone().unwrap();
+    let field = ffi_fn_rec.as_mut().native_field.as_mut().unwrap();
+    let mut ffi_fn = field.downcast_mut::<FFI_Function>().unwrap();
 
     use libc::c_void;
     use std::any::Any;
@@ -161,7 +163,7 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
         FFI_Type::UInt8 | FFI_Type::Int8 | FFI_Type::UInt16 | FFI_Type::Int16  | FFI_Type::UInt32 | FFI_Type::Int32 | FFI_Type::UInt64 | FFI_Type::Int64
             => unsafe {
                 let mut rvalue = std::intrinsics::uninit::<i64>();
-                ffi_call(transmute::<&ffi_cif, *mut ffi_cif>(&ffi_fn.cif), ffi_fn.sym, transmute::<&i64, *mut c_void>(&rvalue), &mut aref.as_mut_ptr());
+                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&i64, *mut c_void>(&rvalue), aref.as_mut_ptr());
                 Value::Int(rvalue)
             },
         _ => unimplemented!()
@@ -174,11 +176,6 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
     }
 }
 
-}
-
-#[no_mangle]
-pub extern fn debug(x: i64) {
-    eprintln!("{}", x);
 }
 
 // exports

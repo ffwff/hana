@@ -16,7 +16,7 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
     let array = vm.malloc(CArray::reserve(nargs));
     for i in 0..nargs {
         let val = vm.stack.top();
-        array.as_mut()[i] = val.clone();
+        array.as_mut().push(val.clone());
         vm.stack.pop();
     }
     vm.stack.push(Value::Array(array).wrap());

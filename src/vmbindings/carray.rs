@@ -68,26 +68,11 @@ impl<T> CArray<T> {
     }
 
     // ptr
-    pub unsafe fn as_ptr(&self) -> *const libc::c_void {
-        self.data as *const libc::c_void
+    pub unsafe fn as_ptr(&self) -> *const T {
+        self.data
     }
-    pub unsafe fn as_mut_ptr(&mut self) -> *mut libc::c_void {
-        self.data as *mut libc::c_void
-    }
-
-    // clone
-    pub fn clone(&self) -> CArray<T> {
-        CArray::<T> {
-            data: unsafe {
-                let layout = Layout::array::<T>(self.len).unwrap();
-                let d = alloc_zeroed(layout) as *mut T;
-                std::ptr::copy(self.data, d, self.len);
-                d
-            },
-            len: self.len,
-            capacity: self.len
-        }
-
+    pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
+        self.data
     }
 
     // length
@@ -195,6 +180,23 @@ impl<T> std::ops::Drop for CArray<T> {
 
 }
 
+impl<T> Clone for CArray<T> {
+
+    fn clone(&self) -> Self {
+        CArray::<T> {
+            data: unsafe {
+                let layout = Layout::array::<T>(self.len).unwrap();
+                let d = alloc_zeroed(layout) as *mut T;
+                std::ptr::copy(self.data, d, self.len);
+                d
+            },
+            len: self.len,
+            capacity: self.len
+        }
+    }
+
+}
+
 // index
 impl<T> std::ops::Index<usize> for CArray<T> {
     type Output = T;
@@ -243,6 +245,21 @@ impl GcTraceable for CArray<NativeValue> {
                 val.trace();
             }
         }
+    }
+
+}
+
+// display
+use std::fmt::Debug;
+impl<T: Debug> Debug for CArray<T> {
+
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "[")?;
+        for val in self.iter() {
+            val.fmt(f)?;
+            write!(f, ", ")?;
+        }
+        write!(f, "]")
     }
 
 }

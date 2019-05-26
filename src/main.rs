@@ -117,10 +117,12 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     // execute!
     c.vm.borrow_mut().compiler = Some(&mut c);
     c.sources.push(s);
-    let mut vm = c.vm.borrow_mut();
-    hanayo::init(&mut vm);
-    vm.gc_enable();
-    vm.execute();
+    {
+        let mut vm = c.vm.borrow_mut();
+        hanayo::init(&mut vm);
+        vm.gc_enable();
+        vm.execute();
+    }
     handle_error(&c);
 }
 
