@@ -14,7 +14,7 @@ pub struct Function {
 
     // internal rust properties:
     /// Represents the current local environment
-    /// at the time the function is declared.function
+    /// at the time the function is declared.
     ///
     /// This will be COPIED into another struct env whenever OP_CALL is issued.
     ///
