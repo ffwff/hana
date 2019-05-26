@@ -598,6 +598,8 @@ Each time you call a record, the record's `constructor` function gets called ins
 and will pass the record in addition to your arguments. I recommend using `self` to denote
 the argument containing the record. **You must return the record (self) manually in the constructor.**
 
+Accessing a key can be done through member expressions. Accessing a non-existant key will throw an error.
+
 To delete a record's key, simply set the key to `nil`.
 
 Methods:

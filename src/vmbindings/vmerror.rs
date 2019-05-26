@@ -31,6 +31,8 @@ pub enum VmError {
     ERROR_CASE_EXPECTS_DICT,
     ERROR_UNHANDLED_EXCEPTION,
     ERROR_EXPECTED_ITERABLE,
+    ERROR_EXPECTED_RECORD_OF_EXPR,
+    ERROR_UNKNOWN_KEY,
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -79,6 +81,7 @@ impl std::fmt::Display for VmError {
             }
             VmError::ERROR_UNHANDLED_EXCEPTION => write!(f, "Unhandled exception"),
             VmError::ERROR_EXPECTED_ITERABLE => write!(f, "Expected iterable (array)"),
+            VmError::ERROR_UNKNOWN_KEY => write!(f, "Unknown key"),
             _ => write!(f, "[vmerror]"),
         }
     }

@@ -581,7 +581,7 @@ end
 y = A.x
 "
         );
-        assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Nil);
+        assert_eq!(vm.error, VmError::ERROR_UNKNOWN_KEY);
     }
 
     #[test]

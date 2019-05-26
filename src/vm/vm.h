@@ -77,6 +77,7 @@ enum vm_error {
     ERROR_UNHANDLED_EXCEPTION,
     ERROR_EXPECTED_ITERABLE,
     ERROR_EXPECTED_RECORD_OF_EXPR,
+    ERROR_UNKNOWN_KEY
 };
 
 typedef array(uint8_t) a_uint8;

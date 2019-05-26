@@ -573,7 +573,7 @@ void vm_execute(struct vm *vm) {
         if(result != NULL) {
             array_push(vm->stack, *result);
         } else {
-            array_push(vm->stack, (struct value){0});
+            ERROR(ERROR_UNKNOWN_KEY, strlen(key)+1);
         }
 
         dispatch();
@@ -658,7 +658,7 @@ void vm_execute(struct vm *vm) {
             if(val != NULL) {
                 array_push(vm->stack, *val);
             } else {
-                array_push(vm->stack, (struct value){0});
+                ERROR(ERROR_UNKNOWN_KEY, 1);
             }
         } else {
             ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1);
