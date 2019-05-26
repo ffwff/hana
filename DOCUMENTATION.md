@@ -661,8 +661,8 @@ nan // => not a number
 ### IO
 
 ```
-print(v) // => prints value "v" onto stdout
-v = input() // => gets a string from stdin
+print("Hello World") // => prints string "Hello World" onto stdout
+input() // => gets a string from stdin
 ```
 
 #### Files
@@ -676,6 +676,14 @@ f = File("/tmp/a", "w") // => opens the file /tmp/a with the writer flag
 f.write("Hello World\n") // => overwrites the file with the string "Hello World\n"
 ```
 
+### Environment variables
+
+```
+Env::get("x") // gets the environment variable x as a string
+Env::set("x", "y") // sets the environment variable x to y
+Env::vars() // gets a record of environment variables
+```
+
 ### Commands
 
 ```
@@ -683,7 +691,19 @@ c = Cmd("echo Hello World") // creates a process with the shell command "echo He
 c = Cmd(["echo", "Hello World"]) // creates a process with args "echo", "Hello World"
 c.out() // => "Hello World\n" (spawns the process and gets its stdout)
 c.err() // => "" (spawns the process and gets its stderr)
+c.outputs() // => ["Hello World\n", ""] (spawns the process and gets an array of stdout/stderr outputs)
 Cmd("cat -").in("hi").out() // => "" (spawns the process with "Hi" passed to its stdin and gets its stdout)
+c.spawn() // => Process record (spawns and detaches the process)
+```
+
+### Process
+
+```
+p = Cmd(["echo", "Hello World"]).spawn()
+p.out() // => "Hello World\n" (waits for the process to terminate and gets its stdout)
+p.err() // => "" (waits for the process to terminate and gets its stderr)
+p.outputs() // => ["Hello World\n", ""] (spawns the process and gets an array of stdout/stderr outputs)
+p.in('hello') // => sends the string 'hello' into the process' stdin
 ```
 
 ## Optional libraries
@@ -698,6 +718,34 @@ JSON::parse('{"a": true}') // => record of a key = 1
 (record
     a = JSON::true
 end).to_json() // => {"a": true}
+```
+
+### C FFI
+
+```
+// calling getuid() from the ffi
+getuid = Cffi::Function("getuid", [], Cffi.Int64)
+print(getuid.call([]), "\n")
+```
+
+#### FFI Types
+
+Stored in Cffi:
+
+```
+UInt8,
+Int8,
+UInt16,
+Int16,
+UInt32,
+Int32,
+UInt64,
+Int64,
+Float32,
+Float64,
+Pointer,
+String,
+Void
 ```
 
 ## Imports

@@ -176,18 +176,18 @@ fn repl(flag: ParserFlag) {
                             continue;
                         }
                         // setup
-                        {
+                        let len = {
                             let mut vm = c.vm.borrow_mut();
                             vm.error = VmError::ERROR_NO_ERROR;
-                            let len = vm.code.len() as u32;
-                            vm.jmp(len);
-                        }
+                            vm.code.len() as u32
+                        };
                         c.sources[0] = s.clone();
                         for stmt in prog {
                             stmt.emit(&mut c);
                         }
                         {
                             let mut vm = c.vm.borrow_mut();
+                            vm.jmp(len);
                             vm.code.push(VmOpcode::OP_HALT);
                             vm.execute();
                         }

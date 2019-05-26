@@ -22,6 +22,14 @@ cargo install haru
 
 The interpreter called `haru` will be installed into your PATH.
 
+### Additional features
+
+Additional features can be enabled by passing their names into
+cargo's `--features` flag:
+
+* `jemalloc`: use the jemalloc memory allocator
+* `cffi`: enables hanayo's C foreign interface *(wip)*
+
 ## Running
 
 Once built or installed, you can write hana code into a source file, then invoke the interpreter like this:
