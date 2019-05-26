@@ -206,15 +206,9 @@ impl fmt::Debug for Value {
                 let mut s = String::new();
                 for ch in p.as_ref().chars() {
                     match ch {
-                        '\n' => {
-                            s += "\\n";
-                        }
-                        '"' => {
-                            s.push('"');
-                        }
-                        _ => {
-                            s.push(ch);
-                        }
+                        '\n' => s.push_str("\\n"),
+                        '"' => s.push('"'),
+                        _ => s.push(ch)
                     }
                 }
                 write!(f, "\"{}\"", s)
