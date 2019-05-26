@@ -2,11 +2,11 @@
 extern crate unicode_segmentation;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::value::Value;
+use crate::vmbindings::vm::Vm;
 
-pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
+pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
         vm.stack.push(Value::Str(vm.malloc(String::new())).wrap());
@@ -15,7 +15,8 @@ pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
         assert_eq!(nargs, 1);
         let arg = vm.stack.top().clone().unwrap();
         vm.stack.pop();
-        vm.stack.push(Value::Str(vm.malloc(format!("{:?}", arg).to_string())).wrap());
+        vm.stack
+            .push(Value::Str(vm.malloc(format!("{:?}", arg).to_string())).wrap());
     }
 }
 
@@ -44,13 +45,18 @@ fn endswith(s: Value::Str, left: Value::Str) -> Value {
 fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos = from_pos as usize;
     let nchars = nchars as usize;
-    let ss = s.as_ref().graphemes(true)
-                .enumerate()
-                .filter_map(|(i, ch)| {
-                    if (from_pos..(from_pos+nchars)).contains(&i) { None }
-                    else { Some(ch) }
-                })
-                .collect::<String>();
+    let ss = s
+        .as_ref()
+        .graphemes(true)
+        .enumerate()
+        .filter_map(|(i, ch)| {
+            if (from_pos..(from_pos + nchars)).contains(&i) {
+                None
+            } else {
+                Some(ch)
+            }
+        })
+        .collect::<String>();
     Value::Str(vm.malloc(ss))
 }
 
@@ -73,13 +79,18 @@ fn delete_(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
 fn copy(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos = from_pos as usize;
     let nchars = nchars as usize;
-    let ss = s.as_ref().graphemes(true)
-                .enumerate()
-                .filter_map(|(i, ch)| {
-                    if (from_pos..(from_pos+nchars)).contains(&i) { Some(ch) }
-                    else { None }
-                })
-                .collect::<String>();
+    let ss = s
+        .as_ref()
+        .graphemes(true)
+        .enumerate()
+        .filter_map(|(i, ch)| {
+            if (from_pos..(from_pos + nchars)).contains(&i) {
+                Some(ch)
+            } else {
+                None
+            }
+        })
+        .collect::<String>();
     Value::Str(vm.malloc(ss))
 }
 
@@ -97,7 +108,9 @@ fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
 fn split(s: Value::Str, delim: Value::Str) -> Value {
     let array = vm.malloc(CArray::new());
     for ss in s.as_ref().split(delim.as_ref()) {
-        array.as_mut().push(Value::Str(vm.malloc(ss.clone().to_string())).wrap());
+        array
+            .as_mut()
+            .push(Value::Str(vm.malloc(ss.clone().to_string())).wrap());
     }
     Value::Array(array)
 }
@@ -107,16 +120,21 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
     let s = s.as_ref();
     match s.find(needle.as_ref()) {
         Some(x) => Value::Int({
-                let mut idx_grapheme = 0;
-                if let Some(_) = s.grapheme_indices(true)
-                                    .filter(|(i, _)| {idx_grapheme += 1; *i == x})
-                                    .next() {
-                    (idx_grapheme - 1) as i64
-                } else {
-                    -1
-                }
-            }),
-        None => Value::Int(-1)
+            let mut idx_grapheme = 0;
+            if let Some(_) = s
+                .grapheme_indices(true)
+                .filter(|(i, _)| {
+                    idx_grapheme += 1;
+                    *i == x
+                })
+                .next()
+            {
+                (idx_grapheme - 1) as i64
+            } else {
+                -1
+            }
+        }),
+        None => Value::Int(-1),
     }
 }
 

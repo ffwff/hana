@@ -1,34 +1,38 @@
 //! Provides File record for handling files
-use std::fs::{File, OpenOptions};
-use std::io::{Read, Write, Seek, SeekFrom};
 use std::boxed::Box;
+use std::fs::{File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
 
-use crate::vmbindings::vm::Vm;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
+use crate::vmbindings::vm::Vm;
 
 #[hana_function()]
-fn constructor(path : Value::Str, mode: Value::Str) -> Value {
+fn constructor(path: Value::Str, mode: Value::Str) -> Value {
     // options
     let mut options = OpenOptions::new();
     for ch in mode.as_ref().chars() {
         match ch {
-            'r' => { options.read(true);       },
-            'w' => { options.write(true);      },
-            'c' => { options.create(true);     },
-            'n' => { options.create_new(true); },
-            'a' => { options.append(true);     },
-            't' => { options.truncate(true);   },
-            _ => panic!("expected options")
-        }
+            'r' => options.read(true),
+            'w' => options.write(true),
+            'c' => options.create(true),
+            'n' => options.create_new(true),
+            'a' => options.append(true),
+            't' => options.truncate(true),
+            _ => {
+                panic!("expected options");
+            }
+        };
     }
 
     // file object
     let rec = vm.malloc(Record::new());
     // store native file
     rec.as_mut().native_field = Some(Box::new(options.open(path.as_ref()).unwrap()));
-    rec.as_mut().insert("prototype",
-        Value::Record(vm.stdlib.as_ref().unwrap().file_rec.clone()).wrap());
+    rec.as_mut().insert(
+        "prototype",
+        Value::Record(vm.stdlib.as_ref().unwrap().file_rec.clone()).wrap(),
+    );
     rec.as_mut().insert("path", Value::Str(path).wrap());
     rec.as_mut().insert("mode", Value::Str(mode).wrap());
     Value::Record(rec)
@@ -55,13 +59,14 @@ fn read(file: Value::Record) -> Value {
 fn read_up_to(file: Value::Record, n: Value::Int) -> Value {
     let field = file.as_mut().native_field.as_mut().unwrap();
     let file = field.downcast_mut::<File>().unwrap();
-    let mut bytes : Vec<u8> = Vec::new();
+    let mut bytes: Vec<u8> = Vec::new();
     bytes.resize(n as usize, 0);
     if file.read_exact(&mut bytes).is_err() {
         panic!("unable to read exact!");
     }
-    Value::Str(vm.malloc(String::from_utf8(bytes)
-        .unwrap_or_else(|e| panic!("error decoding file: {:?}", e))))
+    Value::Str(vm.malloc(
+        String::from_utf8(bytes).unwrap_or_else(|e| panic!("error decoding file: {:?}", e)),
+    ))
 }
 
 // write
@@ -87,7 +92,9 @@ fn seek(file: Value::Record, pos: Value::Int) -> Value {
         } else {
             Value::Int(-1)
         }
-    } else { Value::Int(-1) }
+    } else {
+        Value::Int(-1)
+    }
 }
 
 #[hana_function()]
@@ -100,7 +107,9 @@ fn seek_from_start(file: Value::Record, pos: Value::Int) -> Value {
         } else {
             Value::Int(-1)
         }
-    } else { Value::Int(-1) }
+    } else {
+        Value::Int(-1)
+    }
 }
 
 #[hana_function()]
@@ -113,5 +122,7 @@ fn seek_from_end(file: Value::Record, pos: Value::Int) -> Value {
         } else {
             Value::Int(-1)
         }
-    } else { Value::Int(-1) }
+    } else {
+        Value::Int(-1)
+    }
 }

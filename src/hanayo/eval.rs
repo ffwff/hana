@@ -1,16 +1,16 @@
 //! Provides eval function for dynamically evaluating source code
+use crate::ast;
+use crate::compiler::Compiler;
+use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vm::VmOpcode;
-use crate::ast;
-use crate::vmbindings::value::Value;
-use crate::compiler::Compiler;
 
 #[hana_function()]
 fn eval(s: Value::Str) -> Value {
-     let s = s.as_ref();
+    let s = s.as_ref();
     if let Ok(prog) = ast::grammar::start(&s) {
         let target_ip = vm.code.len() as u32;
-        let mut c = unsafe{ Compiler::new_append_vm(vm) };
+        let mut c = unsafe { Compiler::new_append_vm(vm) };
         // generate code
         for stmt in prog {
             stmt.emit(&mut c);

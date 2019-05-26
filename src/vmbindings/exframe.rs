@@ -1,11 +1,11 @@
 //! Provides an exception frame interface for storing try..case data
 
-use std::collections::HashMap;
+use super::env::Env;
 use super::function::Function;
 use super::record::Record;
 use super::value::Value;
 use super::vm::Vm;
-use super::env::Env;
+use std::collections::HashMap;
 
 /// Exception frame
 pub struct ExFrame {
@@ -20,13 +20,16 @@ pub struct ExFrame {
 }
 
 impl ExFrame {
-
-    pub fn new(unwind_env: *const Env, unwind_stack: usize, unwind_native_call_depth: usize) -> ExFrame {
+    pub fn new(
+        unwind_env: *const Env,
+        unwind_stack: usize,
+        unwind_native_call_depth: usize,
+    ) -> ExFrame {
         ExFrame {
             handlers: HashMap::new(),
             unwind_env: unwind_env,
             unwind_stack: unwind_stack,
-            unwind_native_call_depth: unwind_native_call_depth
+            unwind_native_call_depth: unwind_native_call_depth,
         }
     }
 
@@ -34,10 +37,8 @@ impl ExFrame {
         self.handlers.insert(rec, fun);
     }
 
-    pub fn get_handler(&self, vm: *const Vm, val: &Value)
-        -> Option<&Function> {
+    pub fn get_handler(&self, vm: *const Vm, val: &Value) -> Option<&Function> {
         let rec = val.get_prototype(vm);
         self.handlers.get(&rec)
     }
-
 }

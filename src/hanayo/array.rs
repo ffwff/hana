@@ -1,12 +1,12 @@
 //! Provides Array record for handling arrays
 use std::cmp::Ordering;
 
-use crate::vmbindings::vm::Vm;
 use crate::vmbindings::carray::CArray;
-use crate::vmbindings::cnativeval::{_valueType, NativeValue};
+use crate::vmbindings::cnativeval::{NativeValue, _valueType};
 use crate::vmbindings::value::Value;
+use crate::vmbindings::vm::Vm;
 
-pub extern fn constructor(cvm : *mut Vm, nargs : u16) {
+pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
         vm.stack.push(Value::Array(vm.malloc(CArray::new())).wrap());
@@ -55,21 +55,32 @@ fn pop(array: Value::Array) -> Value {
 }
 
 extern "C" {
-fn value_gt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
-fn value_lt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+    fn value_gt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+    fn value_lt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
 }
 
 // sorting
 fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
     let left = left.clone();
     let right = right.clone();
-    let mut val = NativeValue { data: 0, r#type: _valueType::TYPE_NIL };
+    let mut val = NativeValue {
+        data: 0,
+        r#type: _valueType::TYPE_NIL,
+    };
 
-    unsafe { value_gt(&mut val, left, right); }
-    if val.data == 1 { return Ordering::Greater; }
+    unsafe {
+        value_gt(&mut val, left, right);
+    }
+    if val.data == 1 {
+        return Ordering::Greater;
+    }
 
-    unsafe { value_lt(&mut val, left, right); }
-    if val.data == 1 { return Ordering::Less; }
+    unsafe {
+        value_lt(&mut val, left, right);
+    }
+    if val.data == 1 {
+        return Ordering::Less;
+    }
 
     Ordering::Equal
 }
@@ -141,14 +152,19 @@ fn reduce(array: Value::Array, fun: Value::Any, acc_: Value::Any) -> Value {
 
 // search
 extern "C" {
-fn value_eq(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+    fn value_eq(result: *mut NativeValue, left: NativeValue, right: NativeValue);
 }
 #[hana_function()]
 fn index(array: Value::Array, elem: Value::Any) -> Value {
     let array = array.as_ref();
-    for i in 0..(array.len()-1) {
-        let mut val = NativeValue { data: 0, r#type: _valueType::TYPE_NIL };
-        unsafe { value_eq(&mut val, array[i], elem.wrap()); }
+    for i in 0..(array.len() - 1) {
+        let mut val = NativeValue {
+            data: 0,
+            r#type: _valueType::TYPE_NIL,
+        };
+        unsafe {
+            value_eq(&mut val, array[i], elem.wrap());
+        }
         if val.data == 1 {
             return Value::Int(i as i64);
         }

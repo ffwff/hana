@@ -3,9 +3,8 @@ extern crate haru;
 #[cfg(test)]
 pub mod vm_tests {
 
-    use haru::vmbindings::vm::{Vm, VmOpcode};
     use haru::vmbindings::value::Value;
-
+    use haru::vmbindings::vm::{Vm, VmOpcode};
 
     //#region numbers
     #[test]
@@ -77,7 +76,7 @@ pub mod vm_tests {
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
         vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
-        assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(1.5/1.1));
+        assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(1.5 / 1.1));
     }
 
     #[test]
@@ -91,7 +90,7 @@ pub mod vm_tests {
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
         vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
-        assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(1.5/15.0));
+        assert_eq!(vm.borrow().stack.top().unwrap(), Value::Float(1.5 / 15.0));
     }
     // #endregion
 
@@ -104,7 +103,10 @@ pub mod vm_tests {
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
         vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
-        assert_eq!(*vm.borrow().stack.top().unwrap().string(), String::from("Test"));
+        assert_eq!(
+            *vm.borrow().stack.top().unwrap().string(),
+            String::from("Test")
+        );
     }
 
     #[test]
@@ -118,7 +120,10 @@ pub mod vm_tests {
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
         vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
-        assert_eq!(*vm.borrow().stack.top().unwrap().string(), String::from("TestTest"));
+        assert_eq!(
+            *vm.borrow().stack.top().unwrap().string(),
+            String::from("TestTest")
+        );
     }
 
     #[test]
@@ -132,7 +137,10 @@ pub mod vm_tests {
         vm.borrow_mut().code.push(VmOpcode::OP_HALT);
         vm.borrow_mut().execute();
         assert_eq!(vm.borrow().stack.len(), 1);
-        assert_eq!(*vm.borrow().stack.top().unwrap().string(), String::from("TestTest"));
+        assert_eq!(
+            *vm.borrow().stack.top().unwrap().string(),
+            String::from("TestTest")
+        );
     }
     // #endregion
 

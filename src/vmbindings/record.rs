@@ -1,13 +1,13 @@
 //! Provides a record value in Hana
 
-use std::any::Any;
-use std::boxed::Box;
-use std::hash::Hash;
-use std::borrow::Borrow;
 use super::chmap::CHashMap;
 use super::cnativeval::{NativeValue, _valueType};
 use super::gc::GcTraceable;
 use super::value::Value;
+use std::any::Any;
+use std::borrow::Borrow;
+use std::boxed::Box;
+use std::hash::Hash;
 
 #[repr(C)]
 /// A record value in Hana
@@ -20,18 +20,19 @@ pub struct Record {
 }
 
 impl Record {
-
     pub fn new() -> Record {
         Record {
             data: std::collections::HashMap::new(),
             prototype: None,
-            native_field: None
+            native_field: None,
         }
     }
 
     pub fn get<T: ?Sized>(&self, k: &T) -> Option<&NativeValue>
-        where String: Borrow<T>,
-              T: Hash + Eq {
+    where
+        String: Borrow<T>,
+        T: Hash + Eq,
+    {
         if let Some(v) = self.data.get(k) {
             return Some(v);
         } else if let Some(prototype) = self.prototype {
@@ -41,8 +42,10 @@ impl Record {
     }
 
     pub fn insert<K>(&mut self, k: K, v: NativeValue)
-        where K: std::string::ToString + Hash + Eq {
-        let k : String = k.to_string();
+    where
+        K: std::string::ToString + Hash + Eq,
+    {
+        let k: String = k.to_string();
         if v.r#type == _valueType::TYPE_NIL {
             self.data.remove(&k);
             return;
@@ -51,8 +54,8 @@ impl Record {
             self.prototype = match &v.unwrap() {
                 // since the borrow checker doesn't know that self.prototype
                 // can last as long as self, we'll have to use unsafe
-                Value::Record(x) => Some(unsafe{ &*x.to_raw() }),
-                _ => None
+                Value::Record(x) => Some(unsafe { &*x.to_raw() }),
+                _ => None,
             };
         }
         self.data.insert(k, v);
@@ -61,11 +64,9 @@ impl Record {
     pub fn iter(&self) -> std::collections::hash_map::Iter<String, NativeValue> {
         self.data.iter()
     }
-
 }
 
 impl GcTraceable for Record {
-
     fn trace(ptr: *mut libc::c_void) {
         unsafe {
             let self_ = &*(ptr as *mut Self);
@@ -74,5 +75,4 @@ impl GcTraceable for Record {
             }
         }
     }
-
 }

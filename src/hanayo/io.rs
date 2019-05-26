@@ -1,10 +1,10 @@
 //! Provides print, input and exit functions
 use std::io::Write;
 
-use crate::vmbindings::vm::Vm;
 use crate::vmbindings::value::Value;
+use crate::vmbindings::vm::Vm;
 
-pub extern fn print(cvm : *mut Vm, nargs : u16) {
+pub extern "C" fn print(cvm: *mut Vm, nargs: u16) {
     let vm = unsafe { &mut *cvm };
     for _ in 0..nargs {
         let val = vm.stack.top().unwrap();

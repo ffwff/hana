@@ -3,7 +3,8 @@
 #![feature(ptr_offset_from)]
 #![feature(core_intrinsics)]
 
-#[macro_use] extern crate cfg_if;
+#[macro_use]
+extern crate cfg_if;
 
 cfg_if! {
     if #[cfg(jemalloc)] {
@@ -14,38 +15,49 @@ cfg_if! {
 }
 
 use std::io::{self, Read, Write};
-#[macro_use] extern crate decorator;
+#[macro_use]
+extern crate decorator;
 extern crate ansi_term;
 use ansi_term::Color as ac;
-use rustyline::Editor;
 use rustyline::error::ReadlineError;
+use rustyline::Editor;
 
 mod compiler;
-#[macro_use] mod ast;
+#[macro_use]
+mod ast;
 mod vmbindings;
 
-use vmbindings::vmerror::VmError;
 use vmbindings::vm::VmOpcode;
+use vmbindings::vmerror::VmError;
 mod hanayo;
 
-fn print_error(s: &String,
-               lineno: usize, col: usize,
-               _lineno_end: usize, col_end: usize,
-               etype: &str, message: &String) {
-    let line = s.split("\n").nth(lineno-1).unwrap();
+fn print_error(
+    s: &String,
+    lineno: usize,
+    col: usize,
+    _lineno_end: usize,
+    col_end: usize,
+    etype: &str,
+    message: &String,
+) {
+    let line = s.split("\n").nth(lineno - 1).unwrap();
     let lineno_info = format!("{} | ", lineno);
     let lineno_info_len = lineno_info.len();
-    eprintln!("
+    eprintln!(
+        "
 {}{}
 {}
 
 {} {}",
-    ac::Blue.bold().paint(lineno_info),
-    line,
-    ac::Blue.bold().paint(" ".repeat(lineno_info_len + col-1) +
-        &"^".repeat(if col_end > col { col_end - col } else { 1 })),
-    ac::Red.bold().paint(etype.to_string()),
-    message);
+        ac::Blue.bold().paint(lineno_info),
+        line,
+        ac::Blue.bold().paint(
+            " ".repeat(lineno_info_len + col - 1)
+                + &"^".repeat(if col_end > col { col_end - col } else { 1 })
+        ),
+        ac::Red.bold().paint(etype.to_string()),
+        message
+    );
 }
 
 // command/file
@@ -56,43 +68,49 @@ enum ProcessArg<'a> {
 
 fn process(arg: ProcessArg, flag: ParserFlag) {
     let mut c = compiler::Compiler::new();
-    let s : String =
-        match arg {
-            ProcessArg::Command(cmd) => {
-                c.files.push("[cmdline]".to_string());
-                cmd.to_string()
-            },
-            ProcessArg::File("-") => {
-                let mut s = String::new();
-                io::stdin().read_to_string(&mut s).unwrap_or_else(|err| {
-                    println!("error reading from stdin: {}", err);
-                    std::process::exit(1);
-                });
-                c.files.push("[stdin]".to_string());
-                s
-            },
-            ProcessArg::File(filename) => {
-                let mut file = std::fs::File::open(&filename).unwrap_or_else(|err| {
-                    println!("error opening file: {}", err);
-                    std::process::exit(1);
-                });
-                let mut s = String::new();
-                file.read_to_string(&mut s).unwrap_or_else(|err| {
-                    println!("error reading file: {}", err);
-                    std::process::exit(1);
-                });
-                c.modules_loaded.insert(std::path::Path::new(&filename).to_path_buf());
-                c.files.push(filename.to_string());
-                s
-            }
-        };
+    let s: String = match arg {
+        ProcessArg::Command(cmd) => {
+            c.files.push("[cmdline]".to_string());
+            cmd.to_string()
+        }
+        ProcessArg::File("-") => {
+            let mut s = String::new();
+            io::stdin().read_to_string(&mut s).unwrap_or_else(|err| {
+                println!("error reading from stdin: {}", err);
+                std::process::exit(1);
+            });
+            c.files.push("[stdin]".to_string());
+            s
+        }
+        ProcessArg::File(filename) => {
+            let mut file = std::fs::File::open(&filename).unwrap_or_else(|err| {
+                println!("error opening file: {}", err);
+                std::process::exit(1);
+            });
+            let mut s = String::new();
+            file.read_to_string(&mut s).unwrap_or_else(|err| {
+                println!("error reading file: {}", err);
+                std::process::exit(1);
+            });
+            c.modules_loaded
+                .insert(std::path::Path::new(&filename).to_path_buf());
+            c.files.push(filename.to_string());
+            s
+        }
+    };
     let prog = ast::grammar::start(&s).unwrap_or_else(|err| {
-        print_error(&s, err.line, err.column,
-            err.line, err.column,
-            "parser error:", &format!("expected {}", {
-                let expected : Vec<String> = err.expected.iter().map(|x| x.to_string()).collect();
+        print_error(
+            &s,
+            err.line,
+            err.column,
+            err.line,
+            err.column,
+            "parser error:",
+            &format!("expected {}", {
+                let expected: Vec<String> = err.expected.iter().map(|x| x.to_string()).collect();
                 expected.join(", ")
-            }));
+            }),
+        );
         std::process::exit(1);
     });
 
@@ -135,7 +153,15 @@ fn handle_error(c: &compiler::Compiler) {
             let (line, col) = ast::pos_to_line(&src, smap.file.0);
             let (line_end, col_end) = ast::pos_to_line(&src, smap.file.1);
             let message = format!("{} at {}:{}:{}", vm.error, c.files[smap.fileno], line, col);
-            print_error(&src, line, col, line_end, col_end, "interpreter error:", &message);
+            print_error(
+                &src,
+                line,
+                col,
+                line_end,
+                col_end,
+                "interpreter error:",
+                &message,
+            );
         }
         if !vm.localenv_is_null() {
             eprintln!("{}", ac::Red.bold().paint("backtrace:"));
@@ -144,10 +170,17 @@ fn handle_error(c: &compiler::Compiler) {
                 if let Some(smap) = c.lookup_smap(ip) {
                     let src = &c.sources[smap.fileno];
                     let (line, col) = ast::pos_to_line(&src, smap.file.0);
-                    eprintln!(" from {}{}:{}:{}",
-                              if let Some(sym) = c.symbol.get(&ip) { sym.clone() + "@" }
-                              else { "".to_string() },
-                              c.files[smap.fileno], line, col);
+                    eprintln!(
+                        " from {}{}:{}:{}",
+                        if let Some(sym) = c.symbol.get(&ip) {
+                            sym.clone() + "@"
+                        } else {
+                            "".to_string()
+                        },
+                        c.files[smap.fileno],
+                        line,
+                        col
+                    );
                 } else {
                     eprintln!(" from bytecode index {}", ip);
                 }
@@ -194,25 +227,30 @@ fn repl(flag: ParserFlag) {
                         handle_error(&c);
                     }
                     Err(err) => {
-                        print_error(&s, err.line, err.column,
-                            err.line, err.column,
-                            "parser error:", &format!("expected {}", {
-                                let expected : Vec<String> = err.expected.iter().map(|x| x.to_string()).collect();
+                        print_error(
+                            &s,
+                            err.line,
+                            err.column,
+                            err.line,
+                            err.column,
+                            "parser error:",
+                            &format!("expected {}", {
+                                let expected: Vec<String> =
+                                    err.expected.iter().map(|x| x.to_string()).collect();
                                 expected.join(", ")
-                            }));
+                            }),
+                        );
                     }
                 }
-            },
-            Err(ReadlineError::Interrupted) => {
-                continue
-            },
+            }
+            Err(ReadlineError::Interrupted) => continue,
             Err(ReadlineError::Eof) => {
                 println!("exitting...");
-                break
-            },
+                break;
+            }
             Err(err) => {
                 println!("Error: {:?}", err);
-                break
+                break;
             }
         }
     }
@@ -220,26 +258,30 @@ fn repl(flag: ParserFlag) {
 
 // CLI specific
 fn help(program: &str) {
-println!(
-"usage: {} [options] [-c cmd | file | -]
+    println!(
+        "usage: {} [options] [-c cmd | file | -]
 options:
  -c cmd : execute program passed in as string
  -d/--dump-vmcode: dumps vm bytecode to stdout
                    (only works in interpreter mode)
  -b/--bytecode: runs file as bytecode
  -a/--print-ast: prints ast and without run
- -v/--version: version", program)
+ -v/--version: version",
+        program
+    )
 }
 
 fn version() {
-println!(
-"haru: interpreter implemententation for the hana programming language.
+    println!(
+        "haru: interpreter implemententation for the hana programming language.
 version {}
 
 This program is free software: you can redistribute it
 and/or modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation, either version 3 of
-the License, or (at your option) any later version.", env!("CARGO_PKG_VERSION"))
+the License, or (at your option) any later version.",
+        env!("CARGO_PKG_VERSION")
+    )
 }
 
 // parser flags
@@ -252,20 +294,33 @@ fn main() {
     let mut args = std::env::args();
     let program = args.next().unwrap();
 
-    let mut flags = ParserFlag{
+    let mut flags = ParserFlag {
         dump_bytecode: false,
-        print_ast: false
+        print_ast: false,
     };
     let mut cmd = false;
     for arg in args {
         if arg != "-" && arg.starts_with('-') {
             match arg.as_str() {
-            "-h" | "--help" => { return help(&program); },
-            "-v" | "--version" => { return version(); },
-            "-d" | "--dump-vmcode" => { flags.dump_bytecode = true; },
-            "-a" | "--print-ast" => { flags.print_ast = true; },
-            "-c" => { cmd = true; },
-            _ => { println!("{}: invalid argument", program); return; }
+                "-h" | "--help" => {
+                    return help(&program);
+                }
+                "-v" | "--version" => {
+                    return version();
+                }
+                "-d" | "--dump-vmcode" => {
+                    flags.dump_bytecode = true;
+                }
+                "-a" | "--print-ast" => {
+                    flags.print_ast = true;
+                }
+                "-c" => {
+                    cmd = true;
+                }
+                _ => {
+                    println!("{}: invalid argument", program);
+                    return;
+                }
             }
         } else if cmd {
             return process(ProcessArg::Command(&arg), flags);

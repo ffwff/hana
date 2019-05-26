@@ -1,15 +1,17 @@
 //! Provides Time record for handling time
-use std::time::*;
-use std::thread::sleep as nsleep;
-use crate::vmbindings::vm::Vm;
-use crate::vmbindings::value::Value;
 use crate::vmbindings::record::Record;
+use crate::vmbindings::value::Value;
+use crate::vmbindings::vm::Vm;
+use std::thread::sleep as nsleep;
+use std::time::*;
 
 fn duration_to_record(vm: &Vm, duration: Duration) -> Value {
     let rec = vm.malloc(Record::new());
     rec.as_mut().native_field = Some(Box::new(duration));
-    rec.as_mut().insert("prototype",
-        Value::Record(vm.stdlib.as_ref().unwrap().time_rec.clone()).wrap());
+    rec.as_mut().insert(
+        "prototype",
+        Value::Record(vm.stdlib.as_ref().unwrap().time_rec.clone()).wrap(),
+    );
     Value::Record(rec)
 }
 
@@ -25,8 +27,13 @@ fn since(left: Value::Record, right: Value::Record) -> Value {
     let left_duration = lfield.downcast_ref::<Duration>().unwrap();
     let rfield = right.as_ref().native_field.as_ref().unwrap();
     let right_duration = rfield.downcast_ref::<Duration>().unwrap();
-    duration_to_record(vm, left_duration.clone()
-            .checked_sub(right_duration.clone()).unwrap())
+    duration_to_record(
+        vm,
+        left_duration
+            .clone()
+            .checked_sub(right_duration.clone())
+            .unwrap(),
+    )
 }
 
 // accessors
@@ -59,13 +66,15 @@ fn nanos(time: Value::Record) -> Value {
 #[hana_function()]
 fn sleep(time: Value::Any) -> Value {
     match time {
-        Value::Int(x) => { nsleep(Duration::from_secs(x as u64)); },
+        Value::Int(x) => {
+            nsleep(Duration::from_secs(x as u64));
+        }
         Value::Record(time) => {
             let tref = time.as_ref().native_field.as_ref().unwrap();
             let time = tref.downcast_ref::<Duration>().unwrap();
             nsleep(time.clone());
-        },
-        _ => panic!("invalid argument")
+        }
+        _ => panic!("invalid argument"),
     }
     Value::Nil
 }
