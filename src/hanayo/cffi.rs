@@ -1,13 +1,15 @@
 extern crate libffi_sys;
 use libffi_sys::*;
-use std::ptr::{null, null_mut, NonNull};
+use std::ptr::{null, null_mut};
+use libc::c_void;
+use std::ffi::{CString, CStr};
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
 
 struct FFI_Function {
-    sym: NonNull<libc::c_void>,
+    sym: Option<unsafe extern fn()>,
     cif: ffi_cif,
     argtypes: CArray<FFI_Type>,
     ffi_argtypes: CArray<*mut ffi_type>,
@@ -97,7 +99,11 @@ fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) ->
         // ffi fn
         let dl = libc::dlopen(null(), libc::RTLD_LAZY);
         FFI_Function {
-            sym: NonNull::new(libc::dlsym(dl, name.as_ref().as_ptr() as *const i8)).unwrap(),
+            sym: {
+                let sym = libc::dlsym(dl, name.as_ref().as_ptr() as *const i8);
+                if sym.is_null() { None }
+                else { Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(sym)) }
+            },
             cif,
             argtypes: inst_argtypes,
             ffi_argtypes,
@@ -109,4 +115,54 @@ fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) ->
     let rec = vm.malloc(Record::new());
     rec.as_mut().native_field = Some(Box::new(ffi_fn));
     Value::Record(rec)
+}
+
+#[hana_function()]
+fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
+    let field = ffi_fn_rec.as_ref().native_field.as_ref().unwrap();
+    let mut ffi_fn = field.downcast_ref::<FFI_Function>().clone().unwrap();
+
+    use libc::c_void;
+    use std::any::Any;
+    use std::convert::TryInto;
+    use std::mem::transmute;
+
+    let mut managed_strs : Vec<Box<CStr>> = Vec::new();
+    let mut aref : CArray<*mut c_void> =
+        CArray::reserve(args.as_ref().len());
+    let mut argtypes_iter = ffi_fn.argtypes.iter();
+    let slice = args.as_mut().as_mut_slice();
+    for arg in slice {
+        let argtype = &argtypes_iter.next().unwrap();
+        unsafe {
+            let ptr = transmute::<&u64, *mut c_void>(&arg.data);
+            #[allow(safe_packed_borrows)]
+            match argtype {
+                // TODO make this clearer
+                FFI_Type::String => {
+                    let cstr : Box<CStr> = CString::new(arg.unwrap().string().clone()).unwrap().into_boxed_c_str();
+                    aref.push(transmute::<*const libc::c_char, *mut c_void>(cstr.as_ptr()));
+                    managed_strs.push(cstr);
+                },
+                // primitive types
+                _ => { aref.push(transmute::<&mut u64, *mut c_void>(&mut arg.data)); },
+            }
+        }
+    }
+
+    match &ffi_fn.rettype {
+        FFI_Type::UInt8 | FFI_Type::Int8 | FFI_Type::UInt16 | FFI_Type::Int16  | FFI_Type::UInt32 | FFI_Type::Int32 | FFI_Type::UInt64 | FFI_Type::Int64
+            => unsafe {
+                let mut rvalue = std::intrinsics::uninit::<i64>();
+                ffi_call(transmute::<&ffi_cif, *mut ffi_cif>(&ffi_fn.cif), ffi_fn.sym, transmute::<&i64, *mut c_void>(&rvalue), &mut aref.as_mut_ptr());
+                Value::Int(rvalue)
+            },
+        _ => unimplemented!()
+        /*
+        FFI_Type::Float32 => &mut ffi_type_float,
+        FFI_Type::Float64 => &mut ffi_type_double,
+        FFI_Type::Pointer => &mut ffi_type_pointer,
+        FFI_Type::String  => &mut ffi_type_pointer,
+        FFI_Type::Void    => &mut ffi_type_void*/
+    }
 }

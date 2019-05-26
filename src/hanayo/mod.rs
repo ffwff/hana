@@ -12,9 +12,13 @@ pub mod math;
 pub mod file;
 pub mod proc;
 pub mod cmd;
-pub mod cffi;
 pub mod env;
 pub mod time;
+cfg_if! {
+    if #[cfg(feature="cffi")] {
+        pub mod cffi;
+    }
+}
 
 pub mod array;
 pub mod string;

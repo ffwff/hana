@@ -6,6 +6,7 @@
 #![feature(core_intrinsics)]
 
 #[macro_use] extern crate decorator;
+#[macro_use] extern crate cfg_if;
 
 pub mod compiler;
 pub mod ast;
