@@ -1,3 +1,5 @@
+//! Provides an abstraction for native values
+
 use super::record::Record;
 use super::carray::CArray;
 use super::function::Function;
@@ -10,6 +12,7 @@ pub type NativeFnData = extern fn(*mut Vm, u16);
 
 #[derive(Clone)]
 #[allow(non_camel_case_types, dead_code)]
+/// Wrapper for native values
 pub enum Value {
     // we don't have control over how rust manages its variant
     // types, so this is a convenient wrapper for (de)serialising

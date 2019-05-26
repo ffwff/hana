@@ -1,3 +1,5 @@
+//! Basic implementation of a mark and sweep garbage collector
+
 use std::ptr::{null_mut, drop_in_place};
 use std::alloc::{alloc_zeroed, dealloc, Layout};
 use std::rc::Weak;

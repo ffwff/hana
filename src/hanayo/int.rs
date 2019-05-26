@@ -1,3 +1,4 @@
+//! Provides Int record for handling integers
 use std::str::FromStr;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::value::Value;

@@ -1,3 +1,4 @@
+//! Provides Cffi record for interfacing with C functions
 extern crate libffi_sys;
 use libffi_sys::*;
 use std::ptr::{null, null_mut};

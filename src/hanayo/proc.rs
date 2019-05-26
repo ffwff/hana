@@ -1,3 +1,4 @@
+//! Provides Proc record for handling child process spawned by Cmd
 use std::process::{Child};
 use std::io::Write;
 use crate::vmbindings::carray::CArray;

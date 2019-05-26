@@ -1,3 +1,4 @@
+//! Provides String record for handling UTF-8 strings
 extern crate unicode_segmentation;
 use unicode_segmentation::UnicodeSegmentation;
 

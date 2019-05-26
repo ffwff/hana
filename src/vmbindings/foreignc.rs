@@ -1,3 +1,5 @@
+//! Foreign C bindings for the virtual machine
+
 use super::chmap::CHashMap;
 use super::carray::CArray;
 use super::function::Function;

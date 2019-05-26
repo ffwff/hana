@@ -1,3 +1,4 @@
+//! Provides Record record for handling records
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::carray::CArray;

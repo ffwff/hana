@@ -1,20 +1,25 @@
+//! Provides a function value in Hana
+
 use super::env::Env;
 use std::ptr::null_mut;
 use crate::vmbindings::gc::GcTraceable;
 
-// functions
 #[repr(C)]
 #[derive(Clone)]
 pub struct Function {
-    pub ip: u32, // instruction pointer
-    pub nargs : u16, // number of args
+    /// Starting instruction pointer of the function
+    pub ip: u32,
+    /// Number of args the function takes in
+    pub nargs : u16,
 
     // internal rust properties:
+    /// Represents the current local environment
+    /// at the time the function is declared.function
+    ///
+    /// This will be COPIED into another struct env whenever OP_CALL is issued.
+    ///
+    /// Wwe use this to implement closures.
     pub bound: Env,
-    // represents the current local environment
-    // at the time the function is declared, this will be
-    // COPIED into another struct env whenever OP_CALL is issued
-    // (we use this to implement closures)
 }
 
 impl Function {

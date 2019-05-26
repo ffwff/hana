@@ -1,3 +1,4 @@
+//! Provides Cmd record for executing and handling commands
 use std::process::{Command, Child, Stdio, Output};
 use std::io::Write;
 use crate::vmbindings::vm::Vm;

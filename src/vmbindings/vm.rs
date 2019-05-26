@@ -1,3 +1,5 @@
+//! Provides an interface for the virtual machine
+
 use std::ptr::null_mut;
 use std::mem::ManuallyDrop;
 use std::ffi::CString;

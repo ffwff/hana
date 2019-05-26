@@ -1,3 +1,4 @@
+//! Provides built-in math functions
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::value::Value;
 

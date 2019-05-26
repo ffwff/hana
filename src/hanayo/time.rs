@@ -1,3 +1,4 @@
+//! Provides Time record for handling time
 use std::time::*;
 use std::thread::sleep as nsleep;
 use crate::vmbindings::vm::Vm;

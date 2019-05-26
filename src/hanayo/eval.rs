@@ -1,3 +1,4 @@
+//! Provides eval function for dynamically evaluating source code
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vm::VmOpcode;
 use crate::ast;

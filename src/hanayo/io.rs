@@ -1,3 +1,4 @@
+//! Provides print, input and exit functions
 use std::io::Write;
 
 use crate::vmbindings::vm::Vm;

@@ -1,3 +1,4 @@
+//! Provides Float record for handling floating point numbers
 use std::str::FromStr;
 
 use crate::vmbindings::vm::Vm;

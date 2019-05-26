@@ -29,6 +29,7 @@ pub mod int;
 pub mod float;
 pub mod record;
 
+/// Standard library context
 pub struct HanayoCtx {
     pub file_rec: Gc<Record>,
     pub cmd_rec: Gc<Record>,
@@ -36,6 +37,7 @@ pub struct HanayoCtx {
     pub time_rec: Gc<Record>,
 }
 
+/// Initialises hanayo for the virtual machine
 pub fn init(vm : &mut Vm) {
     macro_rules! set_var {
         ($x:literal, $y:expr) => (vm.mut_global().insert($x.to_string(), $y.wrap()));

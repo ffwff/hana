@@ -1,22 +1,25 @@
-#[allow(unused_variables)]
+//! Provides the stack frame for the virtual machine
 
 use super::cnativeval::NativeValue;
 use super::vm::Value;
 
 #[derive(Clone)]
+/// Stack frame for the virtual machine
 pub struct Env {
+    /// Slot indexes access SHOULD be bounded
+    /// whenever the script is compiled to bytecode
     pub slots: Vec<NativeValue>,
-    // slot indexes access SHOULD be bounded whenever the script
-    // is compiled to bytecode
 
+    /// Cached number of args the function was called with
     pub nargs : u16,
-    // cached number of args the function was called with
 
+    /// Lexical parent of the current environment
+    ///
+    /// This is used for getting values on the previous stack frame.
     pub lexical_parent : *const Env,
-    // lexical parents are the parent of the function's lexical scopes
-    // this should be set to (struct function*)->bound
 
-    pub retip : u32, // return ip, where to return to on pop
+    /// Instruction pointer to return to on OP_RET
+    pub retip : u32,
 }
 
 impl Env {

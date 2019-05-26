@@ -1,3 +1,6 @@
+//! Provides the native value representation
+//! used by the virtual machine
+
 use super::record::Record;
 use super::function::Function;
 use super::carray::CArray;
@@ -7,6 +10,7 @@ use super::gc::{mark_reachable, Gc, GcTraceable};
 #[repr(u8)]
 #[allow(non_camel_case_types, dead_code)]
 #[derive(Debug, PartialEq, Clone, Copy)]
+/// Type of the native value
 pub enum _valueType {
     TYPE_NIL        = 0,
     TYPE_INT        = 1,
@@ -20,6 +24,7 @@ pub enum _valueType {
 
 #[repr(C, packed)]
 #[derive(Debug, PartialEq, Clone, Copy)]
+/// Native value representation used by the virtual machine
 pub struct NativeValue {
     pub data : u64,
     pub r#type : _valueType,
@@ -27,6 +32,7 @@ pub struct NativeValue {
 
 impl NativeValue {
 
+    /// Converts the native value into a wrapped Value.
     pub fn unwrap(&self) -> Value {
         use std::mem::transmute;
         #[allow(non_camel_case_types)]
@@ -51,6 +57,7 @@ impl NativeValue {
         }
     }
 
+    /// Traces the native value recursively for use in the garbage collector.
     pub unsafe fn trace(&self) {
         if self.data == 0 { return; } // uninitialized memory
         #[allow(non_camel_case_types)]

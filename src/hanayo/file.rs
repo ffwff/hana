@@ -1,3 +1,4 @@
+//! Provides File record for handling files
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write, Seek, SeekFrom};
 use std::boxed::Box;

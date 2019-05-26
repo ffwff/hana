@@ -1,3 +1,4 @@
+//! Provides Env record for getting and setting environment variables
 use std::env;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::vm::Vm;

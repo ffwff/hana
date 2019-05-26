@@ -1,3 +1,5 @@
+//! Provides an interface for virtual machine errors
+
 #[repr(C)]
 #[derive(Debug, PartialEq)]
 #[allow(non_camel_case_types, dead_code)]

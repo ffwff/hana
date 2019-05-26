@@ -1,18 +1,20 @@
+//! Provides a stable dynamic array interface that can be used with C
+
 use std::ptr::null_mut;
 use std::alloc::{alloc_zeroed, realloc, dealloc, Layout};
 use crate::vmbindings::cnativeval::NativeValue;
 use crate::vmbindings::gc::GcTraceable;
 
+/// A stable dynamic array interface that can be used with C
 #[repr(C)]
 pub struct CArray<T> {
-    // structure for arrays that can be used with c through ffi
-
     data: *mut T,
     len: usize,
     capacity: usize,
 }
 
 impl<T> CArray<T> {
+    /// Creates a new array with data pointing to nil
     pub unsafe fn new_nil() -> CArray<T> {
         CArray::<T> {
             data: null_mut(),
@@ -21,7 +23,7 @@ impl<T> CArray<T> {
         }
     }
 
-    // constructor/destructor
+    /// Creates an empty CArray
     pub fn new() -> CArray<T> {
         CArray::<T> {
             data: unsafe{
@@ -33,6 +35,10 @@ impl<T> CArray<T> {
         }
     }
 
+    /// Dereferences a CArray by creating a new CArray,
+    /// and moving its data into the new array.
+    ///
+    /// This is an internal function, you shouldn't really use this.
     pub fn deref(&mut self) -> CArray<T> {
         let arr = CArray::<T> {
             data: self.data,
@@ -45,21 +51,23 @@ impl<T> CArray<T> {
         arr
     }
 
-    // to slice
+    /// Converts the array into an immutable slice.
     pub fn as_slice(&self) -> &[T] {
         unsafe { std::slice::from_raw_parts(self.data, self.len) }
     }
+    /// Converts the array into an mutable slice.
     pub fn as_mut_slice(&self) -> &mut [T] {
         unsafe { std::slice::from_raw_parts_mut(self.data, self.len) }
     }
 
-    // bytes
+    /// Converts the array into an immutable slice of raw bytes
     pub fn as_bytes(&self) -> &[u8] {
         unsafe {
             std::slice::from_raw_parts(self.data as *const u8,
                     std::mem::size_of::<T>() * self.len)
         }
     }
+    /// Converts the array into a mutable slice of raw bytes
     pub fn as_mut_bytes(&mut self) -> &mut [u8] {
         unsafe {
             std::slice::from_raw_parts_mut(self.data as *mut u8,
@@ -67,19 +75,23 @@ impl<T> CArray<T> {
         }
     }
 
-    // ptr
+    /// Retrieves the immutable data pointer
     pub unsafe fn as_ptr(&self) -> *const T {
         self.data
     }
+    /// Retrieves the mutable data pointer
     pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
         self.data
     }
 
-    // length
+    /// Retrieves the length of the array
     pub fn len(&self) -> usize {
         self.len
     }
 
+    /// Reserves a zero-initialised array
+    ///
+    /// This is an internal function, you shouldn't really use this.
     pub fn reserve(n : usize) -> CArray<T> {
         CArray::<T> {
             data: unsafe{
@@ -91,7 +103,7 @@ impl<T> CArray<T> {
         }
     }
 
-    // stack
+    /// Pushes a value onto the array, increasing its length by 1.
     pub fn push(&mut self, val : T) {
         unsafe {
             use std::mem::size_of;
@@ -106,23 +118,26 @@ impl<T> CArray<T> {
         self.len += 1;
     }
 
+    /// Pops a value from the array, decreasing its length by 1.
     pub fn pop(&mut self) {
         if self.len == 0 { panic!("popping unbounded!"); }
         unsafe{ std::ptr::drop_in_place(self.data.add(self.len-1)); }
         self.len -= 1;
     }
 
+    /// Retrieves an immutable reference to the top value from the stack
     pub fn top(&self) -> &T {
         if self.len == 0 { panic!("accessing unbounded!"); }
         &self[self.len - 1]
     }
+    /// Retrieves a mutable reference to the top value from the stack
     pub fn top_mut(&mut self) -> &mut T {
         if self.len == 0 { panic!("accessing unbounded!"); }
         let idx = self.len - 1;
         &mut self[idx]
     }
 
-    // iterator
+    /// Gets the iterator for the array
     pub fn iter(&self) -> ArrayIter<T> {
         ArrayIter {
             array: self,
@@ -130,7 +145,7 @@ impl<T> CArray<T> {
         }
     }
 
-    // other
+    /// Inserts an element to an array at position `pos`
     pub fn insert(&mut self, pos: usize, elem: T) {
         assert!(pos+1 < self.len);
         unsafe {
@@ -148,6 +163,7 @@ impl<T> CArray<T> {
         self.len += 1;
     }
 
+    /// Deletes `nelems` elements starting from position `pos`
     pub fn delete(&mut self, from_pos : usize, nelems : usize) {
         assert!(from_pos + nelems < self.len());
         let remaining = self.len - from_pos - nelems;

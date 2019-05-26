@@ -7,7 +7,7 @@
 //!
 //! ```
 //! use haru::ast::{ast, grammar};
-//! let prog = grammar::start("print('Hello World');").unwrap();
+//! let prog = grammar::start("print('Hello World')").unwrap();
 //! ```
 
 use crate::compiler;

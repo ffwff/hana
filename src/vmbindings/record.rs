@@ -1,3 +1,5 @@
+//! Provides a record value in Hana
+
 use std::any::Any;
 use std::boxed::Box;
 use std::hash::Hash;
@@ -8,10 +10,12 @@ use super::gc::GcTraceable;
 use super::value::Value;
 
 #[repr(C)]
+/// A record value in Hana
 pub struct Record {
     data: CHashMap,
     prototype: Option<&'static Record>,
     // it says static but it lasts as long as Record, see below!
+    /// Dynamic field for use in native functions
     pub native_field: Option<Box<Any>>,
 }
 
