@@ -28,7 +28,7 @@ Additional features can be enabled by passing their names into
 cargo's `--features` flag:
 
 * `jemalloc`: use the jemalloc memory allocator
-* `cffi`: enables hanayo's C foreign interface *(wip)*
+* `cffi`: enables the stdlib's C foreign interface *(wip)*
 
 ## Running
 
