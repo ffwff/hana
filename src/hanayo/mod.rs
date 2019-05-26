@@ -19,7 +19,7 @@ cfg_if! {
         pub mod cffi;
         use cffi::load as cffi_load;
     } else {
-        fn cffi_load(vm: &mut Vm) {}
+        fn cffi_load(_vm: &mut Vm) {}
     }
 }
 
