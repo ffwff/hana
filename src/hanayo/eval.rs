@@ -18,10 +18,12 @@ fn eval(s: Value::Str) -> Value {
         vm.code = c.deref_vm_code();
         vm.code.push(VmOpcode::OP_HALT);
         // save current evaluation context
-        let ctx = vm.new_exec_ctx();
+        let ctx = unsafe { vm.new_exec_ctx() };
         vm.jmp(target_ip);
         vm.execute();
-        vm.restore_exec_ctx(ctx);
+        unsafe {
+            vm.restore_exec_ctx(ctx);
+        }
         return Value::True;
     }
     Value::False

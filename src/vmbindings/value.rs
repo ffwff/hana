@@ -208,7 +208,7 @@ impl fmt::Debug for Value {
                     match ch {
                         '\n' => s.push_str("\\n"),
                         '"' => s.push('"'),
-                        _ => s.push(ch)
+                        _ => s.push(ch),
                     }
                 }
                 write!(f, "\"{}\"", s)
