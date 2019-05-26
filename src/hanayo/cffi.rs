@@ -10,6 +10,12 @@ use crate::vmbindings::value::Value;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
 
+
+#[no_mangle]
+unsafe extern "C" fn debug(x: *const libc::c_char) -> *mut u8 {
+    panic!("{:?}", x);
+}
+
 // #region ffi type
 #[repr(i64)]
 enum FFI_Type {
@@ -109,6 +115,7 @@ fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) ->
                 let cstr = CString::new(name.as_ref().clone()).unwrap();
                 let sym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
                 eprintln!("{:?}", cstr);
+                //Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(debug as *mut libc::c_void))
                 if sym.is_null() { panic!("is nul!") }
                 else { Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(sym)) }
             },
@@ -138,8 +145,7 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
     use std::mem::transmute;
 
     let mut managed_strs : Vec<Box<CStr>> = Vec::new();
-    let mut aref : CArray<*mut c_void> =
-        CArray::reserve(args.as_ref().len());
+    let mut aref : CArray<*mut c_void> = CArray::new();
     let mut argtypes_iter = ffi_fn.argtypes.iter();
     let slice = args.as_mut().as_mut_slice();
     for arg in slice {
@@ -151,7 +157,7 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
                 // TODO make this clearer
                 FFI_Type::String => {
                     let cstr : Box<CStr> = CString::new(arg.unwrap().string().clone()).unwrap().into_boxed_c_str();
-                    aref.push(transmute::<*const libc::c_char, *mut c_void>(cstr.as_ptr()));
+                    aref.push(transmute::<*const *const libc::c_char, *mut c_void>(&cstr.as_ptr()));
                     managed_strs.push(cstr);
                 },
                 // primitive types
@@ -159,6 +165,8 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
             }
         }
     }
+
+    eprintln!("{:?}", aref);
 
     unsafe { match &ffi_fn.rettype {
         FFI_Type::UInt8 | FFI_Type::Int8 | FFI_Type::UInt16 | FFI_Type::Int16  | FFI_Type::UInt32 | FFI_Type::Int32 | FFI_Type::UInt64 | FFI_Type::Int64
@@ -169,13 +177,13 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
             },
         FFI_Type::Float32
             => {
-                let mut rvalue = 0;
+                let mut rvalue = 0.0f32;
                 ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&f32, *mut c_void>(&rvalue), aref.as_mut_ptr());
-                Value::Float(rvalue)
+                Value::Float(rvalue as f64)
             },
         FFI_Type::Float64
             => {
-                let mut rvalue = 0;
+                let mut rvalue = 0.0f64;
                 ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&f64, *mut c_void>(&rvalue), aref.as_mut_ptr());
                 Value::Float(rvalue)
             },
