@@ -74,6 +74,14 @@ y = Int(1)
     }
 
     #[test]
+    fn int_constructor_float() {
+        let vm : Vm = eval!("
+y = Int(1.2)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+
+    #[test]
     fn int_constructor_str() {
         let vm : Vm = eval!("
 y = Int('10')
@@ -93,6 +101,14 @@ y = (97).chr()
     // #region float
     #[test]
     fn float_constructor() {
+        let vm : Vm = eval!("
+y = Float(1.0)
+");
+        assert_eq!(vm.global().get("y").unwrap().unwrap().float(), 1.0);
+    }
+
+    #[test]
+    fn float_constructor_int() {
         let vm : Vm = eval!("
 y = Float(1)
 ");
@@ -571,6 +587,20 @@ y = Cmd('echo hello world').spawn().outputs()
         assert_eq!(arr.len(), 2);
         assert_eq!(arr[0].unwrap().string(), "hello world\n");
         assert_eq!(arr[1].unwrap().string(), "");
+    }
+
+    #[test]
+    fn proc_sleep() {
+        let vm : Vm = eval!("
+y = Cmd('sleep 1s').spawn().wait()
+");
+    }
+
+    #[test]
+    fn proc_kill() {
+        let vm : Vm = eval!("
+y = Cmd('sleep 1s').spawn().kill()
+");
     }
     // #endregion
 

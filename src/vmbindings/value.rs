@@ -119,7 +119,12 @@ impl Value {
 }
 
 use std::cmp::PartialEq;
+/// Exact equality for values. This is an internal trait for tests.
+///
+/// Note that equality in Value structs aren't necessarily the same
+/// in the language.
 impl PartialEq for Value {
+    #[cfg_attr(tarpaulin, skip)]
     fn eq(&self, other: &Value) -> bool {
         match (self, other) {
             (Value::Nil,       Value::Nil)             => true,
@@ -136,6 +141,8 @@ impl PartialEq for Value {
 }
 
 use std::fmt;
+
+#[cfg_attr(tarpaulin, skip)]
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -153,6 +160,7 @@ impl fmt::Display for Value {
     }
 }
 
+#[cfg_attr(tarpaulin, skip)]
 impl fmt::Debug for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

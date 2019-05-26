@@ -5,7 +5,7 @@ use std::boxed::Box;
 use std::hash::Hash;
 use std::borrow::Borrow;
 use super::chmap::CHashMap;
-use super::cnativeval::NativeValue;
+use super::cnativeval::{NativeValue, _valueType};
 use super::gc::GcTraceable;
 use super::value::Value;
 
@@ -43,20 +43,19 @@ impl Record {
     pub fn insert<K>(&mut self, k: K, v: NativeValue)
         where K: std::string::ToString + Hash + Eq {
         let k : String = k.to_string();
-        let v = v.unwrap();
-        if v == Value::Nil {
+        if v.r#type == _valueType::TYPE_NIL {
             self.data.remove(&k);
             return;
         }
         if k == "prototype" {
-            self.prototype = match &v {
+            self.prototype = match &v.unwrap() {
                 // since the borrow checker doesn't know that self.prototype
                 // can last as long as self, we'll have to use unsafe
                 Value::Record(x) => Some(unsafe{ &*x.to_raw() }),
                 _ => None
             };
         }
-        self.data.insert(k, v.wrap());
+        self.data.insert(k, v);
     }
 
     pub fn iter(&self) -> std::collections::hash_map::Iter<String, NativeValue> {

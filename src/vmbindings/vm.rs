@@ -309,12 +309,15 @@ impl Vm {
     pub unsafe fn localenv(&self) -> *mut Env {
         self.localenv
     }
+    #[cfg_attr(tarpaulin, skip)]
     pub fn localenv_is_null(&self) -> bool {
         self.localenv.is_null()
     }
+    #[cfg_attr(tarpaulin, skip)]
     pub unsafe fn localenv_bp(&self) -> *mut Env {
         self.localenv_bp
     }
+    #[cfg_attr(tarpaulin, skip)]
     pub fn localenv_to_vec(&self) -> Vec<Env> {
         // used for error handling and such
         if self.localenv.is_null() { return Vec::new(); }
