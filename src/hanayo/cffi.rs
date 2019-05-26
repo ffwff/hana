@@ -96,7 +96,7 @@ fn constructor(name_or_addr: Value::Any, argtypes: Value::Array, rettype: Value:
         // cif
         let mut cif: ffi_cif = Default::default();
         let ffi_rettype = unsafe{ rettype.to_libffi_type() };
-        eprintln!("{:?}", ffi_argtypes);
+        //eprintln!("{:?}", ffi_argtypes);
         ffi_prep_cif(&mut cif, ffi_abi_FFI_DEFAULT_ABI,
             argtypes.len() as u32,
             ffi_rettype,

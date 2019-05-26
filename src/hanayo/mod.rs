@@ -112,6 +112,7 @@ pub fn init(vm: &mut Vm) {
         let int = vm.malloc(Record::new());
         set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
         set_obj_var!(int, "chr", Value::NativeFn(int::chr));
+        set_obj_var!(int, "hex", Value::NativeFn(int::hex));
         vm.dint = int.clone();
         set_var!("Int", Value::Record(int));
     }

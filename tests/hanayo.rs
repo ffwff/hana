@@ -104,6 +104,16 @@ y = (97).chr()
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "a");
     }
+
+    #[test]
+    fn int_hex() {
+        let vm: Vm = eval!(
+            "
+y = (16).hex()
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "0x10");
+    }
     // #end
 
     // #region float

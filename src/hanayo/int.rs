@@ -23,3 +23,8 @@ fn chr(i: Value::Int) -> Value {
         Value::Nil
     }
 }
+
+#[hana_function()]
+fn hex(i: Value::Int) -> Value {
+    Value::Str(vm.malloc(format!("0x{:x}", i)))
+}
