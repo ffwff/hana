@@ -63,11 +63,7 @@ impl FFI_Type {
 }
 // #endregion
 
-pub mod function {
-
-use super::*;
-
-struct FFI_Function {
+struct FFIFunction {
     sym: Option<unsafe extern fn()>,
     cif: ffi_cif,
     argtypes: CArray<FFI_Type>,
@@ -75,6 +71,10 @@ struct FFI_Function {
     rettype: FFI_Type,
     ffi_rettype: *mut ffi_type,
 }
+
+pub mod function {
+
+use super::*;
 
 #[hana_function()]
 fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) -> Value {
@@ -104,7 +104,7 @@ fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) ->
 
         // ffi fn
         let dl = libc::dlopen(null(), libc::RTLD_LAZY);
-        FFI_Function {
+        FFIFunction {
             sym: {
                 let cstr = CString::new(name.as_ref().clone()).unwrap();
                 let sym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
@@ -129,7 +129,7 @@ fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) ->
 #[hana_function()]
 fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
     let field = ffi_fn_rec.as_mut().native_field.as_mut().unwrap();
-    let mut ffi_fn = field.downcast_mut::<FFI_Function>().unwrap();
+    let mut ffi_fn = field.downcast_mut::<FFIFunction>().unwrap();
 
     use libc::c_void;
     use std::any::Any;
@@ -146,7 +146,6 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
             let ptr = transmute::<&u64, *mut c_void>(&arg.data);
             #[allow(safe_packed_borrows)]
             match argtype {
-                // TODO make this clearer
                 FFI_Type::String => {
                     let cstr : Box<CStr> = CString::new(arg.unwrap().string().clone()).unwrap().into_boxed_c_str();
                     aref.push(transmute::<*const *const libc::c_char, *mut c_void>(&cstr.as_ptr()));
@@ -198,6 +197,50 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
 
 }
 
+pub mod gc_pointer {
+
+use super::*;
+
+struct GcPointer {
+    data: *mut libc::c_void,
+    free: unsafe extern fn(*mut libc::c_void),
+}
+
+impl std::ops::Drop for GcPointer {
+
+    fn drop(&mut self) {
+        unsafe{ (self.free)(self.data) }
+    }
+
+}
+
+#[hana_function()]
+fn constructor(addr: Value::Int, cffi_free: Value::Record) -> Value {
+    let field = cffi_free.as_mut().native_field.as_mut().unwrap();
+    let mut cffi_free = field.downcast_mut::<FFIFunction>().unwrap();
+
+    let rec = vm.malloc(Record::new());
+    unsafe{
+        use std::mem::transmute;
+        rec.as_mut().native_field = Some(Box::new(GcPointer {
+            data: transmute::<i64, *mut libc::c_void>(addr),
+            free: transmute::<*mut libc::c_void, unsafe extern fn(*mut libc::c_void)>(cffi_free.sym.unwrap() as *mut libc::c_void),
+        }));
+    }
+    rec.as_mut().insert("prototype",
+        vm.global().get("Cffi").unwrap().unwrap().record().get("GcPointer").unwrap().clone());
+    Value::Record(rec)
+}
+
+#[hana_function()]
+fn addr(pointer: Value::Record) -> Value {
+    let field = pointer.as_mut().native_field.as_mut().unwrap();
+    let mut gc_pointer = field.downcast_mut::<GcPointer>().unwrap();
+    Value::Int(unsafe { std::mem::transmute::<*mut libc::c_void, i64>(gc_pointer.data) })
+}
+
+}
+
 // exports
 pub fn load(vm: &mut Vm) {
     macro_rules! set_var {
@@ -225,10 +268,16 @@ pub fn load(vm: &mut Vm) {
     set_obj_var!(cffi_mod, "Void",    Value::Int(FFI_Type::Void as i64));
 
     // function
-    let cffi_function = vm.malloc(Record::new());
-    set_obj_var!(cffi_function, "constructor", Value::NativeFn(function::constructor));
-    set_obj_var!(cffi_function, "call",        Value::NativeFn(function::call));
-    set_obj_var!(cffi_mod, "Function", Value::Record(cffi_function));
+    let function = vm.malloc(Record::new());
+    set_obj_var!(function, "constructor", Value::NativeFn(function::constructor));
+    set_obj_var!(function, "call",        Value::NativeFn(function::call));
+    set_obj_var!(cffi_mod, "Function", Value::Record(function));
+
+    // garbage collected pointer
+    let gc_pointer = vm.malloc(Record::new());
+    set_obj_var!(gc_pointer, "constructor", Value::NativeFn(gc_pointer::constructor));
+    set_obj_var!(gc_pointer, "addr",        Value::NativeFn(gc_pointer::addr));
+    set_obj_var!(cffi_mod, "GcPointer", Value::Record(gc_pointer));
 
     set_var!("Cffi", Value::Record(cffi_mod));
 }
