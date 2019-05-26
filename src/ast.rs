@@ -50,12 +50,6 @@ pub mod ast {
         };
     }
 
-    macro_rules! vm {
-        ($c:ident) => {
-            $c.vm.borrow_mut()
-        };
-    }
-
     // #endregion
 
     /// Span of the AST node, represented by a tuple of (from, to) indexes
@@ -82,10 +76,10 @@ pub mod ast {
     impl AST for Identifier {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             c.emit_get_var(self.val.clone());
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// String literal
@@ -129,11 +123,11 @@ pub mod ast {
     impl AST for StrLiteral {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
-            vm!(c).code.push(VmOpcode::OP_PUSHSTR);
-            vm!(c).cpushs(self.val.clone());
-            emit_end!(c, vm!(c), _smap_begin);
+            c.vm.code.push(VmOpcode::OP_PUSHSTR);
+            c.vm.cpushs(self.val.clone());
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Integer literal
@@ -151,28 +145,28 @@ pub mod ast {
         ast_impl!();
         #[cfg_attr(tarpaulin, skip)]
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             let n = self.val as u64;
             match n {
                 0...0xff => {
-                    vm!(c).code.push(VmOpcode::OP_PUSH8);
-                    vm!(c).cpush8(n as u8);
+                    c.vm.code.push(VmOpcode::OP_PUSH8);
+                    c.vm.cpush8(n as u8);
                 }
                 0x100...0xffff => {
-                    vm!(c).code.push(VmOpcode::OP_PUSH16);
-                    vm!(c).cpush16(n as u16);
+                    c.vm.code.push(VmOpcode::OP_PUSH16);
+                    c.vm.cpush16(n as u16);
                 }
                 0x10000...0xffffffff => {
-                    vm!(c).code.push(VmOpcode::OP_PUSH32);
-                    vm!(c).cpush32(n as u32);
+                    c.vm.code.push(VmOpcode::OP_PUSH32);
+                    c.vm.cpush32(n as u32);
                 }
                 _ => {
-                    vm!(c).code.push(VmOpcode::OP_PUSH64);
-                    vm!(c).cpush64(n);
+                    c.vm.code.push(VmOpcode::OP_PUSH64);
+                    c.vm.cpush64(n);
                 }
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Float literal
@@ -189,11 +183,11 @@ pub mod ast {
     impl AST for FloatLiteral {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
-            vm!(c).code.push(VmOpcode::OP_PUSHF64);
-            vm!(c).cpushf64(self.val);
-            emit_end!(c, vm!(c), _smap_begin);
+            c.vm.code.push(VmOpcode::OP_PUSHF64);
+            c.vm.cpushf64(self.val);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Array literals
@@ -210,15 +204,15 @@ pub mod ast {
     impl AST for ArrayExpr {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             for expr in &self.exprs {
                 expr.emit(c);
             }
-            vm!(c).code.push(VmOpcode::OP_PUSH64);
-            vm!(c).cpush64(self.exprs.len() as u64);
-            vm!(c).code.push(VmOpcode::OP_ARRAY_LOAD);
-            emit_end!(c, vm!(c), _smap_begin);
+            c.vm.code.push(VmOpcode::OP_PUSH64);
+            c.vm.cpush64(self.exprs.len() as u64);
+            c.vm.code.push(VmOpcode::OP_ARRAY_LOAD);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Function expression
@@ -251,11 +245,11 @@ pub mod ast {
     impl AST for FunctionDefinition {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             // definition
-            vm!(c).code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
-            vm!(c).cpush16(self.args.len() as u16);
+            c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
+            c.vm.cpush16(self.args.len() as u16);
             let function_end = c.reserve_label16();
 
             if self.id.is_some() {
@@ -264,25 +258,24 @@ pub mod ast {
             c.scope();
 
             // body
-            vm!(c).code.push(VmOpcode::OP_ENV_NEW);
+            c.vm.code.push(VmOpcode::OP_ENV_NEW);
             let nslot_label = c.reserve_label16();
             for arg in &self.args {
                 c.set_local(arg.clone());
             }
             self.stmt.emit(c);
             if self.id.is_some() {
-                let len = vm!(c).code.len() - 1;
+                let len = c.vm.code.len() - 1;
                 c.symbol.insert(len, self.id.as_ref().unwrap().clone());
             }
 
             // default return
             {
-                let mut bvm = vm!(c);
-                match bvm.code.top() {
+                match c.vm.code.top() {
                     VmOpcode::OP_RET | VmOpcode::OP_RETCALL => {}
                     _ => {
-                        bvm.code.push(VmOpcode::OP_PUSH_NIL);
-                        bvm.code.push(VmOpcode::OP_RET);
+                        c.vm.code.push(VmOpcode::OP_PUSH_NIL);
+                        c.vm.code.push(VmOpcode::OP_RET);
                     }
                 };
             }
@@ -290,9 +283,9 @@ pub mod ast {
             // end
             let nslots = c.unscope();
             c.fill_label16(nslot_label, nslots);
-            let len = vm!(c).code.len();
+            let len = c.vm.code.len();
             c.fill_label16(function_end, (len - function_end) as u16);
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Record expression
@@ -310,19 +303,19 @@ pub mod ast {
     impl AST for RecordDefinition {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
-            vm!(c).code.push(VmOpcode::OP_PUSH_NIL);
+            c.vm.code.push(VmOpcode::OP_PUSH_NIL);
             for stmt in &self.stmts {
                 let any = stmt.as_any();
                 if let Some(stmt) = any.downcast_ref::<FunctionStatement>() {
                     stmt.def().emit(c);
-                    vm!(c).code.push(VmOpcode::OP_PUSHSTR);
-                    vm!(c).cpushs(stmt.def().id.as_ref().unwrap().clone());
+                    c.vm.code.push(VmOpcode::OP_PUSHSTR);
+                    c.vm.cpushs(stmt.def().id.as_ref().unwrap().clone());
                 } else if let Some(stmt) = any.downcast_ref::<RecordStatement>() {
                     stmt.def().emit(c);
-                    vm!(c).code.push(VmOpcode::OP_PUSHSTR);
-                    vm!(c).cpushs(stmt.def().id.as_ref().unwrap().clone());
+                    c.vm.code.push(VmOpcode::OP_PUSHSTR);
+                    c.vm.cpushs(stmt.def().id.as_ref().unwrap().clone());
                 } else if let Some(stmt) = any.downcast_ref::<ExprStatement>() {
                     let binexpr = stmt.expr.as_any().downcast_ref::<BinExpr>().unwrap();
                     let id = binexpr
@@ -331,12 +324,12 @@ pub mod ast {
                         .downcast_ref::<Identifier>()
                         .unwrap_or_else(|| panic!("left hand side must be identifier"));
                     binexpr.right.emit(c);
-                    vm!(c).code.push(VmOpcode::OP_PUSHSTR);
-                    vm!(c).cpushs(id.val.clone());
+                    c.vm.code.push(VmOpcode::OP_PUSHSTR);
+                    c.vm.cpushs(id.val.clone());
                 }
             }
-            vm!(c).code.push(VmOpcode::OP_DICT_LOAD);
-            emit_end!(c, vm!(c), _smap_begin);
+            c.vm.code.push(VmOpcode::OP_DICT_LOAD);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
 
@@ -361,18 +354,18 @@ pub mod ast {
     impl AST for UnaryExpr {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             self.val.emit(c);
             match self.op {
                 UnaryOp::Not => {
-                    vm!(c).code.push(VmOpcode::OP_NOT);
+                    c.vm.code.push(VmOpcode::OP_NOT);
                 }
                 UnaryOp::Neg => {
-                    vm!(c).code.push(VmOpcode::OP_NEGATE);
+                    c.vm.code.push(VmOpcode::OP_NEGATE);
                 }
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Conditional expressions
@@ -384,7 +377,7 @@ pub mod ast {
     }
     impl CondExpr {
         fn _emit(&self, c: &mut compiler::Compiler, is_tail: bool) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             // Pseudo code of the generated bytecode
             //   [condition]
@@ -394,7 +387,7 @@ pub mod ast {
             //   [else]
             //   [done]
             self.cond.emit(c);
-            vm!(c).code.push(VmOpcode::OP_JNCOND); // TODO: maybe do peephole opt?
+            c.vm.code.push(VmOpcode::OP_JNCOND); // TODO: maybe do peephole opt?
             let else_label = c.reserve_label16();
 
             if is_tail {
@@ -409,10 +402,10 @@ pub mod ast {
                 self.then.emit(c);
             }
 
-            vm!(c).code.push(VmOpcode::OP_JMP);
+            c.vm.code.push(VmOpcode::OP_JMP);
             let done_label = c.reserve_label16();
             {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(else_label, (len - else_label) as u16);
             }
 
@@ -429,10 +422,10 @@ pub mod ast {
             }
 
             {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(done_label, (len - done_label) as u16);
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     #[cfg_attr(tarpaulin, skip)]
@@ -518,13 +511,13 @@ pub mod ast {
     impl AST for BinExpr {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             macro_rules! arithop_do {
                 ($x:expr) => {{
                     self.left.emit(c);
                     self.right.emit(c);
-                    vm!(c).code.push($x);
+                    c.vm.code.push($x);
                 }};
             }
             match self.op {
@@ -550,17 +543,17 @@ pub mod ast {
                         };
                         if val.is_some() && !memexpr.is_expr {
                             let val = val.unwrap();
-                            vm!(c).code.push(VmOpcode::OP_MEMBER_SET);
-                            vm!(c).cpushs(val.clone());
+                            c.vm.code.push(VmOpcode::OP_MEMBER_SET);
+                            c.vm.cpushs(val.clone());
                         } else {
                             // otherwise, do OP_INDEX_SET as normal
                             memexpr.right.emit(c);
-                            vm!(c).code.push(VmOpcode::OP_INDEX_SET);
+                            c.vm.code.push(VmOpcode::OP_INDEX_SET);
                         }
                     } else if let Some(callexpr) = any.downcast_ref::<CallExpr>() {
                         // definition
-                        vm!(c).code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
-                        vm!(c).cpush16(callexpr.args.len() as u16);
+                        c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
+                        c.vm.cpush16(callexpr.args.len() as u16);
                         let function_end = c.reserve_label16();
 
                         c.set_local(
@@ -575,7 +568,7 @@ pub mod ast {
                         c.scope();
 
                         // body
-                        vm!(c).code.push(VmOpcode::OP_ENV_NEW);
+                        c.vm.code.push(VmOpcode::OP_ENV_NEW);
                         let nslot_label = c.reserve_label16();
                         for arg in &callexpr.args {
                             c.set_local(
@@ -591,17 +584,17 @@ pub mod ast {
                             expr._emit(c, true);
                         } else if let Some(expr) = self.right.as_any().downcast_ref::<CondExpr>() {
                             expr._emit(c, true);
-                            vm!(c).code.push(VmOpcode::OP_RET);
+                            c.vm.code.push(VmOpcode::OP_RET);
                         } else {
                             self.right.emit(c);
-                            vm!(c).code.push(VmOpcode::OP_RET);
+                            c.vm.code.push(VmOpcode::OP_RET);
                         }
 
                         // end
                         let nslots = c.unscope();
                         c.fill_label16(nslot_label, nslots);
                         {
-                            let len = vm!(c).code.len();
+                            let len = c.vm.code.len();
                             c.fill_label16(function_end, (len - function_end) as u16);
                         }
 
@@ -633,11 +626,11 @@ pub mod ast {
                     if let Some(id) = any.downcast_ref::<Identifier>() {
                         c.emit_get_var(id.val.clone());
                         self.right.emit(c);
-                        vm!(c).code.push(opcode.clone());
+                        c.vm.code.push(opcode.clone());
                         match opcode {
                             VmOpcode::OP_IADD | VmOpcode::OP_IMUL => {
-                                in_place_addr = vm!(c).code.len();
-                                vm!(c).cpush8(0);
+                                in_place_addr = c.vm.code.len();
+                                c.vm.cpush8(0);
                             }
                             _ => {}
                         };
@@ -657,47 +650,47 @@ pub mod ast {
                         };
                         // prologue
                         if val.is_some() && !memexpr.is_expr {
-                            vm!(c).code.push(VmOpcode::OP_MEMBER_GET_NO_POP);
-                            vm!(c).cpushs(val.unwrap().clone());
+                            c.vm.code.push(VmOpcode::OP_MEMBER_GET_NO_POP);
+                            c.vm.cpushs(val.unwrap().clone());
                         } else {
                             memexpr.right.emit(c);
-                            vm!(c).code.push(VmOpcode::OP_INDEX_GET_NO_POP);
+                            c.vm.code.push(VmOpcode::OP_INDEX_GET_NO_POP);
                         }
                         // body
                         self.right.emit(c);
-                        vm!(c).code.push(opcode.clone());
+                        c.vm.code.push(opcode.clone());
                         match opcode {
                             VmOpcode::OP_IADD | VmOpcode::OP_IMUL => {
-                                in_place_addr = vm!(c).code.len();
-                                vm!(c).cpush8(0);
+                                in_place_addr = c.vm.code.len();
+                                c.vm.cpush8(0);
                             }
                             _ => {}
                         };
                         // epilogue
                         if in_place_addr != std::usize::MAX {
                             // jmp here if we can do it in place
-                            let len = vm!(c).code.len();
-                            vm!(c).code.as_mut_bytes()[in_place_addr] = (len - in_place_addr) as u8;
+                            let len = c.vm.code.len();
+                            c.vm.code.as_mut_bytes()[in_place_addr] = (len - in_place_addr) as u8;
                         }
                         if val.is_some() && !memexpr.is_expr {
-                            vm!(c).code.push(VmOpcode::OP_SWAP);
-                            vm!(c).code.push(VmOpcode::OP_MEMBER_SET);
-                            vm!(c).cpushs(val.unwrap().clone());
+                            c.vm.code.push(VmOpcode::OP_SWAP);
+                            c.vm.code.push(VmOpcode::OP_MEMBER_SET);
+                            c.vm.cpushs(val.unwrap().clone());
                         } else {
                             // otherwise, do OP_INDEX_SET as normal
-                            vm!(c).code.push(VmOpcode::OP_SWAP);
+                            c.vm.code.push(VmOpcode::OP_SWAP);
                             memexpr.right.emit(c);
-                            vm!(c).code.push(VmOpcode::OP_INDEX_SET);
+                            c.vm.code.push(VmOpcode::OP_INDEX_SET);
                         }
-                        emit_end!(c, vm!(c), _smap_begin);
+                        emit_end!(c, c.vm, _smap_begin);
                         return;
                     } else {
                         panic!("Invalid left hand side expression!");
                     }
                     if in_place_addr != std::usize::MAX {
                         // jmp here if we can do it in place
-                        let len = vm!(c).code.len();
-                        vm!(c).code.as_mut_bytes()[in_place_addr] = (len - in_place_addr) as u8;
+                        let len = c.vm.code.len();
+                        c.vm.code.as_mut_bytes()[in_place_addr] = (len - in_place_addr) as u8;
                     }
                 }
                 // basic manip operators
@@ -716,24 +709,24 @@ pub mod ast {
                 // boolean operators
                 BinOp::And => {
                     self.left.emit(c);
-                    vm!(c).code.push(VmOpcode::OP_JNCOND_NO_POP);
+                    c.vm.code.push(VmOpcode::OP_JNCOND_NO_POP);
                     let label = c.reserve_label16();
-                    vm!(c).code.push(VmOpcode::OP_POP);
+                    c.vm.code.push(VmOpcode::OP_POP);
                     self.right.emit(c);
-                    let len = vm!(c).code.len();
+                    let len = c.vm.code.len();
                     c.fill_label16(label, (len - label) as u16);
                 }
                 BinOp::Or => {
                     self.left.emit(c);
-                    vm!(c).code.push(VmOpcode::OP_JCOND_NO_POP);
+                    c.vm.code.push(VmOpcode::OP_JCOND_NO_POP);
                     let label = c.reserve_label16();
-                    vm!(c).code.push(VmOpcode::OP_POP);
+                    c.vm.code.push(VmOpcode::OP_POP);
                     self.right.emit(c);
-                    let len = vm!(c).code.len();
+                    let len = c.vm.code.len();
                     c.fill_label16(label, (len - label) as u16);
                 } //_ => panic!("not implemented: {:?}", self.op)
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
 
@@ -747,7 +740,7 @@ pub mod ast {
     }
     impl MemExpr {
         fn _emit(&self, c: &mut compiler::Compiler, is_method_call: bool) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             self.left.emit(c);
             let get_op = if !is_method_call {
@@ -767,13 +760,13 @@ pub mod ast {
                 }
             };
             if val.is_some() && !self.is_expr {
-                vm!(c).code.push(get_op);
-                vm!(c).cpushs(val.unwrap().clone());
+                c.vm.code.push(get_op);
+                c.vm.cpushs(val.unwrap().clone());
             } else {
                 self.right.emit(c);
-                vm!(c).code.push(VmOpcode::OP_INDEX_GET);
+                c.vm.code.push(VmOpcode::OP_INDEX_GET);
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     #[cfg_attr(tarpaulin, skip)]
@@ -801,7 +794,7 @@ pub mod ast {
     }
     impl CallExpr {
         fn _emit(&self, c: &mut compiler::Compiler, is_tail: bool) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             let op = if is_tail {
                 VmOpcode::OP_RETCALL
@@ -815,19 +808,19 @@ pub mod ast {
                 let right = memexpr.right.as_any();
                 if memexpr.is_namespace {
                     memexpr._emit(c, false);
-                    vm!(c).code.push(op);
-                    vm!(c).cpush16(self.args.len() as u16);
+                    c.vm.code.push(op);
+                    c.vm.cpush16(self.args.len() as u16);
                 } else {
                     memexpr._emit(c, true);
-                    vm!(c).code.push(op);
-                    vm!(c).cpush16((self.args.len() as u16) + 1);
+                    c.vm.code.push(op);
+                    c.vm.cpush16((self.args.len() as u16) + 1);
                 }
             } else {
                 self.callee.emit(c);
-                vm!(c).code.push(op);
-                vm!(c).cpush16(self.args.len() as u16);
+                c.vm.code.push(op);
+                c.vm.cpush16(self.args.len() as u16);
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     #[cfg_attr(tarpaulin, skip)]
@@ -884,7 +877,7 @@ pub mod ast {
     impl AST for IfStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             // Pseudo code of the generated bytecode
             //   [condition]
@@ -894,24 +887,24 @@ pub mod ast {
             //   [else]
             //   [done]
             self.expr.emit(c);
-            vm!(c).code.push(VmOpcode::OP_JNCOND); // TODO: maybe do peephole opt?
+            c.vm.code.push(VmOpcode::OP_JNCOND); // TODO: maybe do peephole opt?
             let else_label = c.reserve_label16();
             self.then.emit(c);
             if let Some(alt) = &self.alt {
-                vm!(c).code.push(VmOpcode::OP_JMP);
+                c.vm.code.push(VmOpcode::OP_JMP);
                 let done_label = c.reserve_label16();
                 {
-                    let len = vm!(c).code.len();
+                    let len = c.vm.code.len();
                     c.fill_label16(else_label, (len as isize - else_label as isize) as u16);
                 }
                 alt.emit(c);
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(done_label, (len - done_label) as u16);
             } else {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(else_label, (len as isize - else_label as isize) as u16);
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
 
@@ -934,38 +927,38 @@ pub mod ast {
     impl AST for WhileStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             // pseudocode of generated bytecode:
             //   begin: jmp condition
             //   [statement]
             //   [condition]
             //   jcond [begin]
-            vm!(c).code.push(VmOpcode::OP_JMP);
+            c.vm.code.push(VmOpcode::OP_JMP);
             let begin_label = c.reserve_label16();
 
-            let then_label = vm!(c).code.len();
+            let then_label = c.vm.code.len();
             c.loop_start();
             self.then.emit(c);
 
             {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(begin_label, (len - begin_label) as u16);
             }
 
-            let next_it_pos = vm!(c).code.len();
+            let next_it_pos = c.vm.code.len();
             self.expr.emit(c);
-            vm!(c).code.push(VmOpcode::OP_JCOND);
+            c.vm.code.push(VmOpcode::OP_JCOND);
             {
-                let len = vm!(c).code.len();
-                vm!(c).cpush16((then_label as isize - len as isize) as u16);
+                let len = c.vm.code.len();
+                c.vm.cpush16((then_label as isize - len as isize) as u16);
             }
 
             {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.loop_end(next_it_pos, len);
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
 
@@ -999,7 +992,7 @@ pub mod ast {
     impl AST for ForStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             // pseudocode of generated bytecode:
             //   [start]
@@ -1015,51 +1008,51 @@ pub mod ast {
             // start
             self.from.emit(c);
             c.emit_set_var(self.id.clone());
-            vm!(c).code.push(VmOpcode::OP_POP);
+            c.vm.code.push(VmOpcode::OP_POP);
 
-            vm!(c).code.push(VmOpcode::OP_JMP);
+            c.vm.code.push(VmOpcode::OP_JMP);
             let begin_label = c.reserve_label16();
 
-            let then_label = vm!(c).code.len();
+            let then_label = c.vm.code.len();
             c.loop_start();
             self.stmt.emit(c);
 
             // step
             c.emit_get_var(self.id.clone());
             self.step.emit(c);
-            vm!(c).code.push(if self.is_up {
+            c.vm.code.push(if self.is_up {
                 VmOpcode::OP_ADD
             } else {
                 VmOpcode::OP_SUB
             });
             c.emit_set_var(self.id.clone());
-            vm!(c).code.push(VmOpcode::OP_POP);
+            c.vm.code.push(VmOpcode::OP_POP);
 
             {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(begin_label, (len - begin_label) as u16);
             }
 
             // condition
-            let next_it_pos = vm!(c).code.len();
+            let next_it_pos = c.vm.code.len();
             c.emit_get_var(self.id.clone());
             self.to.emit(c);
-            vm!(c).code.push(if self.is_up {
+            c.vm.code.push(if self.is_up {
                 VmOpcode::OP_LT
             } else {
                 VmOpcode::OP_GT
             });
-            vm!(c).code.push(VmOpcode::OP_JCOND);
+            c.vm.code.push(VmOpcode::OP_JCOND);
             {
-                let len = vm!(c).code.len();
-                vm!(c).cpush16((then_label as isize - len as isize) as u16);
+                let len = c.vm.code.len();
+                c.vm.cpush16((then_label as isize - len as isize) as u16);
             }
 
             {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.loop_end(next_it_pos, len);
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// For..in statements
@@ -1095,27 +1088,27 @@ pub mod ast {
             //  [body]
             //  jmp [next_it]
             //  [end]
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
 
             self.expr.emit(c);
-            let next_it_label = vm!(c).code.len();
-            vm!(c).code.push(VmOpcode::OP_FOR_IN);
+            let next_it_label = c.vm.code.len();
+            c.vm.code.push(VmOpcode::OP_FOR_IN);
             let end_label = c.reserve_label16();
             c.emit_set_var(self.id.clone());
-            vm!(c).code.push(VmOpcode::OP_POP);
+            c.vm.code.push(VmOpcode::OP_POP);
             self.stmt.emit(c);
-            vm!(c).code.push(VmOpcode::OP_JMP);
+            c.vm.code.push(VmOpcode::OP_JMP);
             {
-                let len = vm!(c).code.len();
-                vm!(c).cpush16((next_it_label as isize - len as isize) as u16);
+                let len = c.vm.code.len();
+                c.vm.cpush16((next_it_label as isize - len as isize) as u16);
             }
             {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(end_label, (len - end_label) as u16);
             }
 
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Continue statements
@@ -1131,11 +1124,11 @@ pub mod ast {
     impl AST for ContinueStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
-            vm!(c).code.push(VmOpcode::OP_JMP);
+            c.vm.code.push(VmOpcode::OP_JMP);
             c.loop_continue();
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Break statement
@@ -1151,11 +1144,11 @@ pub mod ast {
     impl AST for BreakStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
-            vm!(c).code.push(VmOpcode::OP_JMP);
+            c.vm.code.push(VmOpcode::OP_JMP);
             c.loop_break();
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
 
@@ -1190,7 +1183,7 @@ pub mod ast {
 
             // set var
             c.emit_set_var_fn(self.def.id.as_ref().unwrap().clone());
-            vm!(c).code.push(VmOpcode::OP_POP);
+            c.vm.code.push(VmOpcode::OP_POP);
         }
     }
     /// Return statement
@@ -1207,7 +1200,7 @@ pub mod ast {
     impl AST for ReturnStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             if !c.is_in_function() {
                 panic!("not in function!"); // TODO
@@ -1222,10 +1215,10 @@ pub mod ast {
                         expr.emit(c);
                     }
                 }
-                None => vm!(c).code.push(VmOpcode::OP_PUSH_NIL),
+                None => c.vm.code.push(VmOpcode::OP_PUSH_NIL),
             }
-            vm!(c).code.push(VmOpcode::OP_RET);
-            emit_end!(c, vm!(c), _smap_begin);
+            c.vm.code.push(VmOpcode::OP_RET);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
 
@@ -1259,7 +1252,7 @@ pub mod ast {
 
             // set var
             c.emit_set_var(self.def.id.as_ref().unwrap().clone());
-            vm!(c).code.push(VmOpcode::OP_POP);
+            c.vm.code.push(VmOpcode::OP_POP);
         }
     }
 
@@ -1278,14 +1271,14 @@ pub mod ast {
     impl AST for TryStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
-            vm!(c).code.push(VmOpcode::OP_PUSH_NIL);
+            c.vm.code.push(VmOpcode::OP_PUSH_NIL);
             let mut cases_to_fill: Vec<usize> = Vec::new();
             for case in &self.cases {
                 // function will take in 1 arg if id is set
-                vm!(c).code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
-                vm!(c).cpush16(if case.id.is_some() { 1 } else { 0 });
+                c.vm.code.push(VmOpcode::OP_DEF_FUNCTION_PUSH);
+                c.vm.cpush16(if case.id.is_some() { 1 } else { 0 });
                 let body_start = c.reserve_label16();
                 // id
                 if let Some(id) = &case.id {
@@ -1296,29 +1289,29 @@ pub mod ast {
                         .val
                         .clone();
                     c.emit_set_var(id);
-                    vm!(c).code.push(VmOpcode::OP_POP);
+                    c.vm.code.push(VmOpcode::OP_POP);
                 }
                 // body
                 for s in &case.stmts {
                     s.emit(c);
                 }
-                vm!(c).code.push(VmOpcode::OP_EXFRAME_RET);
+                c.vm.code.push(VmOpcode::OP_EXFRAME_RET);
                 cases_to_fill.push(c.reserve_label16());
                 // end
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(body_start, (len - body_start) as u16);
                 // exception type
                 case.etype.emit(c);
             }
-            vm!(c).code.push(VmOpcode::OP_TRY);
+            c.vm.code.push(VmOpcode::OP_TRY);
             for s in &self.stmts {
                 s.emit(c);
             }
             for hole in cases_to_fill {
-                let len = vm!(c).code.len();
+                let len = c.vm.code.len();
                 c.fill_label16(hole, (len - hole) as u16);
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     /// Case statement
@@ -1356,7 +1349,7 @@ pub mod ast {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
             self.expr.emit(c);
-            vm!(c).code.push(VmOpcode::OP_RAISE);
+            c.vm.code.push(VmOpcode::OP_RAISE);
         }
     }
 
@@ -1374,11 +1367,11 @@ pub mod ast {
     impl AST for ExprStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             self.expr.emit(c);
-            vm!(c).code.push(VmOpcode::OP_POP);
-            emit_end!(c, vm!(c), _smap_begin);
+            c.vm.code.push(VmOpcode::OP_POP);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
 
@@ -1396,11 +1389,11 @@ pub mod ast {
     impl AST for UseStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
-            vm!(c).code.push(VmOpcode::OP_USE);
-            vm!(c).cpushs(self.path.clone());
-            emit_end!(c, vm!(c), _smap_begin);
+            c.vm.code.push(VmOpcode::OP_USE);
+            c.vm.cpushs(self.path.clone());
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
 
@@ -1422,12 +1415,12 @@ pub mod ast {
     impl AST for BlockStatement {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) {
-            emit_begin!(self, c, vm!(c));
+            emit_begin!(self, c, c.vm);
             let _smap_begin = c.smap.len() - 1;
             for stmt in &self.stmts {
                 stmt.emit(c);
             }
-            emit_end!(c, vm!(c), _smap_begin);
+            emit_end!(c, c.vm, _smap_begin);
         }
     }
     // #endregion

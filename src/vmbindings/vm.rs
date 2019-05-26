@@ -151,8 +151,8 @@ extern "C" {
 
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new() -> Rc<RefCell<Vm>> {
-        let vm = Rc::new(RefCell::new(Vm {
+    pub fn new() -> Vm {
+        Vm {
             ip: 0,
             localenv: null_mut(),
             localenv_bp: {
@@ -176,11 +176,8 @@ impl Vm {
             native_call_depth: 0,
             compiler: None,
             stdlib: None,
-            gc_manager: None,
-        }));
-        let weakref = Rc::downgrade(&vm);
-        vm.borrow_mut().gc_manager = Some(RefCell::new(GcManager::new(weakref)));
-        vm
+            gc_manager: Some(RefCell::new(GcManager::new())),
+        }
     }
 
     pub unsafe fn new_nil() -> Vm {
@@ -280,17 +277,13 @@ impl Vm {
 
     // gc
     pub fn malloc<T: Sized + GcTraceable>(&self, val: T) -> Gc<T> {
-        self.gc_manager
-            .as_ref()
-            .unwrap()
-            .borrow_mut()
-            .malloc(self, val)
+        self.gc_manager.as_ref().unwrap().borrow_mut().malloc(self, val)
     }
 
-    pub fn gc_disable(&mut self) {
+    pub fn gc_disable(&self) {
         self.gc_manager.as_ref().unwrap().borrow_mut().disable()
     }
-    pub fn gc_enable(&mut self) {
+    pub fn gc_enable(&self) {
         self.gc_manager.as_ref().unwrap().borrow_mut().enable()
     }
 

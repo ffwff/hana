@@ -124,19 +124,19 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     for stmt in prog {
         stmt.emit(&mut c);
     }
-    c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
+    c.vm.code.push(VmOpcode::OP_HALT);
 
     // dump bytecode if asked
     if flag.dump_bytecode {
-        io::stdout().write(c.vm.borrow().code.as_bytes()).unwrap();
+        io::stdout().write(c.vm.code.as_bytes()).unwrap();
         return;
     }
 
     // execute!
-    c.vm.borrow_mut().compiler = Some(&mut c);
+    c.vm.compiler = Some(&mut c);
     c.sources.push(s);
     {
-        let mut vm = c.vm.borrow_mut();
+        let mut vm = &mut c.vm;
         hanayo::init(&mut vm);
         vm.gc_enable();
         vm.execute();
@@ -145,7 +145,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
 }
 
 fn handle_error(c: &compiler::Compiler) {
-    let vm = c.vm.borrow();
+    let vm = &c.vm;
     if vm.error != VmError::ERROR_NO_ERROR {
         {
             let smap = c.lookup_smap(vm.ip() as usize).unwrap();
@@ -195,8 +195,8 @@ fn repl(flag: ParserFlag) {
     let mut c = compiler::Compiler::new();
     c.files.push("[repl]".to_string());
     c.sources.push(String::new());
-    c.vm.borrow_mut().compiler = Some(&mut c);
-    hanayo::init(&mut c.vm.borrow_mut());
+    c.vm.compiler = Some(&mut c);
+    hanayo::init(&mut c.vm);
     loop {
         let readline = rl.readline(">> ");
         match readline {
@@ -210,7 +210,7 @@ fn repl(flag: ParserFlag) {
                         }
                         // setup
                         let len = {
-                            let mut vm = c.vm.borrow_mut();
+                            let mut vm = &mut c.vm;
                             vm.error = VmError::ERROR_NO_ERROR;
                             vm.code.len() as u32
                         };
@@ -219,7 +219,7 @@ fn repl(flag: ParserFlag) {
                             stmt.emit(&mut c);
                         }
                         {
-                            let mut vm = c.vm.borrow_mut();
+                            let mut vm = &mut c.vm;
                             vm.jmp(len);
                             vm.code.push(VmOpcode::OP_HALT);
                             vm.execute();

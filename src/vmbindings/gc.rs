@@ -40,18 +40,16 @@ const USED_SPACE_RATIO: f64 = 0.7;
 pub struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
-    root: Weak<RefCell<Vm>>,
     bytes_allocated: usize,
     threshold: usize,
     enabled: bool,
 }
 
 impl GcManager {
-    pub fn new(root: Weak<RefCell<Vm>>) -> GcManager {
+    pub fn new() -> GcManager {
         GcManager {
             first_node: null_mut(),
             last_node: null_mut(),
-            root: root,
             bytes_allocated: 0,
             threshold: INITIAL_THRESHOLD,
             enabled: false,

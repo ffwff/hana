@@ -15,20 +15,15 @@ pub mod interpreter_tests {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
             let mut c = compiler::Compiler::new();
+            c.vm.compiler = Some(&mut c);
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            {
-                let mut vm = c.vm.borrow_mut();
-                vm.code.push(VmOpcode::OP_HALT);
-                vm.gc_enable();
-                vm.execute();
-            }
-            if let Ok(vm) = Rc::try_unwrap(c.vm) {
-                vm.into_inner()
-            } else {
-                panic!("can't eval")
-            }
+            let mut vm = &mut c.vm;
+            vm.code.push(VmOpcode::OP_HALT);
+            vm.gc_enable();
+            vm.execute();
+            c.vm
         }};
     }
 
@@ -791,13 +786,13 @@ use '/tmp/module_absolute_import'
         .unwrap();
         let mut c = compiler::Compiler::new();
         c.files.push("/tmp/x".to_string());
-        c.vm.borrow_mut().compiler = Some(&mut c);
+        c.vm.compiler = Some(&mut c);
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        c.vm.borrow_mut().execute();
-        assert_eq!(c.vm.borrow().global().get("y").unwrap().unwrap().int(), 10);
+        c.vm.code.push(VmOpcode::OP_HALT);
+        c.vm.execute();
+        assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
     }
 
     #[test]
@@ -811,13 +806,13 @@ use './module_relative_import'
         .unwrap();
         let mut c = compiler::Compiler::new();
         c.files.push("/tmp/x".to_string());
-        c.vm.borrow_mut().compiler = Some(&mut c);
+        c.vm.compiler = Some(&mut c);
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
-        c.vm.borrow_mut().execute();
-        assert_eq!(c.vm.borrow().global().get("y").unwrap().unwrap().int(), 10);
+        c.vm.code.push(VmOpcode::OP_HALT);
+        c.vm.execute();
+        assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
     }
 
     /*#[test] // FIXME: This doesn't work for some reason
