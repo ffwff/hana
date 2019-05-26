@@ -77,7 +77,7 @@ pub mod function {
 use super::*;
 
 #[hana_function()]
-fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) -> Value {
+fn constructor(name_or_addr: Value::Any, argtypes: Value::Array, rettype: Value::Int) -> Value {
     // argtypes
     let argtypes = argtypes.as_ref();
     let mut inst_argtypes = CArray::new();
@@ -106,10 +106,19 @@ fn constructor(name: Value::Str, argtypes: Value::Array, rettype: Value::Int) ->
         let dl = libc::dlopen(null(), libc::RTLD_LAZY);
         FFIFunction {
             sym: {
-                let cstr = CString::new(name.as_ref().clone()).unwrap();
-                let sym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
-                if sym.is_null() { panic!("is nul!") }
-                else { Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(sym)) }
+                match &name_or_addr {
+                    Value::Int(addr) => {
+                        //Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(debug as *mut libc::c_void))
+                        Some(std::mem::transmute::<i64, unsafe extern fn()>(*addr))
+                    }
+                    Value::Str(sym) => {
+                        let cstr = CString::new(sym.as_ref().clone()).unwrap();
+                        let sym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
+                        if sym.is_null() { panic!("is nul!") }
+                        else { Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(sym)) }
+                    }
+                    _ => panic!("expected symbol address or name")
+                }
             },
             cif,
             argtypes: inst_argtypes,
@@ -241,6 +250,54 @@ fn addr(pointer: Value::Record) -> Value {
 
 }
 
+pub mod library {
+
+use super::*;
+
+struct Library {
+    dl: *mut libc::c_void,
+}
+
+impl std::ops::Drop for Library {
+
+    fn drop(&mut self) {
+        unsafe {
+            libc::dlclose(self.dl);
+        }
+    }
+
+}
+
+#[hana_function()]
+fn constructor(filename: Value::Str) -> Value {
+    let rec = vm.malloc(Record::new());
+    unsafe {
+        rec.as_mut().native_field = Some(Box::new({
+            let cstr = CString::new(filename.as_ref().clone()).unwrap();
+            let dl = libc::dlopen(cstr.as_ptr(), libc::RTLD_LAZY);
+            Library {
+                dl
+            }
+        }));
+    }
+    rec.as_mut().insert("prototype",
+        vm.global().get("Cffi").unwrap().unwrap().record().get("Library").unwrap().clone());
+    Value::Record(rec)
+}
+
+#[hana_function()]
+fn sym(library: Value::Record, sym: Value::Str) -> Value {
+    let field = library.as_mut().native_field.as_mut().unwrap();
+    let mut dl = field.downcast_mut::<Library>().unwrap();
+    unsafe {
+        let cstr = CString::new(sym.as_ref().clone()).unwrap();
+        let sym = libc::dlsym(dl.dl, cstr.as_c_str().as_ptr());
+        Value::Int(sym as i64)
+    }
+}
+
+}
+
 // exports
 pub fn load(vm: &mut Vm) {
     macro_rules! set_var {
@@ -266,6 +323,12 @@ pub fn load(vm: &mut Vm) {
     set_obj_var!(cffi_mod, "Pointer", Value::Int(FFI_Type::Pointer as i64));
     set_obj_var!(cffi_mod, "String",  Value::Int(FFI_Type::String as i64));
     set_obj_var!(cffi_mod, "Void",    Value::Int(FFI_Type::Void as i64));
+
+    // dynamically loaded library
+    let library = vm.malloc(Record::new());
+    set_obj_var!(library, "constructor", Value::NativeFn(library::constructor));
+    set_obj_var!(library, "sym",         Value::NativeFn(library::sym));
+    set_obj_var!(cffi_mod, "Library", Value::Record(library));
 
     // function
     let function = vm.malloc(Record::new());

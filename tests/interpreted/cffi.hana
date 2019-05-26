@@ -1,5 +1,13 @@
-debug = Cffi::Function("getuid", [], Cffi.Int64)
-print(debug.call([]), "\n")
+//debug = Cffi::Function("strchr", [Cffi.String, Cffi.Int64], Cffi.String)
+//print(debug.call(["Hello World", "r".ord()]), "\n")
+
+/* malloc = Cffi::Function("malloc", [Cffi.UInt64], Cffi.Pointer)
+free = Cffi::Function("free", [Cffi.UInt64], Cffi.Pointer)
+print(Cffi::GcPointer(malloc.call([10]), free)) */
+
+libm = Cffi::Library("/lib/libm.so.6")
+sin = Cffi::Function(libm.sym("sin"), [Cffi.Float64], Cffi.Float64)
+print(sin.call([0.4]), '\n')
 
 /*
 sin = Cffi::Function("sin", [Cffi.Float64], Cffi.Float64)
