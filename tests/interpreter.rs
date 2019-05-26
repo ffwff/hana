@@ -9,7 +9,7 @@ pub mod interpreter_tests {
     use haru::vmbindings::vm::{Vm, VmOpcode};
     use haru::vmbindings::vmerror::VmError;
 
-    use std::rc::Rc;
+    
 
     macro_rules! eval {
         ($x:expr) => {{
@@ -19,7 +19,7 @@ pub mod interpreter_tests {
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            let mut vm = &mut c.vm;
+            let vm = &mut c.vm;
             vm.code.push(VmOpcode::OP_HALT);
             vm.gc_enable();
             vm.execute();

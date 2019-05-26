@@ -3,9 +3,9 @@
 use super::vm::Vm;
 pub use libc::c_void;
 use std::alloc::{alloc_zeroed, dealloc, Layout};
-use std::cell::RefCell;
+
 use std::ptr::{drop_in_place, null_mut};
-use std::rc::Weak;
+
 
 // node
 struct GcNode {

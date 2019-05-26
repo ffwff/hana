@@ -9,7 +9,7 @@ pub mod hanayo_tests {
     use haru::vmbindings::vm::{Vm, VmOpcode};
 
     use haru::hanayo;
-    use std::rc::Rc;
+    
 
     macro_rules! eval {
         ($x:expr) => {{
@@ -721,7 +721,7 @@ y = Cmd('echo hello world').spawn().outputs()
 
     #[test]
     fn proc_sleep() {
-        let vm: Vm = eval!(
+        let _vm: Vm = eval!(
             "
 y = Cmd('sleep 1s').spawn().wait()
 "
@@ -730,7 +730,7 @@ y = Cmd('sleep 1s').spawn().wait()
 
     #[test]
     fn proc_kill() {
-        let vm: Vm = eval!(
+        let _vm: Vm = eval!(
             "
 y = Cmd('sleep 1s').spawn().kill()
 "

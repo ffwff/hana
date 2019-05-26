@@ -16,9 +16,9 @@
 
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::vm::{Vm, VmOpcode};
-use std::cell::RefCell;
+
 use std::collections::HashMap;
-use std::rc::Rc;
+
 
 struct Scope {
     vars: Vec<String>,

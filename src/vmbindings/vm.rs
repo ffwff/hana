@@ -5,7 +5,7 @@ use std::ffi::CString;
 use std::mem::ManuallyDrop;
 use std::path::Path;
 use std::ptr::null_mut;
-use std::rc::Rc;
+
 extern crate libc;
 
 use super::carray::CArray;

@@ -210,7 +210,7 @@ fn repl(flag: ParserFlag) {
                         }
                         // setup
                         let len = {
-                            let mut vm = &mut c.vm;
+                            let vm = &mut c.vm;
                             vm.error = VmError::ERROR_NO_ERROR;
                             vm.code.len() as u32
                         };
@@ -219,7 +219,7 @@ fn repl(flag: ParserFlag) {
                             stmt.emit(&mut c);
                         }
                         {
-                            let mut vm = &mut c.vm;
+                            let vm = &mut c.vm;
                             vm.jmp(len);
                             vm.code.push(VmOpcode::OP_HALT);
                             vm.execute();
