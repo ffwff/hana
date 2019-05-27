@@ -1,0 +1,21 @@
+libSDL2 = Cffi::Library("/lib/libSDL2.so")
+SDL_INIT_EVERYTHING = 0x7231
+SDL_Init = Cffi::Function(libSDL2.sym("SDL_Init"), [Cffi.UInt32], Cffi.Pointer)
+SDL_Quit = Cffi::Function(libSDL2.sym("SDL_Quit"), [], Cffi.Void)
+SDL_Delay = Cffi::Function(libSDL2.sym("SDL_Delay"), [Cffi.UInt32], Cffi.Void)
+// window
+SDL_CreateWindow = Cffi::Function(libSDL2.sym("SDL_CreateWindow"), [Cffi.String, Cffi.UInt64, Cffi.UInt64, Cffi.UInt64, Cffi.UInt64, Cffi.UInt32], Cffi.Pointer)
+SDL_DestroyWindow = Cffi::Function(libSDL2.sym("SDL_DestroyWindow"), [Cffi.Pointer], Cffi.Void)
+SDL_GetWindowSurface = Cffi::Function(libSDL2.sym("SDL_GetWindowSurface"), [Cffi.Pointer], Cffi.Void)
+SDL_UpdateWindowSurface = Cffi::Function(libSDL2.sym("SDL_UpdateWindowSurface"), [Cffi.Pointer], Cffi.Void)
+// surface
+SDL_FillRect = Cffi::Function(libSDL2.sym("SDL_FillRect"), [Cffi.Pointer,Cffi.Pointer, Cffi.UInt32], Cffi.Int64)
+
+SDL_Init.call([SDL_INIT_EVERYTHING])
+win = SDL_CreateWindow.call(["An SDL2 Window", -1, -1, 640, 480, 0x00000002])
+surface = SDL_GetWindowSurface.call([win])
+SDL_FillRect.call([surface, 0, 0])
+SDL_UpdateWindowSurface.call([win])
+SDL_Delay.call([3000])
+SDL_DestroyWindow.call([win])
+SDL_Quit.call([])
