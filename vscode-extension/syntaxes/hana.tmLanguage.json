@@ -16,7 +16,7 @@
 			"patterns": [
 			{
 				"name": "keyword.control.hana",
-				"match": "\\b(if|else|while|for|then|to|function|record|continue|break|return|try|case|raise|begin|end)\\b"
+				"match": "\\b(if|else|while|for|then|to|step|function|record|continue|break|return|try|case|raise|begin|end)\\b"
 			},
 			{
 				"name": "keyword.other.control",
