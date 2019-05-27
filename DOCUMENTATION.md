@@ -425,8 +425,8 @@ Test::constructor("Hello") // => Hello
 
 ### Identifiers
 
-All tokens that don't contain quotes, operators (except for `?` and `!`) and don't start with a digit
-is an identifier.
+All strings of alphabetical characters, followed by alphanumeric characters
+or the characters `$`, `_`, `?`, `!` are considered an identifier.
 
 Identifiers starting with `$` denotes an identifier in the global scope:
 
@@ -436,6 +436,8 @@ f() = $a = 20
 f() // sets the global variable a to 20
 a // => 20
 ```
+
+Otherwise identifiers will follow scoping rules.
 
 Note that the `$` identifier will just refer to the `$` identifier.
 
@@ -544,6 +546,8 @@ Methods:
 ## Numbers
 
 Numbers are either 64-bit ints or 64-bit double precision floats.
+
+Numbers can be decimal or hexadecimal (prefixed by `0x`).
 
 Methods:
 
