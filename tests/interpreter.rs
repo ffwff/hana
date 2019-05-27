@@ -9,8 +9,6 @@ pub mod interpreter_tests {
     use haru::vmbindings::vm::{Vm, VmOpcode};
     use haru::vmbindings::vmerror::VmError;
 
-    
-
     macro_rules! eval {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
