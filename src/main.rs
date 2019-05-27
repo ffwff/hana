@@ -218,12 +218,13 @@ fn repl(flag: ParserFlag) {
                         for stmt in prog {
                             stmt.emit(&mut c);
                         }
-                        {
-                            let vm = &mut c.vm;
-                            vm.jmp(len);
-                            vm.code.push(VmOpcode::OP_HALT);
-                            vm.execute();
+                        let vm = &mut c.vm;
+                        if vm.code.len() as u32 == len {
+                            continue;
                         }
+                        vm.jmp(len);
+                        vm.code.push(VmOpcode::OP_HALT);
+                        vm.execute();
                         handle_error(&c);
                     }
                     Err(err) => {

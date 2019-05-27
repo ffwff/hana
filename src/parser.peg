@@ -4,11 +4,11 @@ pub start -> Vec<std::boxed::Box<ast::AST>>
     = __ s:(statement_program*) __ { s }
 
 // #region tokens
-int_literal -> String
-    = n:$(#quiet<[0-9]+>) { n.to_string() }
+int_literal -> i64
+    = n:$(#quiet<[0-9]+>) { n.parse::<i64>().unwrap() }
     / #expected("integer literal")
-float_literal -> String
-    = n:$(#quiet<[0-9]+ "." [0-9]+>) { n.to_string() }
+float_literal -> f64
+    = n:$(#quiet<[0-9]+ "." [0-9]+>) { n.parse::<f64>().unwrap() }
     / #expected("float literal")
 
 string_literal_escape -> String
@@ -55,14 +55,14 @@ eos = _ newline
 
 // values
 value -> std::boxed::Box<ast::AST>
-    = ps:#position s:identifier pe:#position
-    { boxed!(Identifier, ps, pe, val: s) }
-    / ps:#position s:float_literal pe:#position
-    { boxed!(FloatLiteral, ps, pe, val: s.parse::<f64>().unwrap()) }
+    = ps:#position s:float_literal pe:#position
+    { boxed!(FloatLiteral, ps, pe, val: s) }
     / ps:#position s:int_literal pe:#position
-    { boxed!(IntLiteral, ps, pe, val: s.parse::<i64>().unwrap()) }
+    { boxed!(IntLiteral, ps, pe, val: s) }
     / ps:#position s:string_literal pe:#position
     { Box::new(ast::StrLiteral::new(&s, (ps, pe))) }
+    / ps:#position s:identifier pe:#position
+    { boxed!(Identifier, ps, pe, val: s) }
     / array_expr / record_expr / function_expr
     / #quiet<"(" __ e:expr __ ")" { e }>
 
