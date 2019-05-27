@@ -802,3 +802,21 @@ that have a reference count of more than 0 will be considered a GC root (its chi
 Otherwise the garbage collector will handle it as normal.
 
 Upon exit the virtual machine will release all memory that is managed by the garbage collector.
+
+## Native functions
+
+Native functions callable from the virtual machine must have the following signature:
+
+```c
+void native_function(struct vm *vm, uint16_t nargs);
+```
+
+Arguments are passed on the virtual machine's stack, and the native
+function is called with a pointer to the virtual machine and the number of
+arguments (16-bits).
+
+The native function must return a value by pushing it on the stack.
+If you don't have anything to return, push nil to the stack.
+
+You should be using the `hana_function` macro in the module `haru-decorator`
+if you're exporting a Rust function.

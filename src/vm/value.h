@@ -23,7 +23,7 @@ struct string;
 #define TYPE_INTERPRETER_ERROR    127
 #define TYPE_INTERPRETER_ITERATOR 128
 
-typedef void (*value_fn)(struct vm *vm, int nargs);
+typedef void (*value_fn)(struct vm *vm, uint16_t nargs);
 struct __attribute__((packed)) value {
     union {
         int64_t integer;
