@@ -261,6 +261,12 @@ impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
     }
 }
 
+impl<T: Sized + GcTraceable> std::cmp::PartialEq for Gc<T> {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self.ptr, other.ptr)
+    }
+}
+
 pub trait GcTraceable {
     fn trace(ptr: *mut libc::c_void);
 }

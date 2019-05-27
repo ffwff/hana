@@ -10,7 +10,7 @@ extern crate libc;
 
 pub type NativeFnData = extern "C" fn(*mut Vm, u16);
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 #[allow(non_camel_case_types, dead_code)]
 /// Wrapper for native values
 pub enum Value {
@@ -148,28 +148,6 @@ impl Value {
     // bool
     pub fn is_true(&self, vm: *const Vm) -> bool {
         unsafe { value_is_true(self.wrap(), vm) }
-    }
-}
-
-use std::cmp::PartialEq;
-/// Exact equality for values. This is an internal trait for tests.
-///
-/// Note that equality in Value structs aren't necessarily the same
-/// in the language.
-impl PartialEq for Value {
-    #[cfg_attr(tarpaulin, skip)]
-    fn eq(&self, other: &Value) -> bool {
-        match (self, other) {
-            (Value::Nil, Value::Nil) => true,
-            (Value::Int(x), Value::Int(y)) => x == y,
-            (Value::Float(x), Value::Float(y)) => x == y,
-            (Value::NativeFn(x), Value::NativeFn(y)) => std::ptr::eq(x, y),
-            (Value::Fn(x), Value::Fn(y)) => x.ptr_eq(y),
-            (Value::Str(x), Value::Str(y)) => x.as_ref() == y.as_ref(),
-            (Value::Record(_), Value::Record(_)) => false,
-            (Value::Array(_), Value::Array(_)) => false,
-            _ => false,
-        }
     }
 }
 
