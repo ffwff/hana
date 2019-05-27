@@ -13,14 +13,16 @@ float_literal -> f64
     / #expected("float literal")
 
 string_literal_escape -> String
-    = s:$(#quiet<"\\" .>)
-    { s.to_string() }
+    = s:$(#quiet<"\\n">) { "\n".to_string() }
+    / s:$(#quiet<"\\r">) { "\r".to_string() }
+    / s:$(#quiet<"\\t">) { "\t".to_string() }
+    / s:$(#quiet<"\\" .>) { s.to_string() }
 string_literal_char -> String
-    = s:$([^\"]) { s.to_owned() }
-    / string_literal_escape
+    = string_literal_escape
+    / s:$([^\"]) { s.to_owned() }
 string_literal_char_single -> String
-    = s:$([^']) { s.to_owned() }
-    / string_literal_escape
+    = string_literal_escape
+    / s:$([^']) { s.to_owned() }
 string_literal -> String
     = #quiet<"\"" s:string_literal_char* "\"" { s.join("") }>
     / #quiet<"'" s:string_literal_char_single* "'" { s.join("") }>
@@ -62,7 +64,7 @@ value -> std::boxed::Box<ast::AST>
     / ps:#position s:int_literal pe:#position
     { boxed!(IntLiteral, ps, pe, val: s) }
     / ps:#position s:string_literal pe:#position
-    { Box::new(ast::StrLiteral::new(&s, (ps, pe))) }
+    { boxed!(StrLiteral, ps, pe, val: s) }
     / ps:#position s:identifier pe:#position
     { boxed!(Identifier, ps, pe, val: s) }
     / array_expr / record_expr / function_expr

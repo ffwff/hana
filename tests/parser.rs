@@ -35,6 +35,14 @@ pub mod parser_tests {
     }
 
     #[test]
+    fn simple_str_newline() {
+        let progast: Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("'\\n'");
+        assert_eq!(progast.len(), 1);
+        let stmt = cast_box!(progast[0], ast::ExprStatement);
+        assert_eq!(cast_box!(stmt.expr, ast::StrLiteral).val, "\n".to_string());
+    }
+
+    #[test]
     fn simple_int() {
         let progast: Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("125");
         assert_eq!(progast.len(), 1);

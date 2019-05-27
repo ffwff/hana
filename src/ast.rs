@@ -86,38 +86,12 @@ pub mod ast {
     pub struct StrLiteral {
         pub _span: Span,
         pub val: String,
-        rawval: String,
-    }
-    impl StrLiteral {
-        #[cfg_attr(tarpaulin, skip)]
-        pub fn new(str: &String, span: Span) -> StrLiteral {
-            let mut s = "".to_string();
-            let mut chars = str.chars();
-            while let Some(c) = chars.next() {
-                if c == '\\' {
-                    let next = chars.next();
-                    match next {
-                        Some('n') => s += "\n",
-                        Some('r') => s += "\r",
-                        Some('t') => s += "\t",
-                        Some(x) => s += &x.to_string(),
-                        _ => panic!("expected character, got eof"),
-                    }
-                } else {
-                    s += &c.to_string();
-                }
-            }
-            StrLiteral {
-                _span: span,
-                val: s,
-                rawval: str.clone(),
-            }
-        }
     }
     #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for StrLiteral {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "{{\"string\": \"{}\"}}", self.rawval)
+            unimplemented!()
+            //write!(f, "{{\"string\": \"{}\"}}", self.rawval)
         }
     }
     impl AST for StrLiteral {
