@@ -6,22 +6,6 @@ Enjoy your stay in Hana!
 
 # Syntax
 
-## Comments
-
-Comments can either be single line:
-
-```
-// a single line comment
-```
-
-or multiple lines:
-
-```
-/*
- multline comment
-*/
-```
-
 ## Statements
 
 All statements are separated by newlines. For statements that are composed
@@ -232,83 +216,9 @@ Record bodies only accept function, assignment and record statements.
 
 ## Expressions
 
-### n-ary expressions
+The following sections describe expressions in hana in order of operator precedence.
 
-Binary operators include (comma separated):
-
-```
-+, -, *, /, mod, ==, !=, >, <, >=, <=,
-and, or, =, +=, -=, *=, /=
-```
-
-Unary operators include:
-
-```
-not, -
-```
-
-#### Arithmetic operators
-
-##### Addition (+)
-
-Adds 2 values together.
-
-Type table:
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Integer                |
-| Integer    | Float       | Float                  |
-| Float      | Integer     | Float                  |
-| String     | String      | String (concatenation) |
-
-##### Subtraction (-)
-
-Subtracts right value from left value.
-
-Type table:
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Integer                |
-| Integer    | Float       | Float                  |
-| Float      | Integer     | Float                  |
-
-##### Division (/)
-
-Divides right value from left value.
-
-Type table:
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Float                  |
-| Integer    | Float       | Float                  |
-| Float      | Integer     | Float                  |
-
-##### Multiplication (*)
-
-Multiplies 2 values together.
-
-Type table:
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Integer                |
-| Integer    | Float       | Float                  |
-| Float      | Integer     | Float                  |
-| String     | Integer     | String (repeats string  by n times) |
-| Array      | Integer     | Array (repeats array by n times) |
-
-##### Modulo (mod)
-
-Gets the modulo or the remainder when the left value is divided by the right value.
-
-| Left value | Right value | Result                 |
-|------------|-------------|------------------------|
-| Integer    | Integer     | Integer                |
-
-#### Assignment operators
+### Assignment operators
 
 Assignment operators assign the value of its right operand to its left operand.
 The left operand may be a function call (for function definitions), a variable
@@ -324,7 +234,23 @@ List of assignment operators:
 | `x *= 10`          | Sets variable `x` to `x * 10`. |
 | `x /= 10`          | Sets variable `x` to `x / 10`. |
 
-#### Equality operators
+### Conditional operator
+
+Hana uses the ternary operator to denote condition expressions:
+
+```
+condition ? then : otherwise
+```
+
+### Logical operators
+
+`and`, `or`: Casts the two values into booleans then does the equivalent **short-circuited**
+boolean operation.
+
+`not` casts the value into a boolean then does a boolean NOT (`true` becomes `false` and
+vice-versa).
+
+### Equality operators
 
 Compares 2 values to see if they are the same (`==`) or not the same (`!=`).
 
@@ -341,7 +267,7 @@ they will **only be the same** when they are of the same memory address.
 
 Otherwise, the two values will not be the same.
 
-#### Comparison operators
+### Comparison operators
 
 Compares 2 values to see if they are greater than (`>`), greater than or equal to (`>=`),
 lesser than (`<`), lesser than or equal to (`<=`).
@@ -352,23 +278,68 @@ String values will be compared based on their Unicode character points.
 
 Otherwise comparison will always evaluate to `false`.
 
-#### Logical operators
+### Arithmetic operators
 
-`and`, `or`: Casts the two values into booleans then does the equivalent **short-circuited**
-boolean operation.
+#### Division (/)
 
-`not` casts the value into a boolean then does a boolean NOT (`true` becomes `false` and
-vice-versa).
+Divides right value from left value.
 
-### conditions
+Type table:
 
-Hana uses the ternary operator to denote condition expressions:
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Float                  |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
 
-```
-condition ? then : otherwise
-```
+#### Multiplication (*)
 
-### call expressions
+Multiplies 2 values together.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+| String     | Integer     | String (repeats string  by n times) |
+| Array      | Integer     | Array (repeats array by n times) |
+
+#### Modulo (mod)
+
+Gets the modulo or the remainder when the left value is divided by the right value.
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+
+#### Addition (+)
+
+Adds 2 values together.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+| String     | String      | String (concatenation) |
+
+#### Subtraction (-)
+
+Subtracts right value from left value.
+
+Type table:
+
+| Left value | Right value | Result                 |
+|------------|-------------|------------------------|
+| Integer    | Integer     | Integer                |
+| Integer    | Float       | Float                  |
+| Float      | Integer     | Float                  |
+
+### Call expressions
 
 Call expressions are used to call functions or records:
 
@@ -396,7 +367,7 @@ Namespace::Example() // => calls constructor with arguments
                      // containing the Namespace record
 ```
 
-### member expressions
+### Member expressions
 
 Member expressions are used to access a key of a record, an array or a string:
 
@@ -423,6 +394,27 @@ Test::constructor("Hello") // => Hello
 
 ## Values
 
+Basic types include:
+
+ * `String`: UTF-8 encoded string
+ * `Int`: 64-bit signed integer
+ * `Float`: 64-bit double precision floating point
+ * `Function`: function
+ * `Record`: records
+ * `Array`: array
+
+`Int`, `Float` values are primitives, they are passed by copies
+into (arguments) and out of (return) functions.
+
+`Function`, `String`, `Record` and `Array` values are passed by reference. Those values are only deleted
+whenever the last variable containing the value is deleted or set to another value.
+
+Primitive types have an immutable `prototype` key which provides its methods:
+`String` for string literals, `Int` for integers, `Float` for floating points,
+`Array` for arrays. Records by default do not have any `prototype` key.
+
+By convention, type names are title-cased.
+
 ### Identifiers
 
 All strings of alphabetical characters, followed by alphanumeric characters
@@ -441,26 +433,7 @@ Otherwise identifiers will follow scoping rules.
 
 Note that the `$` identifier will just refer to the `$` identifier.
 
-# Types
-
-Basic types include:
-
- * `String`: UTF-8 encoded string
- * `Int`: 64-bit signed integer
- * `Float`: 64-bit double precision floating point
- * `Function`: function
- * `Record`: records
- * `Array`: array
-
-`Int`, `Float` values are primitives, they are passed by copies
-into (arguments) and out of (return) functions.
-
-`Function`, `String`, `Record` and `Array` values are passed by reference. Those values are only deleted
-whenever the last variable containing the value is deleted or set to another value.
-
-By convention, type names are title-cased.
-
-## Functions
+### Functions
 
 You can define a function like this:
 
@@ -507,7 +480,7 @@ the return statement is a call, then the interpreter will tail-call optimise it
 by pushing the call expression's arguments onto the stack frame and jumping into
 the function.
 
-## Strings
+### Strings
 
 Strings are mutable UTF-8 strings. Characters in hana are Unicode grapheme clusters
 (actual characters) rather than bytes.
@@ -543,7 +516,7 @@ Methods:
 "a".ord() // => 97 (turn first character of string into a number)
 ```
 
-## Numbers
+### Numbers
 
 Numbers are either 64-bit ints or 64-bit double precision floats.
 
@@ -555,7 +528,7 @@ Methods:
 97.chr() // => (int only) converts 97 to equivalent unicode character ('a')
 ```
 
-## Records
+### Records
 
 Hana is has a prototype-based object system, like JS. Every value is a record (a key-value
 mapping), which keys can be accessed by using the dot (`.key`) operator or the brackets
@@ -614,7 +587,7 @@ a["key"] = "value" // => sets a key
 Record::keys(a) // => ["key"] (gets all keys in record)
 ```
 
-## Arrays
+### Arrays
 
 Arrays in Hana are dynamic arrays. You can declare arrays like this:
 
@@ -642,6 +615,22 @@ a.filter(f(x) = x > 5) // => [6,7] (filters based on the truthiness of the funct
 a.reduce(f(prev, curr) = prev+curr, 0) // => 21
 // reduce executes a function on each member of the array's element
 // then returns a single output
+```
+
+## Comments
+
+Comments can either be single line:
+
+```
+// a single line comment
+```
+
+or multiple lines:
+
+```
+/*
+ multline comment
+*/
 ```
 
 # Libraries
