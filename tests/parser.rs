@@ -43,6 +43,14 @@ pub mod parser_tests {
     }
 
     #[test]
+    fn simple_hex() {
+        let progast: Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("0xf");
+        assert_eq!(progast.len(), 1);
+        let stmt = cast_box!(progast[0], ast::ExprStatement);
+        assert_eq!(cast_box!(stmt.expr, ast::IntLiteral).val, 0xf);
+    }
+
+    #[test]
     fn simple_float() {
         let progast: Vec<std::boxed::Box<ast::AST>> = parse_ast_statement!("12.6");
         assert_eq!(progast.len(), 1);

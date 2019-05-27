@@ -5,8 +5,8 @@ pub start -> Vec<std::boxed::Box<ast::AST>>
 
 // #region tokens
 int_literal -> i64
-    = n:$(#quiet<[0-9]+>) { n.parse::<i64>().unwrap() }
-    / "0x0" { panic!("isn't reachable?") }
+    = "0x" n:$(#quiet<[0-9a-fA-F]+>) { i64::from_str_radix(n, 16).unwrap() }
+    / n:$(#quiet<[0-9]+>) { n.parse::<i64>().unwrap() }
     / #expected("integer literal")
 float_literal -> f64
     = n:$(#quiet<[0-9]+ "." [0-9]+>) { n.parse::<f64>().unwrap() }
