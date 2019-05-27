@@ -717,6 +717,11 @@ end).to_json() // => {"a": true}
 
 ### C FFI
 
+The implementation provides a native set of utilities for interfacing with C functions.
+
+To enable it install the interpreter through cargo with the `cffi` feature. This
+requires libffi be installed in your system.
+
 ```
 // calling getuid(), a native libc function from the ffi
 getuid = Cffi::Function("getuid", [], Cffi.Int64)
