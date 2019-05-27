@@ -6,6 +6,7 @@ pub start -> Vec<std::boxed::Box<ast::AST>>
 // #region tokens
 int_literal -> i64
     = n:$(#quiet<[0-9]+>) { n.parse::<i64>().unwrap() }
+    / "0x0" { panic!("isn't reachable?") }
     / #expected("integer literal")
 float_literal -> f64
     = n:$(#quiet<[0-9]+ "." [0-9]+>) { n.parse::<f64>().unwrap() }
@@ -45,6 +46,7 @@ single_line_comment = "//" [^\n]*
 multiline_comment = "/*" (!"*/" .)* "*/"
 comment = single_line_comment / multiline_comment
 
+s = #quiet<(comment / [ \t] / "\\" .)+>
 _ = #quiet<(comment / [ \t] / "\\" .)*>
 __ = #quiet<(comment / "\\" . / [ \t\r\n])*>
 newline
@@ -153,20 +155,20 @@ condexpr -> std::boxed::Box<ast::AST>
 
 binexpr -> std::boxed::Box<ast::AST>
     = #infix<callexpr> {
-        #L x #quiet<(_ "and" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::And) }
-           x #quiet<(_ "or"  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Or ) }
+        #L x #quiet<(s "and" s)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::And) }
+           x #quiet<(s "or"  s)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Or ) }
         #L x #quiet<(_ "=="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Eq ) }
            x #quiet<(_ "!="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Neq) }
            x #quiet<(_ ">"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Gt ) }
            x #quiet<(_ "<"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Lt ) }
            x #quiet<(_ ">="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Geq) }
            x #quiet<(_ "<="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Leq) }
-        #L x #quiet<(_ "of"  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Of ) }
+        #L x #quiet<(s "of"  s)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Of ) }
         #L x #quiet<(_ "+"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Add) }
            x #quiet<(_ "-"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Sub) }
         #L x #quiet<(_ "*"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mul) }
            x #quiet<(_ "/"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Div) }
-           x #quiet<(_ "mod" _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mod) }
+           x #quiet<(s "mod" s)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Mod) }
       }
     / callexpr
 
