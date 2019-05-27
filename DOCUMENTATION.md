@@ -725,9 +725,25 @@ end).to_json() // => {"a": true}
 ### C FFI
 
 ```
-// calling getuid() from the ffi
+// calling getuid(), a native libc function from the ffi
 getuid = Cffi::Function("getuid", [], Cffi.Int64)
 print(getuid.call([]), "\n")
+
+// returning a unicode string from c ffi
+strchr = Cffi::Function("strchr", [Cffi.String, Cffi.Int64], Cffi.String)
+print(strchr.call(["Hello World", "r".ord()]), "\n")
+
+// importing sin from libm and using it:
+libm = Cffi::Library("/lib/libm.so.6")
+sin = Cffi::Function(libm.sym("sin"), [Cffi.Float64], Cffi.Float64)
+print(sin.call([0.4]), '\n')
+
+// creating a garbage collected pointer
+// free will automatically be called whenever
+// it goes out of scope on garbage collection
+malloc = Cffi::Function("malloc", [Cffi.UInt64], Cffi.Pointer)
+free = Cffi::Function("free", [Cffi.UInt64], Cffi.Pointer)
+print(Cffi::GcPointer(malloc.call([10]), free))
 ```
 
 #### FFI Types
