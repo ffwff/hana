@@ -1,0 +1,105 @@
+#!/home/user/Development/hana/target/release/haru
+
+record TodoProgram
+
+    // loading
+    function start(self) begin
+        args = Sys::args()
+        if args.length() > 1 then return self.handle(args)
+        return self.help()
+    end
+
+    // cli
+    function help(self) begin
+        print(
+"Arguments:
+    - add [string]: adds a note in your list
+    - update [idx] [string]: replaces note at index [idx] with [string]
+    - list: lists all todo notes
+    - remove [idx]: removes note at index [idx] from your list
+")
+    end
+
+    function handle(self, args) begin
+        method = args[1]
+        function expect_arg(idx, name) begin
+            if idx >= args.length() begin
+                raise "method " + method + " expects argument for " + name
+            end
+            return args[idx]
+        end
+        if method == "add" then return self.add(expect_arg(2, "note"))
+        if method == "update" then return self.update(expect_arg(2, "index"), expect_arg(3, "note"))
+        if method == "list" then return self.list()
+        if method == "remove" then return self.remove(expect_arg(2, "index"))
+        print("Unknown method " + method + "\n")
+        return self.help()
+    end
+
+    // todo functions
+    function add(self, note) begin
+        file = File("/tmp/notes", "cra")
+        file.write(note + "\n")
+        print("Added note for '" + note + "'\n")
+    end
+
+    function update(self, idx, note) begin
+        file = File("/tmp/notes", "crw")
+        idx = Int(idx)
+        state = [0]
+        lines = file.read().split("\n").map(|line| {
+            if state[0] == idx - 1 begin
+                state[0] += 1
+                print("Updated index " + idx + " to '" + note + "'\n")
+                return note
+            end
+            else begin
+                state[0] += 1
+                return line
+            end
+        })
+        file.close()
+        file = File("/tmp/notes", "cwt")
+        file.write(lines.join("\n"))
+    end
+
+    function remove(self, idx) begin
+        file = File("/tmp/notes", "crw")
+        idx = Int(idx)
+        state = [0]
+        lines = file.read().split("\n").filter(|line| {
+            if state[0] == idx -1 begin
+                print("Removed index ", idx, "\n")
+                state[0] += 1
+                return false
+            end
+            else begin
+                state[0] += 1
+                return true
+            end
+        })
+        file.close()
+        file = File("/tmp/notes", "cwt")
+        file.write(lines.join("\n"))
+    end
+
+    function list(self) begin
+        file = File("/tmp/notes", "r")
+        lines = file.read().split("\n")
+        for i=0 to lines.length()-1 begin
+            line = lines[i]
+            print(i+1, ': ', line, '\n')
+        end
+    end
+
+end
+
+function main() begin
+    try
+        TodoProgram.start()
+    case String as s
+        print("Error: ", s, "\n")
+    end
+end
+
+main()

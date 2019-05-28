@@ -178,13 +178,13 @@ fn join(array: Value::Array, delim: Value::Str) -> Value {
     let mut s = String::new();
     let array = array.as_ref();
     if array.len() > 0 {
-        s += format!("{:?}", array[0].unwrap()).as_str();
+        s += format!("{}", array[0].unwrap()).as_str();
     }
     if array.len() > 1 {
         let mut i = 1;
         while i < array.len() {
             s += delim.as_ref();
-            s += format!("{:?}", array[i].unwrap()).as_str();
+            s += format!("{}", array[i].unwrap()).as_str();
             i += 1;
         }
     }
