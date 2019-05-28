@@ -31,21 +31,15 @@ pub mod ast {
     }
 
     macro_rules! emit_begin {
-        ($self:ident, $c:ident, $vm:expr) => {
-            {
-                let mut modules_info = $c.modules_info.borrow_mut();
-                let len = modules_info.files.len();
-                modules_info.smap.push(compiler::SourceMap {
-                    file: $self.span().clone(),
-                    fileno: if len == 0 {
-                        0
-                    } else {
-                        len - 1
-                    },
-                    bytecode: ($vm.code.len(), 0),
-                });
-            }
-        };
+        ($self:ident, $c:ident, $vm:expr) => {{
+            let mut modules_info = $c.modules_info.borrow_mut();
+            let len = modules_info.files.len();
+            modules_info.smap.push(compiler::SourceMap {
+                file: $self.span().clone(),
+                fileno: if len == 0 { 0 } else { len - 1 },
+                bytecode: ($vm.code.len(), 0),
+            });
+        }};
     }
 
     macro_rules! smap_begin {
@@ -251,7 +245,9 @@ pub mod ast {
             if self.id.is_some() {
                 let len = c.vm.code.len() - 1;
                 let mut modules_info = c.modules_info.borrow_mut();
-                modules_info.symbol.insert(len, self.id.as_ref().unwrap().clone());
+                modules_info
+                    .symbol
+                    .insert(len, self.id.as_ref().unwrap().clone());
             }
 
             // default return
@@ -864,11 +860,17 @@ pub mod ast {
             if let Some(alt) = &self.alt {
                 c.vm.code.push(VmOpcode::OP_JMP);
                 let done_label = c.reserve_label16();
-                c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
+                c.fill_label16(
+                    else_label,
+                    (c.vm.code.len() as isize - else_label as isize) as u16,
+                );
                 alt.emit(c);
                 c.fill_label16(done_label, (c.vm.code.len() - done_label) as u16);
             } else {
-                c.fill_label16(else_label, (c.vm.code.len() as isize - else_label as isize) as u16);
+                c.fill_label16(
+                    else_label,
+                    (c.vm.code.len() as isize - else_label as isize) as u16,
+                );
             }
             emit_end!(c, c.vm, _smap_begin);
         }

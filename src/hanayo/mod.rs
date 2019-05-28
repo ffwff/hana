@@ -12,8 +12,8 @@ pub mod eval;
 pub mod file;
 pub mod io;
 pub mod math;
-pub mod sys;
 pub mod proc;
+pub mod sys;
 pub mod time;
 cfg_if! {
     if #[cfg(feature="cffi")] {

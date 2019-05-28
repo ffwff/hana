@@ -1,11 +1,11 @@
 //! Provides an interface for the virtual machine
 
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::ffi::CString;
 use std::mem::ManuallyDrop;
 use std::path::Path;
 use std::ptr::null_mut;
+use std::rc::Rc;
 
 extern crate libc;
 
@@ -111,7 +111,7 @@ pub struct Vm {
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
     exframes: CArray<ExFrame>,      // exception frame
-    pub code: CArray<VmOpcode>, // where all the code is
+    pub code: CArray<VmOpcode>,     // where all the code is
     pub stack: CArray<NativeValue>, // stack
 
     // prototype types for primitive values
@@ -275,7 +275,11 @@ impl Vm {
 
     // gc
     pub fn malloc<T: Sized + GcTraceable>(&self, val: T) -> Gc<T> {
-        self.gc_manager.as_ref().unwrap().borrow_mut().malloc(self, val)
+        self.gc_manager
+            .as_ref()
+            .unwrap()
+            .borrow_mut()
+            .malloc(self, val)
     }
 
     pub fn gc_disable(&self) {

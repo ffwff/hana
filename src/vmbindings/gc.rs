@@ -6,7 +6,6 @@ use std::alloc::{alloc_zeroed, dealloc, Layout};
 
 use std::ptr::{drop_in_place, null_mut};
 
-
 // node
 struct GcNode {
     next: *mut GcNode,

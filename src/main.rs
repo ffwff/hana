@@ -70,7 +70,10 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     let mut c = compiler::Compiler::new();
     let s: String = match arg {
         ProcessArg::Command(cmd) => {
-            c.modules_info.borrow_mut().files.push("[cmdline]".to_string());
+            c.modules_info
+                .borrow_mut()
+                .files
+                .push("[cmdline]".to_string());
             cmd.to_string()
         }
         ProcessArg::File("-") => {
@@ -79,7 +82,10 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
                 println!("error reading from stdin: {}", err);
                 std::process::exit(1);
             });
-            c.modules_info.borrow_mut().files.push("[stdin]".to_string());
+            c.modules_info
+                .borrow_mut()
+                .files
+                .push("[stdin]".to_string());
             s
         }
         ProcessArg::File(filename) => {
@@ -93,7 +99,8 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
                 std::process::exit(1);
             });
             let mut modules_info = c.modules_info.borrow_mut();
-            modules_info.modules_loaded
+            modules_info
+                .modules_loaded
                 .insert(std::path::Path::new(&filename).to_path_buf());
             modules_info.files.push(filename.to_string());
             s
@@ -149,14 +156,16 @@ fn handle_error(c: &compiler::Compiler) {
     if vm.error != VmError::ERROR_NO_ERROR {
         {
             let smap = c.lookup_smap(vm.ip() as usize).unwrap();
-            let src : &String = &c.modules_info.borrow().sources[smap.fileno];
+            let src: &String = &c.modules_info.borrow().sources[smap.fileno];
             let (line, col) = ast::pos_to_line(&src, smap.file.0);
             let (line_end, col_end) = ast::pos_to_line(&src, smap.file.1);
-            let message = format!("{} at {}:{}:{}",
+            let message = format!(
+                "{} at {}:{}:{}",
                 vm.error,
                 c.modules_info.borrow().files[smap.fileno],
                 line,
-                col);
+                col
+            );
             print_error(
                 &src,
                 line,

@@ -17,10 +17,9 @@
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::vm::{Vm, VmOpcode};
 
-use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-
+use std::rc::Rc;
 
 struct Scope {
     vars: Vec<String>,
@@ -56,7 +55,6 @@ pub struct ModulesInfo {
 }
 
 impl ModulesInfo {
-
     pub fn new() -> ModulesInfo {
         ModulesInfo {
             smap: Vec::new(),
@@ -66,7 +64,6 @@ impl ModulesInfo {
             sources: Vec::new(),
         }
     }
-
 }
 
 /// Compiler for processing AST nodes and

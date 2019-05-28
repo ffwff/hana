@@ -5,9 +5,9 @@ pub mod hanayo_tests {
 
     use haru::ast::grammar;
     use haru::compiler;
+    use haru::hanayo;
     use haru::vmbindings::value::Value;
     use haru::vmbindings::vm::{Vm, VmOpcode};
-    use haru::hanayo;
 
     macro_rules! eval {
         ($x:expr) => {{
