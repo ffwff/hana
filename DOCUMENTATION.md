@@ -212,7 +212,7 @@ Record bodies only accept function, assignment and record statements.
 
 ### Use
 
-(see [#Imports](/#Imports))
+(see [#Imports](#Imports))
 
 ## Expressions
 
