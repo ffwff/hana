@@ -1,7 +1,9 @@
 use super::ast;
 
 pub start -> Vec<std::boxed::Box<ast::AST>>
-    = __ s:(statement_program*) __ { s }
+    = program_prologue? __ s:(statement_program*) __ { s }
+program_prologue
+    = "#!" [^\n]*
 
 // #region tokens
 int_literal -> i64
@@ -39,7 +41,7 @@ keyword
     = ("and" / "or" / "not" / "mod" / "begin" / "end" / "then" / "if" / "else" /
       "while" / "for" / "to" / "downto" / "step" / "continue" / "break" /
       "try" / "case" / "as" / "raise" / "in" / "of" / "match" /
-      "function" / "return" / "record" / "not") !id_chars
+      "function" / "return" / "record") !id_chars
 identifier -> String
     = #quiet<!keyword w:$(word) { w.to_string() }>
     / #expected("identifier")
@@ -84,7 +86,7 @@ array_expr -> std::boxed::Box<ast::AST>
     / #expected("array literal")
 
 unary_expr -> std::boxed::Box<ast::AST>
-    = ps:#position op:#quiet<$("not" / "-")> _ val:value pe:#position
+    = ps:#position op:#quiet<$(("not" ! id_chars) / "-")> _ val:value pe:#position
     {
         boxed!(UnaryExpr, ps, pe,
             op: match op {
