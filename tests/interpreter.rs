@@ -16,7 +16,6 @@ pub mod interpreter_tests {
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            let vm = &mut c.vm;
             c.vm.code.push(VmOpcode::OP_HALT);
             c.vm.gc_enable();
             c.execute();
