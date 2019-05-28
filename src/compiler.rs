@@ -17,6 +17,8 @@
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::vm::{Vm, VmOpcode};
 
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 
@@ -37,10 +39,34 @@ struct LoopStatement {
 /// Indexed range for a stream of source code or bytecode.
 pub type ArrayIndexRange = (usize, usize);
 /// Mapping for a source code range to bytecode range.
+#[derive(Clone)]
 pub struct SourceMap {
     pub file: ArrayIndexRange,
     pub bytecode: ArrayIndexRange,
     pub fileno: usize,
+}
+
+/// Loaded modules info
+pub struct ModulesInfo {
+    pub smap: Vec<SourceMap>,
+    pub files: Vec<String>,
+    pub modules_loaded: std::collections::HashSet<std::path::PathBuf>,
+    pub symbol: HashMap<usize, String>,
+    pub sources: Vec<String>,
+}
+
+impl ModulesInfo {
+
+    pub fn new() -> ModulesInfo {
+        ModulesInfo {
+            smap: Vec::new(),
+            files: Vec::new(),
+            modules_loaded: std::collections::HashSet::new(),
+            symbol: HashMap::new(),
+            sources: Vec::new(),
+        }
+    }
+
 }
 
 /// Compiler for processing AST nodes and
@@ -48,24 +74,17 @@ pub struct SourceMap {
 pub struct Compiler {
     scopes: Vec<Scope>,
     loop_stmts: Vec<LoopStatement>,
-    pub smap: Vec<SourceMap>,
-    pub files: Vec<String>,
-    pub modules_loaded: std::collections::HashSet<std::path::PathBuf>,
-    pub symbol: HashMap<usize, String>,
-    pub sources: Vec<String>,
+    pub modules_info: Rc<RefCell<ModulesInfo>>,
     pub vm: Vm,
 }
 impl Compiler {
     pub fn new() -> Compiler {
+        let modules_info = Rc::new(RefCell::new(ModulesInfo::new()));
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
-            smap: Vec::new(),
-            files: Vec::new(),
-            modules_loaded: std::collections::HashSet::new(),
-            symbol: HashMap::new(),
-            sources: Vec::new(),
-            vm: Vm::new(),
+            vm: Vm::new(Some(modules_info.clone())),
+            modules_info,
         }
     }
 
@@ -74,11 +93,7 @@ impl Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
-            smap: Vec::new(),
-            files: Vec::new(),
-            modules_loaded: std::collections::HashSet::new(),
-            symbol: HashMap::new(),
-            sources: Vec::new(),
+            modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
             vm: {
                 let mut vm_ = Vm::new_nil();
                 vm_.code = vm.code.deref();
@@ -248,13 +263,14 @@ impl Compiler {
     }
 
     // source map
-    pub fn lookup_smap(&self, bc_idx: usize) -> Option<&SourceMap> {
+    pub fn lookup_smap(&self, bc_idx: usize) -> Option<SourceMap> {
         // TODO: fix this and maybe use binary search?
-        let mut last_found: Option<&SourceMap> = None;
-        for smap in self.smap.iter() {
+        let mut last_found: Option<SourceMap> = None;
+        let modules_info = self.modules_info.borrow();
+        for smap in modules_info.smap.iter() {
             if (smap.bytecode.0..=smap.bytecode.1).contains(&bc_idx) {
                 // this is so that the lookup gets more "specific"
-                last_found = Some(smap);
+                last_found = Some((*smap).clone());
             }
         }
         if last_found.is_some() {
@@ -262,5 +278,11 @@ impl Compiler {
         } else {
             None
         }
+    }
+
+    // execute
+    pub fn execute(&mut self) {
+        self.vm.modules_info = Some(self.modules_info.clone());
+        self.vm.execute();
     }
 }

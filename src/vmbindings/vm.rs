@@ -1,5 +1,6 @@
 //! Provides an interface for the virtual machine
 
+use std::rc::Rc;
 use std::cell::RefCell;
 use std::ffi::CString;
 use std::mem::ManuallyDrop;
@@ -18,7 +19,7 @@ use super::gc::*;
 use super::record::Record;
 pub use super::value::Value;
 use super::vmerror::VmError;
-use crate::compiler::Compiler;
+use crate::compiler::{Compiler, ModulesInfo};
 use crate::hanayo::HanayoCtx;
 
 const CALL_STACK_SIZE: usize = 512;
@@ -129,9 +130,7 @@ pub struct Vm {
     native_call_depth: usize,
 
     // rust-specific fields
-    pub compiler: Option<*mut Compiler>,
-    // store compiler here for import modules
-    // TODO: rethink the design and use RC
+    pub modules_info: Option<Rc<RefCell<ModulesInfo>>>,
     pub stdlib: Option<HanayoCtx>,
     gc_manager: Option<RefCell<GcManager>>,
 }
@@ -151,7 +150,7 @@ extern "C" {
 
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new() -> Vm {
+    pub fn new(modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
         Vm {
             ip: 0,
             localenv: null_mut(),
@@ -174,7 +173,7 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: null_mut(),
             native_call_depth: 0,
-            compiler: None,
+            modules_info,
             stdlib: None,
             gc_manager: Some(RefCell::new(GcManager::new())),
         }
@@ -198,7 +197,7 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: null_mut(),
             native_call_depth: 0,
-            compiler: None,
+            modules_info: None,
             stdlib: None,
             gc_manager: None,
         }
@@ -447,7 +446,7 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: self.exframe_fallthrough,
             native_call_depth: self.native_call_depth,
-            compiler: None,
+            modules_info: None,
             stdlib: None,
             gc_manager: None,
         };
@@ -508,12 +507,12 @@ impl Vm {
 
     // imports
     pub fn load_module(&mut self, path: &str) {
-        eprintln!("load module\n");
         // loads module, jumps to the module then jump back to OP_USE
         use crate::ast;
         use std::io::Read;
 
-        let c = unsafe { &mut *self.compiler.unwrap() };
+        let rc = self.modules_info.clone().unwrap();
+        let mut c = rc.borrow_mut();
 
         let pathobj = if path.starts_with("./") {
             let last_path = c.files.last().unwrap();

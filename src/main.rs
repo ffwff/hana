@@ -70,7 +70,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     let mut c = compiler::Compiler::new();
     let s: String = match arg {
         ProcessArg::Command(cmd) => {
-            c.files.push("[cmdline]".to_string());
+            c.modules_info.borrow_mut().files.push("[cmdline]".to_string());
             cmd.to_string()
         }
         ProcessArg::File("-") => {
@@ -79,7 +79,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
                 println!("error reading from stdin: {}", err);
                 std::process::exit(1);
             });
-            c.files.push("[stdin]".to_string());
+            c.modules_info.borrow_mut().files.push("[stdin]".to_string());
             s
         }
         ProcessArg::File(filename) => {
@@ -92,9 +92,10 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
                 println!("error reading file: {}", err);
                 std::process::exit(1);
             });
-            c.modules_loaded
+            let mut modules_info = c.modules_info.borrow_mut();
+            modules_info.modules_loaded
                 .insert(std::path::Path::new(&filename).to_path_buf());
-            c.files.push(filename.to_string());
+            modules_info.files.push(filename.to_string());
             s
         }
     };
@@ -133,14 +134,13 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     }
 
     // execute!
-    c.vm.compiler = Some(&mut c);
-    c.sources.push(s);
+    c.modules_info.borrow_mut().sources.push(s);
     {
         let mut vm = &mut c.vm;
         hanayo::init(&mut vm);
         vm.gc_enable();
-        vm.execute();
     }
+    c.execute();
     handle_error(&c);
 }
 
@@ -149,10 +149,14 @@ fn handle_error(c: &compiler::Compiler) {
     if vm.error != VmError::ERROR_NO_ERROR {
         {
             let smap = c.lookup_smap(vm.ip() as usize).unwrap();
-            let src = &c.sources[smap.fileno];
+            let src : &String = &c.modules_info.borrow().sources[smap.fileno];
             let (line, col) = ast::pos_to_line(&src, smap.file.0);
             let (line_end, col_end) = ast::pos_to_line(&src, smap.file.1);
-            let message = format!("{} at {}:{}:{}", vm.error, c.files[smap.fileno], line, col);
+            let message = format!("{} at {}:{}:{}",
+                vm.error,
+                c.modules_info.borrow().files[smap.fileno],
+                line,
+                col);
             print_error(
                 &src,
                 line,
@@ -168,16 +172,17 @@ fn handle_error(c: &compiler::Compiler) {
             for env in vm.localenv_to_vec() {
                 let ip = env.retip as usize;
                 if let Some(smap) = c.lookup_smap(ip) {
-                    let src = &c.sources[smap.fileno];
+                    let modules_info = c.modules_info.borrow();
+                    let src = &modules_info.sources[smap.fileno];
                     let (line, col) = ast::pos_to_line(&src, smap.file.0);
                     eprintln!(
                         " from {}{}:{}:{}",
-                        if let Some(sym) = c.symbol.get(&ip) {
+                        if let Some(sym) = modules_info.symbol.get(&ip) {
                             sym.clone() + "@"
                         } else {
                             "".to_string()
                         },
-                        c.files[smap.fileno],
+                        modules_info.files[smap.fileno],
                         line,
                         col
                     );
@@ -193,9 +198,11 @@ fn handle_error(c: &compiler::Compiler) {
 fn repl(flag: ParserFlag) {
     let mut rl = Editor::<()>::new();
     let mut c = compiler::Compiler::new();
-    c.files.push("[repl]".to_string());
-    c.sources.push(String::new());
-    c.vm.compiler = Some(&mut c);
+    {
+        let mut modules_info = c.modules_info.borrow_mut();
+        modules_info.files.push("[repl]".to_string());
+        modules_info.sources.push(String::new());
+    }
     hanayo::init(&mut c.vm);
     loop {
         let readline = rl.readline(">> ");
@@ -214,17 +221,19 @@ fn repl(flag: ParserFlag) {
                             vm.error = VmError::ERROR_NO_ERROR;
                             vm.code.len() as u32
                         };
-                        c.sources[0] = s.clone();
+                        c.modules_info.borrow_mut().sources[0] = s.clone();
                         for stmt in prog {
                             stmt.emit(&mut c);
                         }
-                        let vm = &mut c.vm;
-                        if vm.code.len() as u32 == len {
-                            continue;
+                        {
+                            let vm = &mut c.vm;
+                            if vm.code.len() as u32 == len {
+                                continue;
+                            }
+                            vm.jmp(len);
+                            vm.code.push(VmOpcode::OP_HALT);
                         }
-                        vm.jmp(len);
-                        vm.code.push(VmOpcode::OP_HALT);
-                        vm.execute();
+                        c.execute();
                         handle_error(&c);
                     }
                     Err(err) => {

@@ -13,14 +13,13 @@ pub mod hanayo_tests {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
             let mut c = compiler::Compiler::new();
-            c.vm.compiler = Some(&mut c);
             hanayo::init(&mut c.vm);
             for stmt in prog {
                 stmt.emit(&mut c);
             }
             c.vm.code.push(VmOpcode::OP_HALT);
             c.vm.gc_enable();
-            c.vm.execute();
+            c.execute();
             c.vm
         }};
     }

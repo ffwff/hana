@@ -13,14 +13,13 @@ pub mod interpreter_tests {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
             let mut c = compiler::Compiler::new();
-            c.vm.compiler = Some(&mut c);
             for stmt in prog {
                 stmt.emit(&mut c);
             }
             let vm = &mut c.vm;
-            vm.code.push(VmOpcode::OP_HALT);
-            vm.gc_enable();
-            vm.execute();
+            c.vm.code.push(VmOpcode::OP_HALT);
+            c.vm.gc_enable();
+            c.execute();
             c.vm
         }};
     }
@@ -783,13 +782,12 @@ use '/tmp/module_absolute_import'
         )
         .unwrap();
         let mut c = compiler::Compiler::new();
-        c.files.push("/tmp/x".to_string());
-        c.vm.compiler = Some(&mut c);
+        c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {
             stmt.emit(&mut c);
         }
         c.vm.code.push(VmOpcode::OP_HALT);
-        c.vm.execute();
+        c.execute();
         assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
     }
 
@@ -803,13 +801,12 @@ use './module_relative_import'
         )
         .unwrap();
         let mut c = compiler::Compiler::new();
-        c.files.push("/tmp/x".to_string());
-        c.vm.compiler = Some(&mut c);
+        c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {
             stmt.emit(&mut c);
         }
         c.vm.code.push(VmOpcode::OP_HALT);
-        c.vm.execute();
+        c.execute();
         assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
     }
 
