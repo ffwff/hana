@@ -12,6 +12,7 @@ pub mod eval;
 pub mod file;
 pub mod io;
 pub mod math;
+pub mod sys;
 pub mod proc;
 pub mod time;
 cfg_if! {
@@ -154,6 +155,12 @@ pub fn init(vm: &mut Vm) {
     set_var!("File", Value::Record(file.clone()));
     // #endregion
 
+    // #region sys
+    let sys = vm.malloc(Record::new());
+    set_obj_var!(sys, "args", Value::NativeFn(sys::args));
+    set_var!("Sys", Value::Record(sys));
+    // #endregion
+
     // #region cmd
     let cmd = vm.malloc(Record::new());
     set_obj_var!(cmd, "constructor", Value::NativeFn(cmd::constructor));
@@ -165,7 +172,7 @@ pub fn init(vm: &mut Vm) {
     set_var!("Cmd", Value::Record(cmd.clone()));
     // #endregion
 
-    // #region cmd
+    // #region proc
     let proc = vm.malloc(Record::new());
     set_obj_var!(proc, "in", Value::NativeFn(proc::in_));
     set_obj_var!(proc, "out", Value::NativeFn(proc::out));
