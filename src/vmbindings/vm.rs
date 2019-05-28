@@ -17,7 +17,7 @@ use super::exframe::ExFrame;
 use super::function::Function;
 use super::gc::*;
 use super::record::Record;
-pub use super::value::Value;
+use super::value::Value;
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
 use crate::hanayo::HanayoCtx;

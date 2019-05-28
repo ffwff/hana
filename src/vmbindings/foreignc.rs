@@ -7,7 +7,8 @@ use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
 use super::record::Record;
-use super::vm::{Value, Vm};
+use super::value::Value;
+use super::vm::Vm;
 
 extern crate unicode_segmentation;
 
