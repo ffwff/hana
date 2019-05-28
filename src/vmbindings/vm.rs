@@ -111,18 +111,17 @@ pub struct Vm {
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
     exframes: CArray<ExFrame>,      // exception frame
-    pub code: CArray<VmOpcode>,     // where all the code is
+    pub code: CArray<VmOpcode>, // where all the code is
     pub stack: CArray<NativeValue>, // stack
 
     // prototype types for primitive values
-    pub dstr: Gc<Record>,
-    pub dint: Gc<Record>,
-    pub dfloat: Gc<Record>,
-    pub darray: Gc<Record>,
-    pub drec: Gc<Record>,
+    pub(crate) dstr: Gc<Record>,
+    pub(crate) dint: Gc<Record>,
+    pub(crate) dfloat: Gc<Record>,
+    pub(crate) darray: Gc<Record>,
+    pub(crate) drec: Gc<Record>,
 
     pub error: VmError,
-    // whether the interpreter raised an unhandled error
     pub error_expected: u32,
 
     // for handling exceptions inside of interpreted functions called by native functions
@@ -130,8 +129,8 @@ pub struct Vm {
     native_call_depth: usize,
 
     // rust-specific fields
-    pub modules_info: Option<Rc<RefCell<ModulesInfo>>>,
-    pub stdlib: Option<HanayoCtx>,
+    pub(crate) modules_info: Option<Rc<RefCell<ModulesInfo>>>,
+    pub(crate) stdlib: Option<HanayoCtx>,
     gc_manager: Option<RefCell<GcManager>>,
 }
 
