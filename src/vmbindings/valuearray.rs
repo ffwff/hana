@@ -17,6 +17,12 @@ impl ValueArray {
         }
     }
 
+    pub fn reserve(vm: &Vm, size: usize) -> ValueArray {
+        ValueArray {
+            data: vm.malloc(CArray::reserve(size))
+        }
+    }
+
     pub fn from_carray(data: Gc<CArray<NativeValue>>) -> ValueArray {
         ValueArray {
             data,
