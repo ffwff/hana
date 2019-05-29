@@ -1,6 +1,7 @@
 //! Provides Time record for handling time
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
+use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::vm::Vm;
 use std::thread::sleep as nsleep;
 use std::time::*;

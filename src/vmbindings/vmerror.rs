@@ -41,6 +41,25 @@ pub enum VmError {
 #[cfg_attr(tarpaulin, skip)]
 impl VmError {
 
+    fn method_for_op(&self) -> &str {
+        match self {
+            VmError::ERROR_OP_ADD => "addition",
+            VmError::ERROR_OP_SUB => "subtraction",
+            VmError::ERROR_OP_MUL => "multiplication",
+            VmError::ERROR_OP_DIV => "division",
+            VmError::ERROR_OP_MOD => "modulo",
+            VmError::ERROR_OP_AND => "logical and",
+            VmError::ERROR_OP_OR =>  "logical or",
+            VmError::ERROR_OP_LT =>  "less than",
+            VmError::ERROR_OP_LEQ => "less than or equal to",
+            VmError::ERROR_OP_GT =>  "greater than",
+            VmError::ERROR_OP_GEQ => "greater than or equal to",
+            VmError::ERROR_OP_EQ =>  "equality",
+            VmError::ERROR_OP_NEQ => "inequality",
+            _ => unreachable!()
+        }
+    }
+
     pub fn hint(&self, vm: &Vm) -> Option<String> {
         match self {
             VmError::ERROR_UNHANDLED_EXCEPTION => {
@@ -78,19 +97,19 @@ impl std::fmt::Display for VmError {
     #[allow(non_snake_case)]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            VmError::ERROR_OP_ADD => write!(f, "Invalid arguments for addition"),
-            VmError::ERROR_OP_SUB => write!(f, "Invalid arguments for subtraction"),
-            VmError::ERROR_OP_MUL => write!(f, "Invalid arguments for multiplication"),
-            VmError::ERROR_OP_DIV => write!(f, "Invalid arguments for division"),
-            VmError::ERROR_OP_MOD => write!(f, "Invalid arguments for modulo"),
-            VmError::ERROR_OP_AND => write!(f, "Invalid arguments for logical and"),
-            VmError::ERROR_OP_OR => write!(f, "Invalid arguments for logical or"),
-            VmError::ERROR_OP_LT => write!(f, "Invalid arguments for less than"),
-            VmError::ERROR_OP_LEQ => write!(f, "Invalid arguments for less than or equal to"),
-            VmError::ERROR_OP_GT => write!(f, "Invalid arguments for greater than"),
-            VmError::ERROR_OP_GEQ => write!(f, "Invalid arguments for greater than or equal to"),
-            VmError::ERROR_OP_EQ => write!(f, "Invalid arguments for equality"),
-            VmError::ERROR_OP_NEQ => write!(f, "Invalid arguments for inequality"),
+            VmError::ERROR_OP_ADD |
+            VmError::ERROR_OP_SUB |
+            VmError::ERROR_OP_MUL |
+            VmError::ERROR_OP_DIV |
+            VmError::ERROR_OP_MOD |
+            VmError::ERROR_OP_AND |
+            VmError::ERROR_OP_OR  |
+            VmError::ERROR_OP_LT  |
+            VmError::ERROR_OP_LEQ |
+            VmError::ERROR_OP_GT  |
+            VmError::ERROR_OP_GEQ |
+            VmError::ERROR_OP_EQ  |
+            VmError::ERROR_OP_NEQ => write!(f, "Invalid arguments for {}", self.method_for_op()),
             VmError::ERROR_UNDEFINED_GLOBAL_VAR => write!(f, "Global variable is not defined"),
             VmError::ERROR_RECORD_NO_CONSTRUCTOR => {
                 write!(f, "Cannot call record that has no constructor")
