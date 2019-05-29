@@ -2,6 +2,7 @@
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
+use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::vm::Vm;
 use std::io::Write;
 use std::process::{Child, Command, Output, Stdio};
@@ -12,7 +13,7 @@ fn constructor(val: Value::Any) -> Value {
         Value::Array(arr) => {
             let arr = arr.as_ref();
             if arr.len() == 0 {
-                panic!("expected array with at least 1 elem!");
+                hana_raise!(vm, Value::Str(vm.malloc("No".to_string())));
             }
             let mut cmd = Command::new(match arr[0].unwrap() {
                 Value::Str(s) => s.as_ref().clone(),

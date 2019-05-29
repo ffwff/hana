@@ -6,6 +6,19 @@ use crate::vmbindings::value::*;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
 
+#[macro_export]
+macro_rules! hana_raise {
+    ($vm:ident, $rec:expr) => {
+        $vm.stack.push($rec.wrap());
+        return if $vm.raise() {
+            Value::PropagateError
+        } else {
+            $vm.error = VmError::ERROR_UNHANDLED_EXCEPTION;
+            Value::PropagateError
+        };
+    };
+}
+
 pub mod cmd;
 pub mod env;
 pub mod eval;
