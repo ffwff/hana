@@ -1,0 +1,9 @@
+edition = "2018"
+
+max_width = 99
+
+wrap_comments = true
+
+fn_args_density = "Compressed"
+
+newline_style = "Unix"
