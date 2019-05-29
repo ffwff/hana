@@ -53,9 +53,6 @@ impl NativeValue {
 
     /// Traces the native value recursively for use in the garbage collector.
     pub unsafe fn trace(&self) {
-        if self.data == 0 {
-            return;
-        } // uninitialized memory
         #[allow(non_camel_case_types)]
         match self.r#type {
             _valueType::TYPE_FN => {
