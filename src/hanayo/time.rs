@@ -74,7 +74,16 @@ fn sleep(time: Value::Any) -> Value {
             let time = tref.downcast_ref::<Duration>().unwrap();
             nsleep(time.clone());
         }
-        _ => panic!("invalid argument"),
+        _ => {
+            hana_raise!(vm, {
+                let rec = vm.malloc(Record::new());
+                rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
+                rec.as_mut().insert("why", Value::Str(vm.malloc("time must either be an Int or a Time record".to_string())).wrap());
+                rec.as_mut().insert("where", Value::Int(0).wrap());
+                Value::Record(rec)
+            });
+            return Value::PropagateError;
+        },
     }
     Value::Nil
 }

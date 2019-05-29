@@ -6,6 +6,7 @@ use crate::vmbindings::value::*;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
 
+// TODO: move this somewhere else
 #[macro_export]
 macro_rules! hana_raise {
     ($vm:ident, $rec:expr) => {

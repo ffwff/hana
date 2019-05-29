@@ -48,7 +48,7 @@ use syn;
 ///
 /// ```rust,text
 /// pub extern "C" fn fopen(cvm : *mut Vm, nargs : u16) {
-///     if nargs != [nargs] { panic!(...) }
+///     if nargs != [nargs] { [raise vm error] }
 ///     fn fopen() -> Value {
 ///         let Value::String(path) = vm.stack.pop().unwrap() ||
 ///                 panic!("expected path to be string");
