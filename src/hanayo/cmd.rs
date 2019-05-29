@@ -13,11 +13,21 @@ fn constructor(val: Value::Any) -> Value {
         Value::Array(arr) => {
             let arr = arr.as_ref();
             if arr.len() == 0 {
-                hana_raise!(vm, Value::Str(vm.malloc("No".to_string())));
+                let rec = vm.malloc(Record::new());
+                rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
+                rec.as_mut().insert("why", Value::Str(vm.malloc("Expected argument array to have at least 1 member".to_string())).wrap());
+                rec.as_mut().insert("where", Value::Int(0).wrap());
+                hana_raise!(vm, Value::Record(rec));
             }
             let mut cmd = Command::new(match arr[0].unwrap() {
                 Value::Str(s) => s.as_ref().clone(),
-                _ => unimplemented!(),
+                _ => {
+                    let rec = vm.malloc(Record::new());
+                    rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
+                    rec.as_mut().insert("why", Value::Str(vm.malloc("Expected command to be of string type".to_string())).wrap());
+                    rec.as_mut().insert("where", Value::Int(0).wrap());
+                    hana_raise!(vm, Value::Record(rec));
+                },
             });
             if arr.len() > 1 {
                 let slice = &arr.as_slice()[1..];
@@ -25,7 +35,11 @@ fn constructor(val: Value::Any) -> Value {
                     match val.unwrap() {
                         Value::Str(s) => cmd.arg(s.as_ref().clone()),
                         _ => {
-                            unimplemented!();
+                            let rec = vm.malloc(Record::new());
+                            rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
+                            rec.as_mut().insert("why", Value::Str(vm.malloc("Expected argument to be of string type".to_string())).wrap());
+                            rec.as_mut().insert("where", Value::Int(0).wrap());
+                            hana_raise!(vm, Value::Record(rec));
                         }
                     };
                 }
@@ -37,7 +51,13 @@ fn constructor(val: Value::Any) -> Value {
             cmd.arg("-c").arg(scmd.as_ref().clone());
             cmd
         }
-        _ => panic!("expected val to be string or array"),
+        _ => {
+            let rec = vm.malloc(Record::new());
+            rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
+            rec.as_mut().insert("why", Value::Str(vm.malloc("Expected argument to be of string or array type".to_string())).wrap());
+            rec.as_mut().insert("where", Value::Int(0).wrap());
+            hana_raise!(vm, Value::Record(rec));
+        },
     };
     // cmd object
     let rec = vm.malloc(Record::new());
@@ -69,14 +89,14 @@ impl OutputResult {
     fn as_process(self) -> Child {
         match self {
             OutputResult::Process(x) => x,
-            _ => unreachable!(),
+            _ => panic!("calling with wrong object, expected process"),
         }
     }
 
     fn as_output(self) -> Result<Output, std::io::Error> {
         match self {
             OutputResult::Output(x) => x,
-            _ => unreachable!(),
+            _ => panic!("calling with wrong object, expected output"),
         }
     }
 }

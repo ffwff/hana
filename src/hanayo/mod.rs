@@ -49,6 +49,9 @@ pub struct HanayoCtx {
     pub cmd_rec: Gc<Record>,
     pub proc_rec: Gc<Record>,
     pub time_rec: Gc<Record>,
+
+    // errors
+    pub invalid_argument_error: Gc<Record>,
 }
 
 /// Initialises hanayo for the virtual machine
@@ -218,10 +221,20 @@ pub fn init(vm: &mut Vm) {
 
     cffi_load(vm);
 
+    // #region errors
+    let invalid_argument_error = vm.malloc(Record::new());
+    set_obj_var!(time, "what", Value::Str(vm.malloc("Invalid argument error".to_string())));
+    set_obj_var!(time, "why", Value::Nil);
+    set_obj_var!(time, "where", Value::Nil);
+    // #endregion
+
     vm.stdlib = Some(HanayoCtx {
         file_rec: file,
         cmd_rec: cmd,
         proc_rec: proc,
         time_rec: time,
+
+        // errors
+        invalid_argument_error,
     });
 }
