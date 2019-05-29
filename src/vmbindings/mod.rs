@@ -3,6 +3,7 @@
 pub mod carray;
 pub mod chmap;
 pub mod cnativeval;
+pub mod valuearray;
 pub mod env;
 pub mod exframe;
 mod foreignc;

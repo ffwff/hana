@@ -1,6 +1,6 @@
 //! Provides an abstraction for native values
 
-use super::carray::CArray;
+use super::valuearray::ValueArray;
 use super::cnativeval::{NativeValue, _valueType};
 use super::function::Function;
 use super::gc::Gc;
@@ -27,7 +27,7 @@ pub enum Value {
     Fn(Gc<Function>),
     Str(Gc<String>),
     Record(Gc<Record>),
-    Array(Gc<CArray<NativeValue>>),
+    Array(ValueArray),
 }
 
 #[allow(improper_ctypes)]
@@ -68,6 +68,7 @@ impl Value {
         }
     }
 
+    /*
     #[cfg_attr(tarpaulin, skip)]
     pub fn array(&self) -> &'static CArray<NativeValue> {
         match self {
@@ -76,7 +77,7 @@ impl Value {
                 panic!("Expected array");
             }
         }
-    }
+    } */
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn record(&self) -> &'static Record {
@@ -133,7 +134,7 @@ impl Value {
                 },
                 Value::Array(p) => NativeValue {
                     r#type: _valueType::TYPE_ARRAY,
-                    data: transmute::<*const CArray<NativeValue>, u64>(p.to_raw()),
+                    data: transmute::<*const CArray<NativeValue>, u64>(p.data().to_raw()),
                 },
                 _ => unimplemented!(),
             }
@@ -166,7 +167,7 @@ impl fmt::Display for Value {
             Value::Fn(_) => write!(f, "[fn]"),
             Value::Str(p) => write!(f, "{}", p.as_ref()),
             Value::Record(p) => write!(f, "[record {:p}]", p.to_raw()),
-            Value::Array(p) => write!(f, "[array {:p}]", p.to_raw()),
+            Value::Array(p) => write!(f, "[array]", p.data().to_raw()),
         }
     }
 }
@@ -192,7 +193,7 @@ impl fmt::Debug for Value {
                 write!(f, "\"{}\"", s)
             }
             Value::Record(p) => write!(f, "[record {:p}]", p.to_raw()),
-            Value::Array(p) => write!(f, "[array {:p}]", p.to_raw()),
+            Value::Array(p) => write!(f, "[array]", p),
             _ => write!(f, "[unk]"),
         }
     }

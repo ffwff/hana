@@ -2,7 +2,7 @@
 extern crate unicode_segmentation;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::vmbindings::carray::CArray;
+use crate::vmbindings::valuearray::ValueArray;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 
@@ -140,10 +140,9 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 
 #[hana_function()]
 fn chars(s: Value::Str) -> Value {
-    let array = vm.malloc(CArray::new());
-    let array_ref = array.as_mut();
+    let array = ValueArray::malloc(vm);
     for ch in s.as_ref().graphemes(true) {
-        array_ref.push(Value::Str(vm.malloc(ch.to_string())).wrap());
+        array.push(Value::Str(vm.malloc(ch.to_string())));
     }
     Value::Array(array)
 }

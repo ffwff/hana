@@ -144,7 +144,7 @@ fn reduce(array: Value::Array, fun: Value::Any, acc_: Value::Any) -> Value {
         if let Some(val) = vm.call(fun.wrap(), &args) {
             acc = val.unwrap();
         } else {
-            panic!("no!");
+            return Value::Nil;
         }
     }
     acc

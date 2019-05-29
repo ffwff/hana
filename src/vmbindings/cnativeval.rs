@@ -2,13 +2,14 @@
 //! used by the virtual machine
 
 use super::carray::CArray;
+use super::valuearray::ValueArray;
 use super::function::Function;
 use super::gc::{mark_reachable, Gc, GcTraceable};
 use super::record::Record;
 use super::value::{NativeFnData, Value};
 
 #[repr(u8)]
-#[allow(non_camel_case_types, dead_code)]
+#[allow(non_camel_case_types)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 /// Type of the native value
 pub enum _valueType {
@@ -46,7 +47,7 @@ impl NativeValue {
             _valueType::TYPE_STR => Value::Str(Gc::from_raw(self.data as *mut String)),
             _valueType::TYPE_DICT => Value::Record(Gc::from_raw(self.data as *mut Record)),
             _valueType::TYPE_ARRAY => {
-                Value::Array(Gc::from_raw(self.data as *mut CArray<NativeValue>))
+                Value::Array(ValueArray::from_carray(Gc::from_raw(self.data as *mut CArray<NativeValue>)))
             }
         }
     }
