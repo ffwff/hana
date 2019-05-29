@@ -54,6 +54,7 @@ pub struct HanayoCtx {
     // errors
     pub invalid_argument_error: Gc<Record>,
     pub io_error: Gc<Record>,
+    pub utf8_decoding_error: Gc<Record>,
 }
 
 /// Initialises hanayo for the virtual machine
@@ -231,10 +232,13 @@ pub fn init(vm: &mut Vm) {
 
     // IOError
     let io_error = vm.malloc(Record::new());
-    set_obj_var!(io_error, "what", Value::Str(vm.malloc("IO Error".to_string())));
+    set_obj_var!(io_error, "what", Value::Str(vm.malloc("IO error".to_string())));
     set_var!("IOError", Value::Record(io_error.clone()));
 
-
+    // UTF8DecodingError
+    let utf8_decoding_error = vm.malloc(Record::new());
+    set_obj_var!(utf8_decoding_error, "what", Value::Str(vm.malloc("UTF-8 decoding error".to_string())));
+    set_var!("Utf8DecodingError", Value::Record(utf8_decoding_error.clone()));
     // #endregion
 
     vm.stdlib = Some(HanayoCtx {
@@ -246,5 +250,6 @@ pub fn init(vm: &mut Vm) {
         // errors
         invalid_argument_error,
         io_error,
+        utf8_decoding_error,
     });
 }

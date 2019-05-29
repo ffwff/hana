@@ -4,6 +4,8 @@ use std::io::Write;
 use std::process::Child;
 
 use crate::vmbindings::value::Value;
+use crate::vmbindings::record::Record;
+use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::vm::Vm;
 
 // inputs
@@ -18,6 +20,14 @@ fn in_(process: Value::Record, input: Value::Str) -> Value {
     Value::Record(process)
 }
 
+fn utf8_decoding_error(err: std::string::FromUtf8Error, vm: &Vm) -> Value {
+    let rec = vm.malloc(Record::new());
+    rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().utf8_decoding_error.clone()).wrap());
+    rec.as_mut().insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
+    rec.as_mut().insert("where", Value::Int(0).wrap());
+    Value::Record(rec)
+}
+
 // outs
 #[hana_function()]
 fn out(process: Value::Record) -> Value {
@@ -30,9 +40,13 @@ fn out(process: Value::Record) -> Value {
         .downcast::<Child>()
         .unwrap();
     let out = p.wait_with_output().unwrap();
-    Value::Str(vm.malloc(
-        String::from_utf8(out.stdout).unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e)),
-    ))
+    match String::from_utf8(out.stdout) {
+        Ok(s) => Value::Str(vm.malloc(s)),
+        Err(err) => {
+            hana_raise!(vm, utf8_decoding_error(err, vm));
+            Value::PropagateError
+        }
+    }
 }
 
 #[hana_function()]
@@ -46,9 +60,13 @@ fn err(process: Value::Record) -> Value {
         .downcast::<Child>()
         .unwrap();
     let out = p.wait_with_output().unwrap();
-    Value::Str(vm.malloc(
-        String::from_utf8(out.stderr).unwrap_or_else(|e| panic!("error decoding stderr: {:?}", e)),
-    ))
+    match String::from_utf8(out.stderr) {
+        Ok(s) => Value::Str(vm.malloc(s)),
+        Err(err) => {
+            hana_raise!(vm, utf8_decoding_error(err, vm));
+            Value::PropagateError
+        }
+    }
 }
 
 #[hana_function()]
@@ -63,24 +81,20 @@ fn outputs(process: Value::Record) -> Value {
         .unwrap();
     let out = p.wait_with_output().unwrap();
     let arr = vm.malloc(CArray::new());
-    arr.as_mut().push(
-        Value::Str(
-            vm.malloc(
-                String::from_utf8(out.stdout)
-                    .unwrap_or_else(|e| panic!("error decoding stdout: {:?}", e)),
-            ),
-        )
-        .wrap(),
-    );
-    arr.as_mut().push(
-        Value::Str(
-            vm.malloc(
-                String::from_utf8(out.stderr)
-                    .unwrap_or_else(|e| panic!("error decoding stderr: {:?}", e)),
-            ),
-        )
-        .wrap(),
-    );
+    match String::from_utf8(out.stdout) {
+        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
+        Err(err) => {
+            hana_raise!(vm, utf8_decoding_error(err, vm));
+            return Value::PropagateError;
+        }
+    }
+    match String::from_utf8(out.stderr) {
+        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
+        Err(err) => {
+            hana_raise!(vm, utf8_decoding_error(err, vm));
+            return Value::PropagateError;
+        }
+    }
     Value::Array(arr)
 }
 
