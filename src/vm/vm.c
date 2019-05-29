@@ -958,8 +958,6 @@ do { \
 }
 
 struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *args) {
-    //debug_assert(fn->type ==  || fn->type == TYPE_DICT);
-
     static struct value errorval;
     errorval.type = TYPE_INTERPRETER_ERROR;
 
@@ -973,7 +971,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     } else if(fn.type == TYPE_DICT) {
         const struct value *ctor = dict_get(fn.as.dict, "constructor");
         if(ctor == NULL) {
-            FATAL("expected record to have constructor\n");
+            vm->error = ERROR_RECORD_NO_CONSTRUCTOR;
             return errorval;
         }
         if(ctor->type == TYPE_NATIVE_FN) {
@@ -986,7 +984,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
             array_pop(vm->stack);
             return val;
         } else if(ctor->type != TYPE_FN) {
-            FATAL("constructor must be a function!\n");
+            vm->error = ERROR_CONSTRUCTOR_NOT_FUNCTION;
             return errorval;
         } else {
             ifn = ctor->as.ifn;
@@ -994,12 +992,13 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     } else if (fn.type == TYPE_FN) {
         ifn = fn.as.ifn;
     } else {
-        FATAL("expected caller to be function");
+        vm->error = ERROR_EXPECTED_CALLABLE;
         return errorval;
     }
 
     if((uint32_t)args->length != ifn->nargs) {
-        FATAL("function requires %d arguments, got %ld\n", ifn->nargs, args->length);
+        vm->ip = ifn->ip;
+        vm->error = ERROR_MISMATCH_ARGUMENTS;
         return errorval;
     }
 
