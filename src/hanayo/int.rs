@@ -1,5 +1,7 @@
 //! Provides Int record for handling integers
 use crate::vmbindings::value::Value;
+use crate::vmbindings::record::Record;
+use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::vm::Vm;
 use std::str::FromStr;
 
@@ -8,10 +10,29 @@ fn constructor(val: Value::Any) -> Value {
     match val {
         Value::Int(n) => Value::Int(n),
         Value::Float(n) => Value::Int(n as i64),
-        Value::Str(s) => Value::Int(
-            i64::from_str(s.as_ref()).unwrap_or_else(|_| panic!("cant convert to integer")),
-        ),
-        _ => panic!("cant convert to integer"),
+        Value::Str(s) => match i64::from_str(s.as_ref()) {
+            Ok(n) => Value::Int(n),
+            Err(_) => {
+                hana_raise!(vm, {
+                    let rec = vm.malloc(Record::new());
+                    rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
+                    rec.as_mut().insert("why", Value::Str(vm.malloc("Can't convert string to integer".to_string())).wrap());
+                    rec.as_mut().insert("where", Value::Int(0).wrap());
+                    Value::Record(rec)
+                });
+                Value::PropagateError
+            }
+        },
+        _ => {
+            hana_raise!(vm, {
+                let rec = vm.malloc(Record::new());
+                rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
+                rec.as_mut().insert("why", Value::Str(vm.malloc("Can't convert value to integer".to_string())).wrap());
+                rec.as_mut().insert("where", Value::Int(0).wrap());
+                Value::Record(rec)
+            });
+            Value::PropagateError
+        }
     }
 }
 

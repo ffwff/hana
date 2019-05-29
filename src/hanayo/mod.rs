@@ -52,6 +52,7 @@ pub struct HanayoCtx {
 
     // errors
     pub invalid_argument_error: Gc<Record>,
+    pub io_error: Gc<Record>,
 }
 
 /// Initialises hanayo for the virtual machine
@@ -222,10 +223,17 @@ pub fn init(vm: &mut Vm) {
     cffi_load(vm);
 
     // #region errors
+    // InvalidArgumentError
     let invalid_argument_error = vm.malloc(Record::new());
     set_obj_var!(invalid_argument_error, "what", Value::Str(vm.malloc("Invalid argument error".to_string())));
-    set_obj_var!(invalid_argument_error, "why", Value::Nil);
-    set_obj_var!(invalid_argument_error, "where", Value::Nil);
+    set_var!("InvalidArgumentError", Value::Record(invalid_argument_error.clone()));
+
+    // IOError
+    let io_error = vm.malloc(Record::new());
+    set_obj_var!(io_error, "what", Value::Str(vm.malloc("IO Error".to_string())));
+    set_var!("IOError", Value::Record(io_error.clone()));
+
+
     // #endregion
 
     vm.stdlib = Some(HanayoCtx {
@@ -236,5 +244,6 @@ pub fn init(vm: &mut Vm) {
 
         // errors
         invalid_argument_error,
+        io_error,
     });
 }

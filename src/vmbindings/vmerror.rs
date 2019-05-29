@@ -38,6 +38,7 @@ pub enum VmError {
     ERROR_UNKNOWN_KEY,
 }
 
+#[cfg_attr(tarpaulin, skip)]
 impl VmError {
 
     pub fn hint(&self, vm: &Vm) -> Option<String> {
@@ -60,7 +61,7 @@ impl VmError {
                         if lines.is_empty() {
                             "The exception was a record".to_string()
                         } else {
-                            format!("The exception gave the hints:\n{}", lines.join("\n"))
+                            format!("The exception gave the following hints:\n{}", lines.join("\n"))
                         }
                     }
                     _ => format!("The exception was {:?}", top)

@@ -5,6 +5,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
+use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::vm::Vm;
 
 #[hana_function()]
@@ -28,7 +29,17 @@ fn constructor(path: Value::Str, mode: Value::Str) -> Value {
     // file object
     let rec = vm.malloc(Record::new());
     // store native file
-    rec.as_mut().native_field = Some(Box::new(options.open(path.as_ref()).unwrap()));
+    match options.open(path.as_ref()) {
+        Ok(file) => {
+            rec.as_mut().native_field = Some(Box::new(file));
+        }
+        Err(err) => {
+            rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().io_error.clone()).wrap());
+            rec.as_mut().insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
+            rec.as_mut().insert("where", Value::Str(path).wrap());
+            hana_raise!(vm, Value::Record(rec));
+        }
+    }
     rec.as_mut().insert(
         "prototype",
         Value::Record(vm.stdlib.as_ref().unwrap().file_rec.clone()).wrap(),
@@ -61,9 +72,7 @@ fn read_up_to(file: Value::Record, n: Value::Int) -> Value {
     let file = field.downcast_mut::<File>().unwrap();
     let mut bytes: Vec<u8> = Vec::new();
     bytes.resize(n as usize, 0);
-    if file.read_exact(&mut bytes).is_err() {
-        panic!("unable to read exact!");
-    }
+    file.read_exact(&mut bytes);
     Value::Str(vm.malloc(
         String::from_utf8(bytes).unwrap_or_else(|e| panic!("error decoding file: {:?}", e)),
     ))
