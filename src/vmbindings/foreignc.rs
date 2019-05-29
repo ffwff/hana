@@ -29,10 +29,7 @@ mod foreignc {
     }
     #[no_mangle]
     unsafe extern "C" fn rrealloc(
-        ptr: *mut u8,
-        nelems: usize,
-        size: usize,
-        new_size: usize,
+        ptr: *mut u8, nelems: usize, size: usize, new_size: usize,
     ) -> *mut u8 {
         let layout = Layout::from_size_align(nelems * size, 2).unwrap();
         realloc(ptr, layout, new_size)
@@ -43,8 +40,7 @@ mod foreignc {
     // #region hmap
     #[no_mangle]
     unsafe extern "C" fn hmap_get(
-        chm: *const CHashMap,
-        ckey: *const libc::c_char,
+        chm: *const CHashMap, ckey: *const libc::c_char,
     ) -> *const NativeValue {
         let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
         let hm = &*chm;
@@ -56,7 +52,9 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn hmap_set(chm: *mut CHashMap, ckey: *const libc::c_char, val: NativeValue) {
+    unsafe extern "C" fn hmap_set(
+        chm: *mut CHashMap, ckey: *const libc::c_char, val: NativeValue,
+    ) {
         let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
         let hm = &mut *chm;
         hm.insert(key, val.clone());
@@ -71,8 +69,7 @@ mod foreignc {
 
     #[no_mangle]
     unsafe extern "C" fn dict_get(
-        cr: *const Record,
-        ckey: *const libc::c_char,
+        cr: *const Record, ckey: *const libc::c_char,
     ) -> *const NativeValue {
         let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
         let r = &*cr;
@@ -84,8 +81,7 @@ mod foreignc {
     }
     #[no_mangle]
     unsafe extern "C" fn dict_get_str(
-        cr: *const Record,
-        ckey: *const String,
+        cr: *const Record, ckey: *const String,
     ) -> *const NativeValue {
         let key = &*ckey;
         let r = &*cr;
@@ -120,9 +116,7 @@ mod foreignc {
 
     #[no_mangle]
     unsafe extern "C" fn string_append(
-        cleft: *const String,
-        cright: *const String,
-        vm: *const Vm,
+        cleft: *const String, cright: *const String, vm: *const Vm,
     ) -> *mut String {
         let left: &'static String = &*cleft;
         let right: &'static String = &*cright;
@@ -132,7 +126,9 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_repeat(cleft: *const String, n: i64, vm: *const Vm) -> *mut String {
+    unsafe extern "C" fn string_repeat(
+        cleft: *const String, n: i64, vm: *const Vm,
+    ) -> *mut String {
         let left: &'static String = &*cleft;
         (&*vm).malloc(left.repeat(n as usize)).into_raw()
     }
@@ -167,7 +163,9 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_chars(s: *const String, vm: *const Vm) -> *mut CArray<NativeValue> {
+    unsafe extern "C" fn string_chars(
+        s: *const String, vm: *const Vm,
+    ) -> *mut CArray<NativeValue> {
         let s: &'static String = &*s;
         let vm = &*vm;
         let chars = vm.malloc(CArray::new());
@@ -210,10 +208,7 @@ mod foreignc {
     // #region function
     #[no_mangle]
     unsafe extern "C" fn function_malloc(
-        addr: u32,
-        nargs: u16,
-        env: *const Env,
-        vm: *const Vm,
+        addr: u32, nargs: u16, env: *const Env, vm: *const Vm,
     ) -> *mut Function {
         (&*vm).malloc(Function::new(addr, nargs, env)).into_raw()
     }
@@ -236,9 +231,7 @@ mod foreignc {
     }
     #[no_mangle]
     unsafe extern "C" fn array_obj_repeat(
-        carray: *const CArray<NativeValue>,
-        n: usize,
-        vm: *const Vm,
+        carray: *const CArray<NativeValue>, n: usize, vm: *const Vm,
     ) -> *mut CArray<NativeValue> {
         let array = &*carray;
         let mut result: CArray<NativeValue> = CArray::reserve(n);
@@ -316,9 +309,7 @@ mod foreignc {
     // #region exceptions
     #[no_mangle]
     unsafe extern "C" fn exframe_set_handler(
-        selfptr: *mut ExFrame,
-        proto: *const Record,
-        fun: *const Function,
+        selfptr: *mut ExFrame, proto: *const Record, fun: *const Function,
     ) {
         let exframe = &mut *selfptr;
         exframe.set_handler(proto, (*fun).clone());

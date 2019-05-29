@@ -1,7 +1,7 @@
 //! Provides an interface for virtual machine errors
 
-use super::vm::Vm;
 use super::value::Value;
+use super::vm::Vm;
 
 #[repr(C)]
 #[derive(Debug, PartialEq)]
@@ -39,7 +39,6 @@ pub enum VmError {
 }
 
 impl VmError {
-
     pub fn hint(&self, vm: &Vm) -> Option<String> {
         match self {
             VmError::ERROR_UNHANDLED_EXCEPTION => {
@@ -63,13 +62,12 @@ impl VmError {
                             format!("The exception gave the hints:\n{}", lines.join("\n"))
                         }
                     }
-                    _ => format!("The exception was {:?}", top)
+                    _ => format!("The exception was {:?}", top),
                 })
-            },
+            }
             _ => None,
         }
     }
-
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -105,7 +103,9 @@ impl std::fmt::Display for VmError {
                 write!(f, "Cannot access property of a nil literal")
             }
             VmError::ERROR_KEY_NON_INT => write!(f, "Index must be an integer value"),
-            VmError::ERROR_RECORD_KEY_NON_STRING => write!(f, "Record key must be an string value"),
+            VmError::ERROR_RECORD_KEY_NON_STRING => {
+                write!(f, "Record key must be an string value")
+            }
             VmError::ERROR_UNBOUNDED_ACCESS => write!(
                 f,
                 "Accessing a value that lies outside of the object's bound"
