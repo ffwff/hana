@@ -46,10 +46,6 @@ impl Record {
         K: std::string::ToString + Hash + Eq,
     {
         let k: String = k.to_string();
-        if v.r#type == _valueType::TYPE_NIL {
-            self.data.remove(&k);
-            return;
-        }
         if k == "prototype" {
             self.prototype = match &v.unwrap() {
                 // since the borrow checker doesn't know that self.prototype
