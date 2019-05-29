@@ -28,6 +28,8 @@ pub enum Value {
     Str(Gc<String>),
     Record(Gc<Record>),
     Array(Gc<CArray<NativeValue>>),
+
+    PropagateError,
 }
 
 #[allow(improper_ctypes)]
@@ -167,6 +169,7 @@ impl fmt::Display for Value {
             Value::Str(p) => write!(f, "{}", p.as_ref()),
             Value::Record(p) => write!(f, "[record {:p}]", p.to_raw()),
             Value::Array(p) => write!(f, "[array {:p}]", p.to_raw()),
+            _ => unreachable!(),
         }
     }
 }

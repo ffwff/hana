@@ -110,7 +110,7 @@ fn map(array: Value::Array, fun: Value::Any) -> Value {
         if let Some(val) = vm.call(fun.wrap(), &args) {
             new_array.as_mut()[i] = val;
         } else {
-            return Value::Nil;
+            return Value::PropagateError;
         }
         i += 1;
     }
@@ -128,7 +128,7 @@ fn filter(array: Value::Array, fun: Value::Any) -> Value {
                 new_array.as_mut().push(val.clone());
             }
         } else {
-            return Value::Nil;
+            return Value::PropagateError;
         }
     }
     Value::Array(new_array)
@@ -144,7 +144,7 @@ fn reduce(array: Value::Array, fun: Value::Any, acc_: Value::Any) -> Value {
         if let Some(val) = vm.call(fun.wrap(), &args) {
             acc = val.unwrap();
         } else {
-            panic!("no!");
+            return Value::PropagateError;
         }
     }
     acc

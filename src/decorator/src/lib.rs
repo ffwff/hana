@@ -138,7 +138,10 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                 #body
             }
             let result : Value = #name(vm);
-            vm.stack.push(result.wrap());
+            match result {
+                Value::PropagateError => (),
+                _ => vm.stack.push(result.wrap()),
+            }
         }
     )
     .into()
