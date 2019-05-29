@@ -64,7 +64,7 @@ impl FFI_Type {
 // #endregion
 
 struct FFIFunction {
-    sym: Option<unsafe extern fn()>,
+    sym: unsafe extern fn(),
     cif: ffi_cif,
     argtypes: CArray<FFI_Type>,
     ffi_argtypes: CArray<*mut ffi_type>,
@@ -107,15 +107,12 @@ fn constructor(name_or_addr: Value::Any, argtypes: Value::Array, rettype: Value:
         FFIFunction {
             sym: {
                 match &name_or_addr {
-                    Value::Int(addr) => {
-                        //Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(debug as *mut libc::c_void))
-                        Some(std::mem::transmute::<i64, unsafe extern fn()>(*addr))
-                    }
+                    Value::Int(addr) => std::mem::transmute::<i64, unsafe extern fn()>(*addr),
                     Value::Str(sym) => {
                         let cstr = CString::new(sym.as_ref().clone()).unwrap();
                         let sym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
                         if sym.is_null() { panic!("is nul!") }
-                        else { Some(std::mem::transmute::<*mut c_void, unsafe extern fn()>(sym)) }
+                        else { std::mem::transmute::<*mut c_void, unsafe extern fn()>(sym) }
                     }
                     _ => panic!("expected symbol address or name")
                 }
@@ -166,6 +163,7 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
         }
     }
 
+    let sym = Some(ffi_fn.sym);
     unsafe { match &ffi_fn.rettype {
         FFI_Type::UInt8 | FFI_Type::Int8 |
         FFI_Type::UInt16 | FFI_Type::Int16 |
@@ -174,31 +172,31 @@ fn call(ffi_fn_rec: Value::Record, args: Value::Array) {
         FFI_Type::Pointer
             => {
                 let mut rvalue = 0;
-                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&i64, *mut c_void>(&rvalue), aref.as_mut_ptr());
+                ffi_call(&mut ffi_fn.cif, sym, transmute::<&i64, *mut c_void>(&rvalue), aref.as_mut_ptr());
                 Value::Int(rvalue)
             },
         FFI_Type::Float32
             => {
                 let mut rvalue = 0.0f32;
-                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&f32, *mut c_void>(&rvalue), aref.as_mut_ptr());
+                ffi_call(&mut ffi_fn.cif, sym, transmute::<&f32, *mut c_void>(&rvalue), aref.as_mut_ptr());
                 Value::Float(rvalue as f64)
             },
         FFI_Type::Float64
             => {
                 let mut rvalue = 0.0f64;
-                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&f64, *mut c_void>(&rvalue), aref.as_mut_ptr());
+                ffi_call(&mut ffi_fn.cif, sym, transmute::<&f64, *mut c_void>(&rvalue), aref.as_mut_ptr());
                 Value::Float(rvalue)
             },
         FFI_Type::String
             => {
                 let mut rvalue : *const libc::c_char = null_mut();
-                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, transmute::<&*const libc::c_char, *mut c_void>(&rvalue), aref.as_mut_ptr());
+                ffi_call(&mut ffi_fn.cif, sym, transmute::<&*const libc::c_char, *mut c_void>(&rvalue), aref.as_mut_ptr());
                 assert!(!rvalue.is_null());
                 Value::Str(vm.malloc(CStr::from_ptr(rvalue).to_str().unwrap().to_string()))
             },
         FFI_Type::Void
             => {
-                ffi_call(&mut ffi_fn.cif, ffi_fn.sym, null_mut(), aref.as_mut_ptr());
+                ffi_call(&mut ffi_fn.cif, sym, null_mut(), aref.as_mut_ptr());
                 Value::Nil
             }
     } }

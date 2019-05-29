@@ -1,5 +1,8 @@
 //! Provides an interface for virtual machine errors
 
+use super::vm::Vm;
+use super::value::Value;
+
 #[repr(C)]
 #[derive(Debug, PartialEq)]
 #[allow(non_camel_case_types, dead_code)]
@@ -33,6 +36,40 @@ pub enum VmError {
     ERROR_EXPECTED_ITERABLE,
     ERROR_EXPECTED_RECORD_OF_EXPR,
     ERROR_UNKNOWN_KEY,
+}
+
+impl VmError {
+
+    pub fn hint(&self, vm: &Vm) -> Option<String> {
+        match self {
+            VmError::ERROR_UNHANDLED_EXCEPTION => {
+                let top = vm.stack.top().unwrap();
+                Some(match top {
+                    Value::Record(rec) => {
+                        let rec = rec.as_ref();
+                        let mut lines = Vec::new();
+                        if let Some(what) = rec.get("what") {
+                            lines.push(format!("  what => {:?}", what.unwrap()));
+                        }
+                        if let Some(why) = rec.get("why") {
+                            lines.push(format!("  why => {:?}", why.unwrap()));
+                        }
+                        if let Some(where_) = rec.get("where") {
+                            lines.push(format!("  where => {:?}", where_.unwrap()));
+                        }
+                        if lines.is_empty() {
+                            "The exception was a record".to_string()
+                        } else {
+                            format!("The exception gave the hints:\n{}", lines.join("\n"))
+                        }
+                    }
+                    _ => format!("The exception was {:?}", top)
+                })
+            },
+            _ => None,
+        }
+    }
+
 }
 
 #[cfg_attr(tarpaulin, skip)]

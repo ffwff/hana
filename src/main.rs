@@ -176,6 +176,9 @@ fn handle_error(c: &compiler::Compiler) {
                 &message,
             );
         }
+        if let Some(hint) = vm.error.hint(vm) {
+            eprintln!("{} {}", ac::Red.bold().paint("hint:"), hint);
+        }
         if !vm.localenv_is_null() {
             eprintln!("{}", ac::Red.bold().paint("backtrace:"));
             for env in vm.localenv_to_vec() {

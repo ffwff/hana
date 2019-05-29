@@ -223,9 +223,9 @@ pub fn init(vm: &mut Vm) {
 
     // #region errors
     let invalid_argument_error = vm.malloc(Record::new());
-    set_obj_var!(time, "what", Value::Str(vm.malloc("Invalid argument error".to_string())));
-    set_obj_var!(time, "why", Value::Nil);
-    set_obj_var!(time, "where", Value::Nil);
+    set_obj_var!(invalid_argument_error, "what", Value::Str(vm.malloc("Invalid argument error".to_string())));
+    set_obj_var!(invalid_argument_error, "why", Value::Nil);
+    set_obj_var!(invalid_argument_error, "where", Value::Nil);
     // #endregion
 
     vm.stdlib = Some(HanayoCtx {
