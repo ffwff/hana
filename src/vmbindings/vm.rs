@@ -351,7 +351,7 @@ impl Vm {
     }
 
     // accessors
-    pub unsafe fn localenv(&self) -> *mut Env {
+    pub fn localenv(&self) -> *mut Env {
         self.localenv
     }
     #[cfg_attr(tarpaulin, skip)]
@@ -359,7 +359,7 @@ impl Vm {
         self.localenv.is_null()
     }
     #[cfg_attr(tarpaulin, skip)]
-    pub unsafe fn localenv_bp(&self) -> *mut Env {
+    pub fn localenv_bp(&self) -> *mut Env {
         self.localenv_bp
     }
     #[cfg_attr(tarpaulin, skip)]
