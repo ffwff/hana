@@ -29,7 +29,8 @@ mod compiler;
 mod ast;
 mod vmbindings;
 
-use vmbindings::vm::VmOpcode;
+use vmbindings::carray::CArray;
+use vmbindings::vm::{Vm, VmOpcode};
 use vmbindings::vmerror::VmError;
 mod hanayo;
 
@@ -129,27 +130,24 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     for stmt in prog {
         stmt.emit(&mut c);
     }
-    c.vm.cpushop(VmOpcode::OP_HALT);
+    c.cpushop(VmOpcode::OP_HALT);
 
     // dump bytecode if asked
     if flag.dump_bytecode {
-        io::stdout().write(c.vm.code.as_bytes()).unwrap();
+        io::stdout().write(c.code_as_bytes()).unwrap();
         return;
     }
 
     // execute!
     c.modules_info.borrow_mut().sources.push(s);
-    {
-        let mut vm = &mut c.vm;
-        hanayo::init(&mut vm);
-        vm.gc_enable();
-    }
-    c.execute();
-    handle_error(&c);
+    let mut vm = c.into_vm();
+    hanayo::init(&mut vm);
+    vm.gc_enable();
+    vm.execute();
+    handle_error(&vm, &c);
 }
 
-fn handle_error(c: &compiler::Compiler) {
-    let vm = &c.vm;
+fn handle_error(vm: &Vm, c: &compiler::Compiler) {
     if vm.error != VmError::ERROR_NO_ERROR {
         {
             let smap = c.lookup_smap(vm.ip() as usize).unwrap();
@@ -212,7 +210,8 @@ fn repl(flag: ParserFlag) {
         modules_info.files.push("[repl]".to_string());
         modules_info.sources.push(String::new());
     }
-    hanayo::init(&mut c.vm);
+    let mut vm = Vm::new(unsafe { CArray::new_nil() }, Some(c.modules_info.clone()));
+    hanayo::init(&mut vm);
     loop {
         let readline = rl.readline(">> ");
         match readline {
@@ -225,25 +224,21 @@ fn repl(flag: ParserFlag) {
                             continue;
                         }
                         // setup
-                        let len = {
-                            let vm = &mut c.vm;
-                            vm.error = VmError::ERROR_NO_ERROR;
-                            vm.code.len() as u32
-                        };
+                        vm.error = VmError::ERROR_NO_ERROR;
+                        let len = vm.code.len() as u32;
                         c.modules_info.borrow_mut().sources[0] = s.clone();
+                        c.receive_code(unsafe{ vm.code.deref() });
                         for stmt in prog {
                             stmt.emit(&mut c);
                         }
-                        {
-                            let vm = &mut c.vm;
-                            if vm.code.len() as u32 == len {
-                                continue;
-                            }
-                            vm.jmp(len);
-                            vm.cpushop(VmOpcode::OP_HALT);
+                        if c.clen() as u32 == len {
+                            continue;
                         }
-                        c.execute();
-                        handle_error(&c);
+                        c.cpushop(VmOpcode::OP_HALT);
+                        vm.code = c.take_code();
+                        vm.jmp(len);
+                        vm.execute();
+                        handle_error(&vm, &c);
                     }
                     Err(err) => {
                         print_error(

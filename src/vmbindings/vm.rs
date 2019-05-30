@@ -131,7 +131,7 @@ pub struct Vm {
     native_call_depth: usize,
 
     // rust-specific fields
-    pub(crate) modules_info: Option<Rc<RefCell<ModulesInfo>>>,
+    pub modules_info: Option<Rc<RefCell<ModulesInfo>>>,
     pub(crate) stdlib: Option<HanayoCtx>,
     gc_manager: Option<RefCell<GcManager>>,
 }
@@ -146,7 +146,7 @@ extern "C" {
 
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new(modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
+    pub fn new(code: CArray<u8>, modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
         Vm {
             ip: 0,
             localenv: null_mut(),
@@ -158,7 +158,7 @@ impl Vm {
             },
             globalenv: Box::into_raw(Box::new(CHashMap::new())),
             exframes: CArray::new(),
-            code: CArray::new(),
+            code,
             stack: CArray::new(),
             dstr: Gc::new_nil(),
             dint: Gc::new_nil(),
@@ -175,30 +175,6 @@ impl Vm {
         }
     }
 
-    pub unsafe fn new_nil() -> Vm {
-        Vm {
-            ip: 0,
-            localenv: null_mut(),
-            localenv_bp: null_mut(),
-            globalenv: null_mut(),
-            exframes: CArray::new_nil(),
-            code: CArray::new_nil(),
-            stack: CArray::new_nil(),
-            dstr: Gc::new_nil(),
-            dint: Gc::new_nil(),
-            dfloat: Gc::new_nil(),
-            darray: Gc::new_nil(),
-            drec: Gc::new_nil(),
-            error: VmError::ERROR_NO_ERROR,
-            error_expected: 0,
-            exframe_fallthrough: null_mut(),
-            native_call_depth: 0,
-            modules_info: None,
-            stdlib: None,
-            gc_manager: None,
-        }
-    }
-
     #[cfg_attr(tarpaulin, skip)]
     pub fn print_stack(&self) {
         unsafe {
@@ -209,50 +185,6 @@ impl Vm {
     pub fn execute(&mut self) {
         unsafe {
             vm_execute(self);
-        }
-    }
-
-    // pushes
-    // int
-    pub fn cpushop(&mut self, n: VmOpcode) {
-        self.code.push(n as u8);
-    }
-    pub fn cpush8(&mut self, n: u8) {
-        self.code.push(n);
-    }
-    pub fn cpush16(&mut self, n: u16) {
-        for byte in &n.to_be_bytes() {
-            self.cpush8(*byte);
-        }
-    }
-    pub fn cpush32(&mut self, n: u32) {
-        for byte in &n.to_be_bytes() {
-            self.cpush8(*byte);
-        }
-    }
-    pub fn cpush64(&mut self, n: u64) {
-        for byte in &n.to_be_bytes() {
-            self.cpush8(*byte);
-        }
-    }
-    pub fn cpushf64(&mut self, n: f64) {
-        let bytes = n.to_bits().to_ne_bytes();
-        for byte in &bytes {
-            self.cpush8(*byte);
-        }
-    }
-    pub fn cpushs<T: Into<Vec<u8>>>(&mut self, s: T) {
-        for byte in s.into() {
-            self.code.push(byte);
-        }
-        self.code.push(0);
-    }
-
-    // labels
-    pub fn cfill_label16(&mut self, pos: usize, label: u16) {
-        let bytes = label.to_be_bytes();
-        for (i, byte) in bytes.iter().enumerate() {
-            self.code[pos + i] = *byte;
         }
     }
 
@@ -568,13 +500,13 @@ impl Vm {
             let importer_ip = self.ip;
             let imported_ip = self.code.len();
             {
-                let mut c = unsafe { Compiler::new_append_vm(self) };
+                let mut c = Compiler::new_append(unsafe{ self.code.deref() });
                 for stmt in prog {
                     stmt.emit(&mut c);
                 }
-                self.code = c.deref_vm_code();
-                self.cpushop(VmOpcode::OP_JMP_LONG);
-                self.cpush32(importer_ip);
+                c.cpushop(VmOpcode::OP_JMP_LONG);
+                c.cpush32(importer_ip);
+                self.code = c.into_code();
             }
             self.ip = imported_ip as u32;
         } else {

@@ -37,9 +37,8 @@ impl<T> CArray<T> {
 
     /// Dereferences a CArray by creating a new CArray,
     /// and moving its data into the new array.
-    ///
-    /// This is an internal function, you shouldn't really use this.
-    pub fn deref(&mut self) -> CArray<T> {
+    /// The current array will have its data set to null.
+    pub unsafe fn deref(&mut self) -> CArray<T> {
         let arr = CArray::<T> {
             data: self.data,
             len: self.len,

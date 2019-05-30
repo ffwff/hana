@@ -10,13 +10,13 @@ fn eval(s: Value::Str) -> Value {
     let s = s.as_ref();
     if let Ok(prog) = ast::grammar::start(&s) {
         let target_ip = vm.code.len() as u32;
-        let mut c = unsafe { Compiler::new_append_vm(vm) };
+        let mut c = unsafe { Compiler::new_append(vm.code.deref()) };
         // generate code
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        vm.code = c.deref_vm_code();
-        vm.cpushop(VmOpcode::OP_HALT);
+        c.cpushop(VmOpcode::OP_HALT);
+        vm.code = c.into_code();
         // save current evaluation context
         let ctx = unsafe { vm.new_exec_ctx() };
         vm.jmp(target_ip);

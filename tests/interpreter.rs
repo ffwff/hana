@@ -16,10 +16,11 @@ pub mod interpreter_tests {
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            c.vm.cpushop(VmOpcode::OP_HALT);
-            c.vm.gc_enable();
-            c.execute();
-            c.vm
+            c.cpushop(VmOpcode::OP_HALT);
+            let mut vm = c.into_vm();
+            vm.gc_enable();
+            vm.execute();
+            vm
         }};
     }
 
@@ -785,9 +786,10 @@ use '/tmp/module_absolute_import'
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        c.vm.cpushop(VmOpcode::OP_HALT);
-        c.execute();
-        assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
+        c.cpushop(VmOpcode::OP_HALT);
+        let mut vm = c.into_vm();
+        vm.execute();
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
     }
 
     #[test]
@@ -804,9 +806,10 @@ use './module_relative_import'
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        c.vm.cpushop(VmOpcode::OP_HALT);
-        c.execute();
-        assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
+        c.cpushop(VmOpcode::OP_HALT);
+        let mut vm = c.into_vm();
+        vm.execute();
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
     }
 
     /*#[test] // FIXME: This doesn't work for some reason

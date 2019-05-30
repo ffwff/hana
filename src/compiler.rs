@@ -11,7 +11,7 @@
 //! for stmt in prog {
 //!     stmt.emit(&mut c);
 //! }
-//! c.vm.cpushop(VmOpcode::OP_HALT);
+//! c.cpushop(VmOpcode::OP_HALT);
 //! ```
 
 use crate::vmbindings::carray::CArray;
@@ -71,37 +71,102 @@ impl ModulesInfo {
 pub struct Compiler {
     scopes: Vec<Scope>,
     loop_stmts: Vec<LoopStatement>,
+    code: Option<CArray<u8>>,
     pub modules_info: Rc<RefCell<ModulesInfo>>,
-    pub vm: Vm,
 }
 impl Compiler {
     pub fn new() -> Compiler {
-        let modules_info = Rc::new(RefCell::new(ModulesInfo::new()));
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
-            vm: Vm::new(Some(modules_info.clone())),
-            modules_info,
-        }
-    }
-
-    // constructor for execution ctx
-    pub unsafe fn new_append_vm(vm: &mut Vm) -> Compiler {
-        Compiler {
-            scopes: Vec::new(),
-            loop_stmts: Vec::new(),
+            code: Some(CArray::new()),
             modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
-            vm: {
-                let mut vm_ = Vm::new_nil();
-                vm_.code = vm.code.deref();
-                vm_
-            },
         }
     }
 
-    pub fn deref_vm_code(mut self) -> CArray<u8> {
-        self.vm.code.deref()
+    pub fn new_append(code: CArray<u8>) -> Compiler {
+        Compiler {
+            scopes: Vec::new(),
+            loop_stmts: Vec::new(),
+            code: Some(code),
+            modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
+        }
     }
+
+    // create
+    pub fn into_vm(&mut self) -> Vm {
+        Vm::new(self.code.take().unwrap(), Some(self.modules_info.clone()))
+    }
+    pub fn into_code(self) -> CArray<u8> {
+        self.code.unwrap()
+    }
+    pub fn receive_code(&mut self, code: CArray<u8>) {
+        self.code = Some(code);
+    }
+    pub fn take_code(&mut self) -> CArray<u8> {
+        self.code.take().unwrap()
+    }
+
+    // #region code
+    pub fn ctop(&self) -> u8 {
+        *self.code.as_ref().unwrap().top()
+    }
+    pub fn clen(&self) -> usize {
+        self.code.as_ref().unwrap().len()
+    }
+    pub fn cpushop(&mut self, n: VmOpcode) {
+        self.code.as_mut().unwrap().push(n as u8);
+    }
+    pub fn cpush8(&mut self, n: u8) {
+        self.code.as_mut().unwrap().push(n);
+    }
+    pub fn cpush16(&mut self, n: u16) {
+        for byte in &n.to_be_bytes() {
+            self.cpush8(*byte);
+        }
+    }
+    pub fn cpush32(&mut self, n: u32) {
+        for byte in &n.to_be_bytes() {
+            self.cpush8(*byte);
+        }
+    }
+    pub fn cpush64(&mut self, n: u64) {
+        for byte in &n.to_be_bytes() {
+            self.cpush8(*byte);
+        }
+    }
+    pub fn cpushf64(&mut self, n: f64) {
+        let bytes = n.to_bits().to_ne_bytes();
+        for byte in &bytes {
+            self.cpush8(*byte);
+        }
+    }
+    pub fn cpushs<T: Into<Vec<u8>>>(&mut self, s: T) {
+        let code = self.code.as_mut().unwrap();
+        for byte in s.into() {
+            code.push(byte);
+        }
+        code.push(0);
+    }
+
+    // labels
+    pub fn cfill_label8(&mut self, pos: usize, label: u8) {
+        let code = self.code.as_mut().unwrap();
+        code[pos] = label;
+    }
+    pub fn cfill_label16(&mut self, pos: usize, label: u16) {
+        let bytes = label.to_be_bytes();
+        let code = self.code.as_mut().unwrap();
+        for (i, byte) in bytes.iter().enumerate() {
+            code[pos + i] = *byte;
+        }
+    }
+
+    // other
+    pub fn code_as_bytes(&self) -> &[u8] {
+        self.code.as_ref().unwrap().as_bytes()
+    }
+    // #endregion
 
     // scopes
     pub fn is_in_function(&self) -> bool {
@@ -133,8 +198,8 @@ impl Compiler {
     pub fn emit_set_var(&mut self, var: String) {
         if var.starts_with("$") || self.scopes.len() == 0 {
             // set global
-            self.vm.cpushop(VmOpcode::OP_SET_GLOBAL);
-            self.vm.cpushs(if var.starts_with("$") {
+            self.cpushop(VmOpcode::OP_SET_GLOBAL);
+            self.cpushs(if var.starts_with("$") {
                 &var[1..]
             } else {
                 var.as_str()
@@ -147,20 +212,20 @@ impl Compiler {
                 let local = self.set_local(var.clone()).unwrap();
                 slot = local.0;
             }
-            self.vm.cpushop(VmOpcode::OP_SET_LOCAL);
-            self.vm.cpush16(slot);
+            self.cpushop(VmOpcode::OP_SET_LOCAL);
+            self.cpush16(slot);
         } else {
             let local = self.set_local(var.clone()).unwrap();
             let slot = local.0;
-            self.vm.cpushop(VmOpcode::OP_SET_LOCAL);
-            self.vm.cpush16(slot);
+            self.cpushop(VmOpcode::OP_SET_LOCAL);
+            self.cpush16(slot);
         }
     }
     pub fn emit_set_var_fn(&mut self, var: String) {
         if var.starts_with("$") || self.scopes.len() == 0 {
             // set global
-            self.vm.cpushop(VmOpcode::OP_SET_GLOBAL);
-            self.vm.cpushs(if var.starts_with("$") {
+            self.cpushop(VmOpcode::OP_SET_GLOBAL);
+            self.cpushs(if var.starts_with("$") {
                 &var[1..]
             } else {
                 var.as_str()
@@ -173,13 +238,13 @@ impl Compiler {
                 let local = self.set_local(var.clone()).unwrap();
                 slot = local.0;
             }
-            self.vm.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
-            self.vm.cpush16(slot);
+            self.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            self.cpush16(slot);
         } else {
             let local = self.set_local(var.clone()).unwrap();
             let slot = local.0;
-            self.vm.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
-            self.vm.cpush16(slot);
+            self.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            self.cpush16(slot);
         }
     }
 
@@ -187,8 +252,8 @@ impl Compiler {
         let local = self.get_local(&var);
         if var.starts_with("$") || !local.is_some() {
             // set global
-            self.vm.cpushop(VmOpcode::OP_GET_GLOBAL);
-            self.vm.cpushs(if var.starts_with("$") {
+            self.cpushop(VmOpcode::OP_GET_GLOBAL);
+            self.cpushs(if var.starts_with("$") {
                 &var[1..]
             } else {
                 var.as_str()
@@ -198,29 +263,24 @@ impl Compiler {
             let slot = local.0;
             let relascope = local.1;
             if relascope == 0 {
-                self.vm.cpushop(VmOpcode::OP_GET_LOCAL);
-                self.vm.cpush16(slot);
+                self.cpushop(VmOpcode::OP_GET_LOCAL);
+                self.cpush16(slot);
             } else {
-                self.vm.cpushop(VmOpcode::OP_GET_LOCAL_UP);
-                self.vm.cpush16(slot);
-                self.vm.cpush16(relascope);
+                self.cpushop(VmOpcode::OP_GET_LOCAL_UP);
+                self.cpush16(slot);
+                self.cpush16(relascope);
             }
         }
     }
 
     // labels
-    pub fn reserve_label(&mut self) -> usize {
-        let pos = self.vm.code.len();
-        self.vm.cpush32(0xdeadbeef);
-        pos
-    }
     pub fn reserve_label16(&mut self) -> usize {
-        let pos = self.vm.code.len();
-        self.vm.cpush16(0);
+        let pos = self.clen();
+        self.cpush16(0);
         pos
     }
     pub fn fill_label16(&mut self, pos: usize, label: u16) {
-        self.vm.cfill_label16(pos, label);
+        self.cfill_label16(pos, label);
     }
 
     // scopes
@@ -240,12 +300,12 @@ impl Compiler {
         });
     }
     pub fn loop_continue(&mut self) {
-        let label = self.reserve_label();
+        let label = self.reserve_label16();
         let ls = self.loop_stmts.last_mut().unwrap();
         ls.fill_continue.push(label);
     }
     pub fn loop_break(&mut self) {
-        let label = self.reserve_label();
+        let label = self.reserve_label16();
         let ls = self.loop_stmts.last_mut().unwrap();
         ls.fill_break.push(label);
     }
@@ -275,11 +335,5 @@ impl Compiler {
         } else {
             None
         }
-    }
-
-    // execute
-    pub fn execute(&mut self) {
-        self.vm.modules_info = Some(self.modules_info.clone());
-        self.vm.execute();
     }
 }
