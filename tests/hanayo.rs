@@ -17,7 +17,7 @@ pub mod hanayo_tests {
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            c.vm.code.push(VmOpcode::OP_HALT);
+            c.vm.cpushop(VmOpcode::OP_HALT);
             c.vm.gc_enable();
             c.execute();
             c.vm

@@ -11,7 +11,7 @@
 //! for stmt in prog {
 //!     stmt.emit(&mut c);
 //! }
-//! c.vm.code.push(VmOpcode::OP_HALT);
+//! c.vm.cpushop(VmOpcode::OP_HALT);
 //! ```
 
 use crate::vmbindings::carray::CArray;
@@ -99,7 +99,7 @@ impl Compiler {
         }
     }
 
-    pub fn deref_vm_code(mut self) -> CArray<VmOpcode> {
+    pub fn deref_vm_code(mut self) -> CArray<u8> {
         self.vm.code.deref()
     }
 
@@ -133,7 +133,7 @@ impl Compiler {
     pub fn emit_set_var(&mut self, var: String) {
         if var.starts_with("$") || self.scopes.len() == 0 {
             // set global
-            self.vm.code.push(VmOpcode::OP_SET_GLOBAL);
+            self.vm.cpushop(VmOpcode::OP_SET_GLOBAL);
             self.vm.cpushs(if var.starts_with("$") {
                 &var[1..]
             } else {
@@ -147,19 +147,19 @@ impl Compiler {
                 let local = self.set_local(var.clone()).unwrap();
                 slot = local.0;
             }
-            self.vm.code.push(VmOpcode::OP_SET_LOCAL);
+            self.vm.cpushop(VmOpcode::OP_SET_LOCAL);
             self.vm.cpush16(slot);
         } else {
             let local = self.set_local(var.clone()).unwrap();
             let slot = local.0;
-            self.vm.code.push(VmOpcode::OP_SET_LOCAL);
+            self.vm.cpushop(VmOpcode::OP_SET_LOCAL);
             self.vm.cpush16(slot);
         }
     }
     pub fn emit_set_var_fn(&mut self, var: String) {
         if var.starts_with("$") || self.scopes.len() == 0 {
             // set global
-            self.vm.code.push(VmOpcode::OP_SET_GLOBAL);
+            self.vm.cpushop(VmOpcode::OP_SET_GLOBAL);
             self.vm.cpushs(if var.starts_with("$") {
                 &var[1..]
             } else {
@@ -173,12 +173,12 @@ impl Compiler {
                 let local = self.set_local(var.clone()).unwrap();
                 slot = local.0;
             }
-            self.vm.code.push(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            self.vm.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
             self.vm.cpush16(slot);
         } else {
             let local = self.set_local(var.clone()).unwrap();
             let slot = local.0;
-            self.vm.code.push(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            self.vm.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
             self.vm.cpush16(slot);
         }
     }
@@ -187,7 +187,7 @@ impl Compiler {
         let local = self.get_local(&var);
         if var.starts_with("$") || !local.is_some() {
             // set global
-            self.vm.code.push(VmOpcode::OP_GET_GLOBAL);
+            self.vm.cpushop(VmOpcode::OP_GET_GLOBAL);
             self.vm.cpushs(if var.starts_with("$") {
                 &var[1..]
             } else {
@@ -198,10 +198,10 @@ impl Compiler {
             let slot = local.0;
             let relascope = local.1;
             if relascope == 0 {
-                self.vm.code.push(VmOpcode::OP_GET_LOCAL);
+                self.vm.cpushop(VmOpcode::OP_GET_LOCAL);
                 self.vm.cpush16(slot);
             } else {
-                self.vm.code.push(VmOpcode::OP_GET_LOCAL_UP);
+                self.vm.cpushop(VmOpcode::OP_GET_LOCAL_UP);
                 self.vm.cpush16(slot);
                 self.vm.cpush16(relascope);
             }

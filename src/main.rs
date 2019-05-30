@@ -5,6 +5,8 @@
 
 #[macro_use]
 extern crate cfg_if;
+#[macro_use]
+extern crate num_derive;
 
 cfg_if! {
     if #[cfg(jemalloc)] {
@@ -127,7 +129,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     for stmt in prog {
         stmt.emit(&mut c);
     }
-    c.vm.code.push(VmOpcode::OP_HALT);
+    c.vm.cpushop(VmOpcode::OP_HALT);
 
     // dump bytecode if asked
     if flag.dump_bytecode {
@@ -238,7 +240,7 @@ fn repl(flag: ParserFlag) {
                                 continue;
                             }
                             vm.jmp(len);
-                            vm.code.push(VmOpcode::OP_HALT);
+                            vm.cpushop(VmOpcode::OP_HALT);
                         }
                         c.execute();
                         handle_error(&c);

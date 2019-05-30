@@ -16,7 +16,7 @@ pub mod interpreter_tests {
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            c.vm.code.push(VmOpcode::OP_HALT);
+            c.vm.cpushop(VmOpcode::OP_HALT);
             c.vm.gc_enable();
             c.execute();
             c.vm
@@ -785,7 +785,7 @@ use '/tmp/module_absolute_import'
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        c.vm.code.push(VmOpcode::OP_HALT);
+        c.vm.cpushop(VmOpcode::OP_HALT);
         c.execute();
         assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
     }
@@ -804,7 +804,7 @@ use './module_relative_import'
         for stmt in prog {
             stmt.emit(&mut c);
         }
-        c.vm.code.push(VmOpcode::OP_HALT);
+        c.vm.cpushop(VmOpcode::OP_HALT);
         c.execute();
         assert_eq!(c.vm.global().get("y").unwrap().unwrap().int(), 10);
     }
@@ -822,7 +822,7 @@ use './module_relative_import'
             for stmt in prog {
                 stmt.emit(&mut c);
             }
-            c.vm.borrow_mut().code.push(VmOpcode::OP_HALT);
+            c.vm.borrow_mut().cpushop(VmOpcode::OP_HALT);
             c.vm.borrow_mut().execute();
             assert_eq!(c.vm.borrow().global().get("y").unwrap().unwrap().int(), 10);
         }*/

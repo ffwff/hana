@@ -22,11 +22,14 @@ use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
 use crate::hanayo::HanayoCtx;
 
+extern crate num_derive;
+use num_traits::cast::FromPrimitive;
+
 const CALL_STACK_SIZE: usize = 512;
 
 //
 #[repr(u8)]
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, FromPrimitive, ToPrimitive)]
 #[allow(non_camel_case_types)]
 pub enum VmOpcode {
     OP_HALT,
@@ -111,7 +114,7 @@ pub struct Vm {
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
     exframes: CArray<ExFrame>,      // exception frame
-    pub code: CArray<VmOpcode>,     // where all the code is
+    pub code: CArray<u8>,     // where all the code is
     pub stack: CArray<NativeValue>, // stack
 
     // prototype types for primitive values
@@ -140,11 +143,6 @@ extern "C" {
     fn vm_execute(vm: *mut Vm);
     fn vm_print_stack(vm: *const Vm);
     fn vm_call(vm: *mut Vm, fun: NativeValue, args: *const CArray<NativeValue>) -> NativeValue;
-
-    fn vm_code_push8(vm: *mut Vm, n: u8);
-    fn vm_code_pushstr(vm: *mut Vm, s: *const libc::c_char);
-    fn vm_code_pushf64(vm: *mut Vm, n: f64);
-    fn vm_code_fill16(vm: *mut Vm, pos: u32, len: u16);
 }
 
 impl Vm {
@@ -217,10 +215,11 @@ impl Vm {
 
     // pushes
     // int
+    pub fn cpushop(&mut self, n: VmOpcode) {
+        self.code.push(n as u8);
+    }
     pub fn cpush8(&mut self, n: u8) {
-        unsafe {
-            vm_code_push8(self, n);
-        }
+        self.code.push(n);
     }
     pub fn cpush16(&mut self, n: u16) {
         for byte in &n.to_be_bytes() {
@@ -237,24 +236,24 @@ impl Vm {
             self.cpush8(*byte);
         }
     }
-
-    // other
     pub fn cpushf64(&mut self, n: f64) {
-        unsafe {
-            vm_code_pushf64(self, n);
+        let bytes = n.to_bits().to_le_bytes();
+        for byte in &bytes {
+            self.cpush8(*byte);
         }
     }
     pub fn cpushs<T: Into<Vec<u8>>>(&mut self, s: T) {
-        let cstr = CString::new(s).expect("can't turn to cstring");
-        unsafe {
-            vm_code_pushstr(self, cstr.as_ptr());
+        for byte in s.into() {
+            self.code.push(byte);
         }
+        self.code.push(0);
     }
 
     // labels
     pub fn cfill_label16(&mut self, pos: usize, label: u16) {
-        unsafe {
-            vm_code_fill16(self, pos as u32, label);
+        let bytes = label.to_be_bytes();
+        for (i, byte) in bytes.iter().enumerate() {
+            self.code[pos + i] = *byte;
         }
     }
 
@@ -417,8 +416,12 @@ impl Vm {
     // functions
     pub fn call(&mut self, fun: NativeValue, args: &CArray<NativeValue>) -> Option<NativeValue> {
         let val = unsafe { vm_call(self, fun, args) };
-        if self.code[self.ip as usize] == VmOpcode::OP_HALT
-            || self.exframe_fallthrough != null_mut()
+        if let Some(opcode) = VmOpcode::from_u8(self.code[self.ip as usize]) {
+            if opcode == VmOpcode::OP_HALT {
+                return None;
+            }
+        }
+        if self.exframe_fallthrough != null_mut()
             || self.error != VmError::ERROR_NO_ERROR
         {
             None
@@ -573,7 +576,7 @@ impl Vm {
                     stmt.emit(&mut c);
                 }
                 self.code = c.deref_vm_code();
-                self.code.push(VmOpcode::OP_JMP_LONG);
+                self.cpushop(VmOpcode::OP_JMP_LONG);
                 self.cpush32(importer_ip);
             }
             self.ip = imported_ip as u32;

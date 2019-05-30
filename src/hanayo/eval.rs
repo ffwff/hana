@@ -16,7 +16,7 @@ fn eval(s: Value::Str) -> Value {
             stmt.emit(&mut c);
         }
         vm.code = c.deref_vm_code();
-        vm.code.push(VmOpcode::OP_HALT);
+        vm.cpushop(VmOpcode::OP_HALT);
         // save current evaluation context
         let ctx = unsafe { vm.new_exec_ctx() };
         vm.jmp(target_ip);
