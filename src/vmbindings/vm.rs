@@ -177,6 +177,7 @@ impl Vm {
 
     #[cfg_attr(tarpaulin, skip)]
     pub fn print_stack(&self) {
+        // TODO: move vm_print_stack here and expose function through C ffi
         unsafe {
             vm_print_stack(self);
         }
@@ -500,7 +501,7 @@ impl Vm {
             let importer_ip = self.ip;
             let imported_ip = self.code.len();
             {
-                let mut c = Compiler::new_append(unsafe{ self.code.deref() });
+                let mut c = Compiler::new_append(unsafe { self.code.deref() });
                 for stmt in prog {
                     stmt.emit(&mut c);
                 }

@@ -4,8 +4,8 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::value::Value;
-use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::vm::Vm;
+use crate::vmbindings::vmerror::VmError;
 
 pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
     let vm = unsafe { &mut *cvm };

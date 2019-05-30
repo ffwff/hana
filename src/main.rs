@@ -227,7 +227,7 @@ fn repl(flag: ParserFlag) {
                         vm.error = VmError::ERROR_NO_ERROR;
                         let len = vm.code.len() as u32;
                         c.modules_info.borrow_mut().sources[0] = s.clone();
-                        c.receive_code(unsafe{ vm.code.deref() });
+                        c.receive_code(unsafe { vm.code.deref() });
                         for stmt in prog {
                             stmt.emit(&mut c);
                         }

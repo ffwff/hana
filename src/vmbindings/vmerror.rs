@@ -83,17 +83,12 @@ impl VmError {
                     right.type_name()
                 ))
             }
-            VmError::ERROR_MISMATCH_ARGUMENTS => {
-                Some(format!(
-                    "Function expects exactly {} arguments",
-                    vm.error_expected
-                ))
-            }
+            VmError::ERROR_MISMATCH_ARGUMENTS => Some(format!(
+                "Function expects exactly {} arguments",
+                vm.error_expected
+            )),
             VmError::ERROR_UNBOUNDED_ACCESS => {
-                Some(format!(
-                    "Index must be between [0, {})",
-                    vm.error_expected
-                ))
+                Some(format!("Index must be between [0, {})", vm.error_expected))
             }
             VmError::ERROR_UNHANDLED_EXCEPTION => {
                 let top = vm.stack.top().unwrap();

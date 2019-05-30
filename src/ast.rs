@@ -862,17 +862,11 @@ pub mod ast {
             if let Some(alt) = &self.alt {
                 c.cpushop(VmOpcode::OP_JMP);
                 let done_label = c.reserve_label16();
-                c.fill_label16(
-                    else_label,
-                    (c.clen() as isize - else_label as isize) as u16,
-                );
+                c.fill_label16(else_label, (c.clen() as isize - else_label as isize) as u16);
                 alt.emit(c);
                 c.fill_label16(done_label, (c.clen() - done_label) as u16);
             } else {
-                c.fill_label16(
-                    else_label,
-                    (c.clen() as isize - else_label as isize) as u16,
-                );
+                c.fill_label16(else_label, (c.clen() as isize - else_label as isize) as u16);
             }
             emit_end!(c, _smap_begin);
         }

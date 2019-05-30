@@ -3,9 +3,9 @@ extern crate haru;
 #[cfg(test)]
 pub mod vm_tests {
 
-    use haru::vmbindings::value::Value;
-    use haru::vmbindings::vm::{Vm, VmOpcode};
     use haru::compiler::Compiler;
+    use haru::vmbindings::value::Value;
+    use haru::vmbindings::vm::{VmOpcode};
 
     //#region numbers
     #[test]
