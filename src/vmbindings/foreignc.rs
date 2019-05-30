@@ -351,7 +351,6 @@ mod foreignc {
     // #region modules
     #[no_mangle]
     unsafe extern "C" fn vm_load_module(cvm: *mut Vm, cpath: *const libc::c_char) {
-        // TODO
         let path = CStr::from_ptr(cpath).to_str().unwrap();
         let vm = &mut *cvm;
         vm.load_module(path);

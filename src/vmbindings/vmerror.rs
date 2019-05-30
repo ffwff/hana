@@ -62,6 +62,23 @@ impl VmError {
 
     pub fn hint(&self, vm: &Vm) -> Option<String> {
         match self {
+            VmError::ERROR_OP_ADD |
+            VmError::ERROR_OP_SUB |
+            VmError::ERROR_OP_MUL |
+            VmError::ERROR_OP_DIV |
+            VmError::ERROR_OP_MOD |
+            VmError::ERROR_OP_AND |
+            VmError::ERROR_OP_OR  |
+            VmError::ERROR_OP_LT  |
+            VmError::ERROR_OP_LEQ |
+            VmError::ERROR_OP_GT  |
+            VmError::ERROR_OP_GEQ |
+            VmError::ERROR_OP_EQ  |
+            VmError::ERROR_OP_NEQ => {
+                let left = vm.stack[vm.stack.len() - 2].unwrap();
+                let right = vm.stack[vm.stack.len() - 1].unwrap();
+                Some(format!("Can't perform {} between {} and {}", self.method_for_op(), left.type_name(), right.type_name()))
+            },
             VmError::ERROR_UNHANDLED_EXCEPTION => {
                 let top = vm.stack.top().unwrap();
                 Some(match top {

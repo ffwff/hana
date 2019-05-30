@@ -199,24 +199,23 @@ void vm_execute(struct vm *vm) {
 
     // binary ops: perform binary operations on the 2 top values of the stack
     // arithmetic:
-#define binop(optype, fn)                             \
-    doop(optype) : {                                  \
-        vm->ip++;                                     \
-        LOG(#optype "\n");                            \
-        debug_assert(vm->stack.length >= 2);          \
-                                                      \
-        struct value right = array_top(vm->stack);    \
-        array_pop(vm->stack);                         \
-        struct value left = array_top(vm->stack);     \
-        array_pop(vm->stack);                         \
-                                                      \
-        array_push(vm->stack, (struct value){0});     \
-        struct value *result = &array_top(vm->stack); \
-        fn(result, left, right, vm);                  \
-        if (result->type == TYPE_INTERPRETER_ERROR) { \
-            ERROR(ERROR_##optype, 1);                 \
-        }                                             \
-        dispatch();                                   \
+#define binop(optype, fn)                                          \
+    doop(optype) : {                                               \
+        vm->ip++;                                                  \
+        LOG(#optype "\n");                                         \
+        debug_assert(vm->stack.length >= 2);                       \
+                                                                   \
+        struct value right = vm->stack.data[vm->stack.length - 1]; \
+        struct value left = vm->stack.data[vm->stack.length - 2];  \
+                                                                   \
+        struct value result = {0};                                 \
+        fn(&result, left, right, vm);                              \
+        if (result.type == TYPE_INTERPRETER_ERROR) {               \
+            ERROR(ERROR_##optype, 1);                              \
+        }                                                          \
+        vm->stack.length -= 2;                                     \
+        array_push(vm->stack, result);                             \
+        dispatch();                                                \
     }
     binop(OP_ADD, value_add)
     binop(OP_SUB, value_sub)
@@ -228,30 +227,30 @@ void vm_execute(struct vm *vm) {
     // does regular arith, returns lhs on stack and jumps out of fallback if CAN do it in place (for primitives)
     // else just does the fallback (copying and setting variable manually)
     // add
-#define binop_inplace(optype, errortype, fn, fallback)      \
-    doop(optype) : {                                        \
-        vm->ip++;                                           \
-        LOG(#optype "\n");                                  \
-        debug_assert(vm->stack.length >= 2);                \
-        const uint8_t pos = (uint8_t)vm->code.data[vm->ip]; \
-                                                            \
-        struct value right = array_top(vm->stack);          \
-        array_pop(vm->stack);                               \
-        struct value left = array_top(vm->stack);           \
-        if (fn(left, right)) {                              \
-            LOG("did in place!\n");                         \
-            vm->ip += pos;                                  \
-            dispatch();                                     \
-        }                                                   \
-        array_pop(vm->stack);                               \
-                                                            \
-        array_push(vm->stack, (struct value){0});           \
-        struct value *result = &array_top(vm->stack);       \
-        fallback(result, left, right, vm);                  \
-        if (result->type == TYPE_INTERPRETER_ERROR)         \
-            ERROR(errortype, 1);                            \
-        vm->ip++;                                           \
-        dispatch();                                         \
+#define binop_inplace(optype, errortype, fn, fallback)             \
+    doop(optype) : {                                               \
+        vm->ip++;                                                  \
+        LOG(#optype "\n");                                         \
+        debug_assert(vm->stack.length >= 2);                       \
+        const uint8_t pos = (uint8_t)vm->code.data[vm->ip];        \
+                                                                   \
+        struct value right = vm->stack.data[vm->stack.length - 1]; \
+        struct value left = vm->stack.data[vm->stack.length - 2];  \
+        if (fn(left, right)) {                                     \
+            LOG("did in place!\n");                                \
+            vm->stack.length--;                                    \
+            vm->ip += pos;                                         \
+            dispatch();                                            \
+        }                                                          \
+        struct value result = {0};                                 \
+        fallback(&result, left, right, vm);                        \
+        if (result.type == TYPE_INTERPRETER_ERROR) {               \
+            ERROR(errortype, 1);                                   \
+        }                                                          \
+        vm->stack.length -= 2;                                     \
+        array_push(vm->stack, result);                             \
+        vm->ip++;                                                  \
+        dispatch();                                                \
     }
 
     binop_inplace(OP_IADD, ERROR_OP_ADD, value_iadd, value_add)

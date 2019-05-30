@@ -151,6 +151,19 @@ impl Value {
     pub fn is_true(&self, vm: *const Vm) -> bool {
         unsafe { value_is_true(self.wrap(), vm) }
     }
+
+    pub fn type_name(&self) -> &str {
+        match self {
+            Value::Nil => "nil",
+            Value::Int(_) => "Int",
+            Value::Float(_) => "Float",
+            Value::NativeFn(_) | Value::Fn(_) => "Function",
+            Value::Str(_) => "String",
+            Value::Record(_) => "Record",
+            Value::Array(_) => "Array",
+            _ => "unk"
+        }
+    }
 }
 
 use std::fmt;
