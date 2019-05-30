@@ -1,7 +1,6 @@
 //! Provides an interface for the virtual machine
 
 use std::cell::RefCell;
-use std::ffi::CString;
 use std::mem::ManuallyDrop;
 use std::path::Path;
 use std::ptr::null_mut;
@@ -114,7 +113,7 @@ pub struct Vm {
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
     exframes: CArray<ExFrame>,      // exception frame
-    pub code: CArray<u8>,     // where all the code is
+    pub code: CArray<u8>,           // where all the code is
     pub stack: CArray<NativeValue>, // stack
 
     // prototype types for primitive values
@@ -421,9 +420,7 @@ impl Vm {
                 return None;
             }
         }
-        if self.exframe_fallthrough != null_mut()
-            || self.error != VmError::ERROR_NO_ERROR
-        {
+        if self.exframe_fallthrough != null_mut() || self.error != VmError::ERROR_NO_ERROR {
             None
         } else {
             Some(val)

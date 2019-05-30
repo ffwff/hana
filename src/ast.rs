@@ -19,9 +19,9 @@ pub mod ast {
     //! Provides abstract syntax trees for language blocks.
     use super::compiler;
     use super::VmOpcode;
+    use num_traits::cast::FromPrimitive;
     use std::any::Any;
     use std::fmt;
-    use num_traits::cast::FromPrimitive;
 
     // #region macros
     macro_rules! ast_impl {
