@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::mem::ManuallyDrop;
 use std::path::Path;
-use std::ptr::null_mut;
+use std::ptr::{NonNull, null_mut};
 use std::rc::Rc;
 
 extern crate libc;
@@ -105,7 +105,7 @@ pub enum VmOpcode {
 #[repr(C)]
 pub struct Vm {
     ip: u32, // current instruction pointer
-    localenv: *mut Env,
+    localenv: Option<NonNull<Env>>,
     // pointer to current stack frame
     localenv_bp: *mut Env, // rust owns this, so drop it pls
     // pointer to start of pool of stack frames
@@ -149,7 +149,7 @@ impl Vm {
     pub fn new(code: CArray<u8>, modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
         Vm {
             ip: 0,
-            localenv: null_mut(),
+            localenv: None,
             localenv_bp: {
                 use std::alloc::{alloc, Layout};
                 use std::mem::size_of;
@@ -227,15 +227,16 @@ impl Vm {
             val.trace();
         }
         // call stack
-        if !self.localenv.is_null() {
+        if let Some(localenv) = self.localenv {
             let mut env = self.localenv_bp;
-            while env != self.localenv {
+            let localenv = localenv.as_ptr();
+            while env != localenv {
                 for val in (*env).slots.as_mut_slice().iter_mut() {
                     (*val).trace();
                 }
                 env = env.add(1);
             }
-            env = self.localenv;
+            env = localenv;
             for val in (*env).slots.as_mut_slice().iter_mut() {
                 (*val).trace();
             }
@@ -244,59 +245,65 @@ impl Vm {
 
     // call stack
     pub unsafe fn enter_env(&mut self, fun: &'static Function) {
-        if self.localenv.is_null() {
-            self.localenv = self.localenv_bp;
-        } else if self.localenv.offset_from(self.localenv_bp) > (CALL_STACK_SIZE as isize) {
-            panic!("maximum stack depth exceeded");
+        if self.localenv.is_none() {
+            self.localenv = NonNull::new(self.localenv_bp);
         } else {
-            self.localenv = self.localenv.add(1);
+            let localenv = self.localenv.unwrap().as_ptr();
+            if localenv.offset_from(self.localenv_bp) > (CALL_STACK_SIZE as isize) {
+                panic!("maximum stack depth exceeded");
+            } else {
+                self.localenv = NonNull::new(localenv.add(1));
+            }
         }
         std::ptr::write(
-            self.localenv,
+            self.localenv.unwrap().as_ptr(),
             Env::new(self.ip, fun.get_bound_ptr(), fun.nargs),
         );
         self.ip = fun.ip;
     }
 
     pub unsafe fn enter_env_tail(&mut self, fun: &'static Function) {
-        let env = &mut *self.localenv;
+        let env = self.localenv.as_mut().unwrap().as_mut();
         env.nargs = fun.nargs;
         env.lexical_parent = fun.get_bound_ptr();
         self.ip = fun.ip;
     }
 
     pub unsafe fn leave_env(&mut self) {
-        // we don't check for env leaving
-        // this must be non-null
-        self.ip = (*self.localenv).retip;
-        if self.localenv == self.localenv_bp {
-            std::ptr::drop_in_place(self.localenv);
-            self.localenv = null_mut();
-        } else {
-            std::ptr::drop_in_place(self.localenv);
-            self.localenv = self.localenv.sub(1);
+        if let Some(localenv) = self.localenv {
+            let localenv = localenv.as_ptr();
+            self.ip = (*localenv).retip;
+            if localenv == self.localenv_bp {
+                std::ptr::drop_in_place(localenv);
+                self.localenv = None;
+            } else {
+                std::ptr::drop_in_place(localenv);
+                self.localenv = NonNull::new(localenv.sub(1));
+            }
         }
     }
 
     // accessors
-    pub fn localenv(&self) -> *mut Env {
-        self.localenv
+    pub fn localenv(&self) -> Option<NonNull<Env>> {
+        self.localenv.clone()
     }
     #[cfg_attr(tarpaulin, skip)]
     pub fn localenv_is_null(&self) -> bool {
-        self.localenv.is_null()
+        self.localenv.is_none()
     }
     #[cfg_attr(tarpaulin, skip)]
     pub fn localenv_bp(&self) -> *mut Env {
         self.localenv_bp
     }
+    /// Converts call stack into vector of stack frames.
+    ///
+    /// This is used for error handling and such.
     #[cfg_attr(tarpaulin, skip)]
     pub fn localenv_to_vec(&self) -> Vec<Env> {
-        // used for error handling and such
-        if self.localenv.is_null() {
+        if self.localenv.is_none() {
             return Vec::new();
         }
-        let mut env = self.localenv;
+        let mut env = self.localenv.unwrap().as_ptr();
         let mut vec = Vec::new();
         while env != unsafe { self.localenv_bp.sub(1) } {
             vec.push(unsafe { &*env }.clone());
@@ -308,7 +315,7 @@ impl Vm {
     // exceptions
     pub fn enter_exframe(&mut self) -> &mut ExFrame {
         self.exframes.push(ExFrame::new(
-            self.localenv,
+            self.localenv.clone(),
             self.stack.len() - 1,
             self.native_call_depth,
         ));
@@ -360,7 +367,7 @@ impl Vm {
         // save current ctx
         let current_ctx = Vm {
             ip: self.ip,
-            localenv: self.localenv,
+            localenv: self.localenv.take(),
             localenv_bp: self.localenv_bp,
             globalenv: None, // shared
             exframes: self.exframes.deref(),
@@ -383,7 +390,6 @@ impl Vm {
         };
         // create new ctx
         self.ip = 0;
-        self.localenv = null_mut();
         self.localenv_bp = {
             use std::alloc::{alloc_zeroed, Layout};
             use std::mem::size_of;
@@ -402,20 +408,20 @@ impl Vm {
         use std::alloc::{dealloc, Layout};
         use std::mem;
         // stack frames
-        if !self.localenv.is_null() {
+        if let Some(localenv) = self.localenv {
             let mut env = self.localenv_bp;
-            while env != self.localenv {
+            while env != localenv.as_ptr() {
                 std::ptr::drop_in_place(env);
                 env = env.add(1);
             }
-            std::ptr::drop_in_place(self.localenv);
+            std::ptr::drop_in_place(localenv.as_ptr());
         }
         let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
         dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
         // fill in
         self.ip = ctx.ip;
-        self.localenv = ctx.localenv;
+        self.localenv = ctx.localenv.take();
         self.localenv_bp = ctx.localenv_bp;
         self.exframes = ctx.exframes.deref();
         self.exframe_fallthrough = ctx.exframe_fallthrough;
@@ -423,7 +429,6 @@ impl Vm {
         self.stack = ctx.stack.deref();
 
         // prevent double freeing:
-        ctx.localenv = null_mut();
         ctx.localenv_bp = null_mut();
     }
 
@@ -518,13 +523,13 @@ impl std::ops::Drop for Vm {
             use std::mem;
 
             // stack frames
-            if !self.localenv.is_null() {
+            if let Some(localenv) = self.localenv {
                 let mut env = self.localenv_bp;
-                while env != self.localenv {
+                while env != localenv.as_ptr() {
                     std::ptr::drop_in_place(env);
                     env = env.add(1);
                 }
-                std::ptr::drop_in_place(self.localenv);
+                std::ptr::drop_in_place(localenv.as_ptr());
             }
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());

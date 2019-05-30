@@ -90,7 +90,7 @@ struct vm {
     uint32_t ip;
     struct env *localenv, *localenv_bp;
     struct hmap *globalenv;
-    a_exframe eframes;
+    a_exframe exframes;
     a_uint8 code;
     a_value stack;
     struct dict *dstr, *dint, *dfloat, *darray, *drec;

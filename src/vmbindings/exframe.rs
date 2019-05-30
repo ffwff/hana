@@ -1,18 +1,19 @@
 //! Provides an exception frame interface for storing try..case data
+use std::ptr::NonNull;
+use std::collections::HashMap;
 
 use super::env::Env;
 use super::function::Function;
 use super::record::Record;
 use super::value::Value;
 use super::vm::Vm;
-use std::collections::HashMap;
 
 /// Exception frame
 pub struct ExFrame {
     /// Exception frame handlers
     handlers: HashMap<*const Record, Function>,
     /// The target call stack frame to rewind to
-    pub unwind_env: *const Env,
+    pub unwind_env: Option<NonNull<Env>>,
     /// The target virtual machine stack index to rewind to
     pub unwind_stack: usize,
     /// How many native functions to return until we can call this?
@@ -21,7 +22,7 @@ pub struct ExFrame {
 
 impl ExFrame {
     pub fn new(
-        unwind_env: *const Env, unwind_stack: usize, unwind_native_call_depth: usize,
+        unwind_env: Option<NonNull<Env>>, unwind_stack: usize, unwind_native_call_depth: usize,
     ) -> ExFrame {
         ExFrame {
             handlers: HashMap::new(),
