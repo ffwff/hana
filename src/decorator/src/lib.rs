@@ -130,6 +130,7 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
             if nargs != #arglen {
                 use super::VmError;
                 vm.error = VmError::ERROR_MISMATCH_ARGUMENTS;
+                vm.error_expected = #arglen;
                 return;
             }
             #[inline(always)]

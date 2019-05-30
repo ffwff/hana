@@ -4,6 +4,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::value::Value;
+use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::vm::Vm;
 
 pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
@@ -11,12 +12,14 @@ pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
     if nargs == 0 {
         vm.stack.push(Value::Str(vm.malloc(String::new())).wrap());
         return;
-    } else {
-        assert_eq!(nargs, 1);
+    } else if nargs == 1 {
         let arg = vm.stack.top().clone().unwrap();
         vm.stack.pop();
         vm.stack
             .push(Value::Str(vm.malloc(format!("{:?}", arg).to_string())).wrap());
+    } else {
+        vm.error = VmError::ERROR_MISMATCH_ARGUMENTS;
+        vm.error_expected = 1;
     }
 }
 

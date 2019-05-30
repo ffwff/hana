@@ -83,6 +83,18 @@ impl VmError {
                     right.type_name()
                 ))
             }
+            VmError::ERROR_MISMATCH_ARGUMENTS => {
+                Some(format!(
+                    "Function expects exactly {} arguments",
+                    vm.error_expected
+                ))
+            }
+            VmError::ERROR_UNBOUNDED_ACCESS => {
+                Some(format!(
+                    "Index must be between [0, {})",
+                    vm.error_expected
+                ))
+            }
             VmError::ERROR_UNHANDLED_EXCEPTION => {
                 let top = vm.stack.top().unwrap();
                 Some(match top {
@@ -153,7 +165,7 @@ impl std::fmt::Display for VmError {
             }
             VmError::ERROR_UNBOUNDED_ACCESS => write!(
                 f,
-                "Accessing a value that lies outside of the object's bound"
+                "Accessing an index that lies outside of the object's bound"
             ),
             VmError::ERROR_EXPECTED_RECORD_ARRAY => {
                 write!(f, "Expected record or array to set an index for")
@@ -162,7 +174,7 @@ impl std::fmt::Display for VmError {
                 write!(f, "case statement expects a dictionary as handler type")
             }
             VmError::ERROR_UNHANDLED_EXCEPTION => write!(f, "Unhandled exception"),
-            VmError::ERROR_EXPECTED_ITERABLE => write!(f, "Expected iterable (array)"),
+            VmError::ERROR_EXPECTED_ITERABLE => write!(f, "Expected iterable record or array"),
             VmError::ERROR_UNKNOWN_KEY => write!(f, "Unknown key"),
             _ => write!(f, "[vmerror]"),
         }

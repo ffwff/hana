@@ -6,6 +6,8 @@ use super::value::Value;
 #[derive(Clone)]
 /// Stack frame for the virtual machine
 pub struct Env {
+    /// Local variable storage
+    ///
     /// Slot indexes access SHOULD be bounded
     /// whenever the script is compiled to bytecode
     pub slots: Vec<NativeValue>,
