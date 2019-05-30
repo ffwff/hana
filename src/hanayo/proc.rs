@@ -3,10 +3,10 @@ use crate::vmbindings::carray::CArray;
 use std::io::Write;
 use std::process::Child;
 
-use crate::vmbindings::value::Value;
 use crate::vmbindings::record::Record;
-use crate::vmbindings::vmerror::VmError;
+use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
+use crate::vmbindings::vmerror::VmError;
 
 // inputs
 #[hana_function()]
@@ -22,8 +22,12 @@ fn in_(process: Value::Record, input: Value::Str) -> Value {
 
 fn utf8_decoding_error(err: std::string::FromUtf8Error, vm: &Vm) -> Value {
     let rec = vm.malloc(Record::new());
-    rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().utf8_decoding_error.clone()).wrap());
-    rec.as_mut().insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
+    rec.as_mut().insert(
+        "prototype",
+        Value::Record(vm.stdlib.as_ref().unwrap().utf8_decoding_error.clone()).wrap(),
+    );
+    rec.as_mut()
+        .insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
     rec.as_mut().insert("where", Value::Int(0).wrap());
     Value::Record(rec)
 }

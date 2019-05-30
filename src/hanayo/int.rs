@@ -1,8 +1,8 @@
 //! Provides Int record for handling integers
-use crate::vmbindings::value::Value;
 use crate::vmbindings::record::Record;
-use crate::vmbindings::vmerror::VmError;
+use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
+use crate::vmbindings::vmerror::VmError;
 use std::str::FromStr;
 
 #[hana_function()]
@@ -15,8 +15,16 @@ fn constructor(val: Value::Any) -> Value {
             Err(_) => {
                 hana_raise!(vm, {
                     let rec = vm.malloc(Record::new());
-                    rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
-                    rec.as_mut().insert("why", Value::Str(vm.malloc("Can't convert string to integer".to_string())).wrap());
+                    rec.as_mut().insert(
+                        "prototype",
+                        Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone())
+                            .wrap(),
+                    );
+                    rec.as_mut().insert(
+                        "why",
+                        Value::Str(vm.malloc("Can't convert string to integer".to_string()))
+                            .wrap(),
+                    );
                     rec.as_mut().insert("where", Value::Int(0).wrap());
                     Value::Record(rec)
                 });
@@ -25,8 +33,15 @@ fn constructor(val: Value::Any) -> Value {
         _ => {
             hana_raise!(vm, {
                 let rec = vm.malloc(Record::new());
-                rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
-                rec.as_mut().insert("why", Value::Str(vm.malloc("Can't convert value to integer".to_string())).wrap());
+                rec.as_mut().insert(
+                    "prototype",
+                    Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone())
+                        .wrap(),
+                );
+                rec.as_mut().insert(
+                    "why",
+                    Value::Str(vm.malloc("Can't convert value to integer".to_string())).wrap(),
+                );
                 rec.as_mut().insert("where", Value::Int(0).wrap());
                 Value::Record(rec)
             });

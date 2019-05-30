@@ -111,8 +111,8 @@ impl<T> CArray<T> {
             if self.len == self.capacity {
                 self.capacity *= 2;
                 let layout = Layout::array::<T>(self.capacity).unwrap();
-                self.data =
-                    realloc(self.data as *mut u8, layout, size_of::<T>() * self.capacity) as *mut T;
+                self.data = realloc(self.data as *mut u8, layout, size_of::<T>() * self.capacity)
+                    as *mut T;
             }
             std::ptr::write(self.data.add(self.len), val);
         }
@@ -162,8 +162,8 @@ impl<T> CArray<T> {
             if self.len + 1 >= self.capacity {
                 self.capacity *= 2;
                 let layout = Layout::array::<T>(self.capacity).unwrap();
-                self.data =
-                    realloc(self.data as *mut u8, layout, size_of::<T>() * self.capacity) as *mut T;
+                self.data = realloc(self.data as *mut u8, layout, size_of::<T>() * self.capacity)
+                    as *mut T;
             }
             std::ptr::copy(self.data.add(pos), self.data.add(pos + 1), self.len - pos);
             std::ptr::copy(&elem, self.data.add(pos), 1);

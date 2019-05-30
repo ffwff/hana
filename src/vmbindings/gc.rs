@@ -16,8 +16,8 @@ struct GcNode {
     tracer: GenericFunction,
     // tracer gets called sweep phased (FIXME)
     finalizer: GenericFunction,
-    // finalizer gets called with a pointer to
-    // the data that's about to be freed
+    /* finalizer gets called with a pointer to
+     * the data that's about to be freed */
 }
 
 impl GcNode {
@@ -56,10 +56,7 @@ impl GcManager {
     }
 
     unsafe fn malloc_raw<T: Sized + GcTraceable>(
-        &mut self,
-        vm: &Vm,
-        x: T,
-        finalizer: GenericFunction,
+        &mut self, vm: &Vm, x: T, finalizer: GenericFunction,
     ) -> *mut T {
         // free up if over threshold
         if cfg!(test) {

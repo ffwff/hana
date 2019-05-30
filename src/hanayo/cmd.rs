@@ -2,8 +2,8 @@
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
-use crate::vmbindings::vmerror::VmError;
 use crate::vmbindings::vm::Vm;
+use crate::vmbindings::vmerror::VmError;
 use std::io::Write;
 use std::process::{Child, Command, Output, Stdio};
 
@@ -14,8 +14,18 @@ fn constructor(val: Value::Any) -> Value {
             let arr = arr.as_ref();
             if arr.len() == 0 {
                 let rec = vm.malloc(Record::new());
-                rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
-                rec.as_mut().insert("why", Value::Str(vm.malloc("Expected argument array to have at least 1 member".to_string())).wrap());
+                rec.as_mut().insert(
+                    "prototype",
+                    Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone())
+                        .wrap(),
+                );
+                rec.as_mut().insert(
+                    "why",
+                    Value::Str(
+                        vm.malloc("Expected argument array to have at least 1 member".to_string()),
+                    )
+                    .wrap(),
+                );
                 rec.as_mut().insert("where", Value::Int(0).wrap());
                 hana_raise!(vm, Value::Record(rec));
             }
@@ -23,11 +33,19 @@ fn constructor(val: Value::Any) -> Value {
                 Value::Str(s) => s.as_ref().clone(),
                 _ => {
                     let rec = vm.malloc(Record::new());
-                    rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
-                    rec.as_mut().insert("why", Value::Str(vm.malloc("Expected command to be of string type".to_string())).wrap());
+                    rec.as_mut().insert(
+                        "prototype",
+                        Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone())
+                            .wrap(),
+                    );
+                    rec.as_mut().insert(
+                        "why",
+                        Value::Str(vm.malloc("Expected command to be of string type".to_string()))
+                            .wrap(),
+                    );
                     rec.as_mut().insert("where", Value::Int(0).wrap());
                     hana_raise!(vm, Value::Record(rec));
-                },
+                }
             });
             if arr.len() > 1 {
                 let slice = &arr.as_slice()[1..];
@@ -36,8 +54,22 @@ fn constructor(val: Value::Any) -> Value {
                         Value::Str(s) => cmd.arg(s.as_ref().clone()),
                         _ => {
                             let rec = vm.malloc(Record::new());
-                            rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
-                            rec.as_mut().insert("why", Value::Str(vm.malloc("Expected argument to be of string type".to_string())).wrap());
+                            rec.as_mut().insert(
+                                "prototype",
+                                Value::Record(
+                                    vm.stdlib.as_ref().unwrap().invalid_argument_error.clone(),
+                                )
+                                .wrap(),
+                            );
+                            rec.as_mut().insert(
+                                "why",
+                                Value::Str(
+                                    vm.malloc(
+                                        "Expected argument to be of string type".to_string(),
+                                    ),
+                                )
+                                .wrap(),
+                            );
                             rec.as_mut().insert("where", Value::Int(0).wrap());
                             hana_raise!(vm, Value::Record(rec));
                         }
@@ -53,11 +85,20 @@ fn constructor(val: Value::Any) -> Value {
         }
         _ => {
             let rec = vm.malloc(Record::new());
-            rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap());
-            rec.as_mut().insert("why", Value::Str(vm.malloc("Expected argument to be of string or array type".to_string())).wrap());
+            rec.as_mut().insert(
+                "prototype",
+                Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone()).wrap(),
+            );
+            rec.as_mut().insert(
+                "why",
+                Value::Str(
+                    vm.malloc("Expected argument to be of string or array type".to_string()),
+                )
+                .wrap(),
+            );
             rec.as_mut().insert("where", Value::Int(0).wrap());
             hana_raise!(vm, Value::Record(rec));
-        },
+        }
     };
     // cmd object
     let rec = vm.malloc(Record::new());
@@ -81,8 +122,12 @@ fn in_(cmd: Value::Record, input: Value::Str) -> Value {
 // outputs
 fn utf8_decoding_error(err: std::string::FromUtf8Error, vm: &Vm) -> Value {
     let rec = vm.malloc(Record::new());
-    rec.as_mut().insert("prototype", Value::Record(vm.stdlib.as_ref().unwrap().utf8_decoding_error.clone()).wrap());
-    rec.as_mut().insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
+    rec.as_mut().insert(
+        "prototype",
+        Value::Record(vm.stdlib.as_ref().unwrap().utf8_decoding_error.clone()).wrap(),
+    );
+    rec.as_mut()
+        .insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
     rec.as_mut().insert("where", Value::Int(0).wrap());
     Value::Record(rec)
 }

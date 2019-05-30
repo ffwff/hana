@@ -227,18 +227,36 @@ pub fn init(vm: &mut Vm) {
     // #region errors
     // InvalidArgumentError
     let invalid_argument_error = vm.malloc(Record::new());
-    set_obj_var!(invalid_argument_error, "what", Value::Str(vm.malloc("Invalid argument error".to_string())));
-    set_var!("InvalidArgumentError", Value::Record(invalid_argument_error.clone()));
+    set_obj_var!(
+        invalid_argument_error,
+        "what",
+        Value::Str(vm.malloc("Invalid argument error".to_string()))
+    );
+    set_var!(
+        "InvalidArgumentError",
+        Value::Record(invalid_argument_error.clone())
+    );
 
     // IOError
     let io_error = vm.malloc(Record::new());
-    set_obj_var!(io_error, "what", Value::Str(vm.malloc("IO error".to_string())));
+    set_obj_var!(
+        io_error,
+        "what",
+        Value::Str(vm.malloc("IO error".to_string()))
+    );
     set_var!("IOError", Value::Record(io_error.clone()));
 
     // UTF8DecodingError
     let utf8_decoding_error = vm.malloc(Record::new());
-    set_obj_var!(utf8_decoding_error, "what", Value::Str(vm.malloc("UTF-8 decoding error".to_string())));
-    set_var!("Utf8DecodingError", Value::Record(utf8_decoding_error.clone()));
+    set_obj_var!(
+        utf8_decoding_error,
+        "what",
+        Value::Str(vm.malloc("UTF-8 decoding error".to_string()))
+    );
+    set_var!(
+        "Utf8DecodingError",
+        Value::Record(utf8_decoding_error.clone())
+    );
     // #endregion
 
     vm.stdlib = Some(HanayoCtx {

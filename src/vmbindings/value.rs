@@ -161,7 +161,7 @@ impl Value {
             Value::Str(_) => "String",
             Value::Record(_) => "Record",
             Value::Array(_) => "Array",
-            _ => "unk"
+            _ => "unk",
         }
     }
 }

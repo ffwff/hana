@@ -32,12 +32,7 @@ use vmbindings::vmerror::VmError;
 mod hanayo;
 
 fn print_error(
-    s: &String,
-    lineno: usize,
-    col: usize,
-    _lineno_end: usize,
-    col_end: usize,
-    etype: &str,
+    s: &String, lineno: usize, col: usize, _lineno_end: usize, col_end: usize, etype: &str,
     message: &String,
 ) {
     let line = s.split("\n").nth(lineno - 1).unwrap();

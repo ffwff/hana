@@ -21,9 +21,7 @@ pub struct ExFrame {
 
 impl ExFrame {
     pub fn new(
-        unwind_env: *const Env,
-        unwind_stack: usize,
-        unwind_native_call_depth: usize,
+        unwind_env: *const Env, unwind_stack: usize, unwind_native_call_depth: usize,
     ) -> ExFrame {
         ExFrame {
             handlers: HashMap::new(),

@@ -1,7 +1,7 @@
 //! Provides an interface for virtual machine errors
 
-use super::vm::Vm;
 use super::value::Value;
+use super::vm::Vm;
 
 #[repr(C)]
 #[derive(Debug, PartialEq)]
@@ -40,7 +40,6 @@ pub enum VmError {
 
 #[cfg_attr(tarpaulin, skip)]
 impl VmError {
-
     fn method_for_op(&self) -> &str {
         match self {
             VmError::ERROR_OP_ADD => "addition",
@@ -49,36 +48,41 @@ impl VmError {
             VmError::ERROR_OP_DIV => "division",
             VmError::ERROR_OP_MOD => "modulo",
             VmError::ERROR_OP_AND => "logical and",
-            VmError::ERROR_OP_OR =>  "logical or",
-            VmError::ERROR_OP_LT =>  "less than",
+            VmError::ERROR_OP_OR => "logical or",
+            VmError::ERROR_OP_LT => "less than",
             VmError::ERROR_OP_LEQ => "less than or equal to",
-            VmError::ERROR_OP_GT =>  "greater than",
+            VmError::ERROR_OP_GT => "greater than",
             VmError::ERROR_OP_GEQ => "greater than or equal to",
-            VmError::ERROR_OP_EQ =>  "equality",
+            VmError::ERROR_OP_EQ => "equality",
             VmError::ERROR_OP_NEQ => "inequality",
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
     pub fn hint(&self, vm: &Vm) -> Option<String> {
         match self {
-            VmError::ERROR_OP_ADD |
-            VmError::ERROR_OP_SUB |
-            VmError::ERROR_OP_MUL |
-            VmError::ERROR_OP_DIV |
-            VmError::ERROR_OP_MOD |
-            VmError::ERROR_OP_AND |
-            VmError::ERROR_OP_OR  |
-            VmError::ERROR_OP_LT  |
-            VmError::ERROR_OP_LEQ |
-            VmError::ERROR_OP_GT  |
-            VmError::ERROR_OP_GEQ |
-            VmError::ERROR_OP_EQ  |
-            VmError::ERROR_OP_NEQ => {
+            VmError::ERROR_OP_ADD
+            | VmError::ERROR_OP_SUB
+            | VmError::ERROR_OP_MUL
+            | VmError::ERROR_OP_DIV
+            | VmError::ERROR_OP_MOD
+            | VmError::ERROR_OP_AND
+            | VmError::ERROR_OP_OR
+            | VmError::ERROR_OP_LT
+            | VmError::ERROR_OP_LEQ
+            | VmError::ERROR_OP_GT
+            | VmError::ERROR_OP_GEQ
+            | VmError::ERROR_OP_EQ
+            | VmError::ERROR_OP_NEQ => {
                 let left = vm.stack[vm.stack.len() - 2].unwrap();
                 let right = vm.stack[vm.stack.len() - 1].unwrap();
-                Some(format!("Can't perform {} between {} and {}", self.method_for_op(), left.type_name(), right.type_name()))
-            },
+                Some(format!(
+                    "Can't perform {} between {} and {}",
+                    self.method_for_op(),
+                    left.type_name(),
+                    right.type_name()
+                ))
+            }
             VmError::ERROR_UNHANDLED_EXCEPTION => {
                 let top = vm.stack.top().unwrap();
                 Some(match top {
@@ -97,16 +101,18 @@ impl VmError {
                         if lines.is_empty() {
                             "The exception was a record".to_string()
                         } else {
-                            format!("The exception gave the following hints:\n{}", lines.join("\n"))
+                            format!(
+                                "The exception gave the following hints:\n{}",
+                                lines.join("\n")
+                            )
                         }
                     }
-                    _ => format!("The exception was {:?}", top)
+                    _ => format!("The exception was {:?}", top),
                 })
-            },
+            }
             _ => None,
         }
     }
-
 }
 
 #[cfg_attr(tarpaulin, skip)]
@@ -114,19 +120,19 @@ impl std::fmt::Display for VmError {
     #[allow(non_snake_case)]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            VmError::ERROR_OP_ADD |
-            VmError::ERROR_OP_SUB |
-            VmError::ERROR_OP_MUL |
-            VmError::ERROR_OP_DIV |
-            VmError::ERROR_OP_MOD |
-            VmError::ERROR_OP_AND |
-            VmError::ERROR_OP_OR  |
-            VmError::ERROR_OP_LT  |
-            VmError::ERROR_OP_LEQ |
-            VmError::ERROR_OP_GT  |
-            VmError::ERROR_OP_GEQ |
-            VmError::ERROR_OP_EQ  |
-            VmError::ERROR_OP_NEQ => write!(f, "Invalid arguments for {}", self.method_for_op()),
+            VmError::ERROR_OP_ADD
+            | VmError::ERROR_OP_SUB
+            | VmError::ERROR_OP_MUL
+            | VmError::ERROR_OP_DIV
+            | VmError::ERROR_OP_MOD
+            | VmError::ERROR_OP_AND
+            | VmError::ERROR_OP_OR
+            | VmError::ERROR_OP_LT
+            | VmError::ERROR_OP_LEQ
+            | VmError::ERROR_OP_GT
+            | VmError::ERROR_OP_GEQ
+            | VmError::ERROR_OP_EQ
+            | VmError::ERROR_OP_NEQ => write!(f, "Invalid arguments for {}", self.method_for_op()),
             VmError::ERROR_UNDEFINED_GLOBAL_VAR => write!(f, "Global variable is not defined"),
             VmError::ERROR_RECORD_NO_CONSTRUCTOR => {
                 write!(f, "Cannot call record that has no constructor")
@@ -142,7 +148,9 @@ impl std::fmt::Display for VmError {
                 write!(f, "Cannot access property of a nil literal")
             }
             VmError::ERROR_KEY_NON_INT => write!(f, "Index must be an integer value"),
-            VmError::ERROR_RECORD_KEY_NON_STRING => write!(f, "Record key must be an string value"),
+            VmError::ERROR_RECORD_KEY_NON_STRING => {
+                write!(f, "Record key must be an string value")
+            }
             VmError::ERROR_UNBOUNDED_ACCESS => write!(
                 f,
                 "Accessing a value that lies outside of the object's bound"
