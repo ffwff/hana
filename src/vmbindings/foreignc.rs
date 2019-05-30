@@ -68,6 +68,11 @@ mod foreignc {
     }
 
     #[no_mangle]
+    unsafe extern "C" fn dict_malloc_n(vm: *const Vm, n: usize) -> *mut Record {
+        (&*vm).malloc(Record::with_capacity(n)).into_raw()
+    }
+
+    #[no_mangle]
     unsafe extern "C" fn dict_get(
         cr: *const Record, ckey: *const libc::c_char,
     ) -> *const NativeValue {

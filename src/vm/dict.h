@@ -12,6 +12,7 @@ struct string;
 struct vm;
 
 struct dict *dict_malloc(const struct vm *vm);
+struct dict *dict_malloc_n(const struct vm *vm, size_t n);
 const struct value *dict_get(const struct dict *, const char *);
 void dict_set(struct dict *, const char *, struct value);
 const struct value *dict_get_str(const struct dict *, struct string *);

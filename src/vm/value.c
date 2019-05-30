@@ -28,6 +28,10 @@ void value_dict(struct value *val, const struct vm *vm) {
     val->type = TYPE_DICT;
     val->as.dict = dict_malloc(vm);
 }
+void value_dict_n(struct value *val, size_t n, const struct vm *vm) {
+    val->type = TYPE_DICT;
+    val->as.dict = dict_malloc_n(vm, n);
+}
 void value_array(struct value *val, const struct vm *vm) {
     val->type = TYPE_ARRAY;
     val->as.array = array_obj_malloc(vm);

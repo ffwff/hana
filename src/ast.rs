@@ -188,8 +188,13 @@ pub mod ast {
             for expr in &self.exprs {
                 expr.emit(c);
             }
-            c.cpushop(VmOpcode::OP_PUSH64);
-            c.cpush64(self.exprs.len() as u64);
+            if self.exprs.len() < 0x100 {
+                c.cpushop(VmOpcode::OP_PUSH8);
+                c.cpush8(self.exprs.len() as u8);
+            } else {
+                c.cpushop(VmOpcode::OP_PUSH64);
+                c.cpush64(self.exprs.len() as u64);
+            }
             c.cpushop(VmOpcode::OP_ARRAY_LOAD);
             emit_end!(c, _smap_begin);
         }
@@ -285,7 +290,6 @@ pub mod ast {
         fn emit(&self, c: &mut compiler::Compiler) {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
-            c.cpushop(VmOpcode::OP_PUSH_NIL);
             for stmt in &self.stmts {
                 let any = stmt.as_any();
                 if let Some(stmt) = any.downcast_ref::<FunctionStatement>() {
@@ -307,6 +311,13 @@ pub mod ast {
                     c.cpushop(VmOpcode::OP_PUSHSTR);
                     c.cpushs(id.val.clone());
                 }
+            }
+            if self.stmts.len() < 0x100 {
+                c.cpushop(VmOpcode::OP_PUSH8);
+                c.cpush8(self.stmts.len() as u8);
+            } else {
+                c.cpushop(VmOpcode::OP_PUSH64);
+                c.cpush64(self.stmts.len() as u64);
             }
             c.cpushop(VmOpcode::OP_DICT_LOAD);
             emit_end!(c, _smap_begin);

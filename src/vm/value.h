@@ -43,6 +43,7 @@ void value_str(struct value*, const char*, const struct vm*);
 struct env;
 void value_function(struct value *, uint32_t ip, uint16_t nargs, struct env *env, const struct vm *);
 void value_dict(struct value *, const struct vm *);
+void value_dict_n(struct value *, size_t n, const struct vm *);
 void value_array(struct value *, const struct vm *);
 void value_array_n(struct value *, size_t n, const struct vm *);
 

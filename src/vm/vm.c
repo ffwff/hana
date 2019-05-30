@@ -594,15 +594,21 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_DICT_LOAD): {
         // stack: [nil][value][key]
-        LOG("dict load\n");
         vm->ip++;
-        struct value dval;
-        value_dict(&dval, vm);
 
-        struct value key = {0};
-        while((key = array_top(vm->stack)).type != TYPE_NIL) {
+        struct value val = array_top(vm->stack);
+        int64_t length = val.as.integer;
+        array_pop(vm->stack);
+        debug_assert(val.type == TYPE_INT);
+        LOG("DICT_LOAD %ld\n", length);
+
+        struct value dval;
+        value_dict_n(&dval, length, vm);
+
+        while(length--) {
             debug_assert(key.type == TYPE_STR);
             // key
+            struct value key = array_top(vm->stack);
             array_pop(vm->stack);
             // val
             struct value val = array_top(vm->stack);
@@ -610,7 +616,6 @@ void vm_execute(struct vm *vm) {
             dict_set_str(dval.as.dict, key.as.str, val);
         }
 
-        array_pop(vm->stack);  // pop nil
         array_push(vm->stack, dval);
         dispatch();
     }

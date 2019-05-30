@@ -28,6 +28,14 @@ impl Record {
         }
     }
 
+    pub fn with_capacity(n: usize) -> Record {
+        Record {
+            data: std::collections::HashMap::with_capacity(n),
+            prototype: None,
+            native_field: None,
+        }
+    }
+
     pub fn get<T: ?Sized>(&self, k: &T) -> Option<&NativeValue>
     where
         String: Borrow<T>,
