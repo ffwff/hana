@@ -109,7 +109,7 @@ pub struct Vm {
     // pointer to current stack frame
     localenv_bp: *mut Env, // rust owns this, so drop it pls
     // pointer to start of pool of stack frames
-    globalenv: *mut CHashMap,
+    globalenv: Option<Box<CHashMap>>,
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
     exframes: CArray<ExFrame>,      // exception frame
@@ -127,7 +127,7 @@ pub struct Vm {
     pub error_expected: u32,
 
     // for handling exceptions inside of interpreted functions called by native functions
-    exframe_fallthrough: *const ExFrame,
+    exframe_fallthrough: Option<*const ExFrame>,
     native_call_depth: usize,
 
     // rust-specific fields
@@ -156,7 +156,7 @@ impl Vm {
                 let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
-            globalenv: Box::into_raw(Box::new(CHashMap::new())),
+            globalenv: Some(Box::new(CHashMap::new())),
             exframes: CArray::new(),
             code,
             stack: CArray::new(),
@@ -167,7 +167,7 @@ impl Vm {
             drec: Gc::new_nil(),
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
-            exframe_fallthrough: null_mut(),
+            exframe_fallthrough: None,
             native_call_depth: 0,
             modules_info,
             stdlib: None,
@@ -191,17 +191,13 @@ impl Vm {
 
     // globals
     pub fn global(&self) -> &CHashMap {
-        if self.globalenv.is_null() {
-            panic!("accessing nil ptr");
-        }
-        unsafe { &*self.globalenv }
+        use std::borrow::Borrow;
+        self.globalenv.as_ref().unwrap().borrow()
     }
 
-    pub fn mut_global(&self) -> &mut CHashMap {
-        if self.globalenv.is_null() {
-            panic!("accessing nil ptr");
-        }
-        unsafe { &mut *self.globalenv }
+    pub fn mut_global(&mut self) -> &mut CHashMap {
+        use std::borrow::BorrowMut;
+        self.globalenv.as_mut().unwrap().borrow_mut()
     }
 
     // gc
@@ -222,8 +218,7 @@ impl Vm {
 
     pub unsafe fn mark(&self) {
         // globalenv
-        let globalenv = &*self.globalenv;
-        for (_, val) in globalenv.iter() {
+        for (_, val) in self.global().iter() {
             val.trace();
         }
         // stack
@@ -332,7 +327,7 @@ impl Vm {
             let exframe = &self.exframes[i - 1];
             if let Some(handler) = exframe.get_handler(self, &val) {
                 if exframe.unwind_native_call_depth != self.native_call_depth {
-                    self.exframe_fallthrough = exframe;
+                    self.exframe_fallthrough = Some(exframe);
                 }
                 self.ip = handler.ip;
                 if handler.nargs == 0 {
@@ -353,7 +348,7 @@ impl Vm {
                 return None;
             }
         }
-        if self.exframe_fallthrough != null_mut() || self.error != VmError::ERROR_NO_ERROR {
+        if self.exframe_fallthrough.is_some() || self.error != VmError::ERROR_NO_ERROR {
             None
         } else {
             Some(val)
@@ -367,7 +362,7 @@ impl Vm {
             ip: self.ip,
             localenv: self.localenv,
             localenv_bp: self.localenv_bp,
-            globalenv: null_mut(), // shared
+            globalenv: None, // shared
             exframes: self.exframes.deref(),
             code: CArray::new_nil(), // shared
             stack: self.stack.deref(),
@@ -533,11 +528,6 @@ impl std::ops::Drop for Vm {
             }
             let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
-
-            // other
-            if !self.globalenv.is_null() {
-                Box::from_raw(self.globalenv);
-            }
         }
     }
 }
