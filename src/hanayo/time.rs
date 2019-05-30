@@ -83,7 +83,6 @@ fn sleep(time: Value::Any) -> Value {
                 rec.as_mut().insert("where", Value::Int(0).wrap());
                 Value::Record(rec)
             });
-            return Value::PropagateError;
         },
     }
     Value::Nil

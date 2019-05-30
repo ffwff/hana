@@ -44,7 +44,6 @@ fn out(process: Value::Record) -> Value {
         Ok(s) => Value::Str(vm.malloc(s)),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
-            Value::PropagateError
         }
     }
 }
@@ -64,7 +63,6 @@ fn err(process: Value::Record) -> Value {
         Ok(s) => Value::Str(vm.malloc(s)),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
-            Value::PropagateError
         }
     }
 }
@@ -85,14 +83,12 @@ fn outputs(process: Value::Record) -> Value {
         Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
-            return Value::PropagateError;
         }
     }
     match String::from_utf8(out.stderr) {
         Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
-            return Value::PropagateError;
         }
     }
     Value::Array(arr)

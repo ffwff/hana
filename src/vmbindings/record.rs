@@ -1,7 +1,7 @@
 //! Provides a record value in Hana
 
 use super::chmap::CHashMap;
-use super::cnativeval::{NativeValue, _valueType};
+use super::cnativeval::{NativeValue};
 use super::gc::GcTraceable;
 use super::value::Value;
 use std::any::Any;

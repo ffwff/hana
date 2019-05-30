@@ -20,7 +20,6 @@ fn constructor(val: Value::Any) -> Value {
                     rec.as_mut().insert("where", Value::Int(0).wrap());
                     Value::Record(rec)
                 });
-                Value::PropagateError
             }
         },
         _ => {
@@ -31,7 +30,6 @@ fn constructor(val: Value::Any) -> Value {
                 rec.as_mut().insert("where", Value::Int(0).wrap());
                 Value::Record(rec)
             });
-            Value::PropagateError
         }
     }
 }
