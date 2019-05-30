@@ -133,14 +133,14 @@ void vm_execute(struct vm *vm) {
             double d;
             uint8_t u[4];
         } u;
-        u.u[0] = vm->code.data[vm->ip+0];
-        u.u[1] = vm->code.data[vm->ip+1];
-        u.u[2] = vm->code.data[vm->ip+2];
-        u.u[3] = vm->code.data[vm->ip+3];
-        u.u[4] = vm->code.data[vm->ip+4];
-        u.u[5] = vm->code.data[vm->ip+5];
-        u.u[6] = vm->code.data[vm->ip+6];
-        u.u[7] = vm->code.data[vm->ip+7];
+        u.u[0] = vm->code.data[vm->ip + 0];
+        u.u[1] = vm->code.data[vm->ip + 1];
+        u.u[2] = vm->code.data[vm->ip + 2];
+        u.u[3] = vm->code.data[vm->ip + 3];
+        u.u[4] = vm->code.data[vm->ip + 4];
+        u.u[5] = vm->code.data[vm->ip + 5];
+        u.u[6] = vm->code.data[vm->ip + 6];
+        u.u[7] = vm->code.data[vm->ip + 7];
         vm->ip += sizeof(u);
         LOG("PUSH_F64 %f\n", u.d);
         array_push(vm->stack, (struct value){0});
@@ -223,10 +223,9 @@ void vm_execute(struct vm *vm) {
     binop(OP_DIV, value_div)
     binop(OP_MOD, value_mod)
 
-    // in place arithmetic
+    // in place arithmetic:
     // does regular arith, returns lhs on stack and jumps out of fallback if CAN do it in place (for primitives)
     // else just does the fallback (copying and setting variable manually)
-    // add
 #define binop_inplace(optype, errortype, fn, fallback)             \
     doop(optype) : {                                               \
         vm->ip++;                                                  \
@@ -809,33 +808,36 @@ void vm_execute(struct vm *vm) {
 
     // operators
     doop(OP_FOR_IN): {
-#define CALL_DICT_ITERATOR_FN \
-do { \
-    if(pval == NULL) ERROR(ERROR_EXPECTED_CALLABLE, 0 /* TODO */); \
-    const struct value val = *pval; \
-    const uint16_t nargs = 1; \
-    switch(val.type) { \
-    case TYPE_NATIVE_FN: { \
-        CALL_NATIVE(val.as.fn); \
-        break; } \
-    case TYPE_FN: \
-    case TYPE_DICT: { \
-        struct function *ifn; \
-        JMP_INTERPRETED_FN_NO_POP(0 /* TODO */, { \
-            if (vm->exframe_fallthrough != NULL) { \
-                if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) { \
-                    assert(0); \
-                } else { \
-                    return; \
-                } \
-            } \
-            dispatch(); \
-        }); \
-        vm_enter_env(vm, ifn); \
-        dispatch(); } \
-    default: ERROR(ERROR_EXPECTED_CALLABLE, 0 /* TODO */); \
-    } \
-} while(0);
+#define CALL_DICT_ITERATOR_FN                                                                               \
+    do {                                                                                                    \
+        if (pval == NULL) ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(pos));                                  \
+        const struct value val = *pval;                                                                     \
+        const uint16_t nargs = 1;                                                                           \
+        switch (val.type) {                                                                                 \
+            case TYPE_NATIVE_FN: {                                                                          \
+                CALL_NATIVE(val.as.fn);                                                                     \
+                break;                                                                                      \
+            }                                                                                               \
+            case TYPE_FN:                                                                                   \
+            case TYPE_DICT: {                                                                               \
+                struct function *ifn;                                                                       \
+                JMP_INTERPRETED_FN_NO_POP(1 + sizeof(pos), {                                                \
+                    if (vm->exframe_fallthrough != NULL) {                                                  \
+                        if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) { \
+                            assert(0);                                                                      \
+                        } else {                                                                            \
+                            return;                                                                         \
+                        }                                                                                   \
+                    }                                                                                       \
+                    dispatch();                                                                             \
+                });                                                                                         \
+                vm_enter_env(vm, ifn);                                                                      \
+                dispatch();                                                                                 \
+            }                                                                                               \
+            default:                                                                                        \
+                ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(pos));                                            \
+        }                                                                                                   \
+    } while (0);
         vm->ip++;
         const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
                              (uint16_t)vm->code.data[vm->ip + 1];
@@ -938,8 +940,8 @@ do { \
     doop(OP_SWAP): {
         vm->ip++;
         debug_assert(vm->stack.length >= 2);
-        const struct value lower = vm->stack.data[vm->stack.length-2];
-        const struct value higher = vm->stack.data[vm->stack.length-1];
+        const struct value lower = vm->stack.data[vm->stack.length - 2];
+        const struct value higher = vm->stack.data[vm->stack.length - 1];
         vm->stack.data[vm->stack.length - 1] = lower;
         vm->stack.data[vm->stack.length - 2] = higher;
         dispatch();

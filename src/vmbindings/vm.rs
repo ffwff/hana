@@ -236,7 +236,7 @@ impl Vm {
         }
     }
     pub fn cpushf64(&mut self, n: f64) {
-        let bytes = n.to_bits().to_le_bytes();
+        let bytes = n.to_bits().to_ne_bytes();
         for byte in &bytes {
             self.cpush8(*byte);
         }
