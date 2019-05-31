@@ -18,7 +18,7 @@ string_literal_escape -> String
     = s:$(#quiet<"\\n">) { "\n".to_string() }
     / s:$(#quiet<"\\r">) { "\r".to_string() }
     / s:$(#quiet<"\\t">) { "\t".to_string() }
-    / s:$(#quiet<"\\" .>) { s.to_string() }
+    / #quiet<"\\"> c:$(.) { c.to_string() }
 string_literal_char -> String
     = string_literal_escape
     / s:$([^\"]) { s.to_owned() }
