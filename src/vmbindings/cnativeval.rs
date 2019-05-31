@@ -3,7 +3,7 @@
 
 use super::carray::CArray;
 use super::function::Function;
-use super::gc::{mark_reachable, Gc, GcTraceable};
+use super::gc::{mark_reachable, ref_inc, ref_dec, Gc, GcTraceable};
 use super::record::Record;
 use super::value::{NativeFnData, Value};
 
@@ -72,6 +72,35 @@ impl NativeValue {
                 if mark_reachable(self.data as *mut libc::c_void) {
                     CArray::trace(self.data as *mut libc::c_void)
                 }
+            }
+            _ => {}
+        }
+    }
+
+    // reference counting
+    pub unsafe fn ref_inc(&self) {
+        #[allow(non_camel_case_types)]
+        match self.r#type {
+            _valueType::TYPE_FN
+            | _valueType::TYPE_STR
+            | _valueType::TYPE_DICT
+            | _valueType::TYPE_ARRAY
+            => {
+                ref_inc(self.data as *mut libc::c_void);
+            }
+            _ => {}
+        }
+    }
+
+    pub unsafe fn ref_dec(&self) {
+        #[allow(non_camel_case_types)]
+        match self.r#type {
+            _valueType::TYPE_FN
+            | _valueType::TYPE_STR
+            | _valueType::TYPE_DICT
+            | _valueType::TYPE_ARRAY
+            => {
+                ref_dec(self.data as *mut libc::c_void);
             }
             _ => {}
         }

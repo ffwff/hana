@@ -374,6 +374,29 @@ impl Vm {
 
     // execution context for eval
     pub fn new_exec_ctx(&mut self) -> ManuallyDrop<Vm> {
+        // prevent context's local variables from being freed
+        unsafe {
+            // stack
+            let stack = &self.stack;
+            for val in stack.iter() {
+                val.ref_inc();
+            }
+            // call stack
+            if let Some(localenv) = self.localenv {
+                let mut env = self.localenv_bp;
+                let localenv = localenv.as_ptr();
+                while env != localenv {
+                    for val in (*env).slots.as_mut_slice().iter_mut() {
+                        (*val).ref_inc();
+                    }
+                    env = env.add(1);
+                }
+                env = localenv;
+                for val in (*env).slots.as_mut_slice().iter_mut() {
+                    (*val).ref_inc();
+                }
+            }
+        }
         // save current ctx
         let current_ctx = Vm {
             ip: self.ip,
@@ -438,6 +461,30 @@ impl Vm {
         self.exframe_fallthrough = ctx.exframe_fallthrough;
         self.native_call_depth = ctx.native_call_depth;
         self.stack = std::mem::replace(&mut ctx.stack, CArray::new());
+
+        // release context's local variables
+        unsafe {
+            // stack
+            let stack = &self.stack;
+            for val in stack.iter() {
+                val.ref_dec();
+            }
+            // call stack
+            if let Some(localenv) = self.localenv {
+                let mut env = self.localenv_bp;
+                let localenv = localenv.as_ptr();
+                while env != localenv {
+                    for val in (*env).slots.as_mut_slice().iter_mut() {
+                        (*val).ref_dec();
+                    }
+                    env = env.add(1);
+                }
+                env = localenv;
+                for val in (*env).slots.as_mut_slice().iter_mut() {
+                    (*val).ref_dec();
+                }
+            }
+        }
 
         // prevent double freeing:
         ctx.localenv_bp = null_mut();
