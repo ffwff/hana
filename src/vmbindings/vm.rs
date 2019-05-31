@@ -3,7 +3,7 @@
 use std::cell::RefCell;
 use std::mem::ManuallyDrop;
 use std::path::Path;
-use std::ptr::{NonNull, null_mut};
+use std::ptr::{null_mut, NonNull};
 use std::rc::Rc;
 
 extern crate libc;
@@ -116,9 +116,9 @@ pub struct Vm {
     globalenv: Option<Box<CHashMap>>,
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
-    exframes: Option<CArray<ExFrame>>,      // exception frame
-    pub code: Option<CArray<u8>>,   // where all the code is
-    pub stack: CArray<NativeValue>, // stack
+    exframes: Option<CArray<ExFrame>>, // exception frame
+    pub code: Option<CArray<u8>>,      // where all the code is
+    pub stack: CArray<NativeValue>,    // stack
 
     // prototype types for primitive values
     pub(crate) dstr: Gc<Record>,
@@ -150,8 +150,7 @@ extern "C" {
 
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new(code: Option<CArray<u8>>,
-        modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
+    pub fn new(code: Option<CArray<u8>>, modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
         Vm {
             ip: 0,
             localenv: None,
@@ -189,7 +188,9 @@ impl Vm {
     }
 
     pub fn execute(&mut self) {
-        if self.code.is_none() { panic!("calling with nil code"); }
+        if self.code.is_none() {
+            panic!("calling with nil code");
+        }
         unsafe {
             vm_execute(self);
         }
@@ -329,7 +330,8 @@ impl Vm {
         let localenv = self.localenv.clone();
         let len = self.stack.len() - 1;
         let native_call_depth = self.native_call_depth;
-        self.mut_exframes().push(ExFrame::new(localenv, len, native_call_depth));
+        self.mut_exframes()
+            .push(ExFrame::new(localenv, len, native_call_depth));
         self.mut_exframes().top_mut()
     }
     pub fn leave_exframe(&mut self) {
@@ -409,7 +411,7 @@ impl Vm {
     }
 
     pub unsafe fn restore_exec_ctx(&mut self, ctx: ManuallyDrop<Vm>) {
-        let mut ctx : Vm = ManuallyDrop::into_inner(ctx);
+        let mut ctx: Vm = ManuallyDrop::into_inner(ctx);
 
         // drop old
         use std::alloc::{dealloc, Layout};

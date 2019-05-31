@@ -1,6 +1,6 @@
 //! Provides an exception frame interface for storing try..case data
-use std::ptr::NonNull;
 use std::collections::HashMap;
+use std::ptr::NonNull;
 
 use super::env::Env;
 use super::function::Function;

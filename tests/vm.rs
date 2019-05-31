@@ -5,7 +5,7 @@ pub mod vm_tests {
 
     use haru::compiler::Compiler;
     use haru::vmbindings::value::Value;
-    use haru::vmbindings::vm::{VmOpcode};
+    use haru::vmbindings::vm::VmOpcode;
 
     //#region numbers
     #[test]

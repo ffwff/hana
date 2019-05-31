@@ -28,8 +28,6 @@ mod compiler;
 #[macro_use]
 mod ast;
 mod vmbindings;
-
-use vmbindings::carray::CArray;
 use vmbindings::vm::{Vm, VmOpcode};
 use vmbindings::vmerror::VmError;
 mod hanayo;

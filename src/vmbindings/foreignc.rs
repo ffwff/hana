@@ -18,7 +18,7 @@ mod foreignc {
     use super::*;
     use std::alloc::{alloc_zeroed, realloc, Layout};
     use std::ffi::CStr;
-    use std::ptr::{NonNull, null, null_mut};
+    use std::ptr::{null, null_mut, NonNull};
     use unicode_segmentation::UnicodeSegmentation;
 
     // #region memory allocation
@@ -286,14 +286,18 @@ mod foreignc {
 
     //
     #[no_mangle]
-    unsafe extern "C" fn vm_enter_env(selfptr: *mut Vm, fun: *mut Function) -> Option<NonNull<Env>> {
+    unsafe extern "C" fn vm_enter_env(
+        selfptr: *mut Vm, fun: *mut Function,
+    ) -> Option<NonNull<Env>> {
         let vm = &mut *selfptr;
         let fun = &mut *fun;
         vm.enter_env(fun);
         vm.localenv()
     }
     #[no_mangle]
-    unsafe extern "C" fn vm_enter_env_tail(selfptr: *mut Vm, fun: *mut Function) -> Option<NonNull<Env>> {
+    unsafe extern "C" fn vm_enter_env_tail(
+        selfptr: *mut Vm, fun: *mut Function,
+    ) -> Option<NonNull<Env>> {
         let vm = &mut *selfptr;
         let fun = &mut *fun;
         vm.enter_env_tail(fun);
