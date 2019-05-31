@@ -224,20 +224,29 @@ fn repl(flag: ParserFlag) {
                             continue;
                         }
                         // setup
-                        vm.error = VmError::ERROR_NO_ERROR;
-                        let len = vm.code.len() as u32;
-                        c.modules_info.borrow_mut().sources[0] = s.clone();
-                        c.receive_code(unsafe { vm.code.deref() });
-                        for stmt in prog {
-                            stmt.emit(&mut c);
+                        if vm.code.as_ptr().is_null() {
+                            for stmt in prog {
+                                stmt.emit(&mut c);
+                            }
+                            c.cpushop(VmOpcode::OP_HALT);
+                            vm.code = c.take_code();
+                            vm.execute();
+                        } else {
+                            vm.error = VmError::ERROR_NO_ERROR;
+                            let len = vm.code.len() as u32;
+                            c.modules_info.borrow_mut().sources[0] = s.clone();
+                            c.receive_code(unsafe { vm.code.deref() });
+                            for stmt in prog {
+                                stmt.emit(&mut c);
+                            }
+                            if c.clen() as u32 == len {
+                                continue;
+                            }
+                            c.cpushop(VmOpcode::OP_HALT);
+                            vm.code = c.take_code();
+                            vm.jmp(len);
+                            vm.execute();
                         }
-                        if c.clen() as u32 == len {
-                            continue;
-                        }
-                        c.cpushop(VmOpcode::OP_HALT);
-                        vm.code = c.take_code();
-                        vm.jmp(len);
-                        vm.execute();
                         handle_error(&vm, &c);
                     }
                     Err(err) => {

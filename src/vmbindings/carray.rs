@@ -76,11 +76,11 @@ impl<T> CArray<T> {
     }
 
     /// Retrieves the immutable data pointer
-    pub unsafe fn as_ptr(&self) -> *const T {
+    pub fn as_ptr(&self) -> *const T {
         self.data
     }
     /// Retrieves the mutable data pointer
-    pub unsafe fn as_mut_ptr(&mut self) -> *mut T {
+    pub fn as_mut_ptr(&mut self) -> *mut T {
         self.data
     }
 

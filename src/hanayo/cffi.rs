@@ -10,8 +10,12 @@ use crate::vmbindings::value::Value;
 use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
 
+extern crate num_derive;
+use num_traits::cast::FromPrimitive;
+
 // #region ffi type
 #[repr(i64)]
+#[derive(FromPrimitive)]
 enum FFI_Type {
     UInt8,   Int8,
     UInt16,  Int16,
@@ -24,25 +28,6 @@ enum FFI_Type {
 }
 
 impl FFI_Type {
-    fn from_i64(value: i64) -> Option<Self> {
-        match value {
-            0  => Some(FFI_Type::UInt8),
-            1  => Some(FFI_Type::Int8),
-            2  => Some(FFI_Type::UInt16),
-            3  => Some(FFI_Type::Int16),
-            4  => Some(FFI_Type::UInt32),
-            5  => Some(FFI_Type::Int32),
-            6  => Some(FFI_Type::UInt64),
-            7  => Some(FFI_Type::Int64),
-            8  => Some(FFI_Type::Float32),
-            9  => Some(FFI_Type::Float64),
-            10 => Some(FFI_Type::Pointer),
-            11 => Some(FFI_Type::String),
-            12 => Some(FFI_Type::Void),
-            _ => None
-        }
-    }
-
     unsafe fn to_libffi_type(&self) -> *mut ffi_type {
         match self {
             FFI_Type::UInt8   => &mut ffi_type_uint8,
@@ -102,17 +87,45 @@ fn constructor(name_or_addr: Value::Any, argtypes: Value::Array, rettype: Value:
             ffi_rettype,
             ffi_argtypes.as_mut_ptr());
 
+        fn invalid_symbol(vm: &Vm, filename: Value) -> Value {
+            let rec = vm.malloc(Record::new());
+            rec.as_mut().insert(
+                "prototype",
+                Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone())
+                    .wrap(),
+            );
+            rec.as_mut().insert(
+                "why",
+                Value::Str(
+                    vm.malloc("Specified symbol doesn't exist".to_string()),
+                )
+                .wrap(),
+            );
+            rec.as_mut().insert("where", filename.wrap());
+            Value::Record(rec)
+        }
+
         // ffi fn
         let dl = libc::dlopen(null(), libc::RTLD_LAZY);
         FFIFunction {
             sym: {
                 match &name_or_addr {
-                    Value::Int(addr) => std::mem::transmute::<i64, unsafe extern fn()>(*addr),
+                    Value::Int(addr) => {
+                        if *addr == 0 {
+                            let err = invalid_symbol(vm, Value::Str(vm.malloc("[nil]".to_string())));
+                            hana_raise!(vm, err);
+                        } else {
+                            std::mem::transmute::<i64, unsafe extern fn()>(*addr)
+                        }
+                    },
                     Value::Str(sym) => {
                         let cstr = CString::new(sym.as_ref().clone()).unwrap();
-                        let sym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
-                        if sym.is_null() { panic!("is nul!") }
-                        else { std::mem::transmute::<*mut c_void, unsafe extern fn()>(sym) }
+                        let dlsym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
+                        if dlsym.is_null() {
+                            let err = invalid_symbol(vm, Value::Str(sym.clone()));
+                            hana_raise!(vm, err);
+                        }
+                        else { std::mem::transmute::<*mut c_void, unsafe extern fn()>(dlsym) }
                     }
                     _ => panic!("expected symbol address or name")
                 }
@@ -231,7 +244,7 @@ fn constructor(addr: Value::Int, cffi_free: Value::Record) -> Value {
         use std::mem::transmute;
         rec.as_mut().native_field = Some(Box::new(GcPointer {
             data: transmute::<i64, *mut libc::c_void>(addr),
-            free: transmute::<*mut libc::c_void, unsafe extern fn(*mut libc::c_void)>(cffi_free.sym.unwrap() as *mut libc::c_void),
+            free: transmute::<*mut libc::c_void, unsafe extern fn(*mut libc::c_void)>(cffi_free.sym as *mut libc::c_void),
         }));
     }
     rec.as_mut().insert("prototype",
@@ -273,6 +286,23 @@ fn constructor(filename: Value::Str) -> Value {
         rec.as_mut().native_field = Some(Box::new({
             let cstr = CString::new(filename.as_ref().clone()).unwrap();
             let dl = libc::dlopen(cstr.as_ptr(), libc::RTLD_LAZY);
+            if dl.is_null() {
+                let rec = vm.malloc(Record::new());
+                rec.as_mut().insert(
+                    "prototype",
+                    Value::Record(vm.stdlib.as_ref().unwrap().invalid_argument_error.clone())
+                        .wrap(),
+                );
+                rec.as_mut().insert(
+                    "why",
+                    Value::Str(
+                        vm.malloc("Specified library doesn't exist".to_string()),
+                    )
+                    .wrap(),
+                );
+                rec.as_mut().insert("where", Value::Str(filename).wrap());
+                hana_raise!(vm, Value::Record(rec));
+            }
             Library {
                 dl
             }
