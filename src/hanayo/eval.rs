@@ -9,14 +9,14 @@ use crate::vmbindings::vm::VmOpcode;
 fn eval(s: Value::Str) -> Value {
     let s = s.as_ref();
     if let Ok(prog) = ast::grammar::start(&s) {
-        let target_ip = vm.code.len() as u32;
-        let mut c = unsafe { Compiler::new_append(vm.code.deref()) };
+        let target_ip = vm.code.as_ref().unwrap().len() as u32;
+        let mut c = Compiler::new_append(vm.code.take().unwrap());
         // generate code
         for stmt in prog {
             stmt.emit(&mut c);
         }
         c.cpushop(VmOpcode::OP_HALT);
-        vm.code = c.into_code();
+        vm.code = Some(c.into_code());
         // save current evaluation context
         let ctx = unsafe { vm.new_exec_ctx() };
         vm.jmp(target_ip);

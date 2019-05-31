@@ -3,73 +3,51 @@
 use crate::vmbindings::cnativeval::NativeValue;
 use crate::vmbindings::gc::GcTraceable;
 use std::alloc::{alloc_zeroed, dealloc, realloc, Layout};
-use std::ptr::null_mut;
+use std::ptr::NonNull;
 
 /// A stable dynamic array interface that can be used with C
 #[repr(C)]
 pub struct CArray<T> {
-    data: *mut T,
+    data: NonNull<T>,
     len: usize,
     capacity: usize,
 }
 
 impl<T> CArray<T> {
-    /// Creates a new array with data pointing to nil
-    pub unsafe fn new_nil() -> CArray<T> {
-        CArray::<T> {
-            data: null_mut(),
-            len: 0,
-            capacity: 0,
-        }
-    }
-
     /// Creates an empty CArray
     pub fn new() -> CArray<T> {
         CArray::<T> {
             data: unsafe {
                 let layout = Layout::array::<T>(2).unwrap();
-                alloc_zeroed(layout) as *mut T
+                NonNull::new(alloc_zeroed(layout) as *mut T).unwrap()
             },
             len: 0,
             capacity: 2,
         }
     }
 
-    /// Dereferences a CArray by creating a new CArray,
-    /// and moving its data into the new array.
-    /// The current array will have its data set to null.
-    pub unsafe fn deref(&mut self) -> CArray<T> {
-        let arr = CArray::<T> {
-            data: self.data,
-            len: self.len,
-            capacity: self.capacity,
-        };
-        self.data = null_mut();
-        self.len = 0;
-        self.capacity = 0;
-        arr
-    }
-
     /// Converts the array into an immutable slice.
     pub fn as_slice(&self) -> &[T] {
-        unsafe { std::slice::from_raw_parts(self.data, self.len) }
+        unsafe { std::slice::from_raw_parts(self.as_ptr(), self.len) }
     }
     /// Converts the array into an mutable slice.
-    pub fn as_mut_slice(&self) -> &mut [T] {
-        unsafe { std::slice::from_raw_parts_mut(self.data, self.len) }
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr(), self.len) }
     }
 
     /// Converts the array into an immutable slice of raw bytes
     pub fn as_bytes(&self) -> &[u8] {
         unsafe {
-            std::slice::from_raw_parts(self.data as *const u8, std::mem::size_of::<T>() * self.len)
+            std::slice::from_raw_parts(
+                self.as_ptr() as *const u8,
+                std::mem::size_of::<T>() * self.len)
         }
     }
     /// Converts the array into a mutable slice of raw bytes
     pub fn as_mut_bytes(&mut self) -> &mut [u8] {
         unsafe {
             std::slice::from_raw_parts_mut(
-                self.data as *mut u8,
+                self.as_mut_ptr() as *mut u8,
                 std::mem::size_of::<T>() * self.len,
             )
         }
@@ -77,11 +55,11 @@ impl<T> CArray<T> {
 
     /// Retrieves the immutable data pointer
     pub fn as_ptr(&self) -> *const T {
-        self.data
+        self.data.as_ptr()
     }
     /// Retrieves the mutable data pointer
     pub fn as_mut_ptr(&mut self) -> *mut T {
-        self.data
+        self.data.as_ptr()
     }
 
     /// Retrieves the length of the array
@@ -96,7 +74,7 @@ impl<T> CArray<T> {
         CArray::<T> {
             data: unsafe {
                 let layout = Layout::array::<T>(n).unwrap();
-                alloc_zeroed(layout) as *mut T
+                NonNull::new(alloc_zeroed(layout) as *mut T).unwrap()
             },
             len: n,
             capacity: n,
@@ -110,10 +88,10 @@ impl<T> CArray<T> {
             if self.len == self.capacity {
                 self.capacity *= 2;
                 let layout = Layout::array::<T>(self.capacity).unwrap();
-                self.data = realloc(self.data as *mut u8, layout, size_of::<T>() * self.capacity)
-                    as *mut T;
+                self.data = NonNull::new(realloc(self.as_mut_ptr() as *mut u8, layout, size_of::<T>() * self.capacity)
+                    as *mut T).unwrap();
             }
-            std::ptr::write(self.data.add(self.len), val);
+            std::ptr::write(self.as_mut_ptr().add(self.len), val);
         }
         self.len += 1;
     }
@@ -124,7 +102,7 @@ impl<T> CArray<T> {
             panic!("popping unbounded!");
         }
         unsafe {
-            std::ptr::drop_in_place(self.data.add(self.len - 1));
+            std::ptr::drop_in_place(self.as_mut_ptr().add(self.len - 1));
         }
         self.len -= 1;
     }
@@ -161,11 +139,11 @@ impl<T> CArray<T> {
             if self.len + 1 >= self.capacity {
                 self.capacity *= 2;
                 let layout = Layout::array::<T>(self.capacity).unwrap();
-                self.data = realloc(self.data as *mut u8, layout, size_of::<T>() * self.capacity)
-                    as *mut T;
+                self.data = NonNull::new(realloc(self.as_ptr() as *mut u8, layout, size_of::<T>() * self.capacity)
+                    as *mut T).unwrap();
             }
-            std::ptr::copy(self.data.add(pos), self.data.add(pos + 1), self.len - pos);
-            std::ptr::copy(&elem, self.data.add(pos), 1);
+            std::ptr::copy(self.as_ptr().add(pos), self.as_mut_ptr().add(pos + 1), self.len - pos);
+            std::ptr::copy(&elem, self.as_mut_ptr().add(pos), 1);
         }
         self.len += 1;
     }
@@ -176,11 +154,11 @@ impl<T> CArray<T> {
         let remaining = self.len - from_pos - nelems;
         unsafe {
             for i in from_pos..(from_pos + nelems) {
-                std::ptr::drop_in_place(self.data.add(i));
+                std::ptr::drop_in_place(self.as_mut_ptr().add(i));
             }
             std::ptr::copy(
-                self.data.add(from_pos + nelems),
-                self.data.add(from_pos),
+                self.as_ptr().add(from_pos + nelems),
+                self.as_mut_ptr().add(from_pos),
                 remaining,
             );
         }
@@ -190,19 +168,13 @@ impl<T> CArray<T> {
 
 impl<T> std::ops::Drop for CArray<T> {
     fn drop(&mut self) {
-        if self.data.is_null() {
-            return;
-        }
         unsafe {
             for i in 0..self.len {
-                std::ptr::drop_in_place(self.data.add(i));
+                std::ptr::drop_in_place(self.as_mut_ptr().add(i));
             }
             let layout = Layout::array::<T>(self.capacity).unwrap();
-            dealloc(self.data as *mut u8, layout)
-        };
-        self.data = null_mut();
-        self.len = 0;
-        self.capacity = 0;
+            dealloc(self.as_mut_ptr() as *mut u8, layout);
+        }
     }
 }
 
@@ -212,8 +184,8 @@ impl<T> Clone for CArray<T> {
             data: unsafe {
                 let layout = Layout::array::<T>(self.len).unwrap();
                 let d = alloc_zeroed(layout) as *mut T;
-                std::ptr::copy(self.data, d, self.len);
-                d
+                std::ptr::copy(self.as_ptr(), d, self.len);
+                NonNull::new(d).unwrap()
             },
             len: self.len,
             capacity: self.len,
@@ -226,19 +198,13 @@ impl<T> std::ops::Index<usize> for CArray<T> {
     type Output = T;
 
     fn index(&self, idx: usize) -> &T {
-        if idx >= self.len {
-            panic!("accessing outside of index!");
-        }
-        unsafe { &(*self.data.add(idx)) }
+        &self.as_slice()[idx]
     }
 }
 
 impl<T> std::ops::IndexMut<usize> for CArray<T> {
     fn index_mut(&mut self, idx: usize) -> &mut T {
-        if idx >= self.len {
-            panic!("accessing outside of index!");
-        }
-        unsafe { &mut (*self.data.add(idx)) }
+        &mut self.as_mut_slice()[idx]
     }
 }
 

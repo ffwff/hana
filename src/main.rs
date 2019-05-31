@@ -210,7 +210,7 @@ fn repl(flag: ParserFlag) {
         modules_info.files.push("[repl]".to_string());
         modules_info.sources.push(String::new());
     }
-    let mut vm = Vm::new(unsafe { CArray::new_nil() }, Some(c.modules_info.clone()));
+    let mut vm = Vm::new(None, Some(c.modules_info.clone()));
     hanayo::init(&mut vm);
     loop {
         let readline = rl.readline(">> ");
@@ -224,18 +224,18 @@ fn repl(flag: ParserFlag) {
                             continue;
                         }
                         // setup
-                        if vm.code.as_ptr().is_null() {
+                        if vm.code.is_none() {
                             for stmt in prog {
                                 stmt.emit(&mut c);
                             }
                             c.cpushop(VmOpcode::OP_HALT);
-                            vm.code = c.take_code();
+                            vm.code = Some(c.take_code());
                             vm.execute();
                         } else {
                             vm.error = VmError::ERROR_NO_ERROR;
-                            let len = vm.code.len() as u32;
+                            let len = vm.code.as_ref().unwrap().len() as u32;
                             c.modules_info.borrow_mut().sources[0] = s.clone();
-                            c.receive_code(unsafe { vm.code.deref() });
+                            c.receive_code(vm.code.take().unwrap());
                             for stmt in prog {
                                 stmt.emit(&mut c);
                             }
@@ -243,7 +243,7 @@ fn repl(flag: ParserFlag) {
                                 continue;
                             }
                             c.cpushop(VmOpcode::OP_HALT);
-                            vm.code = c.take_code();
+                            vm.code = Some(c.take_code());
                             vm.jmp(len);
                             vm.execute();
                         }

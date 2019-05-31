@@ -95,7 +95,7 @@ impl Compiler {
 
     // create
     pub fn into_vm(&mut self) -> Vm {
-        Vm::new(self.code.take().unwrap(), Some(self.modules_info.clone()))
+        Vm::new(self.code.take(), Some(self.modules_info.clone()))
     }
     pub fn into_code(self) -> CArray<u8> {
         self.code.unwrap()

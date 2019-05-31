@@ -116,8 +116,8 @@ pub struct Vm {
     globalenv: Option<Box<CHashMap>>,
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
-    exframes: CArray<ExFrame>,      // exception frame
-    pub code: CArray<u8>,           // where all the code is
+    exframes: Option<CArray<ExFrame>>,      // exception frame
+    pub code: Option<CArray<u8>>,   // where all the code is
     pub stack: CArray<NativeValue>, // stack
 
     // prototype types for primitive values
@@ -150,7 +150,8 @@ extern "C" {
 
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new(code: CArray<u8>, modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
+    pub fn new(code: Option<CArray<u8>>,
+        modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
         Vm {
             ip: 0,
             localenv: None,
@@ -161,7 +162,7 @@ impl Vm {
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
             globalenv: Some(Box::new(CHashMap::new())),
-            exframes: CArray::new(),
+            exframes: Some(CArray::new()),
             code,
             stack: CArray::new(),
             dstr: Gc::new_nil(),
@@ -188,6 +189,7 @@ impl Vm {
     }
 
     pub fn execute(&mut self) {
+        if self.code.is_none() { panic!("calling with nil code"); }
         unsafe {
             vm_execute(self);
         }
@@ -317,36 +319,38 @@ impl Vm {
     }
 
     // exceptions
+    fn exframes(&self) -> &CArray<ExFrame> {
+        self.exframes.as_ref().unwrap()
+    }
+    fn mut_exframes(&mut self) -> &mut CArray<ExFrame> {
+        self.exframes.as_mut().unwrap()
+    }
     pub fn enter_exframe(&mut self) -> &mut ExFrame {
-        self.exframes.push(ExFrame::new(
-            self.localenv.clone(),
-            self.stack.len() - 1,
-            self.native_call_depth,
-        ));
-        self.exframes.top_mut()
+        let localenv = self.localenv.clone();
+        let len = self.stack.len() - 1;
+        let native_call_depth = self.native_call_depth;
+        self.mut_exframes().push(ExFrame::new(localenv, len, native_call_depth));
+        self.mut_exframes().top_mut()
     }
     pub fn leave_exframe(&mut self) {
-        self.exframes.pop();
+        self.mut_exframes().pop();
     }
     pub fn raise(&mut self) -> bool {
-        if self.exframes.len() == 0 {
+        if self.exframes().len() == 0 {
             return false;
         }
         let val = self.stack.top().unwrap();
-        let mut i = self.exframes.len();
-        while i != 0 {
-            let exframe = &self.exframes[i - 1];
+        for exframe in self.exframes.as_ref().unwrap().iter() {
             if let Some(handler) = exframe.get_handler(self, &val) {
-                if exframe.unwind_native_call_depth != self.native_call_depth {
-                    self.exframe_fallthrough = Some(exframe);
-                }
                 self.ip = handler.ip;
                 if handler.nargs == 0 {
                     self.stack.pop();
                 }
+                if exframe.unwind_native_call_depth != self.native_call_depth {
+                    self.exframe_fallthrough = Some(exframe);
+                }
                 return true;
             }
-            i -= 1;
         }
         false
     }
@@ -354,7 +358,7 @@ impl Vm {
     // functions
     pub fn call(&mut self, fun: NativeValue, args: &CArray<NativeValue>) -> Option<NativeValue> {
         let val = unsafe { vm_call(self, fun, args) };
-        if let Some(opcode) = VmOpcode::from_u8(self.code[self.ip as usize]) {
+        if let Some(opcode) = VmOpcode::from_u8(self.code.as_ref().unwrap()[self.ip as usize]) {
             if opcode == VmOpcode::OP_HALT {
                 return None;
             }
@@ -374,9 +378,9 @@ impl Vm {
             localenv: self.localenv.take(),
             localenv_bp: self.localenv_bp,
             globalenv: None, // shared
-            exframes: self.exframes.deref(),
-            code: CArray::new_nil(), // shared
-            stack: self.stack.deref(),
+            exframes: self.exframes.take(),
+            code: None, // shared
+            stack: std::mem::replace(&mut self.stack, CArray::new()),
             // types don't need to be saved:
             dstr: Gc::new_nil(),
             dint: Gc::new_nil(),
@@ -400,13 +404,12 @@ impl Vm {
             let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
             alloc_zeroed(layout.unwrap()) as *mut Env
         };
-        self.exframes = CArray::new_nil();
-        self.stack = CArray::reserve(2);
+        self.exframes = Some(CArray::new());
         ManuallyDrop::new(current_ctx)
     }
 
     pub unsafe fn restore_exec_ctx(&mut self, ctx: ManuallyDrop<Vm>) {
-        let mut ctx = ManuallyDrop::into_inner(ctx);
+        let mut ctx : Vm = ManuallyDrop::into_inner(ctx);
 
         // drop old
         use std::alloc::{dealloc, Layout};
@@ -423,17 +426,17 @@ impl Vm {
         let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
         dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
+        // prevent double freeing:
+        ctx.localenv_bp = null_mut();
+
         // fill in
         self.ip = ctx.ip;
         self.localenv = ctx.localenv.take();
         self.localenv_bp = ctx.localenv_bp;
-        self.exframes = ctx.exframes.deref();
+        self.exframes = ctx.exframes.take();
         self.exframe_fallthrough = ctx.exframe_fallthrough;
         self.native_call_depth = ctx.native_call_depth;
-        self.stack = ctx.stack.deref();
-
-        // prevent double freeing:
-        ctx.localenv_bp = null_mut();
+        self.stack = std::mem::replace(&mut ctx.stack, CArray::new());
     }
 
     // instruction pointer
@@ -441,7 +444,7 @@ impl Vm {
         self.ip
     }
     pub fn jmp(&mut self, ip: u32) {
-        assert!(ip < self.code.len() as u32);
+        assert!(ip < self.code.as_ref().unwrap().len() as u32);
         self.ip = ip;
     }
 
@@ -503,15 +506,15 @@ impl Vm {
             c.sources.push(s);
 
             let importer_ip = self.ip;
-            let imported_ip = self.code.len();
+            let imported_ip = self.code.as_ref().unwrap().len();
             {
-                let mut c = Compiler::new_append(unsafe { self.code.deref() });
+                let mut c = Compiler::new_append(self.code.take().unwrap());
                 for stmt in prog {
                     stmt.emit(&mut c);
                 }
                 c.cpushop(VmOpcode::OP_JMP_LONG);
                 c.cpush32(importer_ip);
-                self.code = c.into_code();
+                self.code = Some(c.into_code());
             }
             self.ip = imported_ip as u32;
         } else {
