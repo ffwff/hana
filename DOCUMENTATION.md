@@ -592,6 +592,9 @@ a["key"] = "value" // => sets a key
 Record::keys(a) // => ["key"] (gets all keys in record)
 ```
 
+Records can embed a custom `native_field` containing pointers to user defined data. The native fields
+can not be accessed from the hana language, it can only be accessed through using native functions.
+
 ### Arrays
 
 Arrays in Hana are dynamic arrays. You can declare arrays like this:
@@ -818,4 +821,4 @@ The native function must return a value by pushing it on the stack.
 If you don't have anything to return, push nil to the stack.
 
 You should be using the `hana_function` macro in the module `haru-decorator`
-if you're exporting a Rust function.
+if you're making an exportable Rust function.
