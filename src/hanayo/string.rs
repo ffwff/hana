@@ -47,13 +47,18 @@ fn endswith(s: Value::Str, left: Value::Str) -> Value {
 #[hana_function()]
 fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos = from_pos as usize;
-    let nchars = nchars as usize;
     let ss = s
         .as_ref()
         .graphemes(true)
         .enumerate()
         .filter_map(|(i, ch)| {
-            if (from_pos..(from_pos + nchars)).contains(&i) {
+            if nchars == -1 {
+                if i >= from_pos {
+                    None
+                } else {
+                    Some(ch)
+                }
+            } else if (from_pos..(from_pos + nchars as usize)).contains(&i) {
                 None
             } else {
                 Some(ch)
@@ -66,10 +71,11 @@ fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
 #[hana_function()]
 fn delete_(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos = from_pos as usize;
-    let nchars = nchars as usize;
     let it = s.as_ref().grapheme_indices(true).skip(from_pos);
     if let Some((i, _)) = it.clone().take(1).next() {
-        if let Some((j, _)) = it.skip(nchars).take(1).next() {
+        if nchars == -1 {
+            s.as_mut().truncate(i);
+        } else if let Some((j, _)) = it.skip(nchars as usize).take(1).next() {
             s.as_mut().replace_range(i..j, "");
         } else {
             s.as_mut().remove(i);
@@ -81,13 +87,18 @@ fn delete_(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
 #[hana_function()]
 fn copy(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
     let from_pos = from_pos as usize;
-    let nchars = nchars as usize;
     let ss = s
         .as_ref()
         .graphemes(true)
         .enumerate()
         .filter_map(|(i, ch)| {
-            if (from_pos..(from_pos + nchars)).contains(&i) {
+            if nchars == -1 {
+                if i >= from_pos {
+                    Some(ch)
+                } else {
+                    None
+                }
+            } else if (from_pos..(from_pos + nchars as usize)).contains(&i) {
                 Some(ch)
             } else {
                 None

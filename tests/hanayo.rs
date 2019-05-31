@@ -428,6 +428,16 @@ y = s.delete(1,1)
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "λj");
     }
     #[test]
+    fn string_delete_rest() {
+        let vm: Vm = eval!(
+            "
+s = 'λκj'
+y = s.delete(1,-1)
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "λ");
+    }
+    #[test]
     fn string_delete_in_place() {
         let vm: Vm = eval!(
             "
@@ -437,6 +447,16 @@ s.delete!(1,1)
         );
         assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "λj");
     }
+    #[test]
+    fn string_delete_in_place_rest() {
+        let vm: Vm = eval!(
+            "
+s = 'λκj'
+s.delete!(1,-1)
+"
+        );
+        assert_eq!(vm.global().get("s").unwrap().unwrap().string(), "λ");
+    }
 
     #[test]
     fn string_copy() {
@@ -444,6 +464,16 @@ s.delete!(1,1)
             "
 s = 'λκj'
 y = s.copy(1,2)
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "κj");
+    }
+    #[test]
+    fn string_copy_rest() {
+        let vm: Vm = eval!(
+            "
+s = 'λκj'
+y = s.copy(1,-1)
 "
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().string(), "κj");
@@ -537,6 +567,19 @@ y = Record::keys(x)
         );
         let arr = vm.global().get("y").unwrap().unwrap().array();
         assert_eq!(arr.len(), 2);
+    }
+    #[test]
+    fn record_has_key() {
+        let vm: Vm = eval!(
+            "
+record x
+    a = 10
+    b = 10
+end
+y = Record::has_key(x, 'a')
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
     // #endregion
 
