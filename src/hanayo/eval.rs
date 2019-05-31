@@ -18,12 +18,10 @@ fn eval(s: Value::Str) -> Value {
         c.cpushop(VmOpcode::OP_HALT);
         vm.code = Some(c.into_code());
         // save current evaluation context
-        let ctx = unsafe { vm.new_exec_ctx() };
+        let ctx = vm.new_exec_ctx();
         vm.jmp(target_ip);
         vm.execute();
-        unsafe {
-            vm.restore_exec_ctx(ctx);
-        }
+        vm.restore_exec_ctx(ctx);
         return Value::True;
     }
     Value::False

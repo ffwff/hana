@@ -373,7 +373,7 @@ impl Vm {
     }
 
     // execution context for eval
-    pub unsafe fn new_exec_ctx(&mut self) -> ManuallyDrop<Vm> {
+    pub fn new_exec_ctx(&mut self) -> ManuallyDrop<Vm> {
         // save current ctx
         let current_ctx = Vm {
             ip: self.ip,
@@ -400,7 +400,7 @@ impl Vm {
         };
         // create new ctx
         self.ip = 0;
-        self.localenv_bp = {
+        self.localenv_bp = unsafe {
             use std::alloc::{alloc_zeroed, Layout};
             use std::mem::size_of;
             let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
@@ -410,23 +410,25 @@ impl Vm {
         ManuallyDrop::new(current_ctx)
     }
 
-    pub unsafe fn restore_exec_ctx(&mut self, ctx: ManuallyDrop<Vm>) {
+    pub fn restore_exec_ctx(&mut self, ctx: ManuallyDrop<Vm>) {
         let mut ctx: Vm = ManuallyDrop::into_inner(ctx);
 
         // drop old
-        use std::alloc::{dealloc, Layout};
-        use std::mem;
-        // stack frames
-        if let Some(localenv) = self.localenv {
-            let mut env = self.localenv_bp;
-            while env != localenv.as_ptr() {
-                std::ptr::drop_in_place(env);
-                env = env.add(1);
+        unsafe {
+            use std::alloc::{dealloc, Layout};
+            use std::mem;
+            // stack frames
+            if let Some(localenv) = self.localenv {
+                let mut env = self.localenv_bp;
+                while env != localenv.as_ptr() {
+                    std::ptr::drop_in_place(env);
+                    env = env.add(1);
+                }
+                std::ptr::drop_in_place(localenv.as_ptr());
             }
-            std::ptr::drop_in_place(localenv.as_ptr());
+            let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
+            dealloc(self.localenv_bp as *mut u8, layout.unwrap());
         }
-        let layout = Layout::from_size_align(mem::size_of::<Env>() * CALL_STACK_SIZE, 4);
-        dealloc(self.localenv_bp as *mut u8, layout.unwrap());
 
         // prevent double freeing:
         ctx.localenv_bp = null_mut();
