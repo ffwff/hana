@@ -430,9 +430,6 @@ impl Vm {
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
         }
 
-        // prevent double freeing:
-        ctx.localenv_bp = null_mut();
-
         // fill in
         self.ip = ctx.ip;
         self.localenv = ctx.localenv.take();
@@ -441,6 +438,9 @@ impl Vm {
         self.exframe_fallthrough = ctx.exframe_fallthrough;
         self.native_call_depth = ctx.native_call_depth;
         self.stack = std::mem::replace(&mut ctx.stack, CArray::new());
+
+        // prevent double freeing:
+        ctx.localenv_bp = null_mut();
     }
 
     // instruction pointer
