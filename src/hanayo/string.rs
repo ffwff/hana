@@ -16,7 +16,7 @@ pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
         let arg = vm.stack.top().clone().unwrap();
         vm.stack.pop();
         vm.stack
-            .push(Value::Str(vm.malloc(format!("{:?}", arg).to_string())).wrap());
+            .push(Value::Str(vm.malloc(format!("{}", arg).to_string())).wrap());
     } else {
         vm.error = VmError::ERROR_MISMATCH_ARGUMENTS;
         vm.error_expected = 1;
