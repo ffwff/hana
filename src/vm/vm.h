@@ -17,6 +17,8 @@ enum vm_opcode {
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
     OP_IADD, OP_IMUL,
+    // bitwise
+    OP_BITWISE_AND, OP_BITWISE_OR, OP_BITWISE_XOR,
     // unary
     OP_NEGATE, OP_NOT,
     // comparison
@@ -63,6 +65,9 @@ enum vm_error {
     ERROR_OP_GEQ,
     ERROR_OP_EQ,
     ERROR_OP_NEQ,
+    ERROR_OP_BITWISE_AND,
+    ERROR_OP_BITWISE_OR,
+    ERROR_OP_BITWISE_XOR,
     ERROR_UNDEFINED_GLOBAL_VAR,
     ERROR_RECORD_NO_CONSTRUCTOR,
     ERROR_CONSTRUCTOR_NOT_FUNCTION,

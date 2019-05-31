@@ -133,6 +133,24 @@ void value_mod(struct value *result, const struct value left, const struct value
     } else
         result->type = TYPE_INTERPRETER_ERROR;
 }
+void value_bitwise_and(struct value *result, const struct value left, const struct value right, const struct vm *_) {
+    if (left.type == TYPE_INT && right.type == TYPE_INT) {
+        value_int(result, left.as.integer & right.as.integer);
+    } else
+        result->type = TYPE_INTERPRETER_ERROR;
+}
+void value_bitwise_or(struct value *result, const struct value left, const struct value right, const struct vm *_) {
+    if (left.type == TYPE_INT && right.type == TYPE_INT) {
+        value_int(result, left.as.integer | right.as.integer);
+    } else
+        result->type = TYPE_INTERPRETER_ERROR;
+}
+void value_bitwise_xor(struct value *result, const struct value left, const struct value right, const struct vm *_) {
+    if (left.type == TYPE_INT && right.type == TYPE_INT) {
+        value_int(result, left.as.integer ^ right.as.integer);
+    } else
+        result->type = TYPE_INTERPRETER_ERROR;
+}
 
 // in place
 // returns 1 if it CAN do it in place

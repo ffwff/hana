@@ -38,7 +38,7 @@ word -> String
     = w:$(id_start id_chars*) { w.to_string() }
     / #expected("word")
 keyword
-    = ("and" / "or" / "not" / "mod" / "begin" / "end" / "then" / "if" / "else" /
+    = ("and" / "or" / "not" / "xor" / "mod" / "begin" / "end" / "then" / "if" / "else" /
       "while" / "for" / "to" / "downto" / "step" / "continue" / "break" /
       "try" / "case" / "as" / "raise" / "in" / "of" / "match" /
       "function" / "return" / "record") !id_chars
@@ -159,6 +159,9 @@ condexpr -> std::boxed::Box<ast::AST>
 
 binexpr -> std::boxed::Box<ast::AST>
     = #infix<callexpr> {
+        #L x #quiet<(_ "&"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::BitwiseAnd) }
+           x #quiet<(_ "|"   _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::BitwiseOr ) }
+           x #quiet<(s "xor" s)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::BitwiseXor ) }
         #L x #quiet<(s "and" s)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::And) }
            x #quiet<(s "or"  s)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Or ) }
         #L x #quiet<(_ "=="  _)> y { boxed!(BinExpr, x.span().0, y.span().1, left: x, right:y, op: ast::BinOp::Eq ) }

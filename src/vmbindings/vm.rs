@@ -49,6 +49,10 @@ pub enum VmOpcode {
     OP_MOD,
     OP_IADD,
     OP_IMUL,
+    // bitwise
+    OP_BITWISE_AND,
+    OP_BITWISE_OR,
+    OP_BITWISE_XOR,
     // unary
     OP_NEGATE,
     OP_NOT,

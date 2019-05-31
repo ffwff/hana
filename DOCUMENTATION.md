@@ -244,6 +244,11 @@ Hana uses the ternary operator to denote condition expressions:
 condition ? then : otherwise
 ```
 
+### Bitwise operators
+
+`&`, `|`, `xor`: Takes in two integer operands and performs a bitwise and, or, xor
+respectively.
+
 ### Logical operators
 
 `and`, `or`: Casts the two values into booleans then does the equivalent **short-circuited**

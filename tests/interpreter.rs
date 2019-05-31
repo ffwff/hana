@@ -66,6 +66,22 @@ pub mod interpreter_tests {
     }
 
     #[test]
+    fn bitwise_ops() {
+        {
+            let vm: Vm = eval!("y = 2&5");
+            assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(2&5));
+        }
+        {
+            let vm: Vm = eval!("y = 2|5");
+            assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(2|5));
+        }
+        {
+            let vm: Vm = eval!("y = 2 xor 5");
+            assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(2^5));
+        }
+    }
+
+    #[test]
     fn cmp_gt() {
         let vm: Vm = eval!("y = 1 > 0");
         assert_eq!(vm.global().get("y").unwrap().unwrap(), Value::Int(1));

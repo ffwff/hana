@@ -55,6 +55,10 @@ void value_mul(struct value *result, const struct value left, const struct value
 void value_div(struct value *result, const struct value left, const struct value right, const struct vm *);
 void value_mod(struct value *result, const struct value left, const struct value right, const struct vm *);
 
+void value_bitwise_and(struct value *result, const struct value left, const struct value right, const struct vm *);
+void value_bitwise_or(struct value *result, const struct value left, const struct value right, const struct vm *);
+void value_bitwise_xor(struct value *result, const struct value left, const struct value right, const struct vm *);
+
 int value_iadd(struct value left, const struct value right);
 int value_imul(struct value left, const struct value right);
 

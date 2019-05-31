@@ -452,6 +452,9 @@ pub mod ast {
         Divs,
         Mods,
         Of,
+        BitwiseAnd,
+        BitwiseOr,
+        BitwiseXor,
     }
     /// Binary expressions
     pub struct BinExpr {
@@ -489,6 +492,9 @@ pub mod ast {
                     BinOp::Divs => "/=",
                     BinOp::Mods => "%=",
                     BinOp::Of => "of",
+                    BinOp::BitwiseAnd => "&",
+                    BinOp::BitwiseOr => "|",
+                    BinOp::BitwiseXor => "xor",
                 }
             )
         }
@@ -688,6 +694,9 @@ pub mod ast {
                 BinOp::Geq => arithop_do!(VmOpcode::OP_GEQ),
                 BinOp::Leq => arithop_do!(VmOpcode::OP_LEQ),
                 BinOp::Of => arithop_do!(VmOpcode::OP_OF),
+                BinOp::BitwiseAnd => arithop_do!(VmOpcode::OP_BITWISE_AND),
+                BinOp::BitwiseOr => arithop_do!(VmOpcode::OP_BITWISE_OR),
+                BinOp::BitwiseXor => arithop_do!(VmOpcode::OP_BITWISE_XOR),
                 // boolean operators
                 BinOp::And => {
                     self.left.emit(c);

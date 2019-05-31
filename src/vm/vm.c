@@ -51,6 +51,8 @@ void vm_execute(struct vm *vm) {
         // arith
         X(OP_ADD), X(OP_SUB), X(OP_MUL), X(OP_DIV), X(OP_MOD),
         X(OP_IADD), X(OP_IMUL),
+        // bitwise
+        X(OP_BITWISE_AND), X(OP_BITWISE_OR), X(OP_BITWISE_XOR),
         // unary
         X(OP_NEGATE), X(OP_NOT),
         // comparison
@@ -79,8 +81,7 @@ void vm_execute(struct vm *vm) {
         // iterators
         X(OP_FOR_IN), X(OP_SWAP),
         // modules
-        X(OP_USE)
-    };
+        X(OP_USE)};
 
 #undef X
 
@@ -222,6 +223,10 @@ void vm_execute(struct vm *vm) {
     binop(OP_MUL, value_mul)
     binop(OP_DIV, value_div)
     binop(OP_MOD, value_mod)
+
+    binop(OP_BITWISE_AND, value_bitwise_and)
+    binop(OP_BITWISE_OR, value_bitwise_or)
+    binop(OP_BITWISE_XOR, value_bitwise_xor)
 
     // in place arithmetic:
     // does regular arith, returns lhs on stack and jumps out of fallback if CAN do it in place (for primitives)
