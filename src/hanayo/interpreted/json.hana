@@ -133,7 +133,7 @@ record JSON
 
     function serialise(obj) begin
         if obj of Record begin
-            if obj.to_json != nil then return obj.to_json()
+            if Record::has_key(obj, "to_json") then return obj.to_json()
             return Record::to_json(obj)
         end
         return obj.to_json()
