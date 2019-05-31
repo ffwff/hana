@@ -56,7 +56,7 @@ Syntax:
 for [var]=[from] [to/downto] [dest] step [step] then [statement]
 ```
 
-The statement sets `[var]` to `[from]`, and loops to (or down to) `[dest]` (inclusive)
+The statement sets `[var]` to `[from]`, and loops to (or down to) `[dest]` **(exclusive)**
 stepping `[step]` each iteration. With each iteration, it executes `[statement]`.
 
 `step [step]` is optional, if not specified, and the `to` keyword is used, `[step]` will be 1,

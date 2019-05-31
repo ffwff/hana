@@ -147,8 +147,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
 
 fn handle_error(vm: &Vm, c: &compiler::Compiler) {
     if vm.error != VmError::ERROR_NO_ERROR {
-        {
-            let smap = c.lookup_smap(vm.ip() as usize).unwrap();
+        if let Some(smap) = c.lookup_smap(vm.ip() as usize) {
             let src: &String = &c.modules_info.borrow().sources[smap.fileno];
             let (line, col) = ast::pos_to_line(&src, smap.file.0);
             let (line_end, col_end) = ast::pos_to_line(&src, smap.file.1);
@@ -168,6 +167,9 @@ fn handle_error(vm: &Vm, c: &compiler::Compiler) {
                 "interpreter error:",
                 &message,
             );
+        } else {
+            println!("interpreter error: {}", vm.error);
+            return;
         }
         if let Some(hint) = vm.error.hint(vm) {
             eprintln!("{} {}", ac::Red.bold().paint("hint:"), hint);

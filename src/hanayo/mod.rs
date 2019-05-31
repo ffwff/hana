@@ -152,6 +152,7 @@ pub fn init(vm: &mut Vm) {
         let record = vm.malloc(Record::new());
         set_obj_var!(record, "constructor", Value::NativeFn(record::constructor));
         set_obj_var!(record, "keys", Value::NativeFn(record::keys));
+        set_obj_var!(record, "has_key", Value::NativeFn(record::has_key));
         vm.drec = record.clone();
         set_var!("Record", Value::Record(record));
     }

@@ -1008,11 +1008,7 @@ pub mod ast {
             let next_it_pos = c.clen();
             c.emit_get_var(self.id.clone());
             self.to.emit(c);
-            c.cpushop(if self.is_up {
-                VmOpcode::OP_LT
-            } else {
-                VmOpcode::OP_GT
-            });
+            c.cpushop(VmOpcode::OP_NEQ);
             c.cpushop(VmOpcode::OP_JCOND);
             c.cpush16((then_label as isize - c.clen() as isize) as u16);
 
