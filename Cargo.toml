@@ -43,4 +43,3 @@ cc = { version = "1.0", features = ["parallel"] }
 
 [profile.release]
 lto = true
-panic = 'abort'

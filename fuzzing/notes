@@ -1,3 +1,6 @@
+#building
+RUSTFLAGS='-C codegen-units=1' cargo afl build
+
 cargo afl fuzz -i ../in -o ../out target/debug/fuzzing
 
  If this test case is just a fluke, the other option is to just avoid it
