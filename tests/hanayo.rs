@@ -1,3 +1,5 @@
+mod add_source;
+use add_source::add_source;
 extern crate haru;
 
 #[cfg(test)]
@@ -8,10 +10,13 @@ pub mod hanayo_tests {
     use haru::hanayo;
     use haru::vmbindings::value::Value;
     use haru::vmbindings::vm::{Vm, VmOpcode};
+    use super::*;
 
     macro_rules! eval {
         ($x:expr) => {{
-            let prog = grammar::start($x).unwrap();
+            let s = $x;
+            add_source(s);
+            let prog = grammar::start(s).unwrap();
             let mut c = compiler::Compiler::new();
             for stmt in prog {
                 stmt.emit(&mut c);

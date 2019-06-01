@@ -1,0 +1,9 @@
+[package]
+name = "fuzzing"
+version = "0.1.0"
+authors = ["ffwff <mogamiriver@tuta.io>"]
+edition = "2018"
+
+[dependencies]
+afl = "0.4"
+haru = { version = "0.26.5", path = "../../" }
