@@ -12,7 +12,7 @@ struct GcNode {
     size: usize,
     unreachable: bool, // by default this is false
     // if the node is unreachable, it will be pruned (free'd)
-    pub native_refs: usize,
+    native_refs: usize,
     tracer: GenericFunction,
     // tracer gets called sweep phased (FIXME)
     finalizer: GenericFunction,
