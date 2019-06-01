@@ -1,6 +1,5 @@
 //! Foreign C bindings for the virtual machine
 
-use super::carray::CArray;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
 use super::env::Env;
@@ -170,10 +169,10 @@ mod foreignc {
     #[no_mangle]
     unsafe extern "C" fn string_chars(
         s: *const String, vm: *const Vm,
-    ) -> *mut CArray<NativeValue> {
+    ) -> *mut Vec<NativeValue> {
         let s: &'static String = &*s;
         let vm = &*vm;
-        let chars = vm.malloc(CArray::new());
+        let chars = vm.malloc(Vec::new());
         for ch in s.graphemes(true) {
             chars
                 .as_mut()
@@ -227,22 +226,22 @@ mod foreignc {
 
     // #region array
     #[no_mangle]
-    unsafe extern "C" fn array_obj_malloc(vm: *const Vm) -> *mut CArray<NativeValue> {
-        (&*vm).malloc(CArray::new()).into_raw()
+    unsafe extern "C" fn array_obj_malloc(vm: *const Vm) -> *mut Vec<NativeValue> {
+        (&*vm).malloc(Vec::new()).into_raw()
     }
     #[no_mangle]
-    unsafe extern "C" fn array_obj_malloc_n(n: usize, vm: *const Vm) -> *mut CArray<NativeValue> {
-        (&*vm).malloc(CArray::reserve(n)).into_raw()
+    unsafe extern "C" fn array_obj_malloc_n(n: usize, vm: *const Vm) -> *mut Vec<NativeValue> {
+        (&*vm).malloc(Vec::with_capacity(n)).into_raw()
     }
     #[no_mangle]
     unsafe extern "C" fn array_obj_repeat(
-        carray: *const CArray<NativeValue>, n: usize, vm: *const Vm,
-    ) -> *mut CArray<NativeValue> {
+        carray: *const Vec<NativeValue>, n: usize, vm: *const Vm,
+    ) -> *mut Vec<NativeValue> {
         let array = &*carray;
-        let mut result: CArray<NativeValue> = CArray::reserve(n);
+        let mut result: Vec<NativeValue> = Vec::with_capacity(n);
         for i in 0..n {
             for j in 0..array.len() {
-                result[j * array.len() + i] = array[j].clone();
+                result.push(array[j].clone());
             }
         }
         (&*vm).malloc(result).into_raw()
@@ -256,9 +255,8 @@ mod foreignc {
         env.reserve(nslots);
         let vm = &mut *cvm;
         for i in 0..env.nargs {
-            let val = vm.stack.top();
+            let val = vm.stack.pop().unwrap();
             env.set(i, val.clone());
-            vm.stack.pop();
         }
     }
 

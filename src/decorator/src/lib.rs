@@ -95,16 +95,10 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                     _ => panic!("unknown type {}!", atype),
                 };
                 args_setup.push(match atype.as_str() {
-                    "Any" => quote!(let #pattern = {
-                        let val = vm.stack.top().unwrap();
-                        vm.stack.pop();
-                        val
-                    };),
+                    "Any" => quote!(let #pattern = vm.stack.pop().unwrap().unwrap();),
                     _ => quote!(
                         let #pattern = {
-                            let val = vm.stack.top().unwrap();
-                            vm.stack.pop();
-                            match val {
+                            match vm.stack.pop().unwrap().unwrap() {
                                 #match_arm,
                                 _ => panic!("expected argument {} to be type {}",
                                     #argname,

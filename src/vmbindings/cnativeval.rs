@@ -1,7 +1,6 @@
 //! Provides the native value representation
 //! used by the virtual machine
 
-use super::carray::CArray;
 use super::function::Function;
 use super::gc::{mark_reachable, ref_inc, ref_dec, Gc, GcTraceable};
 use super::record::Record;
@@ -46,7 +45,7 @@ impl NativeValue {
             _valueType::TYPE_STR => Value::Str(Gc::from_raw(self.data as *mut String)),
             _valueType::TYPE_DICT => Value::Record(Gc::from_raw(self.data as *mut Record)),
             _valueType::TYPE_ARRAY => {
-                Value::Array(Gc::from_raw(self.data as *mut CArray<NativeValue>))
+                Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
             }
         }
     }
@@ -70,7 +69,7 @@ impl NativeValue {
             }
             _valueType::TYPE_ARRAY => {
                 if mark_reachable(self.data as *mut libc::c_void) {
-                    CArray::trace(self.data as *mut libc::c_void)
+                    Vec::trace(self.data as *mut libc::c_void)
                 }
             }
             _ => {}

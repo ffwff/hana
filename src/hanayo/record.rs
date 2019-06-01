@@ -1,5 +1,4 @@
 //! Provides Record record for handling records
-use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
@@ -11,7 +10,7 @@ fn constructor() -> Value {
 
 #[hana_function()]
 fn keys(rec: Value::Record) -> Value {
-    let array = vm.malloc(CArray::new());
+    let array = vm.malloc(Vec::new());
     for (key, _) in rec.as_ref().iter() {
         array
             .as_mut()

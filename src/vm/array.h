@@ -8,21 +8,21 @@ void *rrealloc(void *ptr, size_t nelems, size_t size, size_t new_size);
 #define array(type)      \
     struct {             \
         type* data;      \
-        size_t length;   \
         size_t capacity; \
+        size_t length;   \
     }
 
 #define array_init(type)                  \
     {                                     \
         .data = rcalloc(1, sizeof(type)), \
-        .length = 0,                      \
         .capacity = 1                     \
+        .length = 0,                      \
     }
 #define array_init_n(type, n)             \
     {                                     \
         .data = rcalloc(n, sizeof(type)), \
-        .length = n,                      \
         .capacity = n                     \
+        .length = n,                      \
     }
 
 #define array_free(array)   \

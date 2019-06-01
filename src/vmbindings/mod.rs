@@ -1,6 +1,5 @@
 //! Bindings for the virtual machine.
 
-pub mod carray;
 pub mod chmap;
 pub mod cnativeval;
 pub mod env;

@@ -1,11 +1,10 @@
 //! Provides Sys record
-use crate::vmbindings::carray::CArray;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 
 #[hana_function()]
 fn args() -> Value {
-    let array = vm.malloc(CArray::new());
+    let array = vm.malloc(Vec::new());
     for arg in std::env::args().skip(1) {
         array
             .as_mut()

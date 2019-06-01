@@ -1,9 +1,8 @@
 //! Provides an abstraction for native values
 
-use super::carray::CArray;
 use super::cnativeval::{NativeValue, _valueType};
 use super::function::Function;
-use super::gc::Gc;
+use super::gc::{Gc, GcTraceable};
 use super::record::Record;
 use super::vm::Vm;
 extern crate libc;
@@ -27,9 +26,20 @@ pub enum Value {
     Fn(Gc<Function>),
     Str(Gc<String>),
     Record(Gc<Record>),
-    Array(Gc<CArray<NativeValue>>),
+    Array(Gc<Vec<NativeValue>>),
 
     PropagateError,
+}
+
+impl GcTraceable for Vec<NativeValue> {
+    fn trace(ptr: *mut libc::c_void) {
+        unsafe {
+            let self_ = &*(ptr as *mut Self);
+            for val in self_.iter() {
+                val.trace();
+            }
+        }
+    }
 }
 
 #[allow(improper_ctypes)]
@@ -71,7 +81,7 @@ impl Value {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    pub fn array(&self) -> &'static CArray<NativeValue> {
+    pub fn array(&self) -> &'static Vec<NativeValue> {
         match self {
             Value::Array(s) => unsafe { &*s.to_raw() },
             _ => {
@@ -135,7 +145,7 @@ impl Value {
                 },
                 Value::Array(p) => NativeValue {
                     r#type: _valueType::TYPE_ARRAY,
-                    data: transmute::<*const CArray<NativeValue>, u64>(p.to_raw()),
+                    data: transmute::<*const Vec<NativeValue>, u64>(p.to_raw()),
                 },
                 _ => unimplemented!(),
             }
