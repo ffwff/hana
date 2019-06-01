@@ -2,6 +2,7 @@
 
 [![travis](https://travis-ci.org/ffwff/hana.svg?branch=haru)](https://travis-ci.org/ffwff/hana)
 [![codecov](https://codecov.io/gh/ffwff/hana/branch/haru/graph/badge.svg)](https://codecov.io/gh/ffwff/hana)
+[![Gitter](https://badges.gitter.im/flowers-of-spring/community.svg)](https://gitter.im/flowers-of-spring/community)
 
 **hana** is a small dynamically-typed scripting language written in Rust/C
 and is inspired by Pascal, Ruby and Javascript. It primarily supports prototype-based
