@@ -95,8 +95,7 @@ pub mod ast {
     #[cfg_attr(tarpaulin, skip)]
     impl fmt::Debug for StrLiteral {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            unimplemented!()
-            //write!(f, "{{\"string\": \"{}\"}}", self.rawval)
+            write!(f, "{{\"string\": {:?}}}", self.val)
         }
     }
     impl AST for StrLiteral {
