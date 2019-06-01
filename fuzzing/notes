@@ -6,6 +6,9 @@ cargo afl fuzz -i ../in -o ../out target/debug/fuzzing
 # filter out timeouts
 cargo afl fuzz  -i ../in -o ../out target/debug/fuzzing | grep -o "[0-9]*\.hana"
 
+# minimize fuzzing dataset
+cargo afl cmin -i ./in-raw -o ./in -- fuzzing/target/debug/fuzzing
+
 mkdir /tmp/out
 bwrap --ro-bind /usr /usr \
  --symlink usr/lib64 /lib64 \
