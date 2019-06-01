@@ -26,6 +26,29 @@ use num_traits::cast::FromPrimitive;
 
 const CALL_STACK_SIZE: usize = 512;
 
+#[repr(transparent)]
+struct ConstNonNull<T: Sized> {
+    pointer: std::num::NonZeroUsize,
+    phantom: std::marker::PhantomData<T>,
+}
+
+impl<T: Sized> ConstNonNull<T> {
+
+    pub fn new(pointer: *const T) -> Option<Self> {
+        if !pointer.is_null() {
+            unsafe {
+                Some(ConstNonNull {
+                    pointer: std::mem::transmute(pointer),
+                    phantom: std::marker::PhantomData,
+                })
+            }
+        } else {
+            None
+        }
+    }
+
+}
+
 //
 #[repr(u8)]
 #[derive(Debug, PartialEq, Clone, FromPrimitive, ToPrimitive)]
@@ -131,7 +154,7 @@ pub struct Vm {
     pub error_expected: u32,
 
     // for handling exceptions inside of interpreted functions called by native functions
-    exframe_fallthrough: Option<*const ExFrame>,
+    exframe_fallthrough: Option<ConstNonNull<ExFrame>>,
     native_call_depth: usize,
 
     // rust-specific fields
@@ -294,14 +317,6 @@ impl Vm {
     pub fn localenv(&self) -> Option<NonNull<Env>> {
         self.localenv.clone()
     }
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn localenv_is_null(&self) -> bool {
-        self.localenv.is_none()
-    }
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn localenv_bp(&self) -> *mut Env {
-        self.localenv_bp
-    }
     /// Converts call stack into vector of stack frames.
     ///
     /// This is used for error handling and such.
@@ -349,7 +364,7 @@ impl Vm {
                     self.stack.pop();
                 }
                 if exframe.unwind_native_call_depth != self.native_call_depth {
-                    self.exframe_fallthrough = Some(exframe);
+                    self.exframe_fallthrough = ConstNonNull::new(exframe);
                 }
                 return true;
             }
@@ -415,7 +430,7 @@ impl Vm {
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
-            exframe_fallthrough: self.exframe_fallthrough,
+            exframe_fallthrough: self.exframe_fallthrough.take(),
             native_call_depth: self.native_call_depth,
             modules_info: None,
             stdlib: None,
@@ -458,7 +473,7 @@ impl Vm {
         self.localenv = ctx.localenv.take();
         self.localenv_bp = ctx.localenv_bp;
         self.exframes = ctx.exframes.take();
-        self.exframe_fallthrough = ctx.exframe_fallthrough;
+        self.exframe_fallthrough = ctx.exframe_fallthrough.take();
         self.native_call_depth = ctx.native_call_depth;
         self.stack = std::mem::replace(&mut ctx.stack, CArray::new());
 

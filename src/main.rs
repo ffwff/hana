@@ -174,9 +174,10 @@ fn handle_error(vm: &Vm, c: &compiler::Compiler) {
         if let Some(hint) = vm.error.hint(vm) {
             eprintln!("{} {}", ac::Red.bold().paint("hint:"), hint);
         }
-        if !vm.localenv_is_null() {
+        let envs = vm.localenv_to_vec();
+        if envs.len() > 0 {
             eprintln!("{}", ac::Red.bold().paint("backtrace:"));
-            for env in vm.localenv_to_vec() {
+            for env in envs {
                 let ip = env.retip as usize;
                 if let Some(smap) = c.lookup_smap(ip) {
                     let modules_info = c.modules_info.borrow();
