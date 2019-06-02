@@ -151,6 +151,7 @@ impl Value {
         unsafe { value_is_true(self.wrap(), vm) }
     }
 
+    #[cfg_attr(tarpaulin, skip)]
     pub fn type_name(&self) -> &str {
         match self {
             Value::Nil => "nil",

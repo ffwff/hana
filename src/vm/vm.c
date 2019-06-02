@@ -509,9 +509,8 @@ void vm_execute(struct vm *vm) {
             JMP_INTERPRETED_FN(1 + sizeof(nargs), {
                 if (vm->exframe_fallthrough != NULL) {
                     if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) {
-                        assert(0);
+                        dispatch();
                     } else {
-                        // just unwind
                         return;
                     }
                 }

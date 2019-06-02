@@ -8,7 +8,7 @@ use super::vm::Vm;
 
 #[derive(Debug, PartialEq)]
 enum GcNodeColor {
-    White, // unused
+    White,
     Gray,
     Black,
 }
