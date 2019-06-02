@@ -32,7 +32,6 @@ struct ConstNonNull<T: Sized> {
 }
 
 impl<T: Sized> ConstNonNull<T> {
-
     pub fn new(pointer: *const T) -> Option<Self> {
         if !pointer.is_null() {
             unsafe {
@@ -45,7 +44,6 @@ impl<T: Sized> ConstNonNull<T> {
             None
         }
     }
-
 }
 
 //
@@ -143,11 +141,11 @@ pub struct Vm {
     pub stack: Vec<NativeValue>,    // stack
 
     // prototype types for primitive values
-    pub(crate) dstr:   Option<Gc<Record>>,
-    pub(crate) dint:   Option<Gc<Record>>,
+    pub(crate) dstr: Option<Gc<Record>>,
+    pub(crate) dint: Option<Gc<Record>>,
     pub(crate) dfloat: Option<Gc<Record>>,
     pub(crate) darray: Option<Gc<Record>>,
-    pub(crate) drec:   Option<Gc<Record>>,
+    pub(crate) drec: Option<Gc<Record>>,
 
     pub error: VmError,
     pub error_expected: u32,
@@ -186,11 +184,11 @@ impl Vm {
             exframes: Some(Vec::with_capacity(2)),
             code,
             stack: Vec::with_capacity(2),
-            dstr:   None,
-            dint:   None,
+            dstr: None,
+            dint: None,
             dfloat: None,
             darray: None,
-            drec:   None,
+            drec: None,
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
             exframe_fallthrough: None,
@@ -421,11 +419,11 @@ impl Vm {
             code: None, // shared
             stack: std::mem::replace(&mut self.stack, Vec::with_capacity(2)),
             // types don't need to be saved:
-            dstr:   None,
-            dint:   None,
+            dstr: None,
+            dint: None,
             dfloat: None,
             darray: None,
-            drec:   None,
+            drec: None,
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,

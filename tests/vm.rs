@@ -115,7 +115,10 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.last().unwrap().unwrap().string(), String::from("Test"));
+        assert_eq!(
+            *vm.stack.last().unwrap().unwrap().string(),
+            String::from("Test")
+        );
     }
 
     #[test]
@@ -130,7 +133,10 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.last().unwrap().unwrap().string(), String::from("TestTest"));
+        assert_eq!(
+            *vm.stack.last().unwrap().unwrap().string(),
+            String::from("TestTest")
+        );
     }
 
     #[test]
@@ -145,7 +151,10 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.last().unwrap().unwrap().string(), String::from("TestTest"));
+        assert_eq!(
+            *vm.stack.last().unwrap().unwrap().string(),
+            String::from("TestTest")
+        );
     }
     // #endregion
 

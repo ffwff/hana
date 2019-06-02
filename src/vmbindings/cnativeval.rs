@@ -2,7 +2,7 @@
 //! used by the virtual machine
 
 use super::function::Function;
-use super::gc::{mark_reachable, ref_inc, ref_dec, Gc, GcTraceable};
+use super::gc::{mark_reachable, ref_dec, ref_inc, Gc, GcTraceable};
 use super::record::Record;
 use super::value::{NativeFnData, Value};
 
@@ -41,10 +41,16 @@ impl NativeValue {
             _valueType::TYPE_NATIVE_FN => unsafe {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
             },
-            _valueType::TYPE_FN => Value::Fn(Gc::from_raw(self.data as *mut Function)),
-            _valueType::TYPE_STR => Value::Str(Gc::from_raw(self.data as *mut String)),
-            _valueType::TYPE_DICT => Value::Record(Gc::from_raw(self.data as *mut Record)),
-            _valueType::TYPE_ARRAY => {
+            _valueType::TYPE_FN => unsafe {
+                Value::Fn(Gc::from_raw(self.data as *mut Function))
+            },
+            _valueType::TYPE_STR => unsafe {
+                Value::Str(Gc::from_raw(self.data as *mut String))
+            },
+            _valueType::TYPE_DICT => unsafe {
+                Value::Record(Gc::from_raw(self.data as *mut Record))
+            },
+            _valueType::TYPE_ARRAY => unsafe {
                 Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
             }
         }
@@ -83,8 +89,7 @@ impl NativeValue {
             _valueType::TYPE_FN
             | _valueType::TYPE_STR
             | _valueType::TYPE_DICT
-            | _valueType::TYPE_ARRAY
-            => {
+            | _valueType::TYPE_ARRAY => {
                 ref_inc(self.data as *mut libc::c_void);
             }
             _ => {}
@@ -97,8 +102,7 @@ impl NativeValue {
             _valueType::TYPE_FN
             | _valueType::TYPE_STR
             | _valueType::TYPE_DICT
-            | _valueType::TYPE_ARRAY
-            => {
+            | _valueType::TYPE_ARRAY => {
                 ref_dec(self.data as *mut libc::c_void);
             }
             _ => {}

@@ -9,7 +9,6 @@ use std::borrow::Borrow;
 use std::boxed::Box;
 use std::hash::Hash;
 
-#[repr(C)]
 /// A record value in Hana
 pub struct Record {
     data: CHashMap,

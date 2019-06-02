@@ -1,10 +1,10 @@
 //! Provides Cmd record for executing and handling commands
-use std::io::Write;
-use std::process::{Child, Command, Output, Stdio};
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
+use std::io::Write;
+use std::process::{Child, Command, Output, Stdio};
 
 #[hana_function()]
 fn constructor(val: Value::Any) -> Value {

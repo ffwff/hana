@@ -5,10 +5,10 @@ use super::cnativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
+use super::gc::Gc;
 use super::record::Record;
 use super::value::Value;
 use super::vm::Vm;
-use super::gc::Gc;
 
 extern crate unicode_segmentation;
 
@@ -18,7 +18,7 @@ mod foreignc {
     use super::*;
     use std::alloc::{alloc_zeroed, realloc, Layout};
     use std::ffi::CStr;
-    use std::ptr::{null, null_mut, NonNull};
+    use std::ptr::{null, NonNull};
     use unicode_segmentation::UnicodeSegmentation;
 
     // #region memory allocation
@@ -131,9 +131,7 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_repeat(
-        cleft: *const String, n: i64, vm: *const Vm,
-    ) -> Gc<String> {
+    unsafe extern "C" fn string_repeat(cleft: *const String, n: i64, vm: *const Vm) -> Gc<String> {
         let left: &'static String = &*cleft;
         (&*vm).malloc(left.repeat(n as usize))
     }
@@ -152,7 +150,9 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_at(left: *const String, idx: i64, vm: *const Vm) -> Option<Gc<String>> {
+    unsafe extern "C" fn string_at(
+        left: *const String, idx: i64, vm: *const Vm,
+    ) -> Option<Gc<String>> {
         let left: &'static String = &*left;
         if let Some(ch) = left.graphemes(true).nth(idx as usize) {
             Some((&*vm).malloc(ch.to_string()))
@@ -168,9 +168,7 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_chars(
-        s: *const String, vm: *const Vm,
-    ) -> Gc<Vec<NativeValue>> {
+    unsafe extern "C" fn string_chars(s: *const String, vm: *const Vm) -> Gc<Vec<NativeValue>> {
         let s: &'static String = &*s;
         let vm = &*vm;
         let chars = vm.malloc(Vec::new());
@@ -240,7 +238,7 @@ mod foreignc {
     ) -> Gc<Vec<NativeValue>> {
         let array = &*carray;
         let mut result: Vec<NativeValue> = Vec::with_capacity(n);
-        for i in 0..n {
+        for _i in 0..n {
             for j in 0..array.len() {
                 result.push(array[j].clone());
             }

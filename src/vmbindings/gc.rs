@@ -93,7 +93,10 @@ impl GcManager {
 
     pub fn malloc<T: Sized + GcTraceable>(&mut self, vm: &Vm, val: T) -> Gc<T> {
         Gc {
-            ptr: NonNull::new(unsafe { self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T)) }).unwrap(),
+            ptr: NonNull::new(unsafe {
+                self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T))
+            })
+            .unwrap(),
         }
     }
 
@@ -199,12 +202,10 @@ pub struct Gc<T: Sized + GcTraceable> {
 
 impl<T: Sized + GcTraceable> Gc<T> {
     // raw
-    pub fn from_raw(ptr: *mut T) -> Gc<T> {
-        unsafe {
-            ref_inc(ptr as *mut libc::c_void);
-        }
+    pub unsafe fn from_raw(ptr: *mut T) -> Gc<T> {
+        ref_inc(ptr as *mut libc::c_void);
         Gc {
-            ptr: NonNull::new(ptr).unwrap()
+            ptr: NonNull::new(ptr).unwrap(),
         }
     }
 

@@ -14,7 +14,7 @@ pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
 
     let nargs = nargs as usize;
     let array = vm.malloc(Vec::with_capacity(nargs));
-    for i in 0..nargs {
+    for _i in 0..nargs {
         let val = vm.stack.pop().unwrap();
         array.as_mut().push(val.clone());
     }
@@ -34,7 +34,9 @@ fn insert_(array: Value::Array, pos: Value::Int, elem: Value::Any) -> Value {
 
 #[hana_function()]
 fn delete_(array: Value::Array, from_pos: Value::Int, nelems: Value::Int) -> Value {
-    array.as_mut().drain((from_pos as usize)..((nelems as usize) + 1));
+    array
+        .as_mut()
+        .drain((from_pos as usize)..((nelems as usize) + 1));
     Value::Int(array.as_ref().len() as i64)
 }
 
