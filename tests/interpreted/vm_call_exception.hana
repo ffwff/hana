@@ -1,9 +1,8 @@
 a = [1,2]
 function fn(value) begin
-    raise 0
+    function fn2(value) begin
+        raise 0
+    end
+    a.map(fn2)
 end
-try
-    a.map(fn)
-case Int as i
-    print(i)
-end
+a.map(fn)

@@ -9,7 +9,7 @@ use std::rc::Rc;
 extern crate libc;
 
 use super::chmap::CHashMap;
-use super::cnativeval::NativeValue;
+use super::cnativeval::{NativeValueType, NativeValue};
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
@@ -381,12 +381,7 @@ impl Vm {
     // functions
     pub fn call(&mut self, fun: NativeValue, args: &Vec<NativeValue>) -> Option<NativeValue> {
         let val = unsafe { vm_call(self, fun, args) };
-        if let Some(opcode) = VmOpcode::from_u8(self.code.as_ref().unwrap()[self.ip as usize]) {
-            if opcode == VmOpcode::OP_HALT {
-                return None;
-            }
-        }
-        if self.exframe_fallthrough.is_some() || self.error != VmError::ERROR_NO_ERROR {
+        if val.r#type == NativeValueType::TYPE_INTERPRETER_ERROR {
             None
         } else {
             Some(val)

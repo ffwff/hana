@@ -1,7 +1,7 @@
 //! Provides Array record for handling arrays
 use std::cmp::Ordering;
 
-use crate::vmbindings::cnativeval::{NativeValue, _valueType};
+use crate::vmbindings::cnativeval::{NativeValue, NativeValueType};
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 
@@ -63,7 +63,7 @@ fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
     let right = right.clone();
     let mut val = NativeValue {
         data: 0,
-        r#type: _valueType::TYPE_NIL,
+        r#type: NativeValueType::TYPE_NIL,
     };
 
     unsafe {
@@ -159,7 +159,7 @@ fn index(array: Value::Array, elem: Value::Any) -> Value {
     for i in 0..(array.len() - 1) {
         let mut val = NativeValue {
             data: 0,
-            r#type: _valueType::TYPE_NIL,
+            r#type: NativeValueType::TYPE_NIL,
         };
         unsafe {
             value_eq(&mut val, array[i], elem.wrap());

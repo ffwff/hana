@@ -444,15 +444,16 @@ void vm_execute(struct vm *vm) {
     }
     // pops a function/record constructor on top of the stack,
     // sets up necessary environment and calls it.
-#define CALL_NATIVE(expr)        \
-    do {                         \
-        vm->native_call_depth++; \
-        expr(vm, nargs);         \
-        vm->native_call_depth--; \
-        if(vm->exframe_fallthrough != NULL) \
-            vm->exframe_fallthrough = NULL; \
-        else if(vm->error) return;    \
-    } while(0)
+#define CALL_NATIVE(expr)                                                                     \
+    do {                                                                                      \
+        vm->native_call_depth++;                                                              \
+        expr(vm, nargs);                                                                      \
+        vm->native_call_depth--;                                                              \
+        if ((vm->exframe_fallthrough != NULL &&                                               \
+             exframe_native_stack_depth(vm->exframe_fallthrough) != vm->native_call_depth) || \
+            vm->error != ERROR_NO_ERROR)                                                      \
+            return;                                                                           \
+    } while (0)
 #define JMP_INTERPRETED_FN_(POP, UNWIND, END_IF_NATIVE)                      \
     do {                                                                     \
         if (val.type == TYPE_DICT) {                                         \
@@ -762,7 +763,7 @@ void vm_execute(struct vm *vm) {
             }
             return;
         }
-        if (vm->exframe_fallthrough != NULL) {
+        if (vm->exframe_fallthrough != NULL || vm->native_call_depth != 0) {
             LOG("falling through pls wait (%ld)\n", vm->native_call_depth);
             return;
         }
@@ -1024,8 +1025,10 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     }
     // call it
     vm_execute(vm);
-    if(vm->error || vm->exframe_fallthrough != NULL) // exception
+    if(vm->error || vm->exframe_fallthrough != NULL) { // exception
+        LOG("falling through psl wait %ld", vm->native_call_depth);
         return errorval;
+    }
     if(vm->localenv != curenv) { // exception occurred outside of function's scope
         // NOTE: curenv already free'd from unwinding
         return errorval;

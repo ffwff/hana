@@ -1,6 +1,6 @@
 //! Provides an abstraction for native values
 
-use super::cnativeval::{NativeValue, _valueType};
+use super::cnativeval::{NativeValue, NativeValueType};
 use super::function::Function;
 use super::gc::Gc;
 use super::record::Record;
@@ -97,43 +97,43 @@ impl Value {
         unsafe {
             match &self {
                 Value::Nil => NativeValue {
-                    r#type: _valueType::TYPE_NIL,
+                    r#type: NativeValueType::TYPE_NIL,
                     data: 0,
                 },
                 Value::True => NativeValue {
-                    r#type: _valueType::TYPE_INT,
+                    r#type: NativeValueType::TYPE_INT,
                     data: 1,
                 },
                 Value::False => NativeValue {
-                    r#type: _valueType::TYPE_INT,
+                    r#type: NativeValueType::TYPE_INT,
                     data: 0,
                 },
                 Value::Int(n) => NativeValue {
-                    r#type: _valueType::TYPE_INT,
+                    r#type: NativeValueType::TYPE_INT,
                     data: transmute::<i64, u64>(*n),
                 },
                 Value::Float(n) => NativeValue {
-                    r#type: _valueType::TYPE_FLOAT,
+                    r#type: NativeValueType::TYPE_FLOAT,
                     data: transmute::<f64, u64>(*n),
                 },
                 Value::NativeFn(f) => NativeValue {
-                    r#type: _valueType::TYPE_NATIVE_FN,
+                    r#type: NativeValueType::TYPE_NATIVE_FN,
                     data: transmute::<NativeFnData, u64>(*f),
                 },
                 Value::Fn(p) => NativeValue {
-                    r#type: _valueType::TYPE_FN,
+                    r#type: NativeValueType::TYPE_FN,
                     data: transmute::<*const Function, u64>(p.to_raw()),
                 },
                 Value::Str(p) => NativeValue {
-                    r#type: _valueType::TYPE_STR,
+                    r#type: NativeValueType::TYPE_STR,
                     data: transmute::<*const String, u64>(p.to_raw()),
                 },
                 Value::Record(p) => NativeValue {
-                    r#type: _valueType::TYPE_DICT,
+                    r#type: NativeValueType::TYPE_DICT,
                     data: transmute::<*const Record, u64>(p.to_raw()),
                 },
                 Value::Array(p) => NativeValue {
-                    r#type: _valueType::TYPE_ARRAY,
+                    r#type: NativeValueType::TYPE_ARRAY,
                     data: transmute::<*const Vec<NativeValue>, u64>(p.to_raw()),
                 },
                 _ => unimplemented!(),

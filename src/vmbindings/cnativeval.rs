@@ -10,7 +10,7 @@ use super::value::{NativeFnData, Value};
 #[allow(non_camel_case_types, dead_code)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 /// Type of the native value
-pub enum _valueType {
+pub enum NativeValueType {
     TYPE_NIL = 0,
     TYPE_INT = 1,
     TYPE_FLOAT = 2,
@@ -19,6 +19,7 @@ pub enum _valueType {
     TYPE_STR = 5,
     TYPE_DICT = 6,
     TYPE_ARRAY = 7,
+    TYPE_INTERPRETER_ERROR = 127,
 }
 
 #[repr(C, packed)]
@@ -26,7 +27,7 @@ pub enum _valueType {
 /// Native value representation used by the virtual machine
 pub struct NativeValue {
     pub data: u64,
-    pub r#type: _valueType,
+    pub r#type: NativeValueType,
 }
 
 impl NativeValue {
@@ -35,34 +36,35 @@ impl NativeValue {
         use std::mem::transmute;
         #[allow(non_camel_case_types)]
         match &self.r#type {
-            _valueType::TYPE_NIL => Value::Nil,
-            _valueType::TYPE_INT => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
-            _valueType::TYPE_FLOAT => Value::Float(f64::from_bits(self.data)),
-            _valueType::TYPE_NATIVE_FN => unsafe {
+            NativeValueType::TYPE_NIL => Value::Nil,
+            NativeValueType::TYPE_INT => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
+            NativeValueType::TYPE_FLOAT => Value::Float(f64::from_bits(self.data)),
+            NativeValueType::TYPE_NATIVE_FN => unsafe {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
             },
-            _valueType::TYPE_FN => unsafe {
+            NativeValueType::TYPE_FN => unsafe {
                 Value::Fn(Gc::from_raw(self.data as *mut Function))
             },
-            _valueType::TYPE_STR => unsafe {
+            NativeValueType::TYPE_STR => unsafe {
                 Value::Str(Gc::from_raw(self.data as *mut String))
             },
-            _valueType::TYPE_DICT => unsafe {
+            NativeValueType::TYPE_DICT => unsafe {
                 Value::Record(Gc::from_raw(self.data as *mut Record))
             },
-            _valueType::TYPE_ARRAY => unsafe {
+            NativeValueType::TYPE_ARRAY => unsafe {
                 Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
-            }
+            },
+            _ => unreachable!()
         }
     }
 
     pub fn as_pointer(&self) -> Option<*mut libc::c_void> {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            _valueType::TYPE_FN
-            | _valueType::TYPE_STR
-            | _valueType::TYPE_DICT
-            | _valueType::TYPE_ARRAY => {
+            NativeValueType::TYPE_FN
+            | NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_DICT
+            | NativeValueType::TYPE_ARRAY => {
                 if self.data == 0 { None }
                 else { Some(self.data as *mut libc::c_void) }
             },
@@ -74,10 +76,10 @@ impl NativeValue {
     pub unsafe fn ref_inc(&self) {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            _valueType::TYPE_FN
-            | _valueType::TYPE_STR
-            | _valueType::TYPE_DICT
-            | _valueType::TYPE_ARRAY => {
+            NativeValueType::TYPE_FN
+            | NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_DICT
+            | NativeValueType::TYPE_ARRAY => {
                 ref_inc(self.data as *mut libc::c_void);
             }
             _ => {}
@@ -87,10 +89,10 @@ impl NativeValue {
     pub unsafe fn ref_dec(&self) {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            _valueType::TYPE_FN
-            | _valueType::TYPE_STR
-            | _valueType::TYPE_DICT
-            | _valueType::TYPE_ARRAY => {
+            NativeValueType::TYPE_FN
+            | NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_DICT
+            | NativeValueType::TYPE_ARRAY => {
                 ref_dec(self.data as *mut libc::c_void);
             }
             _ => {}
