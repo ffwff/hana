@@ -207,15 +207,9 @@ impl<T: Sized + GcTraceable> Gc<T> {
             ptr: NonNull::new(ptr).unwrap()
         }
     }
-    pub fn into_raw(self) -> *mut T {
-        self.ptr.as_ptr()
-    }
 
     // ptrs
     pub fn to_raw(&self) -> *const T {
-        self.ptr.as_ptr()
-    }
-    pub fn to_mut_raw(&mut self) -> *mut T {
         self.ptr.as_ptr()
     }
 
