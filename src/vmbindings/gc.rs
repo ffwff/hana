@@ -1,10 +1,10 @@
 //! Basic implementation of a mark and sweep garbage collector
 
-use super::vm::Vm;
 pub use libc::c_void;
 use std::alloc::{alloc_zeroed, dealloc, Layout};
+use std::ptr::{drop_in_place, null_mut, NonNull};
 
-use std::ptr::{drop_in_place, null_mut};
+use super::vm::Vm;
 
 // node
 struct GcNode {
@@ -93,7 +93,7 @@ impl GcManager {
 
     pub fn malloc<T: Sized + GcTraceable>(&mut self, vm: &Vm, val: T) -> Gc<T> {
         Gc {
-            ptr: unsafe { self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T)) },
+            ptr: NonNull::new(unsafe { self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T)) }).unwrap(),
         }
     }
 
@@ -194,55 +194,48 @@ impl std::ops::Drop for GcManager {
 // gc struct
 #[repr(transparent)]
 pub struct Gc<T: Sized + GcTraceable> {
-    ptr: *mut T,
+    ptr: NonNull<T>,
 }
 
 impl<T: Sized + GcTraceable> Gc<T> {
-    pub fn new_nil() -> Gc<T> {
-        Gc { ptr: null_mut() }
-    }
-
     // raw
     pub fn from_raw(ptr: *mut T) -> Gc<T> {
         unsafe {
             ref_inc(ptr as *mut libc::c_void);
         }
-        Gc { ptr: ptr }
+        Gc {
+            ptr: NonNull::new(ptr).unwrap()
+        }
     }
     pub fn into_raw(self) -> *mut T {
-        self.ptr
+        self.ptr.as_ptr()
     }
 
     // ptrs
     pub fn to_raw(&self) -> *const T {
-        self.ptr
+        self.ptr.as_ptr()
     }
     pub fn to_mut_raw(&mut self) -> *mut T {
-        self.ptr
-    }
-    pub fn ptr_eq(&self, right: &Gc<T>) -> bool {
-        std::ptr::eq(self.ptr, right.ptr)
+        self.ptr.as_ptr()
     }
 
     // refs with interior mutability
     pub fn as_mut(&self) -> &mut T {
-        unsafe { &mut *self.ptr }
+        unsafe { &mut *self.ptr.as_ptr() }
     }
 }
 
 impl<T: Sized + GcTraceable> std::ops::Drop for Gc<T> {
     fn drop(&mut self) {
         unsafe {
-            if !self.ptr.is_null() {
-                ref_dec(self.ptr as *mut libc::c_void);
-            }
+            ref_dec(self.ptr.as_ptr() as *mut libc::c_void);
         }
     }
 }
 
 impl<T: Sized + GcTraceable> std::convert::AsRef<T> for Gc<T> {
     fn as_ref(&self) -> &T {
-        unsafe { &*self.ptr }
+        unsafe { self.ptr.as_ref() }
     }
 }
 
@@ -250,7 +243,7 @@ impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc {
             ptr: unsafe {
-                ref_inc(self.ptr as *mut libc::c_void);
+                ref_inc(self.ptr.as_ptr() as *mut libc::c_void);
                 self.ptr
             },
         }
@@ -259,7 +252,7 @@ impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
 
 impl<T: Sized + GcTraceable> std::cmp::PartialEq for Gc<T> {
     fn eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self.ptr, other.ptr)
+        std::ptr::eq(self.ptr.as_ptr(), other.ptr.as_ptr())
     }
 }
 

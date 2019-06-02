@@ -143,11 +143,11 @@ pub struct Vm {
     pub stack: Vec<NativeValue>,    // stack
 
     // prototype types for primitive values
-    pub(crate) dstr: Gc<Record>,
-    pub(crate) dint: Gc<Record>,
-    pub(crate) dfloat: Gc<Record>,
-    pub(crate) darray: Gc<Record>,
-    pub(crate) drec: Gc<Record>,
+    pub(crate) dstr:   Option<Gc<Record>>,
+    pub(crate) dint:   Option<Gc<Record>>,
+    pub(crate) dfloat: Option<Gc<Record>>,
+    pub(crate) darray: Option<Gc<Record>>,
+    pub(crate) drec:   Option<Gc<Record>>,
 
     pub error: VmError,
     pub error_expected: u32,
@@ -186,11 +186,11 @@ impl Vm {
             exframes: Some(Vec::with_capacity(2)),
             code,
             stack: Vec::with_capacity(2),
-            dstr: Gc::new_nil(),
-            dint: Gc::new_nil(),
-            dfloat: Gc::new_nil(),
-            darray: Gc::new_nil(),
-            drec: Gc::new_nil(),
+            dstr:   None,
+            dint:   None,
+            dfloat: None,
+            darray: None,
+            drec:   None,
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
             exframe_fallthrough: None,
@@ -421,11 +421,11 @@ impl Vm {
             code: None, // shared
             stack: std::mem::replace(&mut self.stack, Vec::with_capacity(2)),
             // types don't need to be saved:
-            dstr: Gc::new_nil(),
-            dint: Gc::new_nil(),
-            dfloat: Gc::new_nil(),
-            darray: Gc::new_nil(),
-            drec: Gc::new_nil(),
+            dstr:   None,
+            dint:   None,
+            dfloat: None,
+            darray: None,
+            drec:   None,
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
