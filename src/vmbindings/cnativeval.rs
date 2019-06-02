@@ -54,7 +54,9 @@ impl NativeValue {
             NativeValueType::TYPE_ARRAY => unsafe {
                 Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
             },
-            _ => unreachable!()
+            _ => {
+                panic!("type was: {:?}", self.r#type)
+            }
         }
     }
 

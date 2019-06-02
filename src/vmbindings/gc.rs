@@ -109,8 +109,7 @@ impl GcManager {
         Gc {
             ptr: NonNull::new(unsafe {
                 self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T))
-            })
-            .unwrap(),
+            }).unwrap(),
         }
     }
 
@@ -141,11 +140,36 @@ impl GcManager {
             //eprintln!("{:?}", self.first_node);
             let mut node: *mut GcNode = self.first_node;
             let mut prev: *mut GcNode = null_mut();
+            // don't sweep nodes with at least one native reference
+            node = self.first_node;
+            while !node.is_null() {
+                let next: *mut GcNode = (*node).next;
+                let ptr = node.add(1) as *mut c_void;
+                if (*node).native_refs > 0 && (*node).color != GcNodeColor::Black {
+                    // get its children and subchildren
+                    let mut children : Vec<*mut GcNode> = Vec::new();
+                    ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
+                    let mut i = 0;
+                    while i < children.len() {
+                        let node = children[i];
+                        ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
+                        i += 1;
+                    }
+                    // color them black
+                    //eprintln!("children: {:?}", children);
+                    for child in children {
+                        (*child).color = GcNodeColor::Black;
+                    }
+                }
+                node = next;
+            }
+            // sweep
             while !node.is_null() {
                 let next: *mut GcNode = (*node).next;
                 let mut freed = false;
                 if (*node).native_refs == 0 && (*node).color == GcNodeColor::White {
                     freed = true;
+                    //eprintln!("free {:p}", node);
                     let body = node.add(1);
 
                     // remove from ll
@@ -212,7 +236,22 @@ pub struct Gc<T: Sized + GcTraceable> {
 impl<T: Sized + GcTraceable> Gc<T> {
     // raw
     pub unsafe fn from_raw(ptr: *mut T) -> Gc<T> {
-        ref_inc(ptr as *mut libc::c_void);
+        //println!("from raw");
+        // manually color it black & increment ref
+        let node: *mut GcNode = (ptr as *mut GcNode).sub(1);
+        (*node).color = GcNodeColor::Black;
+        (*node).native_refs += 1;
+        // get its children and subchildren
+        let mut children : Vec<*mut GcNode> = Vec::new();
+        ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
+        let mut i = 0;
+        while i < children.len() {
+            let node = children[i];
+            ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
+            i += 1;
+        }
+        // color them black
+        //eprintln!("children: {:?}", children);
         Gc {
             ptr: NonNull::new(ptr).unwrap(),
         }
