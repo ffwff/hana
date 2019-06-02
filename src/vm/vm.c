@@ -834,7 +834,7 @@ void vm_execute(struct vm *vm) {
                 JMP_INTERPRETED_FN_NO_POP(1 + sizeof(pos), {                                                \
                     if (vm->exframe_fallthrough != NULL) {                                                  \
                         if (exframe_native_stack_depth(vm->exframe_fallthrough) == vm->native_call_depth) { \
-                            assert(0);                                                                      \
+                            dispatch();                                                                     \
                         } else {                                                                            \
                             return;                                                                         \
                         }                                                                                   \
