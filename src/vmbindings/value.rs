@@ -32,12 +32,10 @@ pub enum Value {
 }
 
 impl GcTraceable for Vec<NativeValue> {
-    fn trace(ptr: *mut libc::c_void) {
-        unsafe {
-            let self_ = &*(ptr as *mut Self);
-            for val in self_.iter() {
-                val.trace();
-            }
+    unsafe fn trace(ptr: *mut libc::c_void) {
+        let self_ = &*(ptr as *mut Self);
+        for val in self_.iter() {
+            val.trace();
         }
     }
 }

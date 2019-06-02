@@ -28,7 +28,7 @@ impl GcNode {
     }
 }
 
-type GenericFunction = fn(*mut c_void);
+type GenericFunction = unsafe fn(*mut c_void);
 // a generic function that takes in some pointer
 // this might be a finalizer or a tracer function
 // TODO maybe replace this with Any
@@ -257,12 +257,12 @@ impl<T: Sized + GcTraceable> std::cmp::PartialEq for Gc<T> {
 }
 
 pub trait GcTraceable {
-    fn trace(ptr: *mut libc::c_void);
+    unsafe fn trace(ptr: *mut libc::c_void);
 }
 
 // native traceables
 impl GcTraceable for String {
-    fn trace(_: *mut libc::c_void) {}
+    unsafe fn trace(_: *mut libc::c_void) {}
 }
 
 // collect
