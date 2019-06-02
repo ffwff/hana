@@ -241,17 +241,6 @@ impl<T: Sized + GcTraceable> Gc<T> {
         let node: *mut GcNode = (ptr as *mut GcNode).sub(1);
         (*node).color = GcNodeColor::Black;
         (*node).native_refs += 1;
-        // get its children and subchildren
-        let mut children : Vec<*mut GcNode> = Vec::new();
-        ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
-        let mut i = 0;
-        while i < children.len() {
-            let node = children[i];
-            ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
-            i += 1;
-        }
-        // color them black
-        //eprintln!("children: {:?}", children);
         Gc {
             ptr: NonNull::new(ptr).unwrap(),
         }
