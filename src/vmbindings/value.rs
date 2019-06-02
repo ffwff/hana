@@ -2,7 +2,7 @@
 
 use super::cnativeval::{NativeValue, _valueType};
 use super::function::Function;
-use super::gc::{Gc, GcTraceable};
+use super::gc::Gc;
 use super::record::Record;
 use super::vm::Vm;
 extern crate libc;
@@ -29,15 +29,6 @@ pub enum Value {
     Array(Gc<Vec<NativeValue>>),
 
     PropagateError,
-}
-
-impl GcTraceable for Vec<NativeValue> {
-    unsafe fn trace(ptr: *mut libc::c_void) {
-        let self_ = &*(ptr as *mut Self);
-        for val in self_.iter() {
-            val.trace();
-        }
-    }
 }
 
 #[allow(improper_ctypes)]

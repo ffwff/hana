@@ -139,7 +139,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     // execute!
     c.modules_info.borrow_mut().sources.push(s);
     let mut vm = c.into_vm();
-    hanayo::init(&mut vm);
+    //hanayo::init(&mut vm);
     vm.gc_enable();
     vm.execute();
     handle_error(&vm, &c);

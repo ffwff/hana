@@ -243,31 +243,40 @@ impl Vm {
         self.gc_manager.as_ref().unwrap().borrow_mut().enable()
     }
 
-    pub unsafe fn mark(&self) {
-        // globalenv
+    pub(crate) unsafe fn gc_new_gray_node_stack(&self) -> Vec<*mut GcNode> {
+        let mut vec = Vec::new();
         for (_, val) in self.global().iter() {
-            val.trace();
+            if let Some(ptr) = val.as_pointer() {
+                push_gray_body(&mut vec, ptr);
+            }
         }
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
-            val.trace();
+            if let Some(ptr) = val.as_pointer() {
+                push_gray_body(&mut vec, ptr);
+            }
         }
         // call stack
         if let Some(localenv) = self.localenv {
             let mut env = self.localenv_bp;
             let localenv = localenv.as_ptr();
             while env != localenv {
-                for val in (*env).slots.as_mut_slice().iter_mut() {
-                    (*val).trace();
+                for val in (*env).slots.as_slice().iter() {
+                    if let Some(ptr) = (*val).as_pointer() {
+                        push_gray_body(&mut vec, ptr);
+                    }
                 }
                 env = env.add(1);
             }
             env = localenv;
-            for val in (*env).slots.as_mut_slice().iter_mut() {
-                (*val).trace();
+            for val in (*env).slots.as_slice().iter() {
+                if let Some(ptr) = (*val).as_pointer() {
+                    push_gray_body(&mut vec, ptr);
+                }
             }
         }
+        vec
     }
 
     // call stack

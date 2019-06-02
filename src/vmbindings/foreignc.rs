@@ -18,7 +18,7 @@ mod foreignc {
     use super::*;
     use std::alloc::{alloc_zeroed, realloc, Layout};
     use std::ffi::CStr;
-    use std::ptr::{null, NonNull};
+    use std::ptr::{null, null_mut, NonNull};
     use unicode_segmentation::UnicodeSegmentation;
 
     // #region memory allocation
@@ -63,13 +63,13 @@ mod foreignc {
 
     // #region dict
     #[no_mangle]
-    unsafe extern "C" fn dict_malloc(vm: *const Vm) -> Gc<Record> {
-        (&*vm).malloc(Record::new())
+    unsafe extern "C" fn dict_malloc(vm: *const Vm) -> *mut Record {
+        (&*vm).malloc(Record::new()).into_raw()
     }
 
     #[no_mangle]
-    unsafe extern "C" fn dict_malloc_n(vm: *const Vm, n: usize) -> Gc<Record> {
-        (&*vm).malloc(Record::with_capacity(n))
+    unsafe extern "C" fn dict_malloc_n(vm: *const Vm, n: usize) -> *mut Record {
+        (&*vm).malloc(Record::with_capacity(n)).into_raw()
     }
 
     #[no_mangle]
@@ -114,26 +114,26 @@ mod foreignc {
 
     // #region string
     #[no_mangle]
-    unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char, vm: *const Vm) -> Gc<String> {
+    unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char, vm: *const Vm) -> *mut String {
         let s = CStr::from_ptr(cstr).to_str().unwrap();
-        (&*vm).malloc(String::from(s))
+        (&*vm).malloc(String::from(s)).into_raw()
     }
 
     #[no_mangle]
     unsafe extern "C" fn string_append(
         cleft: *const String, cright: *const String, vm: *const Vm,
-    ) -> Gc<String> {
+    ) -> *mut String {
         let left: &'static String = &*cleft;
         let right: &'static String = &*cright;
         let mut newleft = left.clone();
         newleft += right;
-        (&*vm).malloc(newleft)
+        (&*vm).malloc(newleft).into_raw()
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_repeat(cleft: *const String, n: i64, vm: *const Vm) -> Gc<String> {
+    unsafe extern "C" fn string_repeat(cleft: *const String, n: i64, vm: *const Vm) -> *mut String {
         let left: &'static String = &*cleft;
-        (&*vm).malloc(left.repeat(n as usize))
+        (&*vm).malloc(left.repeat(n as usize)).into_raw()
     }
 
     #[no_mangle]
@@ -152,12 +152,12 @@ mod foreignc {
     #[no_mangle]
     unsafe extern "C" fn string_at(
         left: *const String, idx: i64, vm: *const Vm,
-    ) -> Option<Gc<String>> {
+    ) -> *mut String {
         let left: &'static String = &*left;
         if let Some(ch) = left.graphemes(true).nth(idx as usize) {
-            Some((&*vm).malloc(ch.to_string()))
+            (&*vm).malloc(ch.to_string()).into_raw()
         } else {
-            None
+            null_mut()
         }
     }
 
@@ -168,7 +168,7 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_chars(s: *const String, vm: *const Vm) -> Gc<Vec<NativeValue>> {
+    unsafe extern "C" fn string_chars(s: *const String, vm: *const Vm) -> *mut Vec<NativeValue> {
         let s: &'static String = &*s;
         let vm = &*vm;
         let chars = vm.malloc(Vec::new());
@@ -177,7 +177,7 @@ mod foreignc {
                 .as_mut()
                 .push(Value::Str(vm.malloc(ch.to_string())).wrap());
         }
-        chars
+        chars.into_raw()
     }
 
     #[no_mangle]
@@ -212,8 +212,8 @@ mod foreignc {
     #[no_mangle]
     unsafe extern "C" fn function_malloc(
         addr: u32, nargs: u16, env: *const Env, vm: *const Vm,
-    ) -> Gc<Function> {
-        (&*vm).malloc(Function::new(addr, nargs, env))
+    ) -> *mut Function {
+        (&*vm).malloc(Function::new(addr, nargs, env)).into_raw()
     }
 
     #[no_mangle]
@@ -225,17 +225,17 @@ mod foreignc {
 
     // #region array
     #[no_mangle]
-    unsafe extern "C" fn array_obj_malloc(vm: *const Vm) -> Gc<Vec<NativeValue>> {
-        (&*vm).malloc(Vec::new())
+    unsafe extern "C" fn array_obj_malloc(vm: *const Vm) -> *mut Vec<NativeValue> {
+        (&*vm).malloc(Vec::new()).into_raw()
     }
     #[no_mangle]
-    unsafe extern "C" fn array_obj_malloc_n(n: usize, vm: *const Vm) -> Gc<Vec<NativeValue>> {
-        (&*vm).malloc(Vec::with_capacity(n))
+    unsafe extern "C" fn array_obj_malloc_n(n: usize, vm: *const Vm) -> *mut Vec<NativeValue> {
+        (&*vm).malloc(Vec::with_capacity(n)).into_raw()
     }
     #[no_mangle]
     unsafe extern "C" fn array_obj_repeat(
         carray: *const Vec<NativeValue>, n: usize, vm: *const Vm,
-    ) -> Gc<Vec<NativeValue>> {
+    ) -> *mut Vec<NativeValue> {
         let array = &*carray;
         let mut result: Vec<NativeValue> = Vec::with_capacity(n);
         for _i in 0..n {
@@ -243,7 +243,7 @@ mod foreignc {
                 result.push(array[j].clone());
             }
         }
-        (&*vm).malloc(result)
+        (&*vm).malloc(result).into_raw()
     }
     // #endregion
 
@@ -353,6 +353,16 @@ mod foreignc {
         vm.load_module(path);
     }
     // #endregion
+
+    /*
+    // #region modules
+    #[no_mangle]
+    unsafe extern "C" fn vm_write_barrier(cvm: *mut Vm, cpath: *const libc::c_char) {
+        let path = CStr::from_ptr(cpath).to_str().unwrap();
+        let vm = &mut *cvm;
+        vm.load_module(path);
+    }
+    // #endregion */
 
     // #region value
     #[no_mangle]

@@ -2,7 +2,7 @@
 //! used by the virtual machine
 
 use super::function::Function;
-use super::gc::{mark_reachable, ref_dec, ref_inc, Gc, GcTraceable};
+use super::gc::{ref_dec, ref_inc, Gc, GcManager, GcTraceable};
 use super::record::Record;
 use super::value::{NativeFnData, Value};
 
@@ -56,29 +56,17 @@ impl NativeValue {
         }
     }
 
-    /// Traces the native value recursively for use in the garbage collector.
-    pub unsafe fn trace(&self) {
+    pub fn as_pointer(&self) -> Option<*mut libc::c_void> {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            _valueType::TYPE_FN => {
-                if mark_reachable(self.data as *mut libc::c_void) {
-                    Function::trace(self.data as *mut libc::c_void)
-                }
-            }
-            _valueType::TYPE_STR => {
-                mark_reachable(self.data as *mut libc::c_void);
-            }
-            _valueType::TYPE_DICT => {
-                if mark_reachable(self.data as *mut libc::c_void) {
-                    Record::trace(self.data as *mut libc::c_void)
-                }
-            }
-            _valueType::TYPE_ARRAY => {
-                if mark_reachable(self.data as *mut libc::c_void) {
-                    Vec::trace(self.data as *mut libc::c_void)
-                }
-            }
-            _ => {}
+            _valueType::TYPE_FN
+            | _valueType::TYPE_STR
+            | _valueType::TYPE_DICT
+            | _valueType::TYPE_ARRAY => {
+                if self.data == 0 { None }
+                else { Some(self.data as *mut libc::c_void) }
+            },
+            _ => None
         }
     }
 

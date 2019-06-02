@@ -2,7 +2,7 @@
 
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
-use super::gc::GcTraceable;
+use super::gc::{GcNode, GcTraceable, push_gray_body};
 use super::value::Value;
 use std::any::Any;
 use std::borrow::Borrow;
@@ -70,10 +70,11 @@ impl Record {
 }
 
 impl GcTraceable for Record {
-    unsafe fn trace(ptr: *mut libc::c_void) {
-        let self_ = &*(ptr as *mut Self);
-        for (_, val) in self_.iter() {
-            val.trace();
+    unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {
+        for(_, val) in self.iter() {
+            if let Some(ptr) = val.as_pointer() {
+                push_gray_body(gray_nodes, ptr);
+            }
         }
     }
 }
