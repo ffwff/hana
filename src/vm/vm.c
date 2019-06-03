@@ -714,9 +714,7 @@ void vm_execute(struct vm *vm) {
                 array->data[length] = array_top(vm->stack);
                 array_pop(vm->stack);
             }
-            value_print(aval);
             array_push(vm->stack, aval);
-            vm_print_stack(vm);
         }
         dispatch();
     }
