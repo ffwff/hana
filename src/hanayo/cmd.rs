@@ -1,5 +1,4 @@
 //! Provides Cmd record for executing and handling commands
-use crate::vmbindings::carray::CArray;
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
@@ -208,7 +207,7 @@ fn err(cmd: Value::Record) -> Value {
 fn outputs(cmd: Value::Record) -> Value {
     // array of [stdout, stderr] outputs
     let out = get_output(cmd.as_mut(), true).as_output().unwrap();
-    let arr = vm.malloc(CArray::new());
+    let arr = vm.malloc(Vec::new());
     match String::from_utf8(out.stdout) {
         Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
         Err(err) => {

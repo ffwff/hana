@@ -13,10 +13,11 @@ pub mod vm_tests {
         let mut c = Compiler::new();
         c.cpushop(VmOpcode::OP_PUSH16);
         c.cpush16(40000);
+        c.cpushop(VmOpcode::OP_HALT);
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Int(40000));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Int(40000));
     }
 
     #[test]
@@ -24,10 +25,11 @@ pub mod vm_tests {
         let mut c = Compiler::new();
         c.cpushop(VmOpcode::OP_PUSH32);
         c.cpush32(100000);
+        c.cpushop(VmOpcode::OP_HALT);
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Int(100000));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Int(100000));
     }
 
     #[test]
@@ -35,10 +37,11 @@ pub mod vm_tests {
         let mut c = Compiler::new();
         c.cpushop(VmOpcode::OP_PUSHF64);
         c.cpushf64(0.645);
+        c.cpushop(VmOpcode::OP_HALT);
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Float(0.645));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Float(0.645));
     }
 
     #[test]
@@ -53,7 +56,7 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Int(21));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Int(21));
     }
 
     #[test]
@@ -68,7 +71,7 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Float(3.0));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Float(3.0));
     }
 
     #[test]
@@ -83,7 +86,7 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Float(1.5 / 1.1));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Float(1.5 / 1.1));
     }
 
     #[test]
@@ -98,7 +101,7 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Float(1.5 / 15.0));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Float(1.5 / 15.0));
     }
     // #endregion
 
@@ -112,7 +115,10 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.top().unwrap().string(), String::from("Test"));
+        assert_eq!(
+            *vm.stack.last().unwrap().unwrap().string(),
+            String::from("Test")
+        );
     }
 
     #[test]
@@ -127,7 +133,10 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.top().unwrap().string(), String::from("TestTest"));
+        assert_eq!(
+            *vm.stack.last().unwrap().unwrap().string(),
+            String::from("TestTest")
+        );
     }
 
     #[test]
@@ -142,7 +151,10 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(*vm.stack.top().unwrap().string(), String::from("TestTest"));
+        assert_eq!(
+            *vm.stack.last().unwrap().unwrap().string(),
+            String::from("TestTest")
+        );
     }
     // #endregion
 
@@ -161,7 +173,7 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Int(42));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Int(42));
     }
     // #endregion
 
@@ -176,7 +188,7 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Int(0));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Int(0));
     }
 
     #[test]
@@ -189,7 +201,7 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Int(-1));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Int(-1));
     }
 
     #[test]
@@ -202,7 +214,7 @@ pub mod vm_tests {
         let mut vm = c.into_vm();
         vm.execute();
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack.top().unwrap(), Value::Float(-1.5));
+        assert_eq!(vm.stack.last().unwrap().unwrap(), Value::Float(-1.5));
     }
     // #endregion
 

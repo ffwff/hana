@@ -1,6 +1,6 @@
 [package]
 name = "haru"
-version = "0.26.5"
+version = "0.27.1"
 description = "A fast, dynamically-typed general purpose scripting language"
 authors = ["ffwff <mogamiriver@tuta.io>"]
 documentation = "https://github.com/ffwff/hana/blob/haru/DOCUMENTATION.md"
@@ -21,7 +21,7 @@ path = "src/main.rs"
 name = "haru"
 
 [dependencies]
-haru-decorator = { version = "0.2.2", path = "./src/decorator/" }
+haru-decorator = { version = "0.2.3", path = "./src/decorator/" }
 libc = "0.2.0"
 cfg-if = "0.1"
 num-traits = "0.2"

@@ -14,12 +14,11 @@
 //! c.cpushop(VmOpcode::OP_HALT);
 //! ```
 
-use crate::vmbindings::carray::CArray;
-use crate::vmbindings::vm::{Vm, VmOpcode};
-
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+
+use crate::vmbindings::vm::{Vm, VmOpcode};
 
 struct Scope {
     vars: Vec<String>,
@@ -71,7 +70,7 @@ impl ModulesInfo {
 pub struct Compiler {
     scopes: Vec<Scope>,
     loop_stmts: Vec<LoopStatement>,
-    code: Option<CArray<u8>>,
+    code: Option<Vec<u8>>,
     pub modules_info: Rc<RefCell<ModulesInfo>>,
 }
 impl Compiler {
@@ -79,12 +78,12 @@ impl Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
-            code: Some(CArray::new()),
+            code: Some(Vec::new()),
             modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
         }
     }
 
-    pub fn new_append(code: CArray<u8>) -> Compiler {
+    pub fn new_append(code: Vec<u8>) -> Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
@@ -97,19 +96,19 @@ impl Compiler {
     pub fn into_vm(&mut self) -> Vm {
         Vm::new(self.code.take(), Some(self.modules_info.clone()))
     }
-    pub fn into_code(self) -> CArray<u8> {
+    pub fn into_code(self) -> Vec<u8> {
         self.code.unwrap()
     }
-    pub fn receive_code(&mut self, code: CArray<u8>) {
+    pub fn receive_code(&mut self, code: Vec<u8>) {
         self.code = Some(code);
     }
-    pub fn take_code(&mut self) -> CArray<u8> {
+    pub fn take_code(&mut self) -> Vec<u8> {
         self.code.take().unwrap()
     }
 
     // #region code
     pub fn ctop(&self) -> u8 {
-        *self.code.as_ref().unwrap().top()
+        *self.code.as_ref().unwrap().last().unwrap()
     }
     pub fn clen(&self) -> usize {
         self.code.as_ref().unwrap().len()
@@ -164,10 +163,9 @@ impl Compiler {
             code[pos + i] = *byte;
         }
     }
-
     // other
     pub fn code_as_bytes(&self) -> &[u8] {
-        self.code.as_ref().unwrap().as_bytes()
+        self.code.as_ref().unwrap().as_slice()
     }
     // #endregion
 

@@ -1,19 +1,22 @@
 //"abc" + "bcd"
+while 1 begin
+    a = [0]
+    b = [a]
+    a[0] = b
+end
+/*
 //while 1 then print("abc" + "bcd", "\n")
-//while 1 then ["abc", "bcd", "def"]
 
-/*while 1 begin
+while 1 begin
     x = ["bcd"]
     x.push("abc")
-end */
+end
 
-/*
 while 1 begin
     x = record
         a = "b"
     end
 end
-*/
 
 function a() begin
     b = record
@@ -25,3 +28,4 @@ function a() begin
 end
 
 while 1 then a()::c()
+*/

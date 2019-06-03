@@ -101,7 +101,7 @@ pub fn init(vm: &mut Vm) {
         set_obj_var!(array, "reduce", Value::NativeFn(array::reduce));
         set_obj_var!(array, "index", Value::NativeFn(array::index));
         set_obj_var!(array, "join", Value::NativeFn(array::join));
-        vm.darray = array.clone();
+        vm.darray = Some(array.clone());
         set_var!("Array", Value::Record(array));
     }
     // #endregion
@@ -122,7 +122,7 @@ pub fn init(vm: &mut Vm) {
         set_obj_var!(string, "index", Value::NativeFn(string::index));
         set_obj_var!(string, "chars", Value::NativeFn(string::chars));
         set_obj_var!(string, "ord", Value::NativeFn(string::ord));
-        vm.dstr = string.clone();
+        vm.dstr = Some(string.clone());
         set_var!("String", Value::Record(string));
     }
     // #endregion
@@ -133,7 +133,7 @@ pub fn init(vm: &mut Vm) {
         set_obj_var!(int, "constructor", Value::NativeFn(int::constructor));
         set_obj_var!(int, "chr", Value::NativeFn(int::chr));
         set_obj_var!(int, "hex", Value::NativeFn(int::hex));
-        vm.dint = int.clone();
+        vm.dint = Some(int.clone());
         set_var!("Int", Value::Record(int));
     }
     // #endregion
@@ -142,7 +142,7 @@ pub fn init(vm: &mut Vm) {
     {
         let float = vm.malloc(Record::new());
         set_obj_var!(float, "constructor", Value::NativeFn(float::constructor));
-        vm.dfloat = float.clone();
+        vm.dfloat = Some(float.clone());
         set_var!("Float", Value::Record(float));
     }
     // #endregion
@@ -153,7 +153,7 @@ pub fn init(vm: &mut Vm) {
         set_obj_var!(record, "constructor", Value::NativeFn(record::constructor));
         set_obj_var!(record, "keys", Value::NativeFn(record::keys));
         set_obj_var!(record, "has_key", Value::NativeFn(record::has_key));
-        vm.drec = record.clone();
+        vm.drec = Some(record.clone());
         set_var!("Record", Value::Record(record));
     }
     // #endregion

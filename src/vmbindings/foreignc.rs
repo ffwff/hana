@@ -1,11 +1,11 @@
 //! Foreign C bindings for the virtual machine
 
-use super::carray::CArray;
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
+use super::gc::Gc;
 use super::record::Record;
 use super::value::Value;
 use super::vm::Vm;
@@ -131,9 +131,7 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_repeat(
-        cleft: *const String, n: i64, vm: *const Vm,
-    ) -> *mut String {
+    unsafe extern "C" fn string_repeat(cleft: *const String, n: i64, vm: *const Vm) -> *mut String {
         let left: &'static String = &*cleft;
         (&*vm).malloc(left.repeat(n as usize)).into_raw()
     }
@@ -152,7 +150,9 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_at(left: *const String, idx: i64, vm: *const Vm) -> *mut String {
+    unsafe extern "C" fn string_at(
+        left: *const String, idx: i64, vm: *const Vm,
+    ) -> *mut String {
         let left: &'static String = &*left;
         if let Some(ch) = left.graphemes(true).nth(idx as usize) {
             (&*vm).malloc(ch.to_string()).into_raw()
@@ -168,12 +168,10 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_chars(
-        s: *const String, vm: *const Vm,
-    ) -> *mut CArray<NativeValue> {
+    unsafe extern "C" fn string_chars(s: *const String, vm: *const Vm) -> *mut Vec<NativeValue> {
         let s: &'static String = &*s;
         let vm = &*vm;
-        let chars = vm.malloc(CArray::new());
+        let chars = vm.malloc(Vec::new());
         for ch in s.graphemes(true) {
             chars
                 .as_mut()
@@ -228,22 +226,22 @@ mod foreignc {
 
     // #region array
     #[no_mangle]
-    unsafe extern "C" fn array_obj_malloc(vm: *const Vm) -> *mut CArray<NativeValue> {
-        (&*vm).malloc(CArray::new()).into_raw()
+    unsafe extern "C" fn array_obj_malloc(vm: *const Vm) -> *mut Vec<NativeValue> {
+        (&*vm).malloc(Vec::new()).into_raw()
     }
     #[no_mangle]
-    unsafe extern "C" fn array_obj_malloc_n(n: usize, vm: *const Vm) -> *mut CArray<NativeValue> {
-        (&*vm).malloc(CArray::reserve(n)).into_raw()
+    unsafe extern "C" fn array_obj_malloc_n(n: usize, vm: *const Vm) -> *mut Vec<NativeValue> {
+        (&*vm).malloc(Vec::with_capacity(n)).into_raw()
     }
     #[no_mangle]
     unsafe extern "C" fn array_obj_repeat(
-        carray: *const CArray<NativeValue>, n: usize, vm: *const Vm,
-    ) -> *mut CArray<NativeValue> {
+        carray: *const Vec<NativeValue>, n: usize, vm: *const Vm,
+    ) -> *mut Vec<NativeValue> {
         let array = &*carray;
-        let mut result: CArray<NativeValue> = CArray::reserve(n);
-        for i in 0..n {
+        let mut result: Vec<NativeValue> = Vec::with_capacity(n);
+        for _i in 0..n {
             for j in 0..array.len() {
-                result[j * array.len() + i] = array[j].clone();
+                result.push(array[j].clone());
             }
         }
         (&*vm).malloc(result).into_raw()
@@ -258,9 +256,8 @@ mod foreignc {
         let vm = &mut *cvm;
         eprintln!("{:?}", env.nargs);
         for i in 0..env.nargs {
-            let val = vm.stack.top();
+            let val = vm.stack.pop().unwrap();
             env.set(i, val.clone());
-            vm.stack.pop();
         }
     }
 
@@ -358,6 +355,16 @@ mod foreignc {
         vm.load_module(path);
     }
     // #endregion
+
+    /*
+    // #region modules
+    #[no_mangle]
+    unsafe extern "C" fn vm_write_barrier(cvm: *mut Vm, cpath: *const libc::c_char) {
+        let path = CStr::from_ptr(cpath).to_str().unwrap();
+        let vm = &mut *cvm;
+        vm.load_module(path);
+    }
+    // #endregion */
 
     // #region value
     #[no_mangle]

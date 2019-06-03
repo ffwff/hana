@@ -26,9 +26,9 @@ impl ExFrame {
     ) -> ExFrame {
         ExFrame {
             handlers: HashMap::new(),
-            unwind_env: unwind_env,
-            unwind_stack: unwind_stack,
-            unwind_native_call_depth: unwind_native_call_depth,
+            unwind_env,
+            unwind_stack,
+            unwind_native_call_depth,
         }
     }
 
