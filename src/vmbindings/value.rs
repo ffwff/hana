@@ -21,7 +21,7 @@ pub enum Value {
     True,
     False,
 
-    Int(i64),
+    Int(i32),
     Float(f64),
     NativeFn(NativeFnData),
     Fn(Gc<Function>),
@@ -41,7 +41,7 @@ extern "C" {
 impl Value {
     // #region coerce value to type
     #[cfg_attr(tarpaulin, skip)]
-    pub fn int(&self) -> i64 {
+    pub fn int(&self) -> i32 {
         match self {
             Value::Int(s) => *s,
             _ => {
@@ -110,8 +110,8 @@ impl Value {
                     data: 0,
                 },
                 Value::Int(n) => NativeValue {
-                    r#type: _valueType::TYPE_INT,
-                    data: transmute::<i64, u64>(*n),
+                    r#type: NativeValueType::TYPE_INT,
+                    data: (*n) as u64,
                 },
                 Value::Float(n) => NativeValue {
                     r#type: _valueType::TYPE_FLOAT,

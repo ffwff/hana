@@ -42,25 +42,25 @@ fn since(left: Value::Record, right: Value::Record) -> Value {
 fn secs(time: Value::Record) -> Value {
     let tref = time.as_ref().native_field.as_ref().unwrap();
     let time = tref.downcast_ref::<Duration>().unwrap();
-    Value::Int(time.as_secs() as i64)
+    Value::Int(time.as_secs() as i32)
 }
 #[hana_function()]
 fn millis(time: Value::Record) -> Value {
     let tref = time.as_ref().native_field.as_ref().unwrap();
     let time = tref.downcast_ref::<Duration>().unwrap();
-    Value::Int(time.as_millis() as i64)
+    Value::Int(time.as_millis() as i32)
 }
 #[hana_function()]
 fn micros(time: Value::Record) -> Value {
     let tref = time.as_ref().native_field.as_ref().unwrap();
     let time = tref.downcast_ref::<Duration>().unwrap();
-    Value::Int(time.as_micros() as i64)
+    Value::Int(time.as_micros() as i32)
 }
 #[hana_function()]
 fn nanos(time: Value::Record) -> Value {
     let tref = time.as_ref().native_field.as_ref().unwrap();
     let time = tref.downcast_ref::<Duration>().unwrap();
-    Value::Int(time.as_nanos() as i64)
+    Value::Int(time.as_nanos() as i32)
 }
 
 // other

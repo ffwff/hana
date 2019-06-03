@@ -36,10 +36,10 @@ impl NativeValue {
         use std::mem::transmute;
         #[allow(non_camel_case_types)]
         match &self.r#type {
-            _valueType::TYPE_NIL => Value::Nil,
-            _valueType::TYPE_INT => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
-            _valueType::TYPE_FLOAT => Value::Float(f64::from_bits(self.data)),
-            _valueType::TYPE_NATIVE_FN => unsafe {
+            NativeValueType::TYPE_NIL => Value::Nil,
+            NativeValueType::TYPE_INT => unsafe { Value::Int(self.data as i32) },
+            NativeValueType::TYPE_FLOAT => Value::Float(f64::from_bits(self.data)),
+            NativeValueType::TYPE_NATIVE_FN => unsafe {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
             },
             _valueType::TYPE_FN => Value::Fn(Gc::from_raw(self.data as *mut Function)),

@@ -25,19 +25,21 @@ pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
 
 #[hana_function()]
 fn length(array: Value::Array) -> Value {
-    Value::Int(array.as_ref().len() as i64)
+    Value::Int(array.as_ref().len() as i32)
 }
 
 #[hana_function()]
 fn insert_(array: Value::Array, pos: Value::Int, elem: Value::Any) -> Value {
     array.as_mut().insert(pos as usize, elem.wrap());
-    Value::Int(array.as_ref().len() as i64)
+    Value::Int(array.as_ref().len() as i32)
 }
 
 #[hana_function()]
 fn delete_(array: Value::Array, from_pos: Value::Int, nelems: Value::Int) -> Value {
-    array.as_mut().delete(from_pos as usize, nelems as usize);
-    Value::Int(array.as_ref().len() as i64)
+    array
+        .as_mut()
+        .drain((from_pos as usize)..((nelems as usize) + 1));
+    Value::Int(array.as_ref().len() as i32)
 }
 
 // stack manipulation
@@ -166,7 +168,7 @@ fn index(array: Value::Array, elem: Value::Any) -> Value {
             value_eq(&mut val, array[i], elem.wrap());
         }
         if val.data == 1 {
-            return Value::Int(i as i64);
+            return Value::Int(i as i32);
         }
     }
     Value::Int(-1)

@@ -26,7 +26,7 @@ struct string;
 typedef void (*value_fn)(struct vm *vm, uint16_t nargs);
 struct __attribute__((packed)) value {
     union {
-        int64_t integer;
+        int32_t integer;
         double floatp;
         struct string *str;
         value_fn fn;
@@ -37,7 +37,7 @@ struct __attribute__((packed)) value {
     uint8_t type;
 };
 
-void value_int(struct value*, int64_t);
+void value_int(struct value*, int32_t);
 void value_float(struct value*, double);
 void value_str(struct value*, const char*, const struct vm*);
 struct env;

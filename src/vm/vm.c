@@ -23,8 +23,19 @@
 #define FATAL(...) fprintf(stderr, __VA_ARGS__)
 
 void vm_execute(struct vm *vm) {
-#define ERROR(code, unwind) do { vm->error = code; vm->ip -= unwind; return; } while(0)
-#define ERROR_EXPECT(code, unwind, expect) do { vm->error = code; vm->ip -= unwind; vm->error_expected = expect; return; } while(0)
+#define ERROR(code, unwind)           \
+    do {                              \
+        vm->error = code;             \
+        vm->ip -= (uint32_t)(unwind); \
+        return;                       \
+    } while (0)
+#define ERROR_EXPECT(code, unwind, expect)     \
+    do {                                       \
+        vm->error = code;                      \
+        vm->ip -= (uint32_t)(unwind);          \
+        vm->error_expected = (uint32_t)expect; \
+        return;                                \
+    } while (0)
 #define doop(op) do_ ## op
 #define X(op) [op] = && doop(op)
 #ifdef NOLOG
@@ -95,37 +106,32 @@ void vm_execute(struct vm *vm) {
 
     // stack manip
     // push uint family on to the stack
-#define push_int_op(optype, _type, _data) \
-    doop(optype): { \
-        vm->ip++; \
-        const _type data = _data; \
-        vm->ip += sizeof(_type); \
+#define push_int_op(optype, _type, _data)                           \
+    doop(optype) : {                                                \
+        vm->ip++;                                                   \
+        const _type data = _data;                                   \
+        vm->ip += (uint32_t)sizeof(_type);                          \
         LOG(sizeof(_type) == 8 ? "PUSH %ld\n" : "PUSH %d\n", data); \
-\
-        struct value val = { \
-            .type = TYPE_INT,\
-            .as.integer = data }; \
-        array_push(vm->stack, val); \
-        dispatch(); \
+                                                                    \
+        struct value val = {                                        \
+            .type = TYPE_INT,                                       \
+            .as.integer = (int32_t)data};                           \
+        array_push(vm->stack, val);                                 \
+        dispatch();                                                 \
     }
     push_int_op(OP_PUSH8,  uint8_t,  vm->code.data[vm->ip+0])
 
-    push_int_op(OP_PUSH16, uint16_t, (uint16_t)vm->code.data[vm->ip+0] << 8 |
-                                     (uint16_t)vm->code.data[vm->ip+1])
+    push_int_op(OP_PUSH16, uint16_t, (uint16_t)(vm->code.data[vm->ip+0] << 8 |
+                                               vm->code.data[vm->ip+1]))
 
-    push_int_op(OP_PUSH32, uint32_t, (uint32_t)vm->code.data[vm->ip+0] << 24 |
-                                     (uint32_t)vm->code.data[vm->ip+1] << 16 |
-                                     (uint32_t)vm->code.data[vm->ip+2] << 8  |
-                                     (uint32_t)vm->code.data[vm->ip+3])
+    push_int_op(OP_PUSH32, uint32_t, (uint32_t)(vm->code.data[vm->ip+0] << 24 |
+                                                vm->code.data[vm->ip+1] << 16 |
+                                                vm->code.data[vm->ip+2] << 8  |
+                                                vm->code.data[vm->ip+3]))
 
-    push_int_op(OP_PUSH64, uint64_t, (uint64_t)vm->code.data[vm->ip+0] << 56 |
-                                     (uint64_t)vm->code.data[vm->ip+1] << 48 |
-                                     (uint64_t)vm->code.data[vm->ip+2] << 40 |
-                                     (uint64_t)vm->code.data[vm->ip+3] << 32 |
-                                     (uint64_t)vm->code.data[vm->ip+4] << 24 |
-                                     (uint64_t)vm->code.data[vm->ip+5] << 16 |
-                                     (uint64_t)vm->code.data[vm->ip+6] << 8  |
-                                     (uint64_t)vm->code.data[vm->ip+7])
+    doop(OP_PUSH64): {
+        assert(0);
+    }
 
     // push 32/64-bit float on to the stack
     doop(OP_PUSHF64): {
@@ -142,7 +148,7 @@ void vm_execute(struct vm *vm) {
         u.u[5] = vm->code.data[vm->ip + 5];
         u.u[6] = vm->code.data[vm->ip + 6];
         u.u[7] = vm->code.data[vm->ip + 7];
-        vm->ip += sizeof(u);
+        vm->ip += (uint32_t)sizeof(u);
         LOG("PUSH_F64 %f\n", u.d);
         array_push(vm->stack, (struct value){0});
         value_float(&array_top(vm->stack), u.d);
@@ -153,7 +159,7 @@ void vm_execute(struct vm *vm) {
     doop(OP_PUSHSTR): {
         vm->ip++;
         char *str = (char *)&vm->code.data[vm->ip]; // must be null terminated
-        vm->ip += strlen(str)+1;
+        vm->ip += (uint32_t)strlen(str) + 1;
         LOG("PUSH %s\n", str);
         array_push(vm->stack, (struct value){0});
         value_str(&array_top(vm->stack), str, vm);
@@ -302,9 +308,9 @@ void vm_execute(struct vm *vm) {
     // the environment is initialized with a copy of the current environment's variables
     doop(OP_ENV_NEW): {
         vm->ip++;
-        const uint16_t n = vm->code.data[vm->ip+0] << 8 |
-                           vm->code.data[vm->ip+1];
-        vm->ip += sizeof(n);
+        const uint16_t n = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
+        vm->ip += (uint32_t)sizeof(n);
         LOG("RESERVE %d\n", n);
         env_init(vm->localenv, n, vm);
         dispatch();
@@ -314,47 +320,47 @@ void vm_execute(struct vm *vm) {
     // sets the value of current environment's slot to the top of the stack
     doop(OP_SET_LOCAL): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
-                             vm->code.data[vm->ip+1];
-        vm->ip += sizeof(key);
-        LOG("SET LOCAL %d\n", key);
-        env_set(vm->localenv, key, array_top(vm->stack));
+        const uint16_t n = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
+        vm->ip += (uint32_t)sizeof(n);
+        LOG("SET LOCAL %d\n", n);
+        env_set(vm->localenv, n, array_top(vm->stack));
         dispatch();
     }
     // this is for recursive function
     doop(OP_SET_LOCAL_FUNCTION_DEF): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
-                             vm->code.data[vm->ip+1];
-        vm->ip += sizeof(key);
+        const uint16_t n = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
+        vm->ip += (uint32_t)sizeof(n);
         struct value val = array_top(vm->stack);
-        env_set(vm->localenv, key, val);
-        function_set_bound_var(val.as.ifn, key, val);
+        env_set(vm->localenv, n, val);
+        function_set_bound_var(val.as.ifn, n, val);
         dispatch();
     }
     // pushes a copy of the value of current environment's slot
     doop(OP_GET_LOCAL): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
-                             vm->code.data[vm->ip+1];
-        vm->ip += sizeof(key);
-        LOG("GET LOCAL %d\n", key);
+        const uint16_t n = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
+        vm->ip += (uint32_t)sizeof(n);
+        LOG("GET LOCAL %d\n", n);
         array_push(vm->stack, (struct value){0});
-        array_top(vm->stack) = env_get(vm->localenv, key);
+        array_top(vm->stack) = env_get(vm->localenv, n);
         dispatch();
     }
     doop(OP_GET_LOCAL_UP): {
         vm->ip++;
-        const uint16_t key = vm->code.data[vm->ip+0] << 8 |
-                             vm->code.data[vm->ip+1];
-        vm->ip += sizeof(key);
-        uint16_t relascope = vm->code.data[vm->ip+0] << 8 |
-                             vm->code.data[vm->ip+1];
-        vm->ip += sizeof(relascope);
-        LOG("GET LOCAL UP %d %d\n", key, relascope);
+        const uint16_t n = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
+        vm->ip += (uint32_t)sizeof(n);
+        const uint16_t relascope = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                              vm->code.data[vm->ip + 1]);
+        vm->ip += (uint32_t)sizeof(relascope);
+        LOG("GET LOCAL UP %d %d\n", n, relascope);
 
         array_push(vm->stack, (struct value){0});
-        array_top(vm->stack) = env_get_up(vm->localenv, relascope, key);
+        array_top(vm->stack) = env_get_up(vm->localenv, relascope, n);
         dispatch();
     }
 
@@ -362,7 +368,7 @@ void vm_execute(struct vm *vm) {
     doop(OP_SET_GLOBAL): {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
-        vm->ip += strlen(key)+1;
+        vm->ip += (uint32_t)strlen(key) + 1;
         LOG("SET GLOBAL %s %p\n", key, vm->globalenv);
         hmap_set(vm->globalenv, key, array_top(vm->stack));
         dispatch();
@@ -371,7 +377,7 @@ void vm_execute(struct vm *vm) {
     doop(OP_GET_GLOBAL): {
         vm->ip++;
         char *key = (char *)&vm->code.data[vm->ip]; // must be null terminated
-        vm->ip += strlen(key)+1;
+        vm->ip += (uint32_t)strlen(key) + 1;
         LOG("GET GLOBAL %s\n", key);
         const struct value *val = hmap_get(vm->globalenv, key);
         if(val == NULL) {
@@ -387,14 +393,14 @@ void vm_execute(struct vm *vm) {
     doop(OP_DEF_FUNCTION_PUSH): {
         // [opcode][end address]
         vm->ip++;
-        const uint16_t nargs = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
-                               (uint16_t)vm->code.data[vm->ip + 1];
-        vm->ip += sizeof(nargs);
-        const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
-                             (uint16_t)vm->code.data[vm->ip + 1];
+        const uint16_t nargs = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                          vm->code.data[vm->ip + 1]);
+        vm->ip += (uint32_t)sizeof(nargs);
+        const uint16_t pos = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                        vm->code.data[vm->ip + 1]);
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
         array_push(vm->stack, (struct value){0});
-        value_function(&array_top(vm->stack), vm->ip + sizeof(pos), nargs, vm->localenv, vm);
+        value_function(&array_top(vm->stack), vm->ip + (uint32_t)sizeof(pos), nargs, vm->localenv, vm);
         vm->ip += pos;
         dispatch();
     }
@@ -402,18 +408,18 @@ void vm_execute(struct vm *vm) {
     // flow control
     doop(OP_JMP): { // jmp [32-bit position]
         vm->ip++;
-        const int16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
-                            (uint16_t)vm->code.data[vm->ip + 1];
+        const int16_t pos = (int16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
         vm->ip += pos;
         LOG("JMP %d\n", pos);
         dispatch();
     }
     doop(OP_JMP_LONG): { // jmp [32-bit position]
         vm->ip++;
-        const uint32_t pos = (uint32_t)vm->code.data[vm->ip + 0] << 24 |
-                             (uint32_t)vm->code.data[vm->ip + 1] << 16 |
-                             (uint32_t)vm->code.data[vm->ip + 2] << 8 |
-                             (uint32_t)vm->code.data[vm->ip + 3];
+        const uint32_t pos = (uint32_t)(vm->code.data[vm->ip + 0] << 24 |
+                                        vm->code.data[vm->ip + 1] << 16 |
+                                        vm->code.data[vm->ip + 2] << 8 |
+                                        vm->code.data[vm->ip + 3]);
         vm->ip = pos;
         LOG("JMP LONG %d\n", pos);
         dispatch();
@@ -421,25 +427,25 @@ void vm_execute(struct vm *vm) {
     doop(OP_JCOND):
     doop(OP_JCOND_NO_POP): { // jmp if not true [32-bit position]
         const enum vm_opcode op = vm->code.data[vm->ip++];
-        const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
-                            (uint16_t)vm->code.data[vm->ip+1];
+        const int16_t pos = (int16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
         struct value val = array_top(vm->stack);
         if(op == OP_JCOND) array_pop(vm->stack);
         LOG(op == OP_JCOND ? "JCOND %d\n" : "JCOND_NO_POP %d\n", pos);
         if(value_is_true(val)) vm->ip += pos;
-        else vm->ip += sizeof(pos);
+        else vm->ip += (uint32_t)sizeof(pos);
         dispatch();
     }
     doop(OP_JNCOND):
     doop(OP_JNCOND_NO_POP):  { // jump if true [32-bit position]
         const enum vm_opcode op = vm->code.data[vm->ip++];
-        const int16_t pos = (uint16_t)vm->code.data[vm->ip+0] << 8 |
-                            (uint16_t)vm->code.data[vm->ip+1];
+        const int16_t pos = (int16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
         struct value val = array_top(vm->stack);
         if(op == OP_JNCOND) array_pop(vm->stack);
         LOG(op == OP_JNCOND ? "JNCOND %d\n" : "JNCOND_NO_POP %d\n", pos);
         if(!value_is_true(val)) vm->ip += pos;
-        else vm->ip += sizeof(pos);
+        else vm->ip += (uint32_t)sizeof(pos);
         dispatch();
     }
     // pops a function/record constructor on top of the stack,
@@ -492,9 +498,9 @@ void vm_execute(struct vm *vm) {
         // argument: [arg2][arg1]
         vm->ip++;
         struct value val = array_top(vm->stack);
-        const uint16_t nargs = vm->code.data[vm->ip+0] << 8 |
-                               vm->code.data[vm->ip+1];
-        vm->ip += sizeof(nargs);
+        const uint16_t nargs = (uint16_t)(vm->code.data[vm->ip+0] << 8 |
+                                          vm->code.data[vm->ip+1]);
+        vm->ip += (uint32_t)sizeof(nargs);
         debug_assert(vm->stack.length >= nargs);
         LOG("call %d\n", nargs);
         switch(val.type) {
@@ -549,7 +555,7 @@ void vm_execute(struct vm *vm) {
         const enum vm_opcode op = vm->code.data[vm->ip];
         vm->ip++;
         const char *key = (const char *)&vm->code.data[vm->ip]; // must be null terminated
-        vm->ip += strlen(key)+1;
+        vm->ip += (uint32_t)strlen(key) + 1;
         LOG(op == OP_MEMBER_GET ? "MEMBER_GET %s\n" : "MEMBER_GET_NO_POP %s\n", key);
 
         struct value val = array_top(vm->stack);
@@ -585,7 +591,7 @@ void vm_execute(struct vm *vm) {
         // stack: [value][dict]
         vm->ip++;
         char *key = (char *)(vm->code.data+vm->ip); // must be null terminated
-        vm->ip += strlen(key)+1;
+        vm->ip += (uint32_t)strlen(key) + 1;
         LOG("MEMBER_SET %s\n", key);
         struct value dval = array_top(vm->stack);
         if(dval.type != TYPE_DICT) {
@@ -602,7 +608,7 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
 
         struct value val = array_top(vm->stack);
-        int64_t length = val.as.integer;
+        size_t length = (size_t)val.as.integer;
         array_pop(vm->stack);
         debug_assert(val.type == TYPE_INT);
         LOG("DICT_LOAD %ld\n", length);
@@ -641,8 +647,8 @@ void vm_execute(struct vm *vm) {
             if(index.type != TYPE_INT) {
                 ERROR(ERROR_KEY_NON_INT, 1);
             }
-            const int64_t i = (int64_t)index.as.integer;
-            if(!(i >= 0 && i < (int64_t)dval.as.array->length)) {
+            const int32_t i = (int32_t)index.as.integer;
+            if (!(i >= 0 && i < (int32_t)dval.as.array->length)) {
                 ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, dval.as.array->length);
             }
             array_push(vm->stack, dval.as.array->data[i]);
@@ -650,7 +656,7 @@ void vm_execute(struct vm *vm) {
             if(index.type != TYPE_INT) {
                 ERROR(ERROR_KEY_NON_INT, 1);
             }
-            const int64_t i = index.as.integer;
+            const int32_t i = (int32_t)index.as.integer;
             struct value val;
             val.type = TYPE_STR;
             val.as.str = string_at(dval.as.str, i, vm);
@@ -708,7 +714,7 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
 
         struct value val = array_top(vm->stack);
-        int64_t length = val.as.integer;
+        size_t length = (size_t)val.as.integer;
         array_pop(vm->stack);
         debug_assert(val.type == TYPE_INT);
         LOG("ARRAY_LOAD %ld\n", length);
@@ -770,8 +776,8 @@ void vm_execute(struct vm *vm) {
     }
     doop(OP_EXFRAME_RET): {
         vm->ip++;
-        const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
-                             (uint16_t)vm->code.data[vm->ip + 1];
+        const uint16_t pos = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                        vm->code.data[vm->ip + 1]);
         vm->ip += pos;
         LOG("EXFRAME_RET %d\n", pos);
         vm_leave_exframe(vm);
@@ -782,9 +788,9 @@ void vm_execute(struct vm *vm) {
     doop(OP_RETCALL): {
         vm->ip++;
         struct value val = array_top(vm->stack);
-        const uint16_t nargs = (uint16_t)vm->code.data[vm->ip+0] << 8 |
-                               (uint16_t)vm->code.data[vm->ip+1];
-        vm->ip += sizeof(nargs);
+        const uint16_t nargs = (uint16_t)(vm->code.data[vm->ip+0] << 8 |
+                                          vm->code.data[vm->ip+1]);
+        vm->ip += (uint32_t)sizeof(nargs);
         debug_assert(vm->stack.length >= nargs);
         LOG("retcall %d\n", nargs);
         switch(val.type) {
@@ -849,8 +855,8 @@ void vm_execute(struct vm *vm) {
         }                                                                                                   \
     } while (0);
         vm->ip++;
-        const uint16_t pos = (uint16_t)vm->code.data[vm->ip + 0] << 8 |
-                             (uint16_t)vm->code.data[vm->ip + 1];
+        const uint16_t pos = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                        vm->code.data[vm->ip + 1]);
         LOG("FOR_IN %d\n", pos);
         debug_assert(vm->stack.length > 0);
         struct value *top = &array_top(vm->stack);
@@ -894,7 +900,7 @@ void vm_execute(struct vm *vm) {
                 .type = TYPE_INTERPRETER_ITERATOR
             };
             array_push(vm->stack, val);
-            vm->ip += sizeof(pos);
+            vm->ip += (uint32_t)sizeof(pos);
             array_push(vm->stack, *top); // pass arg
             CALL_DICT_ITERATOR_FN
             break; }
@@ -931,7 +937,7 @@ void vm_execute(struct vm *vm) {
                     }
 
                     const struct value *pval = dict_get(dict, "next");
-                    vm->ip += sizeof(pos);
+                    vm->ip += (uint32_t)sizeof(pos);
                     array_push(vm->stack, iterator); // arg
                     CALL_DICT_ITERATOR_FN
                     break;
@@ -942,7 +948,7 @@ void vm_execute(struct vm *vm) {
         }
         default: ERROR(ERROR_EXPECTED_ITERABLE, sizeof(pos));
         }
-        vm->ip += sizeof(pos);
+        vm->ip += (uint32_t)sizeof(pos);
         dispatch();
 #undef CALL_DICT_ITERATOR_FN
     }
@@ -962,7 +968,7 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         char *str = (char *)&vm->code.data[vm->ip]; // must be null terminated
         LOG("USE %s\n", str);
-        vm->ip += strlen(str)+1;
+        vm->ip += (uint32_t)strlen(str) + 1;
         vm_load_module(vm, str);
         dispatch();
     }
@@ -975,10 +981,10 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     struct function *ifn = NULL;
 
     if (fn.type == TYPE_NATIVE_FN) {
-        for (int64_t i = args->length - 1; i >= 0; i--) {
+        for (size_t i = args->length; i-- > 0;) {
             array_push(vm->stack, args->data[i]);
         }
-        fn.as.fn(vm, args->length);
+        fn.as.fn(vm, (uint16_t)args->length);
     } else if(fn.type == TYPE_DICT) {
         const struct value *ctor = dict_get(fn.as.dict, "constructor");
         if(ctor == NULL) {
@@ -986,10 +992,10 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
             return errorval;
         }
         if(ctor->type == TYPE_NATIVE_FN) {
-            for(int64_t i = args->length-1; i >= 0; i--) {
+            for (size_t i = args->length; i-- > 0;) {
                 array_push(vm->stack, args->data[i]);
             }
-            ctor->as.fn(vm, args->length);
+            ctor->as.fn(vm, (uint16_t)args->length);
             if(vm->error) return errorval;
             const struct value val = array_top(vm->stack);
             array_pop(vm->stack);
@@ -1019,7 +1025,8 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     vm->ip = (uint32_t)-1;
     struct env *curenv = vm_enter_env(vm, ifn);
     // setup stack/ip
-    for(int64_t i = args->length-1; i >= 0; i--) {
+    printf("%ld\n", args->length);
+    for (size_t i = (size_t)args->length; i-- > 0;) {
         array_push(vm->stack, args->data[i]);
     }
     // call it

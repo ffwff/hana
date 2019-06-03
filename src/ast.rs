@@ -140,8 +140,9 @@ pub mod ast {
                     c.cpush32(n as u32);
                 }
                 _ => {
-                    c.cpushop(VmOpcode::OP_PUSH64);
-                    c.cpush64(n);
+                    unimplemented!()
+                    //c.cpushop(VmOpcode::OP_PUSH64);
+                    //c.cpush64(n);
                 }
             }
             emit_end!(c, _smap_begin);
@@ -191,8 +192,8 @@ pub mod ast {
                 c.cpushop(VmOpcode::OP_PUSH8);
                 c.cpush8(self.exprs.len() as u8);
             } else {
-                c.cpushop(VmOpcode::OP_PUSH64);
-                c.cpush64(self.exprs.len() as u64);
+                c.cpushop(VmOpcode::OP_PUSH32);
+                c.cpush32(self.exprs.len() as u32);
             }
             c.cpushop(VmOpcode::OP_ARRAY_LOAD);
             emit_end!(c, _smap_begin);
@@ -315,8 +316,8 @@ pub mod ast {
                 c.cpushop(VmOpcode::OP_PUSH8);
                 c.cpush8(self.stmts.len() as u8);
             } else {
-                c.cpushop(VmOpcode::OP_PUSH64);
-                c.cpush64(self.stmts.len() as u64);
+                c.cpushop(VmOpcode::OP_PUSH32);
+                c.cpush32(self.stmts.len() as u32);
             }
             c.cpushop(VmOpcode::OP_DICT_LOAD);
             emit_end!(c, _smap_begin);

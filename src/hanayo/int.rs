@@ -9,8 +9,8 @@ use std::str::FromStr;
 fn constructor(val: Value::Any) -> Value {
     match val {
         Value::Int(n) => Value::Int(n),
-        Value::Float(n) => Value::Int(n as i64),
-        Value::Str(s) => match i64::from_str(s.as_ref()) {
+        Value::Float(n) => Value::Int(n as i32),
+        Value::Str(s) => match i32::from_str(s.as_ref()) {
             Ok(n) => Value::Int(n),
             Err(_) => {
                 hana_raise!(vm, {

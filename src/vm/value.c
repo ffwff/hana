@@ -7,7 +7,7 @@
 #include "array_obj.h"
 #include "function.h"
 
-void value_int(struct value *val, int64_t data) {
+void value_int(struct value *val, int32_t data) {
     val->type = TYPE_INT;
     val->as.integer = data;
 }
