@@ -7,159 +7,163 @@
 #include "array_obj.h"
 #include "function.h"
 
-void value_int(struct value *val, int32_t data) {
-    val->type = TYPE_INT;
-    val->as.integer = data;
+int value_get_type(struct value val) {
+    if(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits > 0) {
+        return val.as.bits.tag_bits;
+    } else {
+        return TYPE_FLOAT;
+    }
 }
-void value_float(struct value *val, double data) {
-    val->type = TYPE_FLOAT;
-    val->as.floatp = data;
-}
+
 // non-primitives
-void value_str(struct value *val, const char *data, const struct vm *vm) {
-    val->type = TYPE_STR;
-    val->as.str = string_malloc(data, vm);
+struct value value_int(int32_t n) {
+    struct value val;
+    value_set_int(&val, n);
+    return val;
 }
-void value_function(struct value *val, uint32_t ip, uint16_t nargs, struct env *env, const struct vm *vm) {
-    val->type = TYPE_FN;
-    val->as.ifn = function_malloc(ip, nargs, env, vm);
+struct value value_float(double n) {
+    struct value val;
+    value_set_float(&val, n);
+    return val;
 }
-void value_dict(struct value *val, const struct vm *vm) {
-    val->type = TYPE_DICT;
-    val->as.dict = dict_malloc(vm);
+struct value value_str(const char *data, const struct vm *vm) {
+    return value_pointer(TYPE_STR, string_malloc(data, vm));
 }
-void value_dict_n(struct value *val, size_t n, const struct vm *vm) {
-    val->type = TYPE_DICT;
-    val->as.dict = dict_malloc_n(vm, n);
+struct value value_function(uint32_t ip, uint16_t nargs, struct env *env, const struct vm *vm) {
+    return value_pointer(TYPE_FN, function_malloc(ip, nargs, env, vm));
 }
-void value_array(struct value *val, const struct vm *vm) {
-    val->type = TYPE_ARRAY;
-    val->as.array = array_obj_malloc(vm);
+struct value value_dict(const struct vm *vm) {
+    return value_pointer(TYPE_DICT, dict_malloc(vm));
 }
-void value_array_n(struct value *val, size_t n, const struct vm *vm) {
-    val->type = TYPE_ARRAY;
-    val->as.array = array_obj_malloc_n(n, vm);
+struct value value_dict_n(size_t n, const struct vm *vm) {
+    return value_pointer(TYPE_DICT, dict_malloc_n(vm, n));
+}
+struct value value_array(const struct vm *vm) {
+    return value_pointer(TYPE_ARRAY, array_obj_malloc(vm));
+}
+struct value value_array_n(size_t n, const struct vm *vm) {
+    return value_pointer(TYPE_ARRAY, array_obj_malloc_n(n, vm));
+}
+
+static inline struct value value_interpreter_error() {
+    return value_pointer(TYPE_INTERPRETER_ERROR, 0);
 }
 
 // arith
 #define arith_op(name, op, custom) \
-void value_ ## name (struct value *result, const struct value left, const struct value right, const struct vm *vm) { \
-    switch(left.type) { \
+struct value value_ ## name (const struct value left, const struct value right, const struct vm *vm) { \
+    switch(value_get_type(left)) { \
     case TYPE_INT: { \
-        switch(right.type) { \
+        switch(value_get_type(right)) { \
         case TYPE_FLOAT: { \
-            value_float(result, (double)left.as.integer op right.as.floatp); break; } \
+            return ((double)value_get_int(left) op right.as.floatp); break; } \
         case TYPE_INT: { \
-            value_int(result, left.as.integer op right.as.integer); \
+            return (value_get_int(left) op value_get_int(right)); \
             break; }\
         default: \
-            result->type = TYPE_INTERPRETER_ERROR; } \
+            return value_interpreter_error(); } \
         break; \
     } \
     case TYPE_FLOAT: { \
-        switch(right.type) { \
+        switch(value_get_type(right)) { \
         case TYPE_INT: { \
-            value_float(result, left.as.floatp op (double)right.as.integer); break; } \
+            return (left.as.floatp op (double)value_get_int(right)); break; } \
         case TYPE_FLOAT: { \
-            value_float(result, left.as.floatp op right.as.floatp); break; } \
+            return (left.as.floatp op right.as.floatp); break; } \
         default: \
-            result->type = TYPE_INTERPRETER_ERROR; } \
+            return value_interpreter_error(); } \
         break; \
     } custom \
-    default: result->type = TYPE_INTERPRETER_ERROR; }\
+    default: return value_interpreter_error(); }\
 }
 arith_op(add, +,
     case TYPE_STR: {
-        if(right.type != TYPE_STR) {
-            result->type = TYPE_INTERPRETER_ERROR;
-            return;
+        if(value_get_type(right) != TYPE_STR) {
+            return value_interpreter_error();
         }
         result->type = TYPE_STR;
-        result->as.str = string_append(left.as.str, right.as.str, vm);
+        result->as.str = string_append(value_get_pointer(TYPE_STR, left), value_get_pointer(TYPE_STR, right), vm);
         break; }
 )
 arith_op(sub, -,)
 arith_op(mul, *,
     case TYPE_STR: {
-        if(right.type == TYPE_INT) {
-            if(right.as.integer == 0) {
-                value_str(result, "", vm);
+        if(value_get_type(right) == TYPE_INT) {
+            if(value_get_int(right) == 0) {
+                return value_interpreter_error();
             } else {
-                result->type = TYPE_STR;
-                result->as.str = string_repeat(left.as.str, right.as.integer, vm);
+                return value_pointer(TYPE_STR, string_repeat(value_get_pointer(TYPE_STR, left), value_get_int(right), vm));
             }
         }
         else
-            result->type = TYPE_INTERPRETER_ERROR;
+            return value_interpreter_error();
         break; }
     case TYPE_ARRAY: {
-        if(right.type == TYPE_INT) {
-            result->type = TYPE_ARRAY;
-            result->as.array = array_obj_repeat(left.as.array, (size_t)right.as.integer, vm);
+        if(value_get_type(right) == TYPE_INT) {
+            return value_pointer(TYPE_ARRAY, array_obj_repeat(left.as.array, (size_t)value_get_int(right), vm));
         }
         else
-            result->type = TYPE_INTERPRETER_ERROR;
-        break; }
+            return value_interpreter_error(); }
 )
 
-void value_div(struct value *result, const struct value left, const struct value right, const struct vm *_) {
-    switch(left.type) {
+struct value value_div(const struct value left, const struct value right, const struct vm *_) {
+    switch(value_get_type(left)) {
     case TYPE_INT: {
-        switch(right.type) {
+        switch(value_get_type(right)) {
         case TYPE_FLOAT: {
-            value_float(result, (double)left.as.integer / right.as.floatp); break; }
+            return ((double)value_get_int(left) / right.as.floatp); break; }
         case TYPE_INT: {
-            value_float(result, (double)left.as.integer / (double)right.as.integer);
+            return ((double)value_get_int(left) / (double)value_get_int(right));
             break; }
         default:
-            result->type = TYPE_INTERPRETER_ERROR; }
+            return value_interpreter_error(); }
         break;
     }
     case TYPE_FLOAT: {
-        switch(right.type) {
+        switch(value_get_type(right)) {
         case TYPE_INT: {
-            value_float(result, left.as.floatp / (double)right.as.integer); break; }
+            return (left.as.floatp / (double)value_get_int(right)); break; }
         case TYPE_FLOAT: {
-            value_float(result, left.as.floatp / right.as.floatp); break; }
+            return (left.as.floatp / right.as.floatp); break; }
         default:
-            result->type = TYPE_INTERPRETER_ERROR; }
+            return value_interpreter_error(); }
         break;
     }
-    default: result->type = TYPE_INTERPRETER_ERROR; }
+    default: return value_interpreter_error(); }
 }
-void value_mod(struct value *result, const struct value left, const struct value right, const struct vm *_) {
-    if(left.type == TYPE_INT && right.type == TYPE_INT) {
-        value_int(result, left.as.integer % right.as.integer);
+struct value value_mod(const struct value left, const struct value right, const struct vm *_) {
+    if(value_get_type(left) == TYPE_INT && value_get_type(right) == TYPE_INT) {
+        return (value_get_int(left) % value_get_int(right));
     } else
-        result->type = TYPE_INTERPRETER_ERROR;
+        return value_interpreter_error();
 }
-void value_bitwise_and(struct value *result, const struct value left, const struct value right, const struct vm *_) {
-    if (left.type == TYPE_INT && right.type == TYPE_INT) {
-        value_int(result, left.as.integer & right.as.integer);
+struct value value_bitwise_and(const struct value left, const struct value right, const struct vm *_) {
+    if (value_get_type(left) == TYPE_INT && value_get_type(right) == TYPE_INT) {
+        return (value_get_int(left) & value_get_int(right));
     } else
-        result->type = TYPE_INTERPRETER_ERROR;
+        return value_interpreter_error();
 }
-void value_bitwise_or(struct value *result, const struct value left, const struct value right, const struct vm *_) {
-    if (left.type == TYPE_INT && right.type == TYPE_INT) {
-        value_int(result, left.as.integer | right.as.integer);
+struct value value_bitwise_or(const struct value left, const struct value right, const struct vm *_) {
+    if (value_get_type(left) == TYPE_INT && value_get_type(right) == TYPE_INT) {
+        return (value_get_int(left) | value_get_int(right));
     } else
-        result->type = TYPE_INTERPRETER_ERROR;
+        return value_interpreter_error();
 }
-void value_bitwise_xor(struct value *result, const struct value left, const struct value right, const struct vm *_) {
-    if (left.type == TYPE_INT && right.type == TYPE_INT) {
-        value_int(result, left.as.integer ^ right.as.integer);
+struct value value_bitwise_xor(const struct value left, const struct value right, const struct vm *_) {
+    if (value_get_type(left) == TYPE_INT && value_get_type(right) == TYPE_INT) {
+        return (value_get_int(left) ^ value_get_int(right));
     } else
-        result->type = TYPE_INTERPRETER_ERROR;
+        return value_interpreter_error();
 }
 
 // in place
 // returns 1 if it CAN do it in place
 int value_iadd(struct value left, const struct value right) {
-    switch (left.type) {
+    switch (value_get_type(left)) {
         case TYPE_STR: {
-            switch(right.type) {
+            switch(value_get_type(right)) {
             case TYPE_STR: {
-                string_append_in_place(left.as.str, right.as.str);
+                string_append_in_place(value_get_pointer(TYPE_STR, left), value_get_pointer(TYPE_STR, right));
                 return 1; } }
             return 0;
         }
@@ -168,11 +172,11 @@ int value_iadd(struct value left, const struct value right) {
 }
 
 int value_imul(struct value left, const struct value right) {
-    switch (left.type) {
+    switch (value_get_type(left)) {
         case TYPE_STR: {
-            switch(right.type) {
+            switch(value_get_type(right)) {
             case TYPE_INT: {
-                string_repeat_in_place(left.as.str, right.as.integer);
+                string_repeat_in_place(value_get_pointer(TYPE_STR, left), value_get_int(right));
                 return 1; } }
             return 0;
         }
@@ -183,17 +187,17 @@ int value_imul(struct value left, const struct value right) {
 // comparison
 #define strcmp_op(cond) \
     case TYPE_STR: \
-        value_int(result, right.type == TYPE_STR && string_cmp(left.as.str, right.as.str) cond); \
+        return (value_get_type(right) == TYPE_STR && string_cmp(value_get_pointer(TYPE_STR, left), value_get_pointer(TYPE_STR, right)) cond); \
         break;
 arith_op(eq, ==,
     strcmp_op(== 0)
     case TYPE_NATIVE_FN:
     case TYPE_FN:
     case TYPE_DICT:
-        value_int(result, left.as.integer == right.as.integer);
+        return (value_get_int(left) == value_get_int(right));
         break;
     case TYPE_NIL:
-        value_int(result, right.type == TYPE_NIL);
+        return (value_get_type(right) == TYPE_NIL);
         break;
 )
 arith_op(neq, !=,
@@ -201,10 +205,10 @@ arith_op(neq, !=,
     case TYPE_NATIVE_FN:
     case TYPE_FN:
     case TYPE_DICT:
-        value_int(result, left.as.integer != right.as.integer);
+        return (value_get_int(left) != value_get_int(right));
         break;
     case TYPE_NIL:
-        value_int(result, right.type != TYPE_NIL);
+        return (value_get_type(right) != TYPE_NIL);
         break;
 )
 arith_op(lt, <,
@@ -222,27 +226,29 @@ arith_op(geq, >=,
 
 // boolean
 bool value_is_true(const struct value val) {
-    switch(val.type) {
-    case TYPE_INT: return val.as.integer > 0;
+    switch(value_get_type(val)) {
+    case TYPE_INT: return value_get_int(val) > 0;
     case TYPE_FLOAT: return val.as.floatp > 0;
-    case TYPE_STR: return !string_is_empty(val.as.str);
+    case TYPE_STR: return !string_is_empty(value_get_pointer(TYPE_STR, val));
     default: return 0;
     }
 }
 
 struct dict *value_get_prototype(const struct vm *vm, const struct value val) {
-    if(val.type == TYPE_STR) {
-        return vm->dstr;
-    } else if(val.type == TYPE_INT) {
-        return vm->dint;
-    } else if(val.type == TYPE_FLOAT) {
-        return vm->dfloat;
-    } else if(val.type == TYPE_ARRAY) {
-        return vm->darray;
-    } else if(val.type == TYPE_DICT) {
-        const struct value *p = dict_get(val.as.dict, "prototype");
-        if (p == NULL) return NULL;
-        return p->as.dict;
+    switch (value_get_type(val)) {
+        case TYPE_STR:
+            return vm->dstr;
+        case TYPE_INT:
+            return vm->dint;
+        case TYPE_FLOAT:
+            return vm->dfloat;
+        case TYPE_ARRAY:
+            return vm->darray;
+        case TYPE_DICT: {
+            const struct value *p = dict_get(value_get_pointer(TYPE_DICT, val), "prototype");
+            if (p == NULL) return NULL;
+            return p->as.dict;
+        }
     }
     return NULL;
 }
