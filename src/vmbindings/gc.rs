@@ -40,7 +40,7 @@ type GenericFunction = unsafe fn(*mut c_void);
 // TODO maybe replace this with Any
 
 // manager
-const INITIAL_THRESHOLD: usize = 4096;
+const INITIAL_THRESHOLD: usize = 128;
 const USED_SPACE_RATIO: f64 = 0.8;
 pub struct GcManager {
     first_node: *mut GcNode,
@@ -66,16 +66,7 @@ impl GcManager {
     unsafe fn malloc_raw<T: Sized + GcTraceable>(
         &mut self, vm: &Vm, x: T, finalizer: GenericFunction,
     ) -> *mut T {
-        // free up if over threshold
-        if cfg!(test) {
-            self.cycle(vm);
-        } else if self.bytes_allocated > self.threshold {
-            self.cycle(vm);
-            // we didn't collect enough, grow the ratio
-            if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
-                self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
-            }
-        }
+        self.cycle(vm);
         // tfw no qt malloc function
         let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
         let node: *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
@@ -136,8 +127,7 @@ impl GcManager {
         }
         //eprintln!("GRAY NODES MARKING: {:?}, {:?}", gray_nodes, self.gray_nodes);
         // nothing left to traverse, sweeping phase:
-        if self.gray_nodes.is_empty() {
-            //eprintln!("{:?}", self.first_node);
+        if self.gray_nodes.is_empty() && self.bytes_allocated > self.threshold {
             let mut node: *mut GcNode = self.first_node;
             let mut prev: *mut GcNode = null_mut();
             // don't sweep nodes with at least one native reference
@@ -146,6 +136,7 @@ impl GcManager {
                 let next: *mut GcNode = (*node).next;
                 let ptr = node.add(1) as *mut c_void;
                 if (*node).native_refs > 0 && (*node).color != GcNodeColor::Black {
+                    //eprintln!("{:p}", node);
                     // get its children and subchildren
                     let mut children : Vec<*mut GcNode> = Vec::new();
                     ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
@@ -164,6 +155,7 @@ impl GcManager {
                 node = next;
             }
             // sweep
+            node = self.first_node;
             while !node.is_null() {
                 let next: *mut GcNode = (*node).next;
                 let mut freed = false;
@@ -200,7 +192,11 @@ impl GcManager {
             }
             // reset all root nodes to gray
             self.gray_nodes = vm.gc_new_gray_node_stack();
-            return;
+
+            // we didn't collect enough, grow the ratio
+            if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
+                self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
+            }
         }
     }
 }
