@@ -780,32 +780,34 @@ void vm_execute(struct vm *vm) {
         vm->ip += (uint32_t)sizeof(nargs);
         debug_assert(vm->stack.length >= nargs);
         LOG("retcall %d\n", nargs);
-        switch(value_get_type(val)) {
-        case TYPE_NATIVE_FN: {
-            array_pop(vm->stack);
-            assert(0);
-            /* CALL_NATIVE(val.as.fn);
-            if (vm_leave_env(vm)) {
-                LOG("return from vm_call\n");
-                return;
-            } */
-            break; }
-        case TYPE_FN:
-        case TYPE_DICT: {
-            struct function *ifn;
-            JMP_INTERPRETED_FN(1 + sizeof(nargs),
+        switch (value_get_type(val)) {
+            case TYPE_NATIVE_FN: {
+                array_pop(vm->stack);
+                assert(0);
+                /* CALL_NATIVE(val.as.fn);
                 if (vm_leave_env(vm)) {
                     LOG("return from vm_call\n");
                     return;
-                } else {
-                    dispatch();
-                }
-            );
-            // caller
-            vm_enter_env_tail(vm, ifn);
-            break; }
-        default: {
-            ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(nargs)); }
+                } */
+                break;
+            }
+            case TYPE_FN:
+            case TYPE_DICT: {
+                struct function *ifn;
+                JMP_INTERPRETED_FN(1 + sizeof(nargs),
+                                   if (vm_leave_env(vm)) {
+                                       LOG("return from vm_call\n");
+                                       return;
+                                   } else {
+                                       dispatch();
+                                   });
+                // caller
+                vm_enter_env_tail(vm, ifn);
+                break;
+            }
+            default: {
+                ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(nargs));
+            }
         }
         dispatch();
     }
@@ -872,7 +874,6 @@ void vm_execute(struct vm *vm) {
             case TYPE_DICT: {
                 struct dict *dict = value_get_pointer(TYPE_DICT, top);
                 const struct value *pval = dict_get(dict, "next");
-                array_pop(vm->stack);
                 array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, 0));
                 vm->ip += (uint32_t)sizeof(pos);
                 array_push(vm->stack, top);  // pass arg
@@ -907,6 +908,7 @@ void vm_execute(struct vm *vm) {
                         break;
                     }
                     case TYPE_DICT: {
+                        LOG("CONTINUE\n");
                         const struct dict *dict = value_get_pointer(TYPE_DICT, iterator);
                         if (dict_get(dict, "stopped") != NULL) {
                             array_pop(vm->stack); /* iterator */
@@ -918,8 +920,7 @@ void vm_execute(struct vm *vm) {
                         const struct value *pval = dict_get(dict, "next");
                         vm->ip += (uint32_t)sizeof(pos);
                         array_push(vm->stack, iterator);  // arg
-                        assert(0);
-                        //CALL_DICT_ITERATOR_FN
+                        CALL_DICT_ITERATOR_FN
                         break;
                     }
                     default:
