@@ -213,7 +213,6 @@ mod foreignc {
     unsafe extern "C" fn function_malloc(
         addr: u32, nargs: u16, env: *const Env, vm: *const Vm,
     ) -> *mut Function {
-        eprintln!("function malloc: {} {}", addr, nargs);
         (&*vm).malloc(Function::new(addr, nargs, env)).into_raw()
     }
 
@@ -254,7 +253,6 @@ mod foreignc {
         let env = &mut *selfptr;
         env.reserve(nslots);
         let vm = &mut *cvm;
-        eprintln!("{:?}", env.nargs);
         for i in 0..env.nargs {
             let val = vm.stack.pop().unwrap();
             env.set(i, val.clone());
