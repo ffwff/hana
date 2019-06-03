@@ -246,14 +246,14 @@ impl Vm {
     pub(crate) unsafe fn gc_new_gray_node_stack(&self) -> Vec<*mut GcNode> {
         let mut vec = Vec::new();
         for (_, val) in self.global().iter() {
-            if let Some(ptr) = val.as_pointer() {
+            if let Some(ptr) = val.as_gc_pointer() {
                 push_gray_body(&mut vec, ptr);
             }
         }
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
-            if let Some(ptr) = val.as_pointer() {
+            if let Some(ptr) = val.as_gc_pointer() {
                 push_gray_body(&mut vec, ptr);
             }
         }
@@ -263,7 +263,7 @@ impl Vm {
             let localenv = localenv.as_ptr();
             while env != localenv {
                 for val in (*env).slots.as_slice().iter() {
-                    if let Some(ptr) = (*val).as_pointer() {
+                    if let Some(ptr) = (*val).as_gc_pointer() {
                         push_gray_body(&mut vec, ptr);
                     }
                 }
@@ -271,7 +271,7 @@ impl Vm {
             }
             env = localenv;
             for val in (*env).slots.as_slice().iter() {
-                if let Some(ptr) = (*val).as_pointer() {
+                if let Some(ptr) = (*val).as_gc_pointer() {
                     push_gray_body(&mut vec, ptr);
                 }
             }
@@ -381,7 +381,7 @@ impl Vm {
     // functions
     pub fn call(&mut self, fun: NativeValue, args: &Vec<NativeValue>) -> Option<NativeValue> {
         let val = unsafe { vm_call(self, fun, args) };
-        if val.r#type == NativeValueType::TYPE_INTERPRETER_ERROR {
+        if val.tag() == NativeValueType::TYPE_INTERPRETER_ERROR {
             None
         } else {
             Some(val)

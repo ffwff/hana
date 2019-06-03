@@ -112,7 +112,7 @@ struct value value_neq(const struct value left, const struct value right, const 
 bool value_is_true(const struct value);
 struct dict *value_get_prototype(const struct vm *vm, const struct value val);
 
-#pragma region
+#define assert(x) if(!(x)){ *((void*)0); }
 static inline struct value value_pointer(uint8_t tag, void *ptr) {
     uint64_t low_bits = (uint64_t)ptr & 0xffffffffffff;
     assert(low_bits == (uint64_t)ptr);
@@ -122,7 +122,7 @@ static inline struct value value_pointer(uint8_t tag, void *ptr) {
         .as.bits.tag_bits = tag,
         .as.bits.payload = low_bits};
 }
-uint16_t value_get_tag(struct value val) {
+static inline uint16_t value_get_tag(struct value val) {
     assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits > 0);
     return val.as.bits.tag_bits;
 }
@@ -148,4 +148,4 @@ static inline void value_set_float(struct value *val, double n) {
     val->as.floatp = n;
     assert(val->as.bits.reserved_nan != RESERVED_NAN);
 }
-#pragma endregion
+#undef assert

@@ -59,6 +59,8 @@ extern "C" {
 
 // sorting
 fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
+    unimplemented!()
+    /*
     let left = left.clone();
     let right = right.clone();
     let mut val = NativeValue {
@@ -80,7 +82,7 @@ fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
         return Ordering::Less;
     }
 
-    Ordering::Equal
+    Ordering::Equal */
 }
 
 #[hana_function()]
@@ -155,7 +157,8 @@ extern "C" {
 }
 #[hana_function()]
 fn index(array: Value::Array, elem: Value::Any) -> Value {
-    let array = array.as_ref();
+    unimplemented!();
+    /* let array = array.as_ref();
     for i in 0..(array.len() - 1) {
         let mut val = NativeValue {
             data: 0,
@@ -168,7 +171,7 @@ fn index(array: Value::Array, elem: Value::Any) -> Value {
             return Value::Int(i as i32);
         }
     }
-    Value::Int(-1)
+    Value::Int(-1) */
 }
 
 // strings
