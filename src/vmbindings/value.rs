@@ -96,7 +96,7 @@ impl Value {
         match &self {
             Value::Nil => NativeValue::new_nil(),
             Value::True => NativeValue::new_i32(1),
-            Value::False => NativeValue::new_i32(1),
+            Value::False => NativeValue::new_i32(0),
             Value::Int(n) => NativeValue::new_i32(*n),
             Value::Float(n) => NativeValue::new_f64(*n),
             Value::NativeFn(p) => unsafe {

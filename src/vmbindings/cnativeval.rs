@@ -53,7 +53,7 @@ impl NativeValue {
         NativeValue((((RESERVED_NAN << 4) | NativeValueType::TYPE_NIL.to_u64().unwrap()) << 48))
     }
     pub fn new_i32(u: i32) -> NativeValue {
-        NativeValue(INT_MASK | (u as u64))
+        NativeValue(INT_MASK | ((u as u32) as u64 & 0xffffffff))
     }
     pub fn new_f64(u: f64) -> NativeValue {
         NativeValue(unsafe{ std::mem::transmute(u) })
