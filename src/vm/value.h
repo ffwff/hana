@@ -21,6 +21,31 @@ struct string;
 #define TYPE_INTERPRETER_ITERATOR 8
 #define TYPE_NIL 9
 
+/*
+    1111111111110000
+    01111111 11111010 00000000 00000000 00000000 00000000 00000000 00000000
+    seeeeeee|eeeemmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm
+    ^            ^^^^ tagging bits (T)
+    ^            ^ initial mantissa bit (whether it's a signalling/quiet NaN)
+    ^ signed bit (ignored)
+
+    we'll assume the architecture is using IEEE 754 double precision floating
+    point, and the OS allocates userland memory in the lower half of memory.
+    NaN values inside doubles allow us to store a 52-bit payload inside the mantissa
+    we can store 48-bit pointers/32-bit integers in the lower 48-bit region
+    and 4 additional higher bits for tagging
+
+    possible values for T:
+    - int
+    - native_fn
+    - fn
+    - str
+    - dict
+    - array
+    - [interpreter data]
+
+*/
+
 struct __attribute__((packed)) value {
     union {
         double floatp;

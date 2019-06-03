@@ -112,11 +112,7 @@ void vm_execute(struct vm *vm) {
         const _type data = _data;                                   \
         vm->ip += (uint32_t)sizeof(_type);                          \
         LOG(sizeof(_type) == 8 ? "PUSH %ld\n" : "PUSH %d\n", data); \
-                                                                    \
-        struct value val = {                                        \
-            .type = TYPE_INT,                                       \
-            .as.integer = (int32_t)data};                           \
-        array_push(vm->stack, val);                                 \
+        array_push(vm->stack, value_int((int32_t)data));            \
         dispatch();                                                 \
     }
     push_int_op(OP_PUSH8,  uint8_t,  vm->code.data[vm->ip+0])
@@ -150,8 +146,7 @@ void vm_execute(struct vm *vm) {
         u.u[7] = vm->code.data[vm->ip + 7];
         vm->ip += (uint32_t)sizeof(u);
         LOG("PUSH_F64 %f\n", u.d);
-        array_push(vm->stack, (struct value){0});
-        value_float(&array_top(vm->stack), u.d);
+        array_push(vm->stack, value_float(u.d));
         dispatch();
     }
 
@@ -161,8 +156,7 @@ void vm_execute(struct vm *vm) {
         char *str = (char *)&vm->code.data[vm->ip]; // must be null terminated
         vm->ip += (uint32_t)strlen(str) + 1;
         LOG("PUSH %s\n", str);
-        array_push(vm->stack, (struct value){0});
-        value_str(&array_top(vm->stack), str, vm);
+        array_push(vm->stack, value_str(str, vm));
         dispatch();
     }
 
@@ -187,20 +181,19 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         struct value val = array_top(vm->stack);
         array_pop(vm->stack);
-        int truth = value_is_true(val);
-        value_int(&val, !truth);
-        array_push(vm->stack, val);
+        array_push(vm->stack, value_int(!value_is_true(val)));
         dispatch();
     }
     // pops top of the stack, performs unary negation and pushes the result
     doop(OP_NEGATE): {
         vm->ip++;
-        struct value *val = &array_top(vm->stack);
+        assert(0);
+        /* struct value *val = &array_top(vm->stack);
         if(val->type == TYPE_INT) {
             val->as.integer = -val->as.integer;
         } else if(val->type == TYPE_FLOAT) {
             val->as.floatp = -val->as.floatp;
-        }
+        } */
         dispatch();
     }
 
@@ -215,9 +208,8 @@ void vm_execute(struct vm *vm) {
         struct value right = vm->stack.data[vm->stack.length - 1]; \
         struct value left = vm->stack.data[vm->stack.length - 2];  \
                                                                    \
-        struct value result = {0};                                 \
-        fn(&result, left, right, vm);                              \
-        if (result.type == TYPE_INTERPRETER_ERROR) {               \
+        struct value result = fn(left, right, vm);                 \
+        if (value_get_type(result) == TYPE_INTERPRETER_ERROR) {    \
             ERROR(ERROR_##optype, 1);                              \
         }                                                          \
         vm->stack.length -= 2;                                     \
@@ -237,30 +229,29 @@ void vm_execute(struct vm *vm) {
     // in place arithmetic:
     // does regular arith, returns lhs on stack and jumps out of fallback if CAN do it in place (for primitives)
     // else just does the fallback (copying and setting variable manually)
-#define binop_inplace(optype, errortype, fn, fallback)             \
-    doop(optype) : {                                               \
-        vm->ip++;                                                  \
-        LOG(#optype "\n");                                         \
-        debug_assert(vm->stack.length >= 2);                       \
-        const uint8_t pos = (uint8_t)vm->code.data[vm->ip];        \
-                                                                   \
-        struct value right = vm->stack.data[vm->stack.length - 1]; \
-        struct value left = vm->stack.data[vm->stack.length - 2];  \
-        if (fn(left, right)) {                                     \
-            LOG("did in place!\n");                                \
-            vm->stack.length--;                                    \
-            vm->ip += pos;                                         \
-            dispatch();                                            \
-        }                                                          \
-        struct value result = {0};                                 \
-        fallback(&result, left, right, vm);                        \
-        if (result.type == TYPE_INTERPRETER_ERROR) {               \
-            ERROR(errortype, 1);                                   \
-        }                                                          \
-        vm->stack.length -= 2;                                     \
-        array_push(vm->stack, result);                             \
-        vm->ip++;                                                  \
-        dispatch();                                                \
+#define binop_inplace(optype, errortype, fn, fallback)               \
+    doop(optype) : {                                                 \
+        vm->ip++;                                                    \
+        LOG(#optype "\n");                                           \
+        debug_assert(vm->stack.length >= 2);                         \
+        const uint8_t pos = (uint8_t)vm->code.data[vm->ip];          \
+                                                                     \
+        struct value right = vm->stack.data[vm->stack.length - 1];   \
+        struct value left = vm->stack.data[vm->stack.length - 2];    \
+        if (fn(left, right)) {                                       \
+            LOG("did in place!\n");                                  \
+            vm->stack.length--;                                      \
+            vm->ip += pos;                                           \
+            dispatch();                                              \
+        }                                                            \
+        struct value result = fallback(left, right, vm);             \
+        if (value_get_type(result) == TYPE_INTERPRETER_ERROR) {      \
+            ERROR(errortype, 1);                                     \
+        }                                                            \
+        vm->stack.length -= 2;                                       \
+        array_push(vm->stack, result);                               \
+        vm->ip++;                                                    \
+        dispatch();                                                  \
     }
 
     binop_inplace(OP_IADD, ERROR_OP_ADD, value_iadd, value_add)
@@ -285,17 +276,14 @@ void vm_execute(struct vm *vm) {
         struct value left = array_top(vm->stack);
         array_pop(vm->stack);
 
-        if (right.type == TYPE_DICT) {
-            const struct dict *rhs = right.as.dict;
-            struct value retval = {
-                .as.integer = 0,
-                .type = TYPE_INT
-            };
-            if ((rhs == vm->drec && left.type == TYPE_DICT) ||
+        if (value_get_type(right) == TYPE_DICT) {
+            const struct dict *rhs = value_get_pointer(TYPE_DICT, right);
+            if ((rhs == vm->drec && value_get_type(left) == TYPE_DICT) ||
                 (value_get_prototype(vm, left) == rhs)) {
-                retval.as.integer = 1;
+                array_push(vm->stack, value_int(1));
+            } else {
+                array_push(vm->stack, value_int(0));
             }
-            array_push(vm->stack, retval);
         } else {
             ERROR(ERROR_EXPECTED_RECORD_OF_EXPR, 1);
         }
@@ -335,7 +323,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += (uint32_t)sizeof(n);
         struct value val = array_top(vm->stack);
         env_set(vm->localenv, n, val);
-        function_set_bound_var(val.as.ifn, n, val);
+        function_set_bound_var(value_get_pointer(TYPE_FN, val), n, val);
         dispatch();
     }
     // pushes a copy of the value of current environment's slot
@@ -399,8 +387,8 @@ void vm_execute(struct vm *vm) {
         const uint16_t pos = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
                                         vm->code.data[vm->ip + 1]);
         LOG("DEF_FUNCTION_PUSH %d %d\n", pos, nargs);
-        array_push(vm->stack, (struct value){0});
-        value_function(&array_top(vm->stack), vm->ip + (uint32_t)sizeof(pos), nargs, vm->localenv, vm);
+        array_push(vm->stack, value_function(vm->ip + (uint32_t)sizeof(pos), nargs, vm->localenv, vm));
+
         vm->ip += pos;
         dispatch();
     }
@@ -459,42 +447,47 @@ void vm_execute(struct vm *vm) {
             vm->exframe_fallthrough = NULL; \
         else if(vm->error) return;    \
     } while(0)
-#define JMP_INTERPRETED_FN_(POP, UNWIND, END_IF_NATIVE)                      \
-    do {                                                                     \
-        if (val.type == TYPE_DICT) {                                         \
-            POP                                                              \
-            const struct value *ctor = dict_get(val.as.dict, "constructor"); \
-            if (ctor == NULL) {                                              \
-                ERROR(ERROR_RECORD_NO_CONSTRUCTOR, UNWIND);                  \
-            }                                                                \
-            if (ctor->type == TYPE_NATIVE_FN) {                              \
-                LOG("NATIVE CONSTRUCTOR %d\n", nargs);                       \
-                CALL_NATIVE(ctor->as.fn);                                    \
-                do {                                                         \
-                    END_IF_NATIVE                                            \
-                } while (0);                                                 \
-            } else if (ctor->type != TYPE_FN) {                              \
-                ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);               \
-            }                                                                \
-            ifn = ctor->as.ifn;                                              \
-            if (nargs + 1 != ifn->nargs) {                                   \
-                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);  \
-            }                                                                \
-            struct value new_val;                                            \
-            value_dict(&new_val, vm);                                        \
-            dict_set(new_val.as.dict, "prototype", val);                     \
-            array_push(vm->stack, new_val);                                  \
-        } else {                                                             \
-            POP                                                              \
-            ifn = val.as.ifn;                                                \
-            if (nargs != ifn->nargs) {                                       \
-                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);  \
-            }                                                                \
-        }                                                                    \
+#define JMP_INTERPRETED_FN_(POP, UNWIND, END_IF_NATIVE)                                             \
+    do {                                                                                            \
+        if (value_get_type(val) == TYPE_DICT) {                                                     \
+            do {                                                                                    \
+                POP                                                                                 \
+            } while (0);                                                                            \
+            const struct value *pctor = dict_get(value_get_pointer(TYPE_DICT, val), "constructor"); \
+            if (pctor == NULL) {                                                                    \
+                ERROR(ERROR_RECORD_NO_CONSTRUCTOR, UNWIND);                                         \
+            }                                                                                       \
+            const struct value ctor = *pctor;                                                       \
+            if (value_get_type(ctor) == TYPE_NATIVE_FN) {                                           \
+                LOG("NATIVE CONSTRUCTOR %d\n", nargs);                                              \
+                CALL_NATIVE(((value_fn)(value_get_pointer(TYPE_NATIVE_FN, ctor))));                 \
+                do {                                                                                \
+                    END_IF_NATIVE                                                                   \
+                } while (0);                                                                        \
+            } else if (value_get_type(ctor) != TYPE_FN) {                                           \
+                ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);                                      \
+            }                                                                                       \
+            ifn = value_get_pointer(TYPE_NATIVE_FN, *ctor);                                         \
+            if (nargs + 1 != ifn->nargs) {                                                          \
+                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);                         \
+            }                                                                                       \
+            struct value new_val = value_dict(vm);                                                  \
+            dict_set(value_get_pointer(TYPE_DICT, val), "prototype", val);                          \
+            array_push(vm->stack, new_val);                                                         \
+        } else {                                                                                    \
+            do {                                                                                    \
+                POP                                                                                 \
+            } while (0);                                                                            \
+            ifn = value_get_pointer(TYPE_FN, val);                                                  \
+            if (nargs != ifn->nargs) {                                                              \
+                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);                         \
+            }                                                                                       \
+        }                                                                                           \
     } while (0)
 #define JMP_INTERPRETED_FN(UNWIND, END_IF_NATIVE) JMP_INTERPRETED_FN_(array_pop(vm->stack);, UNWIND, END_IF_NATIVE)
 #define JMP_INTERPRETED_FN_NO_POP(UNWIND, END_IF_NATIVE) JMP_INTERPRETED_FN_(do{}while(0);, UNWIND, END_IF_NATIVE)
-    doop(OP_CALL): {
+    doop(OP_CALL) : {
+        assert(0); /*
         // argument: [arg2][arg1]
         vm->ip++;
         struct value val = array_top(vm->stack);
@@ -503,10 +496,10 @@ void vm_execute(struct vm *vm) {
         vm->ip += (uint32_t)sizeof(nargs);
         debug_assert(vm->stack.length >= nargs);
         LOG("call %d\n", nargs);
-        switch(val.type) {
+        switch(value_get_type(val)) {
         case TYPE_NATIVE_FN: {
             array_pop(vm->stack);
-            CALL_NATIVE(val.as.fn);
+            CALL_NATIVE(((value_fn)(value_get_pointer(TYPE_NATIVE_FN, val))));
             break; }
         case TYPE_FN:
         case TYPE_DICT: {
@@ -529,7 +522,7 @@ void vm_execute(struct vm *vm) {
         default: {
             ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(nargs)); }
         }
-        dispatch();
+        dispatch();*/
     }
     // returns from function
     doop(OP_RET): {
@@ -545,13 +538,11 @@ void vm_execute(struct vm *vm) {
     // dictionaries
     doop(OP_DICT_NEW): {
         vm->ip++;
-        LOG("DICT_NEW\n");
-        array_push(vm->stack, (struct value){0});
-        value_dict(&array_top(vm->stack), vm);
-        dispatch();
+        assert(0);
     }
     doop(OP_MEMBER_GET):
     doop(OP_MEMBER_GET_NO_POP): {
+        assert(0);/*
         const enum vm_opcode op = vm->code.data[vm->ip];
         vm->ip++;
         const char *key = (const char *)&vm->code.data[vm->ip]; // must be null terminated
@@ -560,7 +551,7 @@ void vm_execute(struct vm *vm) {
 
         struct value val = array_top(vm->stack);
         struct dict *dict = NULL;
-        if(val.type != TYPE_DICT) {
+        if(value_get_type(val) != TYPE_DICT) {
             if((dict = value_get_prototype(vm, val)) == NULL) {
                 ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
             }
@@ -571,10 +562,10 @@ void vm_execute(struct vm *vm) {
                 dispatch();
             }
         } else {
-            if(val.type != TYPE_DICT) {
+            if(value_get_type(val) != TYPE_DICT) {
                 ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
             }
-            dict = val.as.dict;
+            dict = value_get_pointer(TYPE_DICT, val);
             if(op == OP_MEMBER_GET) array_pop(vm->stack);
         }
 
@@ -584,7 +575,7 @@ void vm_execute(struct vm *vm) {
         } else {
             ERROR(ERROR_UNKNOWN_KEY, strlen(key)+1);
         }
-
+        */
         dispatch();
     }
     doop(OP_MEMBER_SET): {
@@ -594,45 +585,48 @@ void vm_execute(struct vm *vm) {
         vm->ip += (uint32_t)strlen(key) + 1;
         LOG("MEMBER_SET %s\n", key);
         struct value dval = array_top(vm->stack);
-        if(dval.type != TYPE_DICT) {
+        if(value_get_type(dval) != TYPE_DICT) {
             ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
         }
         array_pop(vm->stack);
 
         struct value val = array_top(vm->stack);
-        dict_set(dval.as.dict, key, val);
+        dict_set(value_get_pointer(TYPE_DICT, dval), key, val);
         dispatch();
     }
     doop(OP_DICT_LOAD): {
         // stack: [nil][value][key]
-        vm->ip++;
+        assert(0);
+        /*vm->ip++;
 
         struct value val = array_top(vm->stack);
-        size_t length = (size_t)val.as.integer;
+        size_t length = (size_t)value_get_int(val);
         array_pop(vm->stack);
-        debug_assert(val.type == TYPE_INT);
+        debug_assert(value_get_type(val) == TYPE_INT);
         LOG("DICT_LOAD %ld\n", length);
 
         struct value dval;
         value_dict_n(&dval, length, vm);
 
         while(length--) {
-            debug_assert(key.type == TYPE_STR);
+            debug_assert(value_get_type(key) == TYPE_STR);
             // key
             struct value key = array_top(vm->stack);
             array_pop(vm->stack);
             // val
             struct value val = array_top(vm->stack);
             array_pop(vm->stack);
-            dict_set_str(dval.as.dict, key.as.str, val);
+            dict_set_str(value_get_pointer(TYPE_DICT, dval), key.as.str, val);
         }
 
         array_push(vm->stack, dval);
-        dispatch();
+        dispatch();*/
     }
     // array
     doop(OP_INDEX_GET):
     doop(OP_INDEX_GET_NO_POP): {
+        assert(0);
+        /*
         const enum vm_opcode op = vm->code.data[vm->ip];
         vm->ip++;
         LOG(op == OP_INDEX_GET ? "INDEX_GET\n" : "INDEX_GET_NO_POP\n");
@@ -643,32 +637,32 @@ void vm_execute(struct vm *vm) {
         const struct value dval = array_top(vm->stack);
         if (op == OP_INDEX_GET) array_pop(vm->stack);
 
-        if(dval.type == TYPE_ARRAY) {
-            if(index.type != TYPE_INT) {
+        if(value_get_type(dval) == TYPE_ARRAY) {
+            if(value_get_type(index) != TYPE_INT) {
                 ERROR(ERROR_KEY_NON_INT, 1);
             }
-            const int32_t i = (int32_t)index.as.integer;
+            const int32_t i = (int32_t)value_get_int(index);
             if (!(i >= 0 && i < (int32_t)dval.as.array->length)) {
                 ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, dval.as.array->length);
             }
             array_push(vm->stack, dval.as.array->data[i]);
-        } else if(dval.type == TYPE_STR) {
-            if(index.type != TYPE_INT) {
+        } else if(value_get_type(dval) == TYPE_STR) {
+            if(value_get_type(index) != TYPE_INT) {
                 ERROR(ERROR_KEY_NON_INT, 1);
             }
-            const int32_t i = (int32_t)index.as.integer;
+            const int32_t i = (int32_t)value_get_int(index);
             struct value val;
-            val.type = TYPE_STR;
+            value_get_type(val) = TYPE_STR;
             val.as.str = string_at(dval.as.str, i, vm);
             if (val.as.str == NULL) {
                 ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, string_len(dval.as.str));
             }
             array_push(vm->stack, val);
-        } else if(dval.type == TYPE_DICT) {
-            if(index.type != TYPE_STR) {
+        } else if(value_get_type(dval) == TYPE_DICT) {
+            if(value_get_type(index) != TYPE_STR) {
                 ERROR(ERROR_RECORD_KEY_NON_STRING, 1);
             }
-            const struct value *val = dict_get_str(dval.as.dict, index.as.str);
+            const struct value *val = dict_get_str(value_get_pointer(TYPE_DICT, dval), index.as.str);
             if(val != NULL) {
                 array_push(vm->stack, *val);
             } else {
@@ -677,10 +671,12 @@ void vm_execute(struct vm *vm) {
         } else {
             ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1);
         }
+        */
         dispatch();
     }
     doop(OP_INDEX_SET): {
-        vm->ip++;
+        assert(0);
+        /* vm->ip++;
         LOG("INDEX_SET\n");
 
         struct value index = array_top(vm->stack);
@@ -691,32 +687,33 @@ void vm_execute(struct vm *vm) {
 
         struct value val = array_top(vm->stack);
 
-        if(dval.type == TYPE_ARRAY) {
-            if(index.type != TYPE_INT) {
+        if(value_get_type(dval) == TYPE_ARRAY) {
+            if(value_get_type(index) != TYPE_INT) {
                 ERROR(ERROR_KEY_NON_INT, 1);
             }
-            const int64_t i = index.as.integer;
+            const int64_t i = value_get_int(index);
             if (!(i >= 0 && i < (int64_t)dval.as.array->length)) {
                 ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, dval.as.array->length, 1);
             }
             dval.as.array->data[i] = val;
-        } else if(dval.type == TYPE_DICT) {
-            if(index.type != TYPE_STR) {
+        } else if(value_get_type(dval) == TYPE_DICT) {
+            if(value_get_type(index) != TYPE_STR) {
                 ERROR(ERROR_RECORD_KEY_NON_STRING, 1);
             }
-            dict_set_str(dval.as.dict, index.as.str, val);
+            dict_set_str(value_get_pointer(TYPE_DICT, dval), index.as.str, val);
         } else {
             ERROR(ERROR_EXPECTED_RECORD_ARRAY, 1);
         }
-        dispatch();
+        dispatch(); */
     }
-    doop(OP_ARRAY_LOAD): {
+    doop(OP_ARRAY_LOAD) : {
+        assert(0); /*
         vm->ip++;
 
         struct value val = array_top(vm->stack);
-        size_t length = (size_t)val.as.integer;
+        size_t length = (size_t)value_get_int(val);
         array_pop(vm->stack);
-        debug_assert(val.type == TYPE_INT);
+        debug_assert(value_get_type(val) == TYPE_INT);
         LOG("ARRAY_LOAD %ld\n", length);
 
         struct value aval;
@@ -731,12 +728,13 @@ void vm_execute(struct vm *vm) {
             }
         }
         array_push(vm->stack, aval);
-        dispatch();
+        dispatch();*/
     }
 
     // exceptions
     doop(OP_TRY): {
         // stack: [nil][function][error type]
+        assert(0); /*
         LOG("TRY\n");
         vm->ip++;
 
@@ -744,19 +742,19 @@ void vm_execute(struct vm *vm) {
         struct value error = {0};
         while((error = array_top(vm->stack)).type != TYPE_NIL) {
             // error type
-            if(error.type != TYPE_DICT) {
+            if(value_get_type(error) != TYPE_DICT) {
                 ERROR(ERROR_CASE_EXPECTS_DICT, 1);
             }
             array_pop(vm->stack);
             // val
             struct value fn = array_top(vm->stack);
-            debug_assert(fn.type == TYPE_FN);
+            debug_assert(value_get_type(fn) == TYPE_FN);
             array_pop(vm->stack);
-            exframe_set_handler(frame, error.as.dict, fn.as.ifn);
+            exframe_set_handler(frame, value_get_pointer(TYPE_DICT, error), value_get_pointer(TYPE_FN, fn));
         }
         array_pop(vm->stack); // pop nil
 
-        dispatch();
+        dispatch();*/
     }
     doop(OP_RAISE): {
         LOG("RAISE\n");
@@ -786,6 +784,8 @@ void vm_execute(struct vm *vm) {
 
     // tail calls
     doop(OP_RETCALL): {
+        assert(0);
+        /*
         vm->ip++;
         struct value val = array_top(vm->stack);
         const uint16_t nargs = (uint16_t)(vm->code.data[vm->ip+0] << 8 |
@@ -793,7 +793,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += (uint32_t)sizeof(nargs);
         debug_assert(vm->stack.length >= nargs);
         LOG("retcall %d\n", nargs);
-        switch(val.type) {
+        switch(value_get_type(val)) {
         case TYPE_NATIVE_FN: {
             array_pop(vm->stack);
             CALL_NATIVE(val.as.fn);
@@ -819,7 +819,7 @@ void vm_execute(struct vm *vm) {
         default: {
             ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(nargs)); }
         }
-        dispatch();
+        dispatch(); */
     }
 
     // operators
@@ -829,7 +829,7 @@ void vm_execute(struct vm *vm) {
         if (pval == NULL) ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(pos));                                  \
         const struct value val = *pval;                                                                     \
         const uint16_t nargs = 1;                                                                           \
-        switch (val.type) {                                                                                 \
+        switch (value_get_type(val)) {                                                                                 \
             case TYPE_NATIVE_FN: {                                                                          \
                 CALL_NATIVE(val.as.fn);                                                                     \
                 break;                                                                                      \
@@ -855,6 +855,8 @@ void vm_execute(struct vm *vm) {
         }                                                                                                   \
     } while (0);
         vm->ip++;
+        assert(0);
+        #if 0
         const uint16_t pos = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
                                         vm->code.data[vm->ip + 1]);
         LOG("FOR_IN %d\n", pos);
@@ -908,7 +910,7 @@ void vm_execute(struct vm *vm) {
         case TYPE_INTERPRETER_ITERATOR: {
             debug_assert(vm->stack.length >= 2);
             const struct value iterator = vm->stack.data[vm->stack.length-2];
-            switch (iterator.type) {
+            switch (value_get_type(iterator)) {
                 case TYPE_NIL: {
                     vm->ip += pos;
                     dispatch();
@@ -928,7 +930,7 @@ void vm_execute(struct vm *vm) {
                     break;
                 }
                 case TYPE_DICT: {
-                    const struct dict *dict = iterator.as.dict;
+                    const struct dict *dict = value_get_pointer(TYPE_DICT, iterator);
                     if (dict_get(dict, "stopped") != NULL) {
                         array_pop(vm->stack); /* iterator */
                         array_pop(vm->stack); /* record */
@@ -950,6 +952,7 @@ void vm_execute(struct vm *vm) {
         }
         vm->ip += (uint32_t)sizeof(pos);
         dispatch();
+        #endif
 #undef CALL_DICT_ITERATOR_FN
     }
 
@@ -975,18 +978,20 @@ void vm_execute(struct vm *vm) {
 }
 
 struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *args) {
+    assert(0);
+    #if 0
     static struct value errorval;
-    errorval.type = TYPE_INTERPRETER_ERROR;
+    value_get_type(errorval) = TYPE_INTERPRETER_ERROR;
 
     struct function *ifn = NULL;
 
-    if (fn.type == TYPE_NATIVE_FN) {
+    if (value_get_type(fn) == TYPE_NATIVE_FN) {
         for (size_t i = args->length; i-- > 0;) {
             array_push(vm->stack, args->data[i]);
         }
         fn.as.fn(vm, (uint16_t)args->length);
-    } else if(fn.type == TYPE_DICT) {
-        const struct value *ctor = dict_get(fn.as.dict, "constructor");
+    } else if(value_get_type(fn) == TYPE_DICT) {
+        const struct value *ctor = dict_get(value_get_pointer(TYPE_DICT, fn), "constructor");
         if(ctor == NULL) {
             vm->error = ERROR_RECORD_NO_CONSTRUCTOR;
             return errorval;
@@ -1006,8 +1011,8 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
         } else {
             ifn = ctor->as.ifn;
         }
-    } else if (fn.type == TYPE_FN) {
-        ifn = fn.as.ifn;
+    } else if (value_get_type(fn) == TYPE_FN) {
+        ifn = value_get_pointer(TYPE_FN, fn);
     } else {
         vm->error = ERROR_EXPECTED_CALLABLE;
         return errorval;
@@ -1046,6 +1051,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     const struct value val = array_top(vm->stack);
     array_pop(vm->stack);
     return val;
+    #endif
 }
 
 void vm_print_stack(const struct vm *vm) {
