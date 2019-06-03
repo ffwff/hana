@@ -558,10 +558,12 @@ void vm_execute(struct vm *vm) {
             if((dict = value_get_prototype(vm, val)) == NULL) {
                 ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
             }
-        } else {
-            if(value_get_type(val) != TYPE_DICT) {
-                ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
+            if (strcmp(key, "prototype") == 0) {
+                if (op == OP_MEMBER_GET) array_pop(vm->stack);
+                array_push(vm->stack, value_pointer(TYPE_DICT, dict));
+                dispatch();
             }
+        } else {
             dict = value_get_pointer(TYPE_DICT, val);
             if(op == OP_MEMBER_GET) array_pop(vm->stack);
         }
@@ -815,9 +817,9 @@ void vm_execute(struct vm *vm) {
         if (pval == NULL) ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(pos));                                  \
         const struct value val = *pval;                                                                     \
         const uint16_t nargs = 1;                                                                           \
-        switch (value_get_type(val)) {                                                                                 \
+        switch (value_get_type(val)) {                                                                      \
             case TYPE_NATIVE_FN: {                                                                          \
-                CALL_NATIVE(val.as.fn);                                                                     \
+                CALL_NATIVE(((value_fn)(value_get_pointer(TYPE_NATIVE_FN, val))));                          \
                 break;                                                                                      \
             }                                                                                               \
             case TYPE_FN:                                                                                   \
@@ -852,7 +854,7 @@ void vm_execute(struct vm *vm) {
                 array_obj *chars = string_chars(value_get_pointer(TYPE_STR, top), vm);
                 array_pop(vm->stack);
                 array_push(vm->stack, value_pointer(TYPE_ARRAY, chars));
-                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, 0));
+                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, 1));
                 array_push(vm->stack, chars->data[0]);
                 break;
             }
@@ -868,18 +870,13 @@ void vm_execute(struct vm *vm) {
                 break;
             }
             case TYPE_DICT: {
-                return;
-                /*
-                struct dict *dict = top->as.dict;
+                struct dict *dict = value_get_pointer(TYPE_DICT, top);
                 const struct value *pval = dict_get(dict, "next");
-                struct value val = {
-                    .as.integer = 0,
-                    .type = TYPE_INTERPRETER_ITERATOR};
-                array_push(vm->stack, val);
+                array_pop(vm->stack);
+                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, 0));
                 vm->ip += (uint32_t)sizeof(pos);
-                array_push(vm->stack, *top);  // pass arg
+                array_push(vm->stack, top);  // pass arg
                 CALL_DICT_ITERATOR_FN
-                */
                 break;
             }
             // interation
@@ -888,6 +885,7 @@ void vm_execute(struct vm *vm) {
                 const struct value iterator = vm->stack.data[vm->stack.length - 2];
                 switch (value_get_type(iterator)) {
                     case TYPE_NIL: {
+                        LOG("END\n");
                         vm->ip += pos;
                         dispatch();
                     }
@@ -895,13 +893,15 @@ void vm_execute(struct vm *vm) {
                         const array_obj *array = value_get_pointer(TYPE_ARRAY, iterator);
                         const size_t idx = (size_t)value_get_int(top);
                         if (idx == array->length) { /* end of it */
+                            LOG("END\n");
                             array_pop(vm->stack);   /* iterator */
                             array_pop(vm->stack);   /* array */
                             vm->ip += pos;
                             dispatch();
                         } else {  // continuation
+                            LOG("CONTINUE\n");
                             array_pop(vm->stack); /* old iterator */
-                            array_push(vm->stack, value_int((int32_t)idx + 1));
+                            array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, (int32_t)idx + 1));
                             array_push(vm->stack, array->data[idx]);
                         }
                         break;
@@ -927,8 +927,10 @@ void vm_execute(struct vm *vm) {
                 }
                 break;
             }
-            default:
+            default: {
+                LOG("NOT ITERABLE\n");
                 ERROR(ERROR_EXPECTED_ITERABLE, sizeof(pos));
+            }
         }
         vm->ip += (uint32_t)sizeof(pos);
         dispatch();

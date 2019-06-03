@@ -53,50 +53,34 @@ fn pop(array: Value::Array) -> Value {
 }
 
 extern "C" {
-    fn value_gt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
-    fn value_lt(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+    fn value_gt(left: NativeValue, right: NativeValue) -> NativeValue;
+    fn value_lt(left: NativeValue, right: NativeValue) -> NativeValue;
 }
 
 // sorting
 fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
-    unimplemented!()
-    /*
     let left = left.clone();
     let right = right.clone();
-    let mut val = NativeValue {
-        data: 0,
-        r#type: NativeValueType::TYPE_NIL,
-    };
-
-    unsafe {
-        value_gt(&mut val, left, right);
+    if unsafe{ value_gt(left, right) }.unwrap().int() == 1 {
+        Ordering::Greater
+    } else if unsafe{ value_lt(left, right) }.unwrap().int() == 1 {
+        Ordering::Less
+    } else {
+        Ordering::Equal
     }
-    if val.data == 1 {
-        return Ordering::Greater;
-    }
-
-    unsafe {
-        value_lt(&mut val, left, right);
-    }
-    if val.data == 1 {
-        return Ordering::Less;
-    }
-
-    Ordering::Equal */
 }
 
 #[hana_function()]
 fn sort(array: Value::Array) -> Value {
-    /* let new_array = vm.malloc(array.as_ref().clone());
+    let new_array = vm.malloc(array.as_ref().clone());
     let slice = new_array.as_mut().as_mut_slice();
     slice.sort_by(value_cmp);
-    Value::Array(new_array) */
-    Value::Nil
+    Value::Array(new_array)
 }
 #[hana_function()]
 fn sort_(array: Value::Array) -> Value {
-    /* let slice = array.as_mut().as_mut_slice();
-    slice.sort_by(value_cmp);*/
+    let slice = array.as_mut().as_mut_slice();
+    slice.sort_by(value_cmp);
     Value::Array(array)
 }
 
@@ -154,25 +138,17 @@ fn reduce(array: Value::Array, fun: Value::Any, acc_: Value::Any) -> Value {
 
 // search
 extern "C" {
-    fn value_eq(result: *mut NativeValue, left: NativeValue, right: NativeValue);
+    fn value_eq(left: NativeValue, right: NativeValue) -> NativeValue;
 }
 #[hana_function()]
 fn index(array: Value::Array, elem: Value::Any) -> Value {
-    Value::Int(-1)
-    /* let array = array.as_ref();
+    let array = array.as_ref();
     for i in 0..(array.len() - 1) {
-        let mut val = NativeValue {
-            data: 0,
-            r#type: NativeValueType::TYPE_NIL,
-        };
-        unsafe {
-            value_eq(&mut val, array[i], elem.wrap());
-        }
-        if val.data == 1 {
+        if unsafe{ value_eq(array[i], elem.wrap()) }.unwrap().int() == 1 {
             return Value::Int(i as i32);
         }
     }
-    Value::Int(-1) */
+    Value::Int(-1)
 }
 
 // strings

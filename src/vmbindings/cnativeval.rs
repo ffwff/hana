@@ -77,7 +77,7 @@ impl NativeValue {
                 NativeValueType::TYPE_DICT => Value::Record(Gc::from_raw(transmute(self.get_low48()))),
                 NativeValueType::TYPE_ARRAY => Value::Array(Gc::from_raw(transmute(self.get_low48()))),
                 NativeValueType::TYPE_NIL => Value::Nil,
-                _ => unimplemented!(),
+                _ => Value::Nil,
             }
         }
     }
