@@ -783,12 +783,11 @@ void vm_execute(struct vm *vm) {
         switch (value_get_type(val)) {
             case TYPE_NATIVE_FN: {
                 array_pop(vm->stack);
-                assert(0);
-                /* CALL_NATIVE(val.as.fn);
+                CALL_NATIVE(((value_fn)value_get_pointer(TYPE_NATIVE_FN, val)));
                 if (vm_leave_env(vm)) {
                     LOG("return from vm_call\n");
                     return;
-                } */
+                }
                 break;
             }
             case TYPE_FN:
