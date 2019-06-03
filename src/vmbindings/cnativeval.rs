@@ -29,6 +29,7 @@ pub enum NativeValueType {
 /// Native value representation used by the virtual machine
 pub struct NativeValue(u64);
 
+
 const RESERVED_NAN : u64 = 0x7ff;
 const RESERVED_NAN_MASK : u64 = 0b01111111_11110000_00000000_00000000_00000000_00000000_00000000_00000000;
 const INT_MASK          : u64 = 0b01111111_11110001_00000000_00000000_00000000_00000000_00000000_00000000;
@@ -37,10 +38,10 @@ const LOWER_MASK        : u64 = 0xffffffffffff;
 
 impl NativeValue {
     pub fn tag(&self) -> NativeValueType {
-        if self.0 >> 51 != RESERVED_NAN {
+        if !f64::is_nan(unsafe{ std::mem::transmute(self.0) }) {
             return NativeValueType::TYPE_FLOAT;
         }
-        NativeValueType::from_u8((self.0 & TAG_BIT_MASK) as u8).unwrap()
+        NativeValueType::from_u8(((self.0 & TAG_BIT_MASK) >> 48) as u8).unwrap()
     }
     fn get_low48(&self) -> u64 {
         self.0 & LOWER_MASK
@@ -61,10 +62,8 @@ impl NativeValue {
     pub fn unwrap(&self) -> Value {
         use std::mem::transmute;
         unsafe {
-            if self.0 & RESERVED_NAN_MASK != RESERVED_NAN {
-                return Value::Float(transmute(self.0));
-            }
-            match NativeValueType::from_u8((self.0 & TAG_BIT_MASK) as u8).unwrap() {
+            match self.tag() {
+                NativeValueType::TYPE_FLOAT => Value::Float(transmute(self.0)),
                 NativeValueType::TYPE_INT => Value::Int((self.0 & 0xffffffff) as i32),
                 NativeValueType::TYPE_NATIVE_FN
                     => Value::NativeFn(transmute::<_, NativeFnData>(self.get_low48())),

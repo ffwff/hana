@@ -29,9 +29,9 @@ fn main() {
             build.flag("-flto");
         }
         build
-            .flag("-Wall")
+            //.flag("-Wall")
             .flag("-Wno-unused-parameter")
-            .flag("-Wconversion")
+            //.flag("-Wconversion")
             .flag("-std=c11")
             .shared_flag(true)
             .static_flag(true)

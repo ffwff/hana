@@ -17,7 +17,7 @@ int value_get_type(struct value val) {
 
 // non-primitives
 struct value value_int(int32_t n) {
-    struct value val;
+    struct value val = {0};
     value_set_int(&val, n);
     return val;
 }

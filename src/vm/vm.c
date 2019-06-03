@@ -187,13 +187,19 @@ void vm_execute(struct vm *vm) {
     // pops top of the stack, performs unary negation and pushes the result
     doop(OP_NEGATE): {
         vm->ip++;
-        assert(0);
-        /* struct value *val = &array_top(vm->stack);
-        if(val->type == TYPE_INT) {
-            val->as.integer = -val->as.integer;
-        } else if(val->type == TYPE_FLOAT) {
-            val->as.floatp = -val->as.floatp;
-        } */
+        struct value val = array_top(vm->stack);
+        array_pop(vm->stack);
+        switch (value_get_type(val)) {
+            case TYPE_INT: {
+                array_push(vm->stack, value_int(-value_get_int(val)));
+                break;
+            }
+            case TYPE_FLOAT: {
+                array_push(vm->stack, value_float(-value_get_float(val)));
+                break;
+            }
+            default: assert(0);
+        }
         dispatch();
     }
 

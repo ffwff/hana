@@ -49,12 +49,17 @@ struct string;
 struct __attribute__((packed)) value {
     union {
         double floatp;
+        uint64_t bin;
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
         struct __attribute__((packed)) {
             uint64_t payload : 48;
             uint8_t tag_bits : 4;        // must be larger than 0
             uint16_t reserved_nan : 12;  // must be positive NaN (0x7ff0)
         } bits;
+        struct __attribute__((packed)) {
+            uint32_t lower32;
+            uint32_t upper32;
+        };
 #else
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
         struct __attribute__((packed)) {
@@ -62,14 +67,14 @@ struct __attribute__((packed)) value {
             uint8_t tag_bits : 4;        // must be larger than 0
             uint64_t payload : 48;
         } bits;
-#else
-#error "does not support this system"
-#endif
-#endif
         struct __attribute__((packed)) {
             uint32_t upper32;
             uint32_t lower32;
         };
+#else
+#error "does not support this system"
+#endif
+#endif
     } as;
 };
 
