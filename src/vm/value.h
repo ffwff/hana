@@ -131,6 +131,7 @@ static inline uint16_t value_get_tag(struct value val) {
     assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits > 0);
     return val.as.bits.tag_bits;
 }
+// TODO: remove redundant checks from opcodes
 static inline void *value_get_pointer(uint8_t tag, struct value val) {
     assert(tag != TYPE_INT);
     assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits == tag);

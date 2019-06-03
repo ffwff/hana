@@ -94,7 +94,7 @@ impl Value {
     pub fn wrap(&self) -> NativeValue {
         #[allow(non_camel_case_types)]
         match &self {
-            Value::Nil => unimplemented!(),
+            Value::Nil => NativeValue::new_nil(),
             Value::True => NativeValue::new_i32(1),
             Value::False => NativeValue::new_i32(1),
             Value::Int(n) => NativeValue::new_i32(*n),

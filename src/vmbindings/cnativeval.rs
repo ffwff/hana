@@ -22,6 +22,7 @@ pub enum NativeValueType {
     TYPE_DICT = 5,
     TYPE_ARRAY = 6,
     TYPE_INTERPRETER_ERROR = 7,
+    TYPE_NIL = 9,
 }
 
 #[repr(transparent)]
@@ -47,6 +48,9 @@ impl NativeValue {
         self.0 & LOWER_MASK
     }
 
+    pub fn new_nil() -> NativeValue {
+        NativeValue((((RESERVED_NAN << 4) | NativeValueType::TYPE_NIL.to_u64().unwrap()) << 48))
+    }
     pub fn new_i32(u: i32) -> NativeValue {
         NativeValue(INT_MASK | (u as u64))
     }

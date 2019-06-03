@@ -277,6 +277,7 @@ end
         assert_eq!(vm.global().get("i").unwrap().unwrap(), Value::Int(0));
     }
 
+    /*
     #[test]
     fn for_in_stmt() {
         let vm: Vm = eval!(
@@ -338,7 +339,7 @@ end
         let rec = vm.global().get("x").unwrap().unwrap().record();
         assert_eq!(rec.get(&"stopped".to_string()).unwrap().unwrap().int(), 1);
         assert_eq!(rec.get(&"i".to_string()).unwrap().unwrap().int(), 10);
-    }
+    }*/
     // #endregion
 
     // #region continue/break
