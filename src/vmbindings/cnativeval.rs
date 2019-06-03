@@ -22,6 +22,7 @@ pub enum NativeValueType {
     TYPE_DICT = 5,
     TYPE_ARRAY = 6,
     TYPE_INTERPRETER_ERROR = 7,
+    TYPE_INTERPRETER_ITERATOR = 8,
     TYPE_NIL = 9,
 }
 
