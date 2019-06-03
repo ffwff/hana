@@ -90,6 +90,7 @@ struct value value_dict(const struct vm *);
 struct value value_dict_n(size_t n, const struct vm *);
 struct value value_array(const struct vm *);
 struct value value_array_n(size_t n, const struct vm *);
+struct value value_interpreter_error();
 int value_get_type(struct value val);
 
 void value_print(struct value);

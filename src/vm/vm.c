@@ -164,7 +164,7 @@ void vm_execute(struct vm *vm) {
     doop(OP_PUSH_NIL): {
         vm->ip++;
         LOG("PUSH NIL\n");
-        array_push(vm->stack, (struct value){0});
+        array_push(vm->stack, value_pointer(TYPE_NIL, 0));
         dispatch();
     }
 
@@ -466,7 +466,10 @@ void vm_execute(struct vm *vm) {
             }                                                                                       \
             const struct value ctor = *pctor;                                                       \
             if (value_get_type(ctor) == TYPE_NATIVE_FN) {                                           \
-                assert(0);                                                                          \
+                CALL_NATIVE(((value_fn)value_get_pointer(TYPE_NATIVE_FN, ctor)));                   \
+                do {                                                                                \
+                    END_IF_NATIVE                                                                   \
+                } while (0);                                                                        \
             } else if (value_get_type(ctor) != TYPE_FN) {                                           \
                 ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);                                      \
             }                                                                                       \
@@ -706,12 +709,14 @@ void vm_execute(struct vm *vm) {
         } else {
             struct value aval = value_array_n(length, vm);
             array_obj *array = value_get_pointer(TYPE_ARRAY, aval);
-            array_push(vm->stack, aval);
             array->length = length;
             while(length--) {
                 array->data[length] = array_top(vm->stack);
                 array_pop(vm->stack);
             }
+            value_print(aval);
+            array_push(vm->stack, aval);
+            vm_print_stack(vm);
         }
         dispatch();
     }
@@ -954,50 +959,47 @@ void vm_execute(struct vm *vm) {
 }
 
 struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *args) {
-    assert(0);
-    #if 0
-    static struct value errorval;
-    value_get_type(errorval) = TYPE_INTERPRETER_ERROR;
-
     struct function *ifn = NULL;
+    const uint16_t nargs = args->length;
 
     if (value_get_type(fn) == TYPE_NATIVE_FN) {
         for (size_t i = args->length; i-- > 0;) {
             array_push(vm->stack, args->data[i]);
         }
-        fn.as.fn(vm, (uint16_t)args->length);
+        CALL_NATIVE(((value_fn)(value_get_pointer(TYPE_NATIVE_FN, fn))));
     } else if(value_get_type(fn) == TYPE_DICT) {
-        const struct value *ctor = dict_get(value_get_pointer(TYPE_DICT, fn), "constructor");
-        if(ctor == NULL) {
+        const struct value *pctor = dict_get(value_get_pointer(TYPE_DICT, fn), "constructor");
+        if(pctor == NULL) {
             vm->error = ERROR_RECORD_NO_CONSTRUCTOR;
-            return errorval;
+            return value_interpreter_error();
         }
-        if(ctor->type == TYPE_NATIVE_FN) {
+        const struct value ctor = *pctor;
+        if(value_get_type(ctor) == TYPE_NATIVE_FN) {
             for (size_t i = args->length; i-- > 0;) {
                 array_push(vm->stack, args->data[i]);
             }
-            ctor->as.fn(vm, (uint16_t)args->length);
-            if(vm->error) return errorval;
+            CALL_NATIVE(((value_fn)(value_get_pointer(TYPE_NATIVE_FN, ctor))));
+            if (vm->error) return value_interpreter_error();
             const struct value val = array_top(vm->stack);
             array_pop(vm->stack);
             return val;
-        } else if(ctor->type != TYPE_FN) {
-            vm->error = ERROR_CONSTRUCTOR_NOT_FUNCTION;
-            return errorval;
+        } else if (value_get_type(ctor) == TYPE_FN) {
+            ifn = value_get_pointer(TYPE_FN, ctor);
         } else {
-            ifn = ctor->as.ifn;
+            vm->error = ERROR_CONSTRUCTOR_NOT_FUNCTION;
+            return value_interpreter_error();
         }
     } else if (value_get_type(fn) == TYPE_FN) {
         ifn = value_get_pointer(TYPE_FN, fn);
     } else {
         vm->error = ERROR_EXPECTED_CALLABLE;
-        return errorval;
+        return value_interpreter_error();
     }
 
     if((uint32_t)args->length != ifn->nargs) {
         vm->ip = ifn->ip;
         vm->error = ERROR_MISMATCH_ARGUMENTS;
-        return errorval;
+        return value_interpreter_error();
     }
 
     const uint32_t last = vm->ip;
@@ -1014,11 +1016,11 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     vm_execute(vm);
     if(vm->error || vm->exframe_fallthrough != NULL) { // exception
         LOG("falling through psl wait %ld", vm->native_call_depth);
-        return errorval;
+        return value_interpreter_error();
     }
     if(vm->localenv != curenv) { // exception occurred outside of function's scope
         // NOTE: curenv already free'd from unwinding
-        return errorval;
+        return value_interpreter_error();
     }
     // restore ip
     LOG("vm_call complete\n");
@@ -1029,7 +1031,6 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     const struct value val = array_top(vm->stack);
     array_pop(vm->stack);
     return val;
-    #endif
 }
 
 void vm_print_stack(const struct vm *vm) {

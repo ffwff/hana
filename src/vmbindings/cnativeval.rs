@@ -30,8 +30,8 @@ pub enum NativeValueType {
 /// Native value representation used by the virtual machine
 pub struct NativeValue(u64);
 
-
 const RESERVED_NAN : u64 = 0x7ff;
+                             // 0b01111111 11110110 0 10101011 11101111 11011001 01100011 01111110 1000000
 const RESERVED_NAN_MASK : u64 = 0b01111111_11110000_00000000_00000000_00000000_00000000_00000000_00000000;
 const INT_MASK          : u64 = 0b01111111_11110001_00000000_00000000_00000000_00000000_00000000_00000000;
 const TAG_BIT_MASK      : u64 = 0b00000000_00001111_00000000_00000000_00000000_00000000_00000000_00000000;
@@ -75,65 +75,51 @@ impl NativeValue {
                 NativeValueType::TYPE_STR => Value::Str(Gc::from_raw(transmute(self.get_low48()))),
                 NativeValueType::TYPE_DICT => Value::Record(Gc::from_raw(transmute(self.get_low48()))),
                 NativeValueType::TYPE_ARRAY => Value::Array(Gc::from_raw(transmute(self.get_low48()))),
+                NativeValueType::TYPE_NIL => Value::Nil,
                 _ => unimplemented!(),
             }
         }
     }
 
-    /// Traces the native value recursively for use in the garbage collector.
-    pub unsafe fn trace(&self) {
-        /* #[allow(non_camel_case_types)]
-        match self.r#type {
-            _valueType::TYPE_FN => {
-                if mark_reachable(self.data as *mut libc::c_void) {
-                    Function::trace(self.data as *mut libc::c_void)
-                }
+    pub unsafe fn as_gc_pointer(&self) -> Option<*mut libc::c_void> {
+        #[allow(non_camel_case_types)]
+        match self.tag() {
+            NativeValueType::TYPE_FN
+            | NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_DICT
+            | NativeValueType::TYPE_ARRAY => {
+                let low48 = self.get_low48();
+                if low48 == 0 { None }
+                else { Some(std::mem::transmute(low48)) }
             }
-            _valueType::TYPE_STR => {
-                mark_reachable(self.data as *mut libc::c_void);
-            }
-            _valueType::TYPE_DICT => {
-                if mark_reachable(self.data as *mut libc::c_void) {
-                    Record::trace(self.data as *mut libc::c_void)
-                }
-            }
-            _valueType::TYPE_ARRAY => {
-                if mark_reachable(self.data as *mut libc::c_void) {
-                    CArray::trace(self.data as *mut libc::c_void)
-                }
-            }
-            _ => {}
-        } */
+            _ => None
+        }
     }
 
     // reference counting
     pub unsafe fn ref_inc(&self) {
-        /* #[allow(non_camel_case_types)]
-        match self.r#type {
+        #[allow(non_camel_case_types)]
+        match self.tag() {
             NativeValueType::TYPE_FN
             | NativeValueType::TYPE_STR
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
-                ref_inc(self.data as *mut libc::c_void);
+                ref_inc(std::mem::transmute(self.get_low48()));
             }
             _ => {}
-        } */
+        }
     }
 
     pub unsafe fn ref_dec(&self) {
-        /* #[allow(non_camel_case_types)]
-        match self.r#type {
+        #[allow(non_camel_case_types)]
+        match self.tag() {
             NativeValueType::TYPE_FN
             | NativeValueType::TYPE_STR
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
-                ref_dec(self.data as *mut libc::c_void);
+                ref_dec(std::mem::transmute(self.get_low48()));
             }
             _ => {}
-        } */
-    }
-
-    pub unsafe fn as_gc_pointer(&self) -> Option<*mut libc::c_void> {
-        None
+        }
     }
 }

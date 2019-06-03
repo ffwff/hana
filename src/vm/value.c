@@ -45,7 +45,7 @@ struct value value_array_n(size_t n, const struct vm *vm) {
     return value_pointer(TYPE_ARRAY, array_obj_malloc_n(n, vm));
 }
 
-static inline struct value value_interpreter_error() {
+struct value value_interpreter_error() {
     return value_pointer(TYPE_INTERPRETER_ERROR, 0);
 }
 
