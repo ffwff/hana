@@ -54,9 +54,7 @@ impl NativeValue {
             NativeValueType::TYPE_ARRAY => unsafe {
                 Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
             },
-            _ => {
-                panic!("type was: {:?}", self.r#type)
-            }
+            _ => panic!("type was: {:?}", self.r#type),
         }
     }
 
@@ -67,10 +65,13 @@ impl NativeValue {
             | NativeValueType::TYPE_STR
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
-                if self.data == 0 { None }
-                else { Some(self.data as *mut libc::c_void) }
-            },
-            _ => None
+                if self.data == 0 {
+                    None
+                } else {
+                    Some(self.data as *mut libc::c_void)
+                }
+            }
+            _ => None,
         }
     }
 
