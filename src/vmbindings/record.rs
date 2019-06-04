@@ -67,6 +67,18 @@ impl Record {
     pub fn iter(&self) -> std::collections::hash_map::Iter<String, NativeValue> {
         self.data.iter()
     }
+
+    pub fn is_prototype_of(&self, other: &Record) -> bool {
+        let mut prototype = self.prototype.clone();
+        while prototype.is_some() {
+            let proto = prototype.unwrap();
+            if proto as *const _ == other as *const _ {
+                return true;
+            }
+            prototype = proto.prototype;
+        }
+        false
+    }
 }
 
 impl GcTraceable for Record {

@@ -110,6 +110,13 @@ mod foreignc {
         r.insert(key, val.clone());
     }
 
+    #[no_mangle]
+    unsafe extern "C" fn dict_is_prototype_of(left: *const Record, right: *const Record) -> bool {
+        let left = &*left;
+        let right = &*right;
+        left.is_prototype_of(right)
+    }
+
     // #endregion
 
     // #region string
@@ -353,16 +360,6 @@ mod foreignc {
         vm.load_module(path);
     }
     // #endregion
-
-    /*
-    // #region modules
-    #[no_mangle]
-    unsafe extern "C" fn vm_write_barrier(cvm: *mut Vm, cpath: *const libc::c_char) {
-        let path = CStr::from_ptr(cpath).to_str().unwrap();
-        let vm = &mut *cvm;
-        vm.load_module(path);
-    }
-    // #endregion */
 
     // #region value
     #[no_mangle]

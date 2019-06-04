@@ -17,6 +17,7 @@ const struct value *dict_get(const struct dict *, const char *);
 void dict_set(struct dict *, const char *, struct value);
 const struct value *dict_get_str(const struct dict *, struct string *);
 void dict_set_str(struct dict *, struct string *, struct value);
+bool dict_is_prototype_of(const struct dict *child, const struct dict *parent);
 
 #ifdef __cplusplus
 }

@@ -52,6 +52,43 @@ y = X of Y
     }
 
     #[test]
+    fn of_expr_parent() {
+        let vm: Vm = eval!(
+            "
+record Z
+end
+record Y
+    prototype = Z
+end
+record X
+    prototype = Y
+end
+y = X of Z
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+    #[test]
+    fn of_expr_not_parent() {
+        let vm: Vm = eval!(
+            "
+record Z
+end
+record Y
+    prototype = Z
+end
+record A
+end
+record X
+    prototype = Y
+end
+y = X of A
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 0);
+    }
+
+    #[test]
     fn literal_prototype() {
         let vm: Vm = eval!(
             "

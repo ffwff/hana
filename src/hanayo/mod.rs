@@ -23,6 +23,7 @@ macro_rules! hana_raise {
 pub mod cmd;
 pub mod env;
 pub mod eval;
+//pub mod dir;
 pub mod file;
 pub mod io;
 pub mod math;
@@ -34,7 +35,7 @@ cfg_if! {
         pub mod cffi;
         use cffi::load as cffi_load;
     } else {
-        fn cffi_load(_vm: &mut Vm) {}
+        fn cffi_load(_vm: &Vm) {}
     }
 }
 
@@ -47,6 +48,7 @@ pub mod string;
 /// Standard library context
 pub struct HanayoCtx {
     pub file_rec: Gc<Record>,
+    //pub dir_rec: Gc<Record>,
     pub cmd_rec: Gc<Record>,
     pub proc_rec: Gc<Record>,
     pub time_rec: Gc<Record>,
@@ -175,6 +177,12 @@ pub fn init(vm: &mut Vm) {
     set_var!("File", Value::Record(file.clone()));
     // #endregion
 
+    // #region directory
+    /* let dir = vm.malloc(Record::new());
+    set_obj_var!(dir, "constructor", Value::NativeFn(dir::constructor));
+    set_var!("Dir", Value::Record(dir.clone())); */
+    // #endregion
+
     // #region sys
     let sys = vm.malloc(Record::new());
     set_obj_var!(sys, "args", Value::NativeFn(sys::args));
@@ -262,6 +270,7 @@ pub fn init(vm: &mut Vm) {
 
     vm.stdlib = Some(HanayoCtx {
         file_rec: file,
+        //dir_rec: dir,
         cmd_rec: cmd,
         proc_rec: proc,
         time_rec: time,

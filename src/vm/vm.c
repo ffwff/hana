@@ -289,8 +289,13 @@ void vm_execute(struct vm *vm) {
 
         if (right.type == TYPE_DICT) {
             const struct dict *rhs = value_get_pointer(right);
-            if ((rhs == vm->drec && left.type == TYPE_DICT) ||
-                (value_get_prototype(vm, left) == rhs)) {
+            if (left.type == TYPE_DICT) {
+                if (rhs == vm->drec) {
+                    array_push(vm->stack, value_int(1));
+                } else {
+                    array_push(vm->stack, value_int(dict_is_prototype_of(value_get_pointer(left), rhs)));
+                }
+            } else if (value_get_prototype(vm, left) == rhs) {
                 array_push(vm->stack, value_int(1));
             } else {
                 array_push(vm->stack, value_int(0));
