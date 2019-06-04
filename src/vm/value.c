@@ -9,7 +9,7 @@
 #include "function.h"
 
 // non-primitives
-struct value value_int(int32_t n) {
+struct value value_int(int64_t n) {
     return (struct value){
         .type = TYPE_INT,
         .as.integer = n,

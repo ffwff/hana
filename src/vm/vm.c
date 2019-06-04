@@ -112,7 +112,7 @@ void vm_execute(struct vm *vm) {
         const _type data = _data;                                   \
         vm->ip += (uint32_t)sizeof(_type);                          \
         LOG(sizeof(_type) == 8 ? "PUSH %ld\n" : "PUSH %d\n", data); \
-        array_push(vm->stack, value_int((int32_t)data));            \
+        array_push(vm->stack, value_int((int64_t)data));            \
         dispatch();                                                 \
     }
     push_int_op(OP_PUSH8,  uint8_t,  vm->code.data[vm->ip+0])
@@ -125,9 +125,14 @@ void vm_execute(struct vm *vm) {
                                                 vm->code.data[vm->ip+2] << 8  |
                                                 vm->code.data[vm->ip+3]))
 
-    doop(OP_PUSH64): {
-        assert(0);
-    }
+    push_int_op(OP_PUSH64, uint64_t, (uint64_t)vm->code.data[vm->ip+0] << 56 |
+                                     (uint64_t)vm->code.data[vm->ip+1] << 48 |
+                                     (uint64_t)vm->code.data[vm->ip+2] << 40 |
+                                     (uint64_t)vm->code.data[vm->ip+3] << 32 |
+                                     (uint64_t)vm->code.data[vm->ip+4] << 24 |
+                                     (uint64_t)vm->code.data[vm->ip+5] << 16 |
+                                     (uint64_t)vm->code.data[vm->ip+6] << 8  |
+                                     (uint64_t)vm->code.data[vm->ip+7])
 
     // push 32/64-bit float on to the stack
     doop(OP_PUSHF64): {

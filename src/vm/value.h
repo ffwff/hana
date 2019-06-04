@@ -32,7 +32,7 @@ struct __attribute__((packed)) value {
 
 struct env;
 
-struct value value_int(int32_t);
+struct value value_int(int64_t);
 struct value value_float(double);
 struct value value_str(const char*, const struct vm*);
 struct value value_function(uint32_t ip, uint16_t nargs, struct env *env, const struct vm *);
