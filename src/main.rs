@@ -145,7 +145,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     handle_error(&vm, &c);
 }
 
-fn handle_error(vm: &Vm, c: &compiler::Compiler) {
+fn handle_error(vm: &Vm, c: &compiler::Compiler) -> bool {
     if vm.error != VmError::ERROR_NO_ERROR {
         if let Some(smap) = c.lookup_smap(vm.ip() as usize) {
             let src: &String = &c.modules_info.borrow().sources[smap.fileno];
@@ -169,7 +169,7 @@ fn handle_error(vm: &Vm, c: &compiler::Compiler) {
             );
         } else {
             println!("interpreter error: {}", vm.error);
-            return;
+            return true;
         }
         if let Some(hint) = vm.error.hint(vm) {
             eprintln!("{} {}", ac::Red.bold().paint("hint:"), hint);
@@ -199,6 +199,9 @@ fn handle_error(vm: &Vm, c: &compiler::Compiler) {
                 }
             }
         }
+        true
+    } else {
+        false
     }
 }
 
@@ -220,16 +223,30 @@ fn repl(flag: ParserFlag) {
                 rl.add_history_entry(s.as_str());
                 c.modules_info.borrow_mut().sources[0] = s.clone();
                 match ast::grammar::start(&s) {
-                    Ok(prog) => {
+                    Ok(mut prog) => {
                         if flag.print_ast {
                             println!("{:?}", prog);
                             continue;
                         }
-                        // setup
-                        if vm.code.is_none() {
-                            for stmt in prog {
-                                stmt.emit(&mut c);
+                        let mut gencode = |c: &mut compiler::Compiler| -> bool {
+                            if let Some(_) = prog.last() {
+                                let stmt = prog.pop().unwrap();
+                                prog.iter().for_each(|stmt| stmt.emit(c));
+                                if let Some(expr_stmt) = stmt.as_any().downcast_ref::<ast::ast::ExprStatement>() {
+                                    expr_stmt.expr.emit(c);
+                                    return true;
+                                } else {
+                                    stmt.emit(c);
+                                }
+                            } else {
+                                prog.iter().for_each(|stmt| stmt.emit(c));
                             }
+                            false
+                        };
+                        // setup
+                        let mut pop_print = false;
+                        if vm.code.is_none() {
+                            pop_print = gencode(&mut c);
                             c.cpushop(VmOpcode::OP_HALT);
                             vm.code = Some(c.take_code());
                             vm.execute();
@@ -237,9 +254,7 @@ fn repl(flag: ParserFlag) {
                             vm.error = VmError::ERROR_NO_ERROR;
                             let len = vm.code.as_ref().unwrap().len() as u32;
                             c.receive_code(vm.code.take().unwrap());
-                            for stmt in prog {
-                                stmt.emit(&mut c);
-                            }
+                            pop_print = gencode(&mut c);
                             if c.clen() as u32 == len {
                                 continue;
                             }
@@ -248,7 +263,9 @@ fn repl(flag: ParserFlag) {
                             vm.jmp(len);
                             vm.execute();
                         }
-                        handle_error(&vm, &c);
+                        if !handle_error(&vm, &c) && pop_print {
+                            println!("=> {:?}", vm.stack.pop().unwrap().unwrap());
+                        }
                     }
                     Err(err) => {
                         print_error(
