@@ -100,7 +100,8 @@ impl GcManager {
         Gc {
             ptr: NonNull::new(unsafe {
                 self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T))
-            }).unwrap(),
+            })
+            .unwrap(),
         }
     }
 
@@ -138,12 +139,15 @@ impl GcManager {
                 if (*node).native_refs > 0 && (*node).color != GcNodeColor::Black {
                     //eprintln!("{:p}", node);
                     // get its children and subchildren
-                    let mut children : Vec<*mut GcNode> = Vec::new();
+                    let mut children: Vec<*mut GcNode> = Vec::new();
                     ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
                     let mut i = 0;
                     while i < children.len() {
                         let node = children[i];
-                        ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
+                        ((*node).tracer)(
+                            std::mem::transmute(ptr),
+                            std::mem::transmute(&mut children),
+                        );
                         i += 1;
                     }
                     // color them black
