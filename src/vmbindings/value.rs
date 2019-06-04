@@ -20,7 +20,7 @@ pub enum Value {
     True,
     False,
 
-    Int(i64),
+    Int(i32),
     Float(f64),
     NativeFn(NativeFnData),
     Fn(Gc<Function>),
@@ -40,7 +40,7 @@ extern "C" {
 impl Value {
     // #region coerce value to type
     #[cfg_attr(tarpaulin, skip)]
-    pub fn int(&self) -> i64 {
+    pub fn int(&self) -> i32 {
         match self {
             Value::Int(s) => *s,
             _ => {
@@ -92,52 +92,30 @@ impl Value {
 
     // wrapper for native
     pub fn wrap(&self) -> NativeValue {
-        use std::mem::transmute;
         #[allow(non_camel_case_types)]
-        unsafe {
-            match &self {
-                Value::Nil => NativeValue {
-                    r#type: NativeValueType::TYPE_NIL,
-                    data: 0,
-                },
-                Value::True => NativeValue {
-                    r#type: NativeValueType::TYPE_INT,
-                    data: 1,
-                },
-                Value::False => NativeValue {
-                    r#type: NativeValueType::TYPE_INT,
-                    data: 0,
-                },
-                Value::Int(n) => NativeValue {
-                    r#type: NativeValueType::TYPE_INT,
-                    data: transmute::<i64, u64>(*n),
-                },
-                Value::Float(n) => NativeValue {
-                    r#type: NativeValueType::TYPE_FLOAT,
-                    data: transmute::<f64, u64>(*n),
-                },
-                Value::NativeFn(f) => NativeValue {
-                    r#type: NativeValueType::TYPE_NATIVE_FN,
-                    data: transmute::<NativeFnData, u64>(*f),
-                },
-                Value::Fn(p) => NativeValue {
-                    r#type: NativeValueType::TYPE_FN,
-                    data: transmute::<*const Function, u64>(p.to_raw()),
-                },
-                Value::Str(p) => NativeValue {
-                    r#type: NativeValueType::TYPE_STR,
-                    data: transmute::<*const String, u64>(p.to_raw()),
-                },
-                Value::Record(p) => NativeValue {
-                    r#type: NativeValueType::TYPE_DICT,
-                    data: transmute::<*const Record, u64>(p.to_raw()),
-                },
-                Value::Array(p) => NativeValue {
-                    r#type: NativeValueType::TYPE_ARRAY,
-                    data: transmute::<*const Vec<NativeValue>, u64>(p.to_raw()),
-                },
-                _ => unimplemented!(),
+        match &self {
+            Value::Nil => NativeValue::new_nil(),
+            Value::True => NativeValue::new_i32(1),
+            Value::False => NativeValue::new_i32(0),
+            Value::Int(n) => NativeValue::new_i32(*n),
+            Value::Float(n) => NativeValue::new_f64(*n),
+            Value::NativeFn(p) => unsafe {
+                NativeValue::new_tagged_pointer(
+                    NativeValueType::TYPE_NATIVE_FN,
+                    std::mem::transmute::<_, *mut libc::c_void>(*p),
+                )
+            },
+            Value::Fn(p) => NativeValue::new_tagged_pointer(NativeValueType::TYPE_FN, p.to_raw()),
+            Value::Str(p) => {
+                NativeValue::new_tagged_pointer(NativeValueType::TYPE_STR, p.to_raw())
             }
+            Value::Record(p) => {
+                NativeValue::new_tagged_pointer(NativeValueType::TYPE_DICT, p.to_raw())
+            }
+            Value::Array(p) => {
+                NativeValue::new_tagged_pointer(NativeValueType::TYPE_ARRAY, p.to_raw())
+            }
+            _ => unreachable!(),
         }
     }
 

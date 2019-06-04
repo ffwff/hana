@@ -1,7 +1,4 @@
 #pragma once
-#ifdef __cplusplus
-extern "C" {
-#endif
 #include <stdint.h>
 #include <stdbool.h>
 #include "dict.h"
@@ -12,66 +9,146 @@ struct hmap;
 struct array_obj;
 struct string;
 
-#define TYPE_NIL        0
-#define TYPE_INT        1
-#define TYPE_FLOAT      2
-#define TYPE_NATIVE_FN  3
-#define TYPE_FN         4
-#define TYPE_STR        5
-#define TYPE_DICT       6
-#define TYPE_ARRAY      7
-#define TYPE_INTERPRETER_ERROR    127
-#define TYPE_INTERPRETER_ITERATOR 128
+#define RESERVED_NAN 0x7ff
+#define TYPE_FLOAT 0
+#define TYPE_INT 1
+#define TYPE_NATIVE_FN 2
+#define TYPE_FN 3
+#define TYPE_STR 4
+#define TYPE_DICT 5
+#define TYPE_ARRAY 6
+#define TYPE_INTERPRETER_ERROR 7
+#define TYPE_INTERPRETER_ITERATOR 8
+#define TYPE_NIL 9
 
-typedef void (*value_fn)(struct vm *vm, uint16_t nargs);
+/*
+    1111111111110000
+    01111111 11111010 00000000 00000000 00000000 00000000 00000000 00000000
+    seeeeeee|eeeemmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm|mmmmmmmm
+    ^            ^^^^ tagging bits (T)
+    ^            ^ initial mantissa bit (whether it's a signalling/quiet NaN)
+    ^ signed bit (ignored)
+
+    we'll assume the architecture is using IEEE 754 double precision floating
+    point, and the OS allocates userland memory in the lower half of memory.
+    NaN values inside doubles allow us to store a 52-bit payload inside the mantissa
+    we can store 48-bit pointers/32-bit integers in the lower 48-bit region
+    and 4 additional higher bits for tagging
+
+    possible values for T:
+    - int
+    - native_fn
+    - fn
+    - str
+    - dict
+    - array
+    - [interpreter data]
+
+*/
+
 struct __attribute__((packed)) value {
     union {
-        int64_t integer;
         double floatp;
-        struct string *str;
-        value_fn fn;
-        struct function *ifn;
-        struct dict *dict;
-        array_obj *array;
+        uint64_t bin;
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+        struct __attribute__((packed)) {
+            uint64_t payload : 48;
+            uint8_t tag_bits : 4;        // must be larger than 0
+            uint16_t reserved_nan : 12;  // must be positive NaN (0x7ff0)
+        } bits;
+        struct __attribute__((packed)) {
+            uint32_t lower32;
+            uint32_t upper32;
+        };
+#else
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+        struct __attribute__((packed)) {
+            uint16_t reserved_nan : 12;  // must be positive NaN (0x7ff0)
+            uint8_t tag_bits : 4;        // must be larger than 0
+            uint64_t payload : 48;
+        } bits;
+        struct __attribute__((packed)) {
+            uint32_t upper32;
+            uint32_t lower32;
+        };
+#else
+#error "does not support this system"
+#endif
+#endif
     } as;
-    uint8_t type;
 };
 
-void value_int(struct value*, int64_t);
-void value_float(struct value*, double);
-void value_str(struct value*, const char*, const struct vm*);
+typedef void (*value_fn)(struct vm *vm, uint16_t nargs);
+
 struct env;
-void value_function(struct value *, uint32_t ip, uint16_t nargs, struct env *env, const struct vm *);
-void value_dict(struct value *, const struct vm *);
-void value_dict_n(struct value *, size_t n, const struct vm *);
-void value_array(struct value *, const struct vm *);
-void value_array_n(struct value *, size_t n, const struct vm *);
+
+struct value value_int(int32_t);
+struct value value_float(double);
+struct value value_str(const char*, const struct vm*);
+struct value value_function(uint32_t ip, uint16_t nargs, struct env *env, const struct vm *);
+struct value value_dict(const struct vm *);
+struct value value_dict_n(size_t n, const struct vm *);
+struct value value_array(const struct vm *);
+struct value value_array_n(size_t n, const struct vm *);
+struct value value_interpreter_error();
+int value_get_type(struct value val);
 
 void value_print(struct value);
 
-void value_add(struct value *result, const struct value left, const struct value right, const struct vm *);
-void value_sub(struct value *result, const struct value left, const struct value right, const struct vm *);
-void value_mul(struct value *result, const struct value left, const struct value right, const struct vm *);
-void value_div(struct value *result, const struct value left, const struct value right, const struct vm *);
-void value_mod(struct value *result, const struct value left, const struct value right, const struct vm *);
+struct value value_add(const struct value left, const struct value right, const struct vm *);
+struct value value_sub(const struct value left, const struct value right, const struct vm *);
+struct value value_mul(const struct value left, const struct value right, const struct vm *);
+struct value value_div(const struct value left, const struct value right, const struct vm *);
+struct value value_mod(const struct value left, const struct value right, const struct vm *);
 
-void value_bitwise_and(struct value *result, const struct value left, const struct value right, const struct vm *);
-void value_bitwise_or(struct value *result, const struct value left, const struct value right, const struct vm *);
-void value_bitwise_xor(struct value *result, const struct value left, const struct value right, const struct vm *);
+struct value value_bitwise_and(const struct value left, const struct value right, const struct vm *);
+struct value value_bitwise_or (const struct value left, const struct value right, const struct vm *);
+struct value value_bitwise_xor(const struct value left, const struct value right, const struct vm *);
 
 int value_iadd(struct value left, const struct value right);
 int value_imul(struct value left, const struct value right);
 
-void value_lt(struct value  *result, const struct value left, const struct value right, const struct vm*);
-void value_leq(struct value *result, const struct value left, const struct value right, const struct vm*);
-void value_gt(struct value  *result, const struct value left, const struct value right, const struct vm*);
-void value_geq(struct value *result, const struct value left, const struct value right, const struct vm*);
-void value_eq(struct value  *result, const struct value left, const struct value right, const struct vm*);
-void value_neq(struct value *result, const struct value left, const struct value right, const struct vm*);
+struct value value_lt (const struct value left, const struct value right, const struct vm*);
+struct value value_leq(const struct value left, const struct value right, const struct vm*);
+struct value value_gt (const struct value left, const struct value right, const struct vm*);
+struct value value_geq(const struct value left, const struct value right, const struct vm*);
+struct value value_eq (const struct value left, const struct value right, const struct vm*);
+struct value value_neq(const struct value left, const struct value right, const struct vm*);
 
 bool value_is_true(const struct value);
 struct dict *value_get_prototype(const struct vm *vm, const struct value val);
 
-#ifdef __cplusplus
-}
+// TODO move this somewhere else
+#ifdef DEBUG
+#define debug_assert(x) if(!(x)){ *((void*)0); }
+#else
+#define debug_assert(x)
 #endif
+static inline struct value value_pointer(uint8_t tag, void *ptr) {
+    //uint64_t low_bits = (uint64_t)ptr & 0xffffffffffff;
+    //debug_assert(low_bits == (uint64_t)ptr);
+    debug_assert(tag < 16 && tag > 0);  // we can only store 4 bits
+    return (struct value){
+        .as.bits.reserved_nan = RESERVED_NAN,
+        .as.bits.tag_bits = tag,
+        .as.bits.payload = (uint64_t)(uintptr_t)(ptr)};
+}
+static inline uint16_t value_get_tag(struct value val) {
+    debug_assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits > 0);
+    return val.as.bits.tag_bits;
+}
+// TODO: remove redundant checks from opcodes
+static inline void *value_get_pointer(uint8_t tag, struct value val) {
+    debug_assert(tag != TYPE_INT);
+    debug_assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits == tag);
+    return (void *)((uintptr_t)val.as.bits.payload);
+}
+static inline int32_t value_get_int(struct value val) {
+    debug_assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits == TYPE_INT);
+    return (int32_t)val.as.lower32;
+}
+static inline double value_get_float(struct value val) {
+    debug_assert(!isnan(val.as.floatp));
+    return val.as.floatp;
+}
+#undef debug_assert

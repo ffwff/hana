@@ -60,6 +60,18 @@ y = (10).prototype == Int
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
+
+    #[test]
+    fn native_tail_ret() {
+        let _vm: Vm = eval!(
+            "
+function x() begin
+    return print('hello')
+end
+x()
+"
+        );
+    }
     // #endregion
 
     // #region int

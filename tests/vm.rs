@@ -94,8 +94,8 @@ pub mod vm_tests {
         let mut c = Compiler::new();
         c.cpushop(VmOpcode::OP_PUSHF64);
         c.cpushf64(1.5);
-        c.cpushop(VmOpcode::OP_PUSH64);
-        c.cpush64(15);
+        c.cpushop(VmOpcode::OP_PUSH32);
+        c.cpush32(15);
         c.cpushop(VmOpcode::OP_DIV);
         c.cpushop(VmOpcode::OP_HALT);
         let mut vm = c.into_vm();

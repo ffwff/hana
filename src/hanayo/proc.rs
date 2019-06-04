@@ -105,7 +105,7 @@ fn wait(process: Value::Record) -> Value {
     match p.wait() {
         Ok(e) => {
             if let Some(code) = e.code() {
-                Value::Int(code as i64)
+                Value::Int(code as i32)
             } else {
                 Value::Int(0)
             }

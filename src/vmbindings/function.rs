@@ -1,7 +1,7 @@
 //! Provides a function value in Hana
 
 use super::env::Env;
-use crate::vmbindings::gc::{GcNode, GcTraceable, push_gray_body};
+use crate::vmbindings::gc::{push_gray_body, GcNode, GcTraceable};
 use std::ptr::null_mut;
 
 #[repr(C)]
@@ -44,7 +44,7 @@ impl Function {
 impl GcTraceable for Function {
     unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {
         for val in self.bound.slots.iter() {
-            if let Some(ptr) = val.as_pointer() {
+            if let Some(ptr) = val.as_gc_pointer() {
                 push_gray_body(gray_nodes, ptr);
             }
         }

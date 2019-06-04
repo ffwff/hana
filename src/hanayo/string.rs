@@ -24,21 +24,21 @@ pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
 // length
 #[hana_function()]
 fn length(s: Value::Str) -> Value {
-    Value::Int(s.as_ref().graphemes(true).count() as i64)
+    Value::Int(s.as_ref().graphemes(true).count() as i32)
 }
 #[hana_function()]
 fn bytesize(s: Value::Str) -> Value {
-    Value::Int(s.as_ref().len() as i64)
+    Value::Int(s.as_ref().len() as i32)
 }
 
 // check
 #[hana_function()]
 fn startswith(s: Value::Str, left: Value::Str) -> Value {
-    Value::Int(s.as_ref().starts_with(left.as_ref()) as i64)
+    Value::Int(s.as_ref().starts_with(left.as_ref()) as i32)
 }
 #[hana_function()]
 fn endswith(s: Value::Str, left: Value::Str) -> Value {
-    Value::Int(s.as_ref().ends_with(left.as_ref()) as i64)
+    Value::Int(s.as_ref().ends_with(left.as_ref()) as i32)
 }
 
 // basic manip
@@ -141,7 +141,7 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
                 })
                 .next()
             {
-                (idx_grapheme - 1) as i64
+                (idx_grapheme - 1) as i32
             } else {
                 -1
             }
@@ -164,7 +164,7 @@ fn chars(s: Value::Str) -> Value {
 fn ord(s: Value::Str) -> Value {
     let s = s.as_ref();
     if let Some(ch) = s.chars().next() {
-        Value::Int(ch as i64)
+        Value::Int(ch as i32)
     } else {
         Value::Int(0)
     }
