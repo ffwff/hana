@@ -218,6 +218,7 @@ fn repl(flag: ParserFlag) {
         match readline {
             Ok(s) => {
                 rl.add_history_entry(s.as_str());
+                c.modules_info.borrow_mut().sources[0] = s.clone();
                 match ast::grammar::start(&s) {
                     Ok(prog) => {
                         if flag.print_ast {
@@ -235,7 +236,6 @@ fn repl(flag: ParserFlag) {
                         } else {
                             vm.error = VmError::ERROR_NO_ERROR;
                             let len = vm.code.as_ref().unwrap().len() as u32;
-                            c.modules_info.borrow_mut().sources[0] = s.clone();
                             c.receive_code(vm.code.take().unwrap());
                             for stmt in prog {
                                 stmt.emit(&mut c);
@@ -269,7 +269,7 @@ fn repl(flag: ParserFlag) {
             }
             Err(ReadlineError::Interrupted) => continue,
             Err(ReadlineError::Eof) => {
-                println!("exitting...");
+                println!("exiting...");
                 break;
             }
             Err(err) => {
