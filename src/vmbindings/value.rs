@@ -115,7 +115,7 @@ impl Value {
             Value::Array(p) => {
                 NativeValue::new_tagged_pointer(NativeValueType::TYPE_ARRAY, p.to_raw())
             }
-            _ => unimplemented!(),
+            _ => unreachable!(),
         }
     }
 

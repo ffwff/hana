@@ -125,13 +125,13 @@ struct dict *value_get_prototype(const struct vm *vm, const struct value val);
 #define debug_assert(x)
 #endif
 static inline struct value value_pointer(uint8_t tag, void *ptr) {
-    uint64_t low_bits = (uint64_t)ptr & 0xffffffffffff;
-    debug_assert(low_bits == (uint64_t)ptr);
+    //uint64_t low_bits = (uint64_t)ptr & 0xffffffffffff;
+    //debug_assert(low_bits == (uint64_t)ptr);
     debug_assert(tag < 16 && tag > 0);  // we can only store 4 bits
     return (struct value){
         .as.bits.reserved_nan = RESERVED_NAN,
         .as.bits.tag_bits = tag,
-        .as.bits.payload = low_bits};
+        .as.bits.payload = (uint64_t)(uintptr_t)(ptr)};
 }
 static inline uint16_t value_get_tag(struct value val) {
     debug_assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits > 0);
@@ -141,7 +141,7 @@ static inline uint16_t value_get_tag(struct value val) {
 static inline void *value_get_pointer(uint8_t tag, struct value val) {
     debug_assert(tag != TYPE_INT);
     debug_assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits == tag);
-    return (void *)((intptr_t)val.as.bits.payload);
+    return (void *)((uintptr_t)val.as.bits.payload);
 }
 static inline int32_t value_get_int(struct value val) {
     debug_assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits == TYPE_INT);

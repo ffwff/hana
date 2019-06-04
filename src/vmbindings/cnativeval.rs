@@ -12,7 +12,6 @@ use super::value::{NativeFnData, Value};
 #[derive(Debug, PartialEq, Clone, Copy, FromPrimitive, ToPrimitive)]
 /// Type of the native value
 pub enum NativeValueType {
-    TYPE_FLOAT = 0,
     TYPE_INT = 1,
     TYPE_NATIVE_FN = 2,
     TYPE_FN = 3,
@@ -22,6 +21,7 @@ pub enum NativeValueType {
     TYPE_INTERPRETER_ERROR = 7,
     TYPE_INTERPRETER_ITERATOR = 8,
     TYPE_NIL = 9,
+    TYPE_FLOAT,
 }
 
 #[repr(transparent)]

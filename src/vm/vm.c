@@ -465,21 +465,27 @@ void vm_execute(struct vm *vm) {
                 ERROR(ERROR_RECORD_NO_CONSTRUCTOR, UNWIND);                                         \
             }                                                                                       \
             const struct value ctor = *pctor;                                                       \
-            if (value_get_type(ctor) == TYPE_NATIVE_FN) {                                           \
-                CALL_NATIVE(((value_fn)value_get_pointer(TYPE_NATIVE_FN, ctor)));                   \
-                do {                                                                                \
-                    END_IF_NATIVE                                                                   \
-                } while (0);                                                                        \
-            } else if (value_get_type(ctor) != TYPE_FN) {                                           \
-                ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);                                      \
+            switch (value_get_type(ctor)) {                                                         \
+                case TYPE_NATIVE_FN: {                                                              \
+                    CALL_NATIVE(((value_fn)value_get_pointer(TYPE_NATIVE_FN, ctor)));               \
+                    do {                                                                            \
+                        END_IF_NATIVE                                                               \
+                    } while (0);                                                                    \
+                    break;                                                                          \
+                }                                                                                   \
+                case TYPE_FN: {                                                                     \
+                    ifn = value_get_pointer(TYPE_FN, ctor);                                         \
+                    if (nargs + 1 != ifn->nargs) {                                                  \
+                        ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);                 \
+                    }                                                                               \
+                    struct value new_val = value_dict(vm);                                          \
+                    dict_set(value_get_pointer(TYPE_DICT, new_val), "prototype", val);              \
+                    array_push(vm->stack, new_val);                                                 \
+                    break;                                                                          \
+                }                                                                                   \
+                default:                                                                            \
+                    ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);                                  \
             }                                                                                       \
-            ifn = value_get_pointer(TYPE_FN, ctor);                                                 \
-            if (nargs + 1 != ifn->nargs) {                                                          \
-                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);                         \
-            }                                                                                       \
-            struct value new_val = value_dict(vm);                                                  \
-            dict_set(value_get_pointer(TYPE_DICT, new_val), "prototype", val);                      \
-            array_push(vm->stack, new_val);                                                         \
         } else {                                                                                    \
             do {                                                                                    \
                 POP                                                                                 \
@@ -552,7 +558,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += (uint32_t)strlen(key) + 1;
         LOG(op == OP_MEMBER_GET ? "MEMBER_GET %s\n" : "MEMBER_GET_NO_POP %s\n", key);
 
-        struct value val = array_top(vm->stack);
+        const struct value val = array_top(vm->stack);
         struct dict *dict = NULL;
         if(value_get_type(val) != TYPE_DICT) {
             if((dict = value_get_prototype(vm, val)) == NULL) {
@@ -579,10 +585,10 @@ void vm_execute(struct vm *vm) {
     doop(OP_MEMBER_SET): {
         // stack: [value][dict]
         vm->ip++;
-        char *key = (char *)(vm->code.data+vm->ip); // must be null terminated
+        const char *key = (char *)(vm->code.data + vm->ip);  // must be null terminated
         vm->ip += (uint32_t)strlen(key) + 1;
         LOG("MEMBER_SET %s\n", key);
-        struct value dval = array_top(vm->stack);
+        const struct value dval = array_top(vm->stack);
         if(value_get_type(dval) != TYPE_DICT) {
             ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
         }
@@ -632,38 +638,45 @@ void vm_execute(struct vm *vm) {
         const struct value dval = array_top(vm->stack);
         if (op == OP_INDEX_GET) array_pop(vm->stack);
 
-        if(value_get_type(dval) == TYPE_ARRAY) {
-            array_obj *array = value_get_pointer(TYPE_ARRAY, dval);
-            if(value_get_type(index) != TYPE_INT) {
-                ERROR(ERROR_KEY_NON_INT, 1);
+        switch (value_get_type(dval)) {
+            case TYPE_ARRAY: {
+                array_obj *array = value_get_pointer(TYPE_ARRAY, dval);
+                if (value_get_type(index) != TYPE_INT) {
+                    ERROR(ERROR_KEY_NON_INT, 1);
+                }
+                const int32_t i = (int32_t)value_get_int(index);
+                if (!(i >= 0 && i < (int32_t)array->length)) {
+                    ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, array->length);
+                }
+                array_push(vm->stack, array->data[i]);
+                break;
             }
-            const int32_t i = (int32_t)value_get_int(index);
-            if (!(i >= 0 && i < (int32_t)array->length)) {
-                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, array->length);
+            case TYPE_STR: {
+                if (value_get_type(index) != TYPE_INT) {
+                    ERROR(ERROR_KEY_NON_INT, 1);
+                }
+                const int32_t i = (int32_t)value_get_int(index);
+                struct string *s = string_at(value_get_pointer(TYPE_STR, dval), i, vm);
+                if (s == NULL) {
+                    ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, string_len(value_get_pointer(TYPE_STR, dval)));
+                }
+                array_push(vm->stack, value_pointer(TYPE_STR, s));
+                break;
             }
-            array_push(vm->stack, array->data[i]);
-        } else if(value_get_type(dval) == TYPE_STR) {
-            if(value_get_type(index) != TYPE_INT) {
-                ERROR(ERROR_KEY_NON_INT, 1);
+            case TYPE_DICT: {
+                if (value_get_type(index) != TYPE_STR) {
+                    ERROR(ERROR_RECORD_KEY_NON_STRING, 1);
+                }
+                const struct value *val = dict_get_str(value_get_pointer(TYPE_DICT, dval), value_get_pointer(TYPE_STR, index));
+                if (val != NULL) {
+                    array_push(vm->stack, *val);
+                } else {
+                    ERROR(ERROR_UNKNOWN_KEY, 1);
+                }
+                break;
             }
-            const int32_t i = (int32_t)value_get_int(index);
-            struct string *s = string_at(value_get_pointer(TYPE_STR, dval), i, vm);
-            if (s == NULL) {
-                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, 1, string_len(value_get_pointer(TYPE_STR, dval)));
-            }
-            array_push(vm->stack, value_pointer(TYPE_STR, s));
-        } else if(value_get_type(dval) == TYPE_DICT) {
-            if(value_get_type(index) != TYPE_STR) {
-                ERROR(ERROR_RECORD_KEY_NON_STRING, 1);
-            }
-            const struct value *val = dict_get_str(value_get_pointer(TYPE_DICT, dval), value_get_pointer(TYPE_STR, index));
-            if(val != NULL) {
-                array_push(vm->stack, *val);
-            } else {
-                ERROR(ERROR_UNKNOWN_KEY, 1);
-            }
-        } else {
-            ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1);
+            default:
+                ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1);
         }
         dispatch();
     }
@@ -671,31 +684,35 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         LOG("INDEX_SET\n");
 
-        struct value index = array_top(vm->stack);
+        const struct value index = array_top(vm->stack);
         array_pop(vm->stack);
 
-        struct value dval = array_top(vm->stack);
+        const struct value dval = array_top(vm->stack);
         array_pop(vm->stack);
 
-        struct value val = array_top(vm->stack);
-
-        if(value_get_type(dval) == TYPE_ARRAY) {
-            if(value_get_type(index) != TYPE_INT) {
-                ERROR(ERROR_KEY_NON_INT, 1);
+        const struct value val = array_top(vm->stack);
+        switch (value_get_type(dval)) {
+            case TYPE_ARRAY: {
+                if (value_get_type(index) != TYPE_INT) {
+                    ERROR(ERROR_KEY_NON_INT, 1);
+                }
+                const int64_t i = value_get_int(index);
+                array_obj *array = value_get_pointer(TYPE_ARRAY, dval);
+                if (!(i >= 0 && i < (int64_t)array->length)) {
+                    ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, array->length, 1);
+                }
+                array->data[i] = val;
+                break;
             }
-            const int64_t i = value_get_int(index);
-            array_obj *array = value_get_pointer(TYPE_ARRAY, dval);
-            if (!(i >= 0 && i < (int64_t)array->length)) {
-                ERROR_EXPECT(ERROR_UNBOUNDED_ACCESS, array->length, 1);
+            case TYPE_DICT: {
+                if (value_get_type(index) != TYPE_STR) {
+                    ERROR(ERROR_RECORD_KEY_NON_STRING, 1);
+                }
+                dict_set_str(value_get_pointer(TYPE_DICT, dval), value_get_pointer(TYPE_STR, index), val);
+                break;
             }
-            array->data[i] = val;
-        } else if(value_get_type(dval) == TYPE_DICT) {
-            if(value_get_type(index) != TYPE_STR) {
-                ERROR(ERROR_RECORD_KEY_NON_STRING, 1);
-            }
-            dict_set_str(value_get_pointer(TYPE_DICT, dval), value_get_pointer(TYPE_STR, index), val);
-        } else {
-            ERROR(ERROR_EXPECTED_RECORD_ARRAY, 1);
+            default:
+                ERROR(ERROR_EXPECTED_RECORD_ARRAY, 1);
         }
         dispatch();
     }
