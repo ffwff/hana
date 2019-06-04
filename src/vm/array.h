@@ -25,11 +25,6 @@ void *rrealloc(void *ptr, size_t nelems, size_t size, size_t new_size);
         .length = n,                      \
     }
 
-#define array_free(array)   \
-    do {                    \
-        free(array.data);   \
-    } while (0)
-
 #define array_push(array, element)                                 \
     do {                                                           \
         if (array.length == array.capacity) {                      \

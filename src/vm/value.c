@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "string_.h"
 #include "value.h"
 #include "vm.h"
@@ -18,12 +19,16 @@ int value_get_type(struct value val) {
 // non-primitives
 struct value value_int(int32_t n) {
     struct value val = {0};
-    value_set_int(&val, n);
+    val.as.bits.reserved_nan = RESERVED_NAN;
+    val.as.bits.tag_bits = TYPE_INT;
+    val.as.lower32 = n;
     return val;
 }
 struct value value_float(double n) {
     struct value val;
-    value_set_float(&val, n);
+    val.as.floatp = n;
+    // TODO: fix nan
+    //assert(!isnan(n));
     return val;
 }
 struct value value_str(const char *data, const struct vm *vm) {

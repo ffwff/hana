@@ -141,23 +141,14 @@ static inline uint16_t value_get_tag(struct value val) {
 static inline void *value_get_pointer(uint8_t tag, struct value val) {
     debug_assert(tag != TYPE_INT);
     debug_assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits == tag);
-    return (void *)val.as.bits.payload;
+    return (void *)((intptr_t)val.as.bits.payload);
 }
 static inline int32_t value_get_int(struct value val) {
     debug_assert(val.as.bits.reserved_nan == RESERVED_NAN && val.as.bits.tag_bits == TYPE_INT);
     return (int32_t)val.as.lower32;
 }
-static inline void value_set_int(struct value *val, int32_t n) {
-    val->as.bits.reserved_nan = RESERVED_NAN;
-    val->as.bits.tag_bits = TYPE_INT;
-    val->as.lower32 = n;
-}
 static inline double value_get_float(struct value val) {
     debug_assert(!isnan(val.as.floatp));
     return val.as.floatp;
-}
-static inline void value_set_float(struct value *val, double n) {
-    val->as.floatp = n;
-    debug_assert(val->as.bits.reserved_nan != RESERVED_NAN);
 }
 #undef debug_assert

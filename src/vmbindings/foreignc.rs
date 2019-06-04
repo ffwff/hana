@@ -5,7 +5,6 @@ use super::cnativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
-use super::gc::Gc;
 use super::record::Record;
 use super::value::Value;
 use super::vm::Vm;
@@ -131,7 +130,9 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_repeat(cleft: *const String, n: i64, vm: *const Vm) -> *mut String {
+    unsafe extern "C" fn string_repeat(
+        cleft: *const String, n: i64, vm: *const Vm,
+    ) -> *mut String {
         let left: &'static String = &*cleft;
         (&*vm).malloc(left.repeat(n as usize)).into_raw()
     }
@@ -150,9 +151,7 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_at(
-        left: *const String, idx: i64, vm: *const Vm,
-    ) -> *mut String {
+    unsafe extern "C" fn string_at(left: *const String, idx: i64, vm: *const Vm) -> *mut String {
         let left: &'static String = &*left;
         if let Some(ch) = left.graphemes(true).nth(idx as usize) {
             (&*vm).malloc(ch.to_string()).into_raw()

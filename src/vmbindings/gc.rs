@@ -100,7 +100,8 @@ impl GcManager {
         Gc {
             ptr: NonNull::new(unsafe {
                 self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T))
-            }).unwrap(),
+            })
+            .unwrap(),
         }
     }
 
@@ -128,22 +129,24 @@ impl GcManager {
         //eprintln!("GRAY NODES MARKING: {:?}, {:?}", gray_nodes, self.gray_nodes);
         // nothing left to traverse, sweeping phase:
         if self.gray_nodes.is_empty() && self.bytes_allocated > self.threshold {
-            let mut node: *mut GcNode = self.first_node;
             let mut prev: *mut GcNode = null_mut();
             // don't sweep nodes with at least one native reference
-            node = self.first_node;
+            let mut node: *mut GcNode = self.first_node;
             while !node.is_null() {
                 let next: *mut GcNode = (*node).next;
                 let ptr = node.add(1) as *mut c_void;
                 if (*node).native_refs > 0 && (*node).color != GcNodeColor::Black {
                     //eprintln!("{:p}", node);
                     // get its children and subchildren
-                    let mut children : Vec<*mut GcNode> = Vec::new();
+                    let mut children: Vec<*mut GcNode> = Vec::new();
                     ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
                     let mut i = 0;
                     while i < children.len() {
                         let node = children[i];
-                        ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
+                        ((*node).tracer)(
+                            std::mem::transmute(ptr),
+                            std::mem::transmute(&mut children),
+                        );
                         i += 1;
                     }
                     // color them black
@@ -297,7 +300,7 @@ type GenericTraceFunction = unsafe fn(*mut c_void, *mut c_void);
 
 // native traceables
 impl GcTraceable for String {
-    unsafe fn trace(&self, manager: &mut Vec<*mut GcNode>) {}
+    unsafe fn trace(&self, _: &mut Vec<*mut GcNode>) {}
 }
 
 use super::cnativeval::NativeValue;

@@ -63,7 +63,7 @@ y = (10).prototype == Int
 
     #[test]
     fn native_tail_ret() {
-        let vm: Vm = eval!(
+        let _vm: Vm = eval!(
             "
 function x() begin
     return print('hello')

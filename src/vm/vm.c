@@ -855,7 +855,7 @@ void vm_execute(struct vm *vm) {
                 array_obj *chars = string_chars(value_get_pointer(TYPE_STR, top), vm);
                 array_pop(vm->stack);
                 array_push(vm->stack, value_pointer(TYPE_ARRAY, chars));
-                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, 1));
+                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, (void *)1));
                 array_push(vm->stack, chars->data[0]);
                 break;
             }
@@ -866,14 +866,14 @@ void vm_execute(struct vm *vm) {
                     array_pop(vm->stack);
                     dispatch();
                 }
-                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, 1));
+                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, (void *)1));
                 array_push(vm->stack, array->data[0]);
                 break;
             }
             case TYPE_DICT: {
                 struct dict *dict = value_get_pointer(TYPE_DICT, top);
                 const struct value *pval = dict_get(dict, "next");
-                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, 0));
+                array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, (void *)0));
                 vm->ip += (uint32_t)sizeof(pos);
                 array_push(vm->stack, top);  // pass arg
                 CALL_DICT_ITERATOR_FN
@@ -901,7 +901,7 @@ void vm_execute(struct vm *vm) {
                         } else {  // continuation
                             LOG("CONTINUE\n");
                             array_pop(vm->stack); /* old iterator */
-                            array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, (int32_t)idx + 1));
+                            array_push(vm->stack, value_pointer(TYPE_INTERPRETER_ITERATOR, (void *)(idx + 1)));
                             array_push(vm->stack, array->data[idx]);
                         }
                         break;
@@ -966,7 +966,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
         for (size_t i = args->length; i-- > 0;) {
             array_push(vm->stack, args->data[i]);
         }
-        CALL_NATIVE(((value_fn)(value_get_pointer(TYPE_NATIVE_FN, fn))));
+        ((value_fn)(value_get_pointer(TYPE_NATIVE_FN, fn)))(vm, nargs);
     } else if(value_get_type(fn) == TYPE_DICT) {
         const struct value *pctor = dict_get(value_get_pointer(TYPE_DICT, fn), "constructor");
         if(pctor == NULL) {
@@ -978,7 +978,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
             for (size_t i = args->length; i-- > 0;) {
                 array_push(vm->stack, args->data[i]);
             }
-            CALL_NATIVE(((value_fn)(value_get_pointer(TYPE_NATIVE_FN, ctor))));
+            ((value_fn)(value_get_pointer(TYPE_NATIVE_FN, ctor)))(vm, nargs);
             if (vm->error) return value_interpreter_error();
             const struct value val = array_top(vm->stack);
             array_pop(vm->stack);

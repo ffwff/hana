@@ -832,9 +832,12 @@ use './module_relative_import'
     fn module_native_import() {
         std::fs::write("/tmp/module_native_import.hana", "$y = 10").unwrap();
         std::env::set_var("HANA_PATH", "/tmp");
-        let prog = grammar::start("
+        let prog = grammar::start(
+            "
 use 'module_native_import'
-        ").unwrap();
+        ",
+        )
+        .unwrap();
         let mut c = compiler::Compiler::new();
         c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {

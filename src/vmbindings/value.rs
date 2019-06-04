@@ -100,12 +100,21 @@ impl Value {
             Value::Int(n) => NativeValue::new_i32(*n),
             Value::Float(n) => NativeValue::new_f64(*n),
             Value::NativeFn(p) => unsafe {
-                NativeValue::new_tagged_pointer(NativeValueType::TYPE_NATIVE_FN, std::mem::transmute::<_, *mut libc::c_void>(*p))
+                NativeValue::new_tagged_pointer(
+                    NativeValueType::TYPE_NATIVE_FN,
+                    std::mem::transmute::<_, *mut libc::c_void>(*p),
+                )
             },
             Value::Fn(p) => NativeValue::new_tagged_pointer(NativeValueType::TYPE_FN, p.to_raw()),
-            Value::Str(p) => NativeValue::new_tagged_pointer(NativeValueType::TYPE_STR, p.to_raw()),
-            Value::Record(p) => NativeValue::new_tagged_pointer(NativeValueType::TYPE_DICT, p.to_raw()),
-            Value::Array(p) => NativeValue::new_tagged_pointer(NativeValueType::TYPE_ARRAY, p.to_raw()),
+            Value::Str(p) => {
+                NativeValue::new_tagged_pointer(NativeValueType::TYPE_STR, p.to_raw())
+            }
+            Value::Record(p) => {
+                NativeValue::new_tagged_pointer(NativeValueType::TYPE_DICT, p.to_raw())
+            }
+            Value::Array(p) => {
+                NativeValue::new_tagged_pointer(NativeValueType::TYPE_ARRAY, p.to_raw())
+            }
             _ => unimplemented!(),
         }
     }

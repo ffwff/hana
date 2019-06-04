@@ -113,6 +113,7 @@ struct exframe *vm_enter_exframe(struct vm *);
 bool vm_leave_exframe(struct vm *);
 bool vm_raise(struct vm *);
 
+struct function;
 struct value vm_call(struct vm *, const struct value, const a_arguments*);
 struct env *vm_enter_env(struct vm *, struct function *);
 struct env *vm_enter_env_tail(struct vm *, struct function *);

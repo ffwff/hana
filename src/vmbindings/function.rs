@@ -1,7 +1,7 @@
 //! Provides a function value in Hana
 
 use super::env::Env;
-use crate::vmbindings::gc::{GcNode, GcTraceable, push_gray_body};
+use crate::vmbindings::gc::{push_gray_body, GcNode, GcTraceable};
 use std::ptr::null_mut;
 
 #[repr(C)]
