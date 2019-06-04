@@ -139,7 +139,7 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
         union {
             double d;
-            uint8_t u[4];
+            uint8_t u[8];
         } u;
         u.u[0] = vm->code.data[vm->ip + 0];
         u.u[1] = vm->code.data[vm->ip + 1];
