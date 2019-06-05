@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 afl = "0.4"
-haru = { version = "0.26.5", path = "../../" }
+haru = { version = "0.27.3", path = "../../" }

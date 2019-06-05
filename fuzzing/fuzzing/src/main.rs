@@ -14,7 +14,9 @@ fn main() {
             if let Ok(prog) = grammar::start(s) {
                 let mut c = compiler::Compiler::new();
                 for stmt in prog {
-                    stmt.emit(&mut c);
+                    if stmt.emit(&mut c).is_err() {
+                        return;
+                    }
                 }
                 c.cpushop(VmOpcode::OP_HALT);
                 let mut vm = c.into_vm();

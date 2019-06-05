@@ -140,15 +140,16 @@ impl Compiler {
             self.cpush8(*byte);
         }
     }
-    pub fn cpushs<T: Into<Vec<u8>>>(&mut self, s: T) {
+    pub fn cpushs<T: Into<Vec<u8>>>(&mut self, s: T) -> Result<(), ()> {
         let code = self.code.as_mut().unwrap();
         for byte in s.into() {
             if byte == 0 {
-                panic!("string literals can't contain NUL character");
+                return Err(());
             }
             code.push(byte);
         }
         code.push(0);
+        return Ok(());
     }
 
     // labels
