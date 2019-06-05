@@ -57,7 +57,9 @@ pub mod ast {
 
     macro_rules! try_nil {
         ($e:expr) => {
-            try!($e.map_err(CodeGenError::NilString))
+            if let Err(_) = $e {
+                return Err(CodeGenError::NilString);
+            }
         };
     }
     // #endregion
