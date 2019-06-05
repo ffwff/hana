@@ -1,5 +1,4 @@
 //! Provides Proc record for handling child process spawned by Cmd
-use crate::vmbindings::carray::CArray;
 use std::io::Write;
 use std::process::Child;
 
@@ -82,7 +81,7 @@ fn outputs(process: Value::Record) -> Value {
         .downcast::<Child>()
         .unwrap();
     let out = p.wait_with_output().unwrap();
-    let arr = vm.malloc(CArray::new());
+    let arr = vm.malloc(Vec::new());
     match String::from_utf8(out.stdout) {
         Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
         Err(err) => {

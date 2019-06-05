@@ -2,14 +2,13 @@
 
 use super::chmap::CHashMap;
 use super::cnativeval::NativeValue;
-use super::gc::GcTraceable;
+use super::gc::{push_gray_body, GcNode, GcTraceable};
 use super::value::Value;
 use std::any::Any;
 use std::borrow::Borrow;
 use std::boxed::Box;
 use std::hash::Hash;
 
-#[repr(C)]
 /// A record value in Hana
 pub struct Record {
     data: CHashMap,
@@ -68,14 +67,25 @@ impl Record {
     pub fn iter(&self) -> std::collections::hash_map::Iter<String, NativeValue> {
         self.data.iter()
     }
+
+    pub fn is_prototype_of(&self, other: &Record) -> bool {
+        let mut prototype = self.prototype.clone();
+        while prototype.is_some() {
+            let proto = prototype.unwrap();
+            if proto as *const _ == other as *const _ {
+                return true;
+            }
+            prototype = proto.prototype;
+        }
+        false
+    }
 }
 
 impl GcTraceable for Record {
-    fn trace(ptr: *mut libc::c_void) {
-        unsafe {
-            let self_ = &*(ptr as *mut Self);
-            for (_, val) in self_.iter() {
-                val.trace();
+    unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {
+        for (_, val) in self.iter() {
+            if let Some(ptr) = val.as_pointer() {
+                push_gray_body(gray_nodes, ptr);
             }
         }
     }

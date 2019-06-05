@@ -833,22 +833,25 @@ use './module_relative_import'
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
     }
 
-    /*#[test] // FIXME: This doesn't work for some reason
-        fn module_native_import() {
-            std::fs::write("/tmp/module_native_import", "$y = 10").unwrap();
-            std::env::set_var("HANA_PATH", "/tmp");
-            let prog = grammar::start("
-    use 'module_native_import'
-            ").unwrap();
-            let mut c = compiler::Compiler::new();
-            c.files.push("/tmp/x".to_string());
-            c.vm.borrow_mut().compiler = Some(&mut c);
-            for stmt in prog {
-                stmt.emit(&mut c);
-            }
-            c.vm.borrow_mut().cpushop(VmOpcode::OP_HALT);
-            c.vm.borrow_mut().execute();
-            assert_eq!(c.vm.borrow().global().get("y").unwrap().unwrap().int(), 10);
-        }*/
+    #[test]
+    fn module_native_import() {
+        std::fs::write("/tmp/module_native_import.hana", "$y = 10").unwrap();
+        std::env::set_var("HANA_PATH", "/tmp");
+        let prog = grammar::start(
+            "
+use 'module_native_import'
+        ",
+        )
+        .unwrap();
+        let mut c = compiler::Compiler::new();
+        c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
+        for stmt in prog {
+            stmt.emit(&mut c);
+        }
+        c.cpushop(VmOpcode::OP_HALT);
+        let mut vm = c.into_vm();
+        vm.execute();
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
+    }
     // #endregion
 }

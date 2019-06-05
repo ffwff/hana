@@ -8,9 +8,8 @@ use std::rc::Rc;
 
 extern crate libc;
 
-use super::carray::CArray;
 use super::chmap::CHashMap;
-use super::cnativeval::NativeValue;
+use super::cnativeval::{NativeValue, NativeValueType};
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
@@ -33,7 +32,6 @@ struct ConstNonNull<T: Sized> {
 }
 
 impl<T: Sized> ConstNonNull<T> {
-
     pub fn new(pointer: *const T) -> Option<Self> {
         if !pointer.is_null() {
             unsafe {
@@ -46,7 +44,6 @@ impl<T: Sized> ConstNonNull<T> {
             None
         }
     }
-
 }
 
 //
@@ -139,16 +136,16 @@ pub struct Vm {
     globalenv: Option<Box<CHashMap>>,
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
-    exframes: Option<CArray<ExFrame>>, // exception frame
-    pub code: Option<CArray<u8>>,      // where all the code is
-    pub stack: CArray<NativeValue>,    // stack
+    exframes: Option<Vec<ExFrame>>, // exception frame
+    pub code: Option<Vec<u8>>,      // where all the code is
+    pub stack: Vec<NativeValue>,    // stack
 
     // prototype types for primitive values
-    pub(crate) dstr: Gc<Record>,
-    pub(crate) dint: Gc<Record>,
-    pub(crate) dfloat: Gc<Record>,
-    pub(crate) darray: Gc<Record>,
-    pub(crate) drec: Gc<Record>,
+    pub(crate) dstr: Option<Gc<Record>>,
+    pub(crate) dint: Option<Gc<Record>>,
+    pub(crate) dfloat: Option<Gc<Record>>,
+    pub(crate) darray: Option<Gc<Record>>,
+    pub(crate) drec: Option<Gc<Record>>,
 
     pub error: VmError,
     pub error_expected: u32,
@@ -168,12 +165,12 @@ pub struct Vm {
 extern "C" {
     fn vm_execute(vm: *mut Vm);
     fn vm_print_stack(vm: *const Vm);
-    fn vm_call(vm: *mut Vm, fun: NativeValue, args: *const CArray<NativeValue>) -> NativeValue;
+    fn vm_call(vm: *mut Vm, fun: NativeValue, args: *const Vec<NativeValue>) -> NativeValue;
 }
 
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new(code: Option<CArray<u8>>, modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
+    pub fn new(code: Option<Vec<u8>>, modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
         Vm {
             ip: 0,
             localenv: None,
@@ -184,14 +181,14 @@ impl Vm {
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
             globalenv: Some(Box::new(CHashMap::new())),
-            exframes: Some(CArray::new()),
+            exframes: Some(Vec::with_capacity(2)),
             code,
-            stack: CArray::new(),
-            dstr: Gc::new_nil(),
-            dint: Gc::new_nil(),
-            dfloat: Gc::new_nil(),
-            darray: Gc::new_nil(),
-            drec: Gc::new_nil(),
+            stack: Vec::with_capacity(2),
+            dstr: None,
+            dint: None,
+            dfloat: None,
+            darray: None,
+            drec: None,
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
             exframe_fallthrough: None,
@@ -246,31 +243,40 @@ impl Vm {
         self.gc_manager.as_ref().unwrap().borrow_mut().enable()
     }
 
-    pub unsafe fn mark(&self) {
-        // globalenv
+    pub(crate) unsafe fn gc_new_gray_node_stack(&self) -> Vec<*mut GcNode> {
+        let mut vec = Vec::new();
         for (_, val) in self.global().iter() {
-            val.trace();
+            if let Some(ptr) = val.as_pointer() {
+                push_gray_body(&mut vec, ptr);
+            }
         }
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
-            val.trace();
+            if let Some(ptr) = val.as_pointer() {
+                push_gray_body(&mut vec, ptr);
+            }
         }
         // call stack
         if let Some(localenv) = self.localenv {
             let mut env = self.localenv_bp;
             let localenv = localenv.as_ptr();
             while env != localenv {
-                for val in (*env).slots.as_mut_slice().iter_mut() {
-                    (*val).trace();
+                for val in (*env).slots.as_slice().iter() {
+                    if let Some(ptr) = (*val).as_pointer() {
+                        push_gray_body(&mut vec, ptr);
+                    }
                 }
                 env = env.add(1);
             }
             env = localenv;
-            for val in (*env).slots.as_mut_slice().iter_mut() {
-                (*val).trace();
+            for val in (*env).slots.as_slice().iter() {
+                if let Some(ptr) = (*val).as_pointer() {
+                    push_gray_body(&mut vec, ptr);
+                }
             }
         }
+        vec
     }
 
     // call stack
@@ -335,10 +341,10 @@ impl Vm {
     }
 
     // exceptions
-    fn exframes(&self) -> &CArray<ExFrame> {
+    fn exframes(&self) -> &Vec<ExFrame> {
         self.exframes.as_ref().unwrap()
     }
-    fn mut_exframes(&mut self) -> &mut CArray<ExFrame> {
+    fn mut_exframes(&mut self) -> &mut Vec<ExFrame> {
         self.exframes.as_mut().unwrap()
     }
     pub fn enter_exframe(&mut self) -> &mut ExFrame {
@@ -347,7 +353,7 @@ impl Vm {
         let native_call_depth = self.native_call_depth;
         self.mut_exframes()
             .push(ExFrame::new(localenv, len, native_call_depth));
-        self.mut_exframes().top_mut()
+        self.mut_exframes().last_mut().unwrap()
     }
     pub fn leave_exframe(&mut self) {
         self.mut_exframes().pop();
@@ -356,7 +362,7 @@ impl Vm {
         if self.exframes().len() == 0 {
             return false;
         }
-        let val = self.stack.top().unwrap();
+        let val = self.stack.last().unwrap().unwrap();
         for exframe in self.exframes.as_ref().unwrap().iter() {
             if let Some(handler) = exframe.get_handler(self, &val) {
                 self.ip = handler.ip;
@@ -373,14 +379,9 @@ impl Vm {
     }
 
     // functions
-    pub fn call(&mut self, fun: NativeValue, args: &CArray<NativeValue>) -> Option<NativeValue> {
+    pub fn call(&mut self, fun: NativeValue, args: &Vec<NativeValue>) -> Option<NativeValue> {
         let val = unsafe { vm_call(self, fun, args) };
-        if let Some(opcode) = VmOpcode::from_u8(self.code.as_ref().unwrap()[self.ip as usize]) {
-            if opcode == VmOpcode::OP_HALT {
-                return None;
-            }
-        }
-        if self.exframe_fallthrough.is_some() || self.error != VmError::ERROR_NO_ERROR {
+        if val.r#type == NativeValueType::TYPE_INTERPRETER_ERROR {
             None
         } else {
             Some(val)
@@ -420,13 +421,13 @@ impl Vm {
             globalenv: None, // shared
             exframes: self.exframes.take(),
             code: None, // shared
-            stack: std::mem::replace(&mut self.stack, CArray::new()),
+            stack: std::mem::replace(&mut self.stack, Vec::with_capacity(2)),
             // types don't need to be saved:
-            dstr: Gc::new_nil(),
-            dint: Gc::new_nil(),
-            dfloat: Gc::new_nil(),
-            darray: Gc::new_nil(),
-            drec: Gc::new_nil(),
+            dstr: None,
+            dint: None,
+            dfloat: None,
+            darray: None,
+            drec: None,
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
@@ -444,7 +445,7 @@ impl Vm {
             let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
             alloc_zeroed(layout.unwrap()) as *mut Env
         };
-        self.exframes = Some(CArray::new());
+        self.exframes = Some(Vec::new());
         ManuallyDrop::new(current_ctx)
     }
 
@@ -475,7 +476,7 @@ impl Vm {
         self.exframes = ctx.exframes.take();
         self.exframe_fallthrough = ctx.exframe_fallthrough.take();
         self.native_call_depth = ctx.native_call_depth;
-        self.stack = std::mem::replace(&mut ctx.stack, CArray::new());
+        self.stack = std::mem::replace(&mut ctx.stack, Vec::new());
 
         // release context's local variables
         unsafe {

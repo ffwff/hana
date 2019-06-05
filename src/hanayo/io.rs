@@ -7,9 +7,8 @@ use crate::vmbindings::vm::Vm;
 pub extern "C" fn print(cvm: *mut Vm, nargs: u16) {
     let vm = unsafe { &mut *cvm };
     for _ in 0..nargs {
-        let val = vm.stack.top().unwrap();
+        let val = vm.stack.pop().unwrap().unwrap();
         std::print!("{}", val);
-        vm.stack.pop();
     }
     std::io::stdout().flush().unwrap();
     vm.stack.push(Value::Nil.wrap());

@@ -57,6 +57,43 @@ y = X of Y
     }
 
     #[test]
+    fn of_expr_parent() {
+        let vm: Vm = eval!(
+            "
+record Z
+end
+record Y
+    prototype = Z
+end
+record X
+    prototype = Y
+end
+y = X of Z
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+    #[test]
+    fn of_expr_not_parent() {
+        let vm: Vm = eval!(
+            "
+record Z
+end
+record Y
+    prototype = Z
+end
+record A
+end
+record X
+    prototype = Y
+end
+y = X of A
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 0);
+    }
+
+    #[test]
     fn literal_prototype() {
         let vm: Vm = eval!(
             "
@@ -64,6 +101,16 @@ y = (10).prototype == Int
 "
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+
+    #[test]
+    fn vm_call_native() {
+        let vm: Vm = eval!(
+            "
+[1,2,3].map(print)
+"
+        );
+        assert_eq!(vm.stack.len(), 0);
     }
     // #endregion
 
@@ -77,7 +124,6 @@ y = Int(1)
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
-
     #[test]
     fn int_constructor_float() {
         let vm: Vm = eval!(
@@ -87,7 +133,6 @@ y = Int(1.2)
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
-
     #[test]
     fn int_constructor_str() {
         let vm: Vm = eval!(
@@ -96,6 +141,32 @@ y = Int('10')
 "
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 10);
+    }
+    #[test]
+    fn int_constructor_str_invalid() {
+        let vm: Vm = eval!(
+            "
+try
+    Int('1?')
+case InvalidArgumentError
+    y = 1
+end
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+    #[test]
+    fn int_constructor_invalid() {
+        let vm: Vm = eval!(
+            "
+try
+    Int([0])
+case InvalidArgumentError
+    y = 1
+end
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
 
     #[test]
@@ -129,7 +200,6 @@ y = Float(1.0)
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().float(), 1.0);
     }
-
     #[test]
     fn float_constructor_int() {
         let vm: Vm = eval!(
@@ -139,7 +209,6 @@ y = Float(1)
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().float(), 1.0);
     }
-
     #[test]
     fn float_constructor_str() {
         let vm: Vm = eval!(
@@ -148,6 +217,32 @@ y = Float('10.55')
 "
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().float(), 10.55);
+    }
+    #[test]
+    fn float_constructor_str_invalid() {
+        let vm: Vm = eval!(
+            "
+try
+    Float('1?')
+case InvalidArgumentError
+    y = 1
+end
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
+    #[test]
+    fn float_constructor_invalid() {
+        let vm: Vm = eval!(
+            "
+try
+    Float([0])
+case InvalidArgumentError
+    y = 1
+end
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
     // #end
 
@@ -677,6 +772,19 @@ y = Cmd(['echo', 'hello world']).out()
             "hello world\n"
         );
     }
+    #[test]
+    fn cmd_constructor_array_invalid() {
+        let vm: Vm = eval!(
+            "
+try
+    Cmd([1]).out()
+case InvalidArgumentError
+    y = 1
+end
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
+    }
 
     #[test]
     fn cmd_constructor_string() {
@@ -689,6 +797,19 @@ y = Cmd('echo hello world').out()
             vm.global().get("y").unwrap().unwrap().string(),
             "hello world\n"
         );
+    }
+    #[test]
+    fn cmd_constructor_string_invalid() {
+        let vm: Vm = eval!(
+            "
+try
+    Cmd(1).out()
+case InvalidArgumentError
+    y = 1
+end
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
 
     #[test]

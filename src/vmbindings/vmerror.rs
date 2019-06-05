@@ -94,7 +94,7 @@ impl VmError {
                 Some(format!("Index must be between [0, {})", vm.error_expected))
             }
             VmError::ERROR_UNHANDLED_EXCEPTION => {
-                let top = vm.stack.top().unwrap();
+                let top = vm.stack.last().unwrap().unwrap();
                 Some(match top {
                     Value::Record(rec) => {
                         let rec = rec.as_ref();

@@ -10,4 +10,6 @@ function run_test() begin
     end
 end
 
+t = Time()
 run_test()
+print("elapsed: ", Time().since(t).millis()/1000, "\n")

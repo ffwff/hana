@@ -1,23 +1,29 @@
 //! Basic implementation of a mark and sweep garbage collector
 
-use super::vm::Vm;
 pub use libc::c_void;
 use std::alloc::{alloc_zeroed, dealloc, Layout};
+use std::ptr::{drop_in_place, null_mut, NonNull};
 
-use std::ptr::{drop_in_place, null_mut};
+use super::vm::Vm;
+
+#[derive(Debug, PartialEq)]
+enum GcNodeColor {
+    White,
+    Gray,
+    Black,
+}
 
 // node
-struct GcNode {
+pub struct GcNode {
     next: *mut GcNode,
     size: usize,
-    unreachable: bool, // by default this is false
-    // if the node is unreachable, it will be pruned (free'd)
-    pub native_refs: usize,
-    tracer: GenericFunction,
-    // tracer gets called sweep phased (FIXME)
-    finalizer: GenericFunction,
+    color: GcNodeColor,
+    native_refs: usize,
+    // tracer gets called on the marking phase
+    tracer: GenericTraceFunction,
     /* finalizer gets called with a pointer to
      * the data that's about to be freed */
+    finalizer: GenericFunction,
 }
 
 impl GcNode {
@@ -28,18 +34,19 @@ impl GcNode {
     }
 }
 
-type GenericFunction = fn(*mut c_void);
+type GenericFunction = unsafe fn(*mut c_void);
 // a generic function that takes in some pointer
 // this might be a finalizer or a tracer function
 // TODO maybe replace this with Any
 
 // manager
-const INITIAL_THRESHOLD: usize = 100;
-const USED_SPACE_RATIO: f64 = 0.7;
+const INITIAL_THRESHOLD: usize = 128;
+const USED_SPACE_RATIO: f64 = 0.8;
 pub struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
     bytes_allocated: usize,
+    gray_nodes: Vec<*mut GcNode>,
     threshold: usize,
     enabled: bool,
 }
@@ -50,6 +57,7 @@ impl GcManager {
             first_node: null_mut(),
             last_node: null_mut(),
             bytes_allocated: 0,
+            gray_nodes: Vec::new(),
             threshold: INITIAL_THRESHOLD,
             enabled: false,
         }
@@ -58,42 +66,42 @@ impl GcManager {
     unsafe fn malloc_raw<T: Sized + GcTraceable>(
         &mut self, vm: &Vm, x: T, finalizer: GenericFunction,
     ) -> *mut T {
-        // free up if over threshold
-        if cfg!(test) {
-            self.collect(vm);
-        } else if self.bytes_allocated > self.threshold {
-            self.collect(vm);
-            // we didn't collect enough, grow the ratio
-            if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
-                self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
-            }
-        }
+        self.cycle(vm);
         // tfw no qt malloc function
         let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
-        let bytes: *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
+        let node: *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
         // append node
         if self.first_node.is_null() {
-            self.first_node = bytes;
-            self.last_node = bytes;
-            (*bytes).next = null_mut();
+            self.first_node = node;
+            self.last_node = node;
+            (*node).next = null_mut();
         } else {
-            (*self.last_node).next = bytes;
-            (*bytes).next = null_mut();
-            self.last_node = bytes;
+            (*self.last_node).next = node;
+            (*node).next = null_mut();
+            self.last_node = node;
         }
-        (*bytes).native_refs = 1;
-        (*bytes).tracer = T::trace;
-        (*bytes).finalizer = finalizer;
-        (*bytes).size = GcNode::alloc_size::<T>();
-        self.bytes_allocated += (*bytes).size;
+        (*node).native_refs = 1;
+        (*node).tracer = std::mem::transmute(T::trace as *mut c_void);
+        (*node).finalizer = finalizer;
+        (*node).size = GcNode::alloc_size::<T>();
+        self.bytes_allocated += (*node).size;
+        // gray out the node
+        // TODO: we currently move the write barrier forward rather than backwards
+        // this probably is less efficient than setting the newly allocated node
+        // to white then resetting its soon-to-be parent to gray (for retracing)
+        (*node).color = GcNodeColor::Gray;
+        self.gray_nodes.push(node);
         // return the body aka (start byte + sizeof(GCNode))
-        std::mem::replace(&mut *(bytes.add(1) as *mut T), x);
-        bytes.add(1) as *mut T
+        std::mem::replace(&mut *(node.add(1) as *mut T), x);
+        node.add(1) as *mut T
     }
 
     pub fn malloc<T: Sized + GcTraceable>(&mut self, vm: &Vm, val: T) -> Gc<T> {
         Gc {
-            ptr: unsafe { self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T)) },
+            ptr: NonNull::new(unsafe {
+                self.malloc_raw(vm, val, |ptr| drop_in_place::<T>(ptr as *mut T))
+            })
+            .unwrap(),
         }
     }
 
@@ -106,65 +114,93 @@ impl GcManager {
     }
 
     // gc algorithm
-    unsafe fn collect(&mut self, vm: &Vm) {
+    unsafe fn cycle(&mut self, vm: &Vm) {
         if !self.enabled {
             return;
         }
-        // mark phase:
-        let mut node: *mut GcNode = self.first_node;
-        // reset all nodes
-        while !node.is_null() {
-            let next: *mut GcNode = (*node).next;
-            (*node).unreachable = true;
-            node = next;
+        //eprintln!("GRAY NODES: {:?}", self.gray_nodes);
+        // marking phase
+        let gray_nodes = std::mem::replace(&mut self.gray_nodes, Vec::new());
+        for node in gray_nodes.iter() {
+            let body = node.add(1) as *mut c_void;
+            (**node).color = GcNodeColor::Black;
+            ((**node).tracer)(body, std::mem::transmute(&mut self.gray_nodes));
         }
-        // mark make nodes with at least one native reference
-        node = self.first_node;
-        while !node.is_null() {
-            let next: *mut GcNode = (*node).next;
-            if (*node).native_refs > 0 {
-                (*node).unreachable = false;
-                ((*node).tracer)(node.add(1) as *mut c_void);
+        //eprintln!("GRAY NODES MARKING: {:?}, {:?}", gray_nodes, self.gray_nodes);
+        // nothing left to traverse, sweeping phase:
+        if self.gray_nodes.is_empty() && self.bytes_allocated > self.threshold {
+            let mut node: *mut GcNode = self.first_node;
+            let mut prev: *mut GcNode = null_mut();
+            // don't sweep nodes with at least one native reference
+            node = self.first_node;
+            while !node.is_null() {
+                let next: *mut GcNode = (*node).next;
+                let ptr = node.add(1) as *mut c_void;
+                if (*node).native_refs > 0 && (*node).color != GcNodeColor::Black {
+                    //eprintln!("{:p}", node);
+                    // get its children and subchildren
+                    let mut children: Vec<*mut GcNode> = Vec::new();
+                    ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
+                    let mut i = 0;
+                    while i < children.len() {
+                        let node = children[i];
+                        ((*node).tracer)(
+                            std::mem::transmute(ptr),
+                            std::mem::transmute(&mut children),
+                        );
+                        i += 1;
+                    }
+                    // color them black
+                    //eprintln!("children: {:?}", children);
+                    for child in children {
+                        (*child).color = GcNodeColor::Black;
+                    }
+                }
+                node = next;
             }
-            node = next;
-        }
-        // mark from root
-        vm.mark();
-        // sweep phase:
-        let mut node: *mut GcNode = self.first_node;
-        let mut prev: *mut GcNode = null_mut();
-        while !node.is_null() {
-            let next: *mut GcNode = (*node).next;
-            let mut freed = false;
-            if (*node).native_refs == 0 && (*node).unreachable {
-                freed = true;
-                let body = node.add(1);
+            // sweep
+            node = self.first_node;
+            while !node.is_null() {
+                let next: *mut GcNode = (*node).next;
+                let mut freed = false;
+                if (*node).native_refs == 0 && (*node).color == GcNodeColor::White {
+                    freed = true;
+                    //eprintln!("free {:p}", node);
+                    let body = node.add(1);
 
-                // remove from ll
-                if prev.is_null() {
-                    self.first_node = (*node).next;
+                    // remove from ll
+                    if prev.is_null() {
+                        self.first_node = (*node).next;
+                    } else {
+                        (*prev).next = (*node).next;
+                    }
+                    if (*node).next.is_null() {
+                        self.last_node = prev;
+                    }
+                    self.bytes_allocated -= (*node).size;
+
+                    // call finalizer
+                    let finalizer = (*node).finalizer;
+                    finalizer(body as *mut c_void);
+
+                    // free memory
+                    let layout = Layout::from_size_align((*node).size, 2).unwrap();
+                    dealloc(node as *mut u8, layout);
                 } else {
-                    (*prev).next = (*node).next;
+                    (*node).color = GcNodeColor::White;
                 }
-
-                if (*node).next.is_null() {
-                    self.last_node = prev;
+                if !freed {
+                    prev = node;
                 }
-
-                self.bytes_allocated -= (*node).size;
-
-                // call finalizer
-                let finalizer = (*node).finalizer;
-                finalizer(body as *mut c_void);
-
-                // free memory
-                let layout = Layout::from_size_align((*node).size, 2).unwrap();
-                dealloc(node as *mut u8, layout);
+                node = next;
             }
-            if !freed {
-                prev = node;
+            // reset all root nodes to gray
+            self.gray_nodes = vm.gc_new_gray_node_stack();
+
+            // we didn't collect enough, grow the ratio
+            if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
+                self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
             }
-            node = next;
         }
     }
 }
@@ -191,58 +227,50 @@ impl std::ops::Drop for GcManager {
     }
 }
 
-// gc struct
+// #region gc struct
 #[repr(transparent)]
 pub struct Gc<T: Sized + GcTraceable> {
-    ptr: *mut T,
+    ptr: NonNull<T>,
 }
 
 impl<T: Sized + GcTraceable> Gc<T> {
-    pub fn new_nil() -> Gc<T> {
-        Gc { ptr: null_mut() }
-    }
-
     // raw
-    pub fn from_raw(ptr: *mut T) -> Gc<T> {
-        unsafe {
-            ref_inc(ptr as *mut libc::c_void);
+    pub unsafe fn from_raw(ptr: *mut T) -> Gc<T> {
+        //println!("from raw");
+        // manually color it black & increment ref
+        let node: *mut GcNode = (ptr as *mut GcNode).sub(1);
+        (*node).color = GcNodeColor::Black;
+        (*node).native_refs += 1;
+        Gc {
+            ptr: NonNull::new(ptr).unwrap(),
         }
-        Gc { ptr: ptr }
-    }
-    pub fn into_raw(self) -> *mut T {
-        self.ptr
     }
 
     // ptrs
     pub fn to_raw(&self) -> *const T {
-        self.ptr
+        self.ptr.as_ptr()
     }
-    pub fn to_mut_raw(&mut self) -> *mut T {
-        self.ptr
-    }
-    pub fn ptr_eq(&self, right: &Gc<T>) -> bool {
-        std::ptr::eq(self.ptr, right.ptr)
+    pub unsafe fn into_raw(self) -> *mut T {
+        self.ptr.as_ptr()
     }
 
     // refs with interior mutability
     pub fn as_mut(&self) -> &mut T {
-        unsafe { &mut *self.ptr }
+        unsafe { &mut *self.ptr.as_ptr() }
     }
 }
 
 impl<T: Sized + GcTraceable> std::ops::Drop for Gc<T> {
     fn drop(&mut self) {
         unsafe {
-            if !self.ptr.is_null() {
-                ref_dec(self.ptr as *mut libc::c_void);
-            }
+            ref_dec(self.ptr.as_ptr() as *mut libc::c_void);
         }
     }
 }
 
 impl<T: Sized + GcTraceable> std::convert::AsRef<T> for Gc<T> {
     fn as_ref(&self) -> &T {
-        unsafe { &*self.ptr }
+        unsafe { self.ptr.as_ref() }
     }
 }
 
@@ -250,7 +278,7 @@ impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
     fn clone(&self) -> Self {
         Gc {
             ptr: unsafe {
-                ref_inc(self.ptr as *mut libc::c_void);
+                ref_inc(self.ptr.as_ptr() as *mut libc::c_void);
                 self.ptr
             },
         }
@@ -259,18 +287,34 @@ impl<T: Sized + GcTraceable> std::clone::Clone for Gc<T> {
 
 impl<T: Sized + GcTraceable> std::cmp::PartialEq for Gc<T> {
     fn eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self.ptr, other.ptr)
+        std::ptr::eq(self.ptr.as_ptr(), other.ptr.as_ptr())
     }
 }
+// #endregion
 
+// #region traceable
 pub trait GcTraceable {
-    fn trace(ptr: *mut libc::c_void);
+    unsafe fn trace(&self, manager: &mut Vec<*mut GcNode>);
 }
+
+type GenericTraceFunction = unsafe fn(*mut c_void, *mut c_void);
 
 // native traceables
 impl GcTraceable for String {
-    fn trace(_: *mut libc::c_void) {}
+    unsafe fn trace(&self, manager: &mut Vec<*mut GcNode>) {}
 }
+
+use super::cnativeval::NativeValue;
+impl GcTraceable for Vec<NativeValue> {
+    unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {
+        for val in self.iter() {
+            if let Some(ptr) = val.as_pointer() {
+                push_gray_body(gray_nodes, ptr);
+            }
+        }
+    }
+}
+// #endregion
 
 // collect
 pub unsafe fn ref_inc(ptr: *mut c_void) {
@@ -289,15 +333,11 @@ pub unsafe fn ref_dec(ptr: *mut c_void) {
     (*node).native_refs -= 1;
 }
 
-pub unsafe fn mark_reachable(ptr: *mut c_void) -> bool {
-    // => start byte
-    if ptr.is_null() {
-        return false;
-    }
+pub unsafe fn push_gray_body(gray_nodes: &mut Vec<*mut GcNode>, ptr: *mut c_void) {
     let node: *mut GcNode = (ptr as *mut GcNode).sub(1);
-    if !(*node).unreachable {
-        return false;
+    if (*node).color == GcNodeColor::Black || (*node).color == GcNodeColor::Gray {
+        return;
     }
-    (*node).unreachable = false;
-    true
+    (*node).color = GcNodeColor::Gray;
+    gray_nodes.push(node);
 }

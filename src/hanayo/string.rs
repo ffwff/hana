@@ -2,7 +2,6 @@
 extern crate unicode_segmentation;
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::vmbindings::carray::CArray;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
@@ -13,8 +12,7 @@ pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
         vm.stack.push(Value::Str(vm.malloc(String::new())).wrap());
         return;
     } else if nargs == 1 {
-        let arg = vm.stack.top().clone().unwrap();
-        vm.stack.pop();
+        let arg = vm.stack.pop().unwrap().unwrap();
         vm.stack
             .push(Value::Str(vm.malloc(format!("{}", arg).to_string())).wrap());
     } else {
@@ -120,7 +118,7 @@ fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
 // other
 #[hana_function()]
 fn split(s: Value::Str, delim: Value::Str) -> Value {
-    let array = vm.malloc(CArray::new());
+    let array = vm.malloc(Vec::new());
     for ss in s.as_ref().split(delim.as_ref()) {
         array
             .as_mut()
@@ -154,7 +152,7 @@ fn index(s: Value::Str, needle: Value::Str) -> Value {
 
 #[hana_function()]
 fn chars(s: Value::Str) -> Value {
-    let array = vm.malloc(CArray::new());
+    let array = vm.malloc(Vec::new());
     let array_ref = array.as_mut();
     for ch in s.as_ref().graphemes(true) {
         array_ref.push(Value::Str(vm.malloc(ch.to_string())).wrap());
