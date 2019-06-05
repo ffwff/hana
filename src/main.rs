@@ -232,40 +232,60 @@ fn repl(flag: ParserFlag) {
                             println!("{:?}", prog);
                             continue;
                         }
-                        let mut gencode = |c: &mut compiler::Compiler| -> bool {
+                        let mut gencode = |c: &mut compiler::Compiler| -> Result<bool, ast::ast::CodeGenError> {
                             if let Some(_) = prog.last() {
                                 let stmt = prog.pop().unwrap();
-                                prog.iter().for_each(|stmt| stmt.emit(c).unwrap());
+                                for stmt in prog {
+                                    stmt.emit(c)?;
+                                }
                                 if let Some(expr_stmt) = stmt.as_any().downcast_ref::<ast::ast::ExprStatement>() {
-                                    expr_stmt.expr.emit(c);
-                                    return true;
+                                    expr_stmt.expr.emit(c)?;
+                                    return Ok(true);
                                 } else {
                                     stmt.emit(c);
                                 }
                             } else {
-                                prog.iter().for_each(|stmt| stmt.emit(c).unwrap());
+                                for stmt in prog {
+                                    stmt.emit(c)?;
+                                }
                             }
-                            false
+                            Ok(false)
                         };
                         // setup
                         let mut pop_print = false;
                         if vm.code.is_none() {
-                            pop_print = gencode(&mut c);
-                            c.cpushop(VmOpcode::OP_HALT);
-                            vm.code = Some(c.take_code());
-                            vm.execute();
+                            match gencode(&mut c) {
+                                Ok(pop_print_) => {
+                                    pop_print = pop_print_;
+                                    c.cpushop(VmOpcode::OP_HALT);
+                                    vm.code = Some(c.take_code());
+                                    vm.execute();
+                                }
+                                Err(e) => {
+                                    eprintln!("{:?}", e);
+                                    continue;
+                                }
+                            }
                         } else {
                             vm.error = VmError::ERROR_NO_ERROR;
                             let len = vm.code.as_ref().unwrap().len() as u32;
                             c.receive_code(vm.code.take().unwrap());
-                            pop_print = gencode(&mut c);
-                            if c.clen() as u32 == len {
-                                continue;
+                            match gencode(&mut c) {
+                                Ok(pop_print_) => {
+                                    pop_print = pop_print_;
+                                    if c.clen() as u32 == len {
+                                        continue;
+                                    }
+                                    c.cpushop(VmOpcode::OP_HALT);
+                                    vm.code = Some(c.take_code());
+                                    vm.jmp(len);
+                                    vm.execute();
+                                }
+                                Err(e) => {
+                                    eprintln!("{:?}", e);
+                                    continue;
+                                }
                             }
-                            c.cpushop(VmOpcode::OP_HALT);
-                            vm.code = Some(c.take_code());
-                            vm.jmp(len);
-                            vm.execute();
                         }
                         if !handle_error(&vm, &c) && pop_print {
                             println!("=> {:?}", vm.stack.pop().unwrap().unwrap());

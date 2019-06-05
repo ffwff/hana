@@ -349,8 +349,7 @@ void vm_execute(struct vm *vm) {
                                       vm->code.data[vm->ip + 1]);
         vm->ip += (uint32_t)sizeof(n);
         LOG("GET LOCAL %d\n", n);
-        array_push(vm->stack, (struct value){0});
-        array_top(vm->stack) = env_get(vm->localenv, n);
+        array_push(vm->stack, env_get(vm->localenv, n));
         dispatch();
     }
     doop(OP_GET_LOCAL_UP): {
@@ -363,8 +362,7 @@ void vm_execute(struct vm *vm) {
         vm->ip += (uint32_t)sizeof(relascope);
         LOG("GET LOCAL UP %d %d\n", n, relascope);
 
-        array_push(vm->stack, (struct value){0});
-        array_top(vm->stack) = env_get_up(vm->localenv, relascope, n);
+        array_push(vm->stack, env_get_up(vm->localenv, relascope, n));
         dispatch();
     }
 
@@ -434,10 +432,15 @@ void vm_execute(struct vm *vm) {
         const int16_t pos = (int16_t)(vm->code.data[vm->ip + 0] << 8 |
                                       vm->code.data[vm->ip + 1]);
         struct value val = array_top(vm->stack);
-        if(op == OP_JCOND) array_pop(vm->stack);
+        if(op == OP_JCOND) {
+            array_pop(vm->stack);
+        }
         LOG(op == OP_JCOND ? "JCOND %d\n" : "JCOND_NO_POP %d\n", pos);
-        if(value_is_true(val)) vm->ip += pos;
-        else vm->ip += (uint32_t)sizeof(pos);
+        if (value_is_true(val)) {
+            vm->ip += pos;
+        } else {
+            vm->ip += (uint32_t)sizeof(pos);
+        }
         dispatch();
     }
     doop(OP_JNCOND):
@@ -448,8 +451,11 @@ void vm_execute(struct vm *vm) {
         struct value val = array_top(vm->stack);
         if(op == OP_JNCOND) array_pop(vm->stack);
         LOG(op == OP_JNCOND ? "JNCOND %d\n" : "JNCOND_NO_POP %d\n", pos);
-        if(!value_is_true(val)) vm->ip += pos;
-        else vm->ip += (uint32_t)sizeof(pos);
+        if (!value_is_true(val)) {
+            vm->ip += pos;
+        } else {
+            vm->ip += (uint32_t)sizeof(pos);
+        }
         dispatch();
     }
     // pops a function/record constructor on top of the stack,
@@ -575,13 +581,17 @@ void vm_execute(struct vm *vm) {
                 ERROR(ERROR_CANNOT_ACCESS_NON_RECORD, 1 + strlen(key)+1);
             }
             if (strcmp(key, "prototype") == 0) {
-                if (op == OP_MEMBER_GET) array_pop(vm->stack);
+                if (op == OP_MEMBER_GET) {
+                    array_pop(vm->stack);
+                }
                 array_push(vm->stack, value_pointer(TYPE_DICT, dict));
                 dispatch();
             }
         } else {
             dict = value_get_pointer(val);
-            if(op == OP_MEMBER_GET) array_pop(vm->stack);
+            if(op == OP_MEMBER_GET) {
+                array_pop(vm->stack);
+            }
         }
 
         const struct value *result = dict_get(dict, key);
@@ -646,7 +656,9 @@ void vm_execute(struct vm *vm) {
         array_pop(vm->stack);
 
         const struct value dval = array_top(vm->stack);
-        if (op == OP_INDEX_GET) array_pop(vm->stack);
+        if (op == OP_INDEX_GET) {
+            array_pop(vm->stack);
+        }
 
         switch (dval.type) {
             case TYPE_ARRAY: {
@@ -755,7 +767,7 @@ void vm_execute(struct vm *vm) {
         vm->ip++;
 
         struct exframe *frame = vm_enter_exframe(vm);
-        struct value error = {0};
+        struct value error;
         while((error = array_top(vm->stack)).type != TYPE_NIL) {
             // error type
             if(error.type != TYPE_DICT) {
@@ -845,9 +857,9 @@ void vm_execute(struct vm *vm) {
         if (pval == NULL) ERROR(ERROR_EXPECTED_CALLABLE, 1 + sizeof(pos));                                  \
         const struct value val = *pval;                                                                     \
         const uint16_t nargs = 1;                                                                           \
-        switch (val.type) {                                                                      \
+        switch (val.type) {                                                                                 \
             case TYPE_NATIVE_FN: {                                                                          \
-                CALL_NATIVE(((value_fn)(value_get_pointer(val))));                          \
+                CALL_NATIVE(((value_fn)(value_get_pointer(val))));                                          \
                 break;                                                                                      \
             }                                                                                               \
             case TYPE_FN:                                                                                   \
