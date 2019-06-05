@@ -119,7 +119,12 @@ fn constructor(name_or_addr: Value::Any, argtypes: Value::Array, rettype: Value:
                         }
                     },
                     Value::Str(sym) => {
-                        let cstr = CString::new(sym.as_ref().clone()).unwrap();
+                        let cstr = if let Some(cstr) = CString::new(sym.as_ref().clone()) {
+                            cstr
+                        } else {
+                            let err = invalid_symbol(vm, Value::Str(sym.clone()));
+                            hana_raise!(vm, err);
+                        };
                         let dlsym = libc::dlsym(dl, cstr.as_c_str().as_ptr());
                         if dlsym.is_null() {
                             let err = invalid_symbol(vm, Value::Str(sym.clone()));

@@ -55,6 +55,13 @@ pub mod ast {
         };
     }
 
+    macro_rules! try_nil {
+        ($e:expr) => {
+            if let Err(_) = $e {
+                return Err(CodeGenError::NilString);
+            }
+        };
+    }
     // #endregion
 
     /// Code generation result
@@ -63,6 +70,7 @@ pub mod ast {
         InvalidLeftHandSide,
         ExpectedIdentifier,
         ExpectedInFunction,
+        NilString,
     }
     pub type CodeGenResult = Result<(), CodeGenError>;
 
@@ -114,7 +122,7 @@ pub mod ast {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             c.cpushop(VmOpcode::OP_PUSHSTR);
-            c.cpushs(self.val.clone());
+            try_nil!(c.cpushs(self.val.clone()));
             emit_end!(c, _smap_begin);
             Ok(())
         }
