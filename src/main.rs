@@ -126,7 +126,11 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
 
     // emit bytecode
     for stmt in prog {
-        stmt.emit(&mut c);
+        if let Err(e) = stmt.emit(&mut c) {
+            // TODO: better error message
+            eprintln!("{:?}", e);
+            return;
+        }
     }
     c.cpushop(VmOpcode::OP_HALT);
 
@@ -231,7 +235,7 @@ fn repl(flag: ParserFlag) {
                         let mut gencode = |c: &mut compiler::Compiler| -> bool {
                             if let Some(_) = prog.last() {
                                 let stmt = prog.pop().unwrap();
-                                prog.iter().for_each(|stmt| stmt.emit(c));
+                                prog.iter().for_each(|stmt| stmt.emit(c).unwrap());
                                 if let Some(expr_stmt) = stmt.as_any().downcast_ref::<ast::ast::ExprStatement>() {
                                     expr_stmt.expr.emit(c);
                                     return true;
@@ -239,7 +243,7 @@ fn repl(flag: ParserFlag) {
                                     stmt.emit(c);
                                 }
                             } else {
-                                prog.iter().for_each(|stmt| stmt.emit(c));
+                                prog.iter().for_each(|stmt| stmt.emit(c).unwrap());
                             }
                             false
                         };

@@ -97,6 +97,16 @@ y = (10).prototype == Int
         );
         assert_eq!(vm.global().get("y").unwrap().unwrap().int(), 1);
     }
+
+    #[test]
+    fn vm_call_native() {
+        let vm: Vm = eval!(
+            "
+[1,2,3].map(print)
+"
+        );
+        assert_eq!(vm.stack.len(), 0);
+    }
     // #endregion
 
     // #region int

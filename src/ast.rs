@@ -57,13 +57,22 @@ pub mod ast {
 
     // #endregion
 
+    /// Code generation result
+    #[derive(Debug)]
+    pub enum CodeGenError {
+        InvalidLeftHandSide,
+        ExpectedIdentifier,
+        ExpectedInFunction,
+    }
+    pub type CodeGenResult = Result<(), CodeGenError>;
+
     /// Span of the AST node, represented by a tuple of (from, to) indexes
     pub type Span = (usize, usize);
     /// Generic abstract syntax tree
     pub trait AST: fmt::Debug {
         fn as_any(&self) -> &dyn Any;
         fn span(&self) -> &Span;
-        fn emit(&self, c: &mut compiler::Compiler);
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult;
     }
 
     // # values
@@ -80,11 +89,12 @@ pub mod ast {
     }
     impl AST for Identifier {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             c.emit_get_var(self.val.clone());
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// String literal
@@ -100,12 +110,13 @@ pub mod ast {
     }
     impl AST for StrLiteral {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             c.cpushop(VmOpcode::OP_PUSHSTR);
             c.cpushs(self.val.clone());
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Integer literal
@@ -122,7 +133,7 @@ pub mod ast {
     impl AST for IntLiteral {
         ast_impl!();
         #[cfg_attr(tarpaulin, skip)]
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             let n = self.val as u64;
@@ -145,6 +156,7 @@ pub mod ast {
                 }
             }
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Float literal
@@ -160,12 +172,13 @@ pub mod ast {
     }
     impl AST for FloatLiteral {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             c.cpushop(VmOpcode::OP_PUSHF64);
             c.cpushf64(self.val);
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Array literals
@@ -181,7 +194,7 @@ pub mod ast {
     }
     impl AST for ArrayExpr {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             for expr in &self.exprs {
@@ -196,6 +209,7 @@ pub mod ast {
             }
             c.cpushop(VmOpcode::OP_ARRAY_LOAD);
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Function expression
@@ -227,7 +241,7 @@ pub mod ast {
     }
     impl AST for FunctionDefinition {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             // definition
@@ -235,8 +249,8 @@ pub mod ast {
             c.cpush16(self.args.len() as u16);
             let function_end = c.reserve_label16();
 
-            if self.id.is_some() {
-                c.set_local(self.id.as_ref().unwrap().clone());
+            if let Some(id) = &self.id {
+                c.set_local(id.clone());
             }
             c.scope();
 
@@ -247,12 +261,12 @@ pub mod ast {
                 c.set_local(arg.clone());
             }
             self.stmt.emit(c);
-            if self.id.is_some() {
+            if let Some(id) = &self.id {
                 let len = c.clen() - 1;
                 let mut modules_info = c.modules_info.borrow_mut();
                 modules_info
                     .symbol
-                    .insert(len, self.id.as_ref().unwrap().clone());
+                    .insert(len, id.clone());
             }
 
             // default return
@@ -270,6 +284,7 @@ pub mod ast {
             c.fill_label16(nslot_label, nslots);
             c.fill_label16(function_end, (c.clen() - function_end) as u16);
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Record expression
@@ -286,7 +301,7 @@ pub mod ast {
     }
     impl AST for RecordDefinition {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             for stmt in &self.stmts {
@@ -301,11 +316,12 @@ pub mod ast {
                     c.cpushs(stmt.def().id.as_ref().unwrap().clone());
                 } else if let Some(stmt) = any.downcast_ref::<ExprStatement>() {
                     let binexpr = stmt.expr.as_any().downcast_ref::<BinExpr>().unwrap();
-                    let id = binexpr
-                        .left
-                        .as_any()
-                        .downcast_ref::<Identifier>()
-                        .unwrap_or_else(|| panic!("left hand side must be identifier"));
+                    let id =
+                        if let Some(id) = binexpr.left.as_any().downcast_ref::<Identifier>() {
+                            id
+                        } else {
+                            return Err(CodeGenError::InvalidLeftHandSide)
+                        };
                     binexpr.right.emit(c);
                     c.cpushop(VmOpcode::OP_PUSHSTR);
                     c.cpushs(id.val.clone());
@@ -320,6 +336,7 @@ pub mod ast {
             }
             c.cpushop(VmOpcode::OP_DICT_LOAD);
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
 
@@ -343,7 +360,7 @@ pub mod ast {
     }
     impl AST for UnaryExpr {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             self.val.emit(c);
@@ -356,6 +373,7 @@ pub mod ast {
                 }
             }
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Conditional expressions
@@ -424,8 +442,9 @@ pub mod ast {
     }
     impl AST for CondExpr {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
-            self._emit(c, false)
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
+            self._emit(c, false);
+            Ok(())
         }
     }
     /// Binary operators
@@ -500,7 +519,7 @@ pub mod ast {
     }
     impl AST for BinExpr {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             macro_rules! arithop_do {
@@ -547,13 +566,11 @@ pub mod ast {
                         let function_end = c.reserve_label16();
 
                         c.set_local(
-                            callexpr
-                                .callee
-                                .as_any()
-                                .downcast_ref::<Identifier>()
-                                .unwrap()
-                                .val
-                                .clone(),
+                            if let Some(callee) = callexpr.callee.as_any().downcast_ref::<Identifier>() {
+                                callee.val.clone()
+                            } else {
+                                return Err(CodeGenError::ExpectedIdentifier)
+                            },
                         );
                         c.scope();
 
@@ -562,11 +579,11 @@ pub mod ast {
                         let nslot_label = c.reserve_label16();
                         for arg in &callexpr.args {
                             c.set_local(
-                                arg.as_any()
-                                    .downcast_ref::<Identifier>()
-                                    .unwrap()
-                                    .val
-                                    .clone(),
+                                if let Some(arg) = arg.as_any().downcast_ref::<Identifier>() {
+                                    arg.val.clone()
+                                } else {
+                                    return Err(CodeGenError::ExpectedIdentifier)
+                                },
                             );
                         }
 
@@ -585,18 +602,18 @@ pub mod ast {
                         c.fill_label16(nslot_label, nslots);
                         c.fill_label16(function_end, (c.clen() - function_end) as u16);
 
-                        let id = &callexpr
-                            .callee
-                            .as_any()
-                            .downcast_ref::<Identifier>()
-                            .unwrap()
-                            .val;
+                        let id =
+                            if let Some(id) = &callexpr.callee.as_any().downcast_ref::<Identifier>() {
+                                id.val.clone()
+                            } else {
+                                return Err(CodeGenError::ExpectedIdentifier)
+                            };
                         if id != "_" {
                             // _ for id is considered a anonymous function decl
-                            c.emit_set_var_fn(id.clone());
+                            c.emit_set_var_fn(id);
                         }
                     } else {
-                        panic!("Invalid left hand side expression!");
+                        return Err(CodeGenError::InvalidLeftHandSide);
                     }
                 }
                 BinOp::Adds | BinOp::Subs | BinOp::Muls | BinOp::Divs | BinOp::Mods => {
@@ -670,9 +687,9 @@ pub mod ast {
                             c.cpushop(VmOpcode::OP_INDEX_SET);
                         }
                         emit_end!(c, _smap_begin);
-                        return;
+                        return Ok(());
                     } else {
-                        panic!("Invalid left hand side expression!");
+                        return Err(CodeGenError::InvalidLeftHandSide);
                     }
                     if in_place_addr != std::usize::MAX {
                         // jmp here if we can do it in place
@@ -715,6 +732,7 @@ pub mod ast {
                 } //_ => panic!("not implemented: {:?}", self.op)
             }
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
 
@@ -769,8 +787,9 @@ pub mod ast {
     }
     impl AST for MemExpr {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
-            self._emit(c, false)
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
+            self._emit(c, false);
+            Ok(())
         }
     }
 
@@ -823,8 +842,9 @@ pub mod ast {
     }
     impl AST for CallExpr {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             self._emit(c, false);
+            Ok(())
         }
     }
     /// Call expression arm (for internal usage)
@@ -864,7 +884,7 @@ pub mod ast {
     }
     impl AST for IfStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             // Pseudo code of the generated bytecode
@@ -888,6 +908,7 @@ pub mod ast {
                 c.fill_label16(else_label, (c.clen() as isize - else_label as isize) as u16);
             }
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
 
@@ -909,7 +930,7 @@ pub mod ast {
     }
     impl AST for WhileStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             // pseudocode of generated bytecode:
@@ -932,6 +953,7 @@ pub mod ast {
             c.cpush16((then_label as isize - c.clen() as isize) as u16);
             c.loop_end(next_it_pos, c.clen());
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
 
@@ -964,7 +986,7 @@ pub mod ast {
     }
     impl AST for ForStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             // pseudocode of generated bytecode:
@@ -1013,6 +1035,7 @@ pub mod ast {
 
             c.loop_end(next_it_pos, c.clen());
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// For..in statements
@@ -1038,7 +1061,7 @@ pub mod ast {
     }
     impl AST for ForInStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             // TODO: OP_FOR (pushes val onto stack)
             // stack: [int iterator pos]
             // code:
@@ -1063,6 +1086,7 @@ pub mod ast {
             c.fill_label16(end_label, (c.clen() - end_label) as u16);
 
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Continue statements
@@ -1077,12 +1101,13 @@ pub mod ast {
     }
     impl AST for ContinueStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             c.cpushop(VmOpcode::OP_JMP);
             c.loop_continue();
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Break statement
@@ -1097,12 +1122,13 @@ pub mod ast {
     }
     impl AST for BreakStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             c.cpushop(VmOpcode::OP_JMP);
             c.loop_break();
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
 
@@ -1132,12 +1158,13 @@ pub mod ast {
     }
     impl AST for FunctionStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             self.def.emit(c);
 
             // set var
             c.emit_set_var_fn(self.def.id.as_ref().unwrap().clone());
             c.cpushop(VmOpcode::OP_POP);
+            Ok(())
         }
     }
     /// Return statement
@@ -1153,11 +1180,11 @@ pub mod ast {
     }
     impl AST for ReturnStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             if !c.is_in_function() {
-                panic!("not in function!"); // TODO
+                return Err(CodeGenError::ExpectedInFunction);
             }
             match &self.expr {
                 Some(expr) => {
@@ -1173,6 +1200,7 @@ pub mod ast {
             }
             c.cpushop(VmOpcode::OP_RET);
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
 
@@ -1201,12 +1229,13 @@ pub mod ast {
     }
     impl AST for RecordStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             self.def.emit(c);
 
             // set var
             c.emit_set_var(self.def.id.as_ref().unwrap().clone());
             c.cpushop(VmOpcode::OP_POP);
+            Ok(())
         }
     }
 
@@ -1224,7 +1253,7 @@ pub mod ast {
     }
     impl AST for TryStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             c.cpushop(VmOpcode::OP_PUSH_NIL);
@@ -1264,6 +1293,7 @@ pub mod ast {
                 c.fill_label16(hole, (c.clen() - hole) as u16);
             }
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     /// Case statement
@@ -1281,7 +1311,7 @@ pub mod ast {
     }
     impl AST for CaseStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             // this is already generated by try statement
             unreachable!()
         }
@@ -1299,9 +1329,10 @@ pub mod ast {
     }
     impl AST for RaiseStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             self.expr.emit(c);
             c.cpushop(VmOpcode::OP_RAISE);
+            Ok(())
         }
     }
 
@@ -1318,12 +1349,13 @@ pub mod ast {
     }
     impl AST for ExprStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             self.expr.emit(c);
             c.cpushop(VmOpcode::OP_POP);
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
 
@@ -1340,12 +1372,13 @@ pub mod ast {
     }
     impl AST for UseStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             c.cpushop(VmOpcode::OP_USE);
             c.cpushs(self.path.clone());
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
 
@@ -1366,13 +1399,14 @@ pub mod ast {
     }
     impl AST for BlockStatement {
         ast_impl!();
-        fn emit(&self, c: &mut compiler::Compiler) {
+        fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             for stmt in &self.stmts {
                 stmt.emit(c);
             }
             emit_end!(c, _smap_begin);
+            Ok(())
         }
     }
     // #endregion
