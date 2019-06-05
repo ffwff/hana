@@ -1038,7 +1038,7 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
     vm->ip = (uint32_t)-1;
     struct env *curenv = vm_enter_env(vm, ifn);
     // setup stack/ip
-    printf("%ld\n", args->length);
+    LOG("%ld\n", args->length);
     for (size_t i = (size_t)args->length; i-- > 0;) {
         array_push(vm->stack, args->data[i]);
     }
