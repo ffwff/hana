@@ -994,6 +994,9 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *ar
             array_push(vm->stack, args->data[i]);
         }
         ((value_fn)(value_get_pointer(fn)))(vm, nargs);
+        const struct value val = array_top(vm->stack);
+        array_pop(vm->stack);
+        return val;
     } else if(fn.type == TYPE_DICT) {
         const struct value *pctor = dict_get(value_get_pointer(fn), "constructor");
         if(pctor == NULL) {
