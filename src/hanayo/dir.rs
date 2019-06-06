@@ -2,7 +2,7 @@
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
-use crate::vmbindings::vmerror::VmError;
+
 use std::path::PathBuf;
 
 #[hana_function()]
@@ -20,7 +20,7 @@ fn constructor(path: Value::Str) -> Value {
 fn ls(dir: Value::Record) -> Value {
     let field = dir.as_ref().native_field.as_ref().unwrap();
     let dir = field.downcast_ref::<PathBuf>().unwrap();
-    let mut entries = vm.malloc(Vec::new());
+    let entries = vm.malloc(Vec::new());
     let read_dir =
         if let Ok(read_dir) = std::fs::read_dir(dir) {
             read_dir

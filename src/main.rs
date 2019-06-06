@@ -232,7 +232,7 @@ fn repl(flag: ParserFlag) {
                             println!("{:?}", prog);
                             continue;
                         }
-                        let mut gencode = |c: &mut compiler::Compiler| -> Result<bool, ast::ast::CodeGenError> {
+                        let gencode = |c: &mut compiler::Compiler| -> Result<bool, ast::ast::CodeGenError> {
                             if let Some(_) = prog.last() {
                                 let stmt = prog.pop().unwrap();
                                 for stmt in prog {

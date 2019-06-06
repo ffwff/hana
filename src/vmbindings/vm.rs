@@ -21,7 +21,6 @@ use crate::compiler::{Compiler, ModulesInfo};
 use crate::hanayo::HanayoCtx;
 
 extern crate num_derive;
-use num_traits::cast::FromPrimitive;
 
 const CALL_STACK_SIZE: usize = 512;
 
@@ -402,13 +401,13 @@ impl Vm {
                 let mut env = self.localenv_bp;
                 let localenv = localenv.as_ptr();
                 while env != localenv {
-                    for val in (*env).slots.as_mut_slice().iter_mut() {
+                    for val in (*env).slots.iter() {
                         (*val).ref_inc();
                     }
                     env = env.add(1);
                 }
                 env = localenv;
-                for val in (*env).slots.as_mut_slice().iter_mut() {
+                for val in (*env).slots.iter() {
                     (*val).ref_inc();
                 }
             }
@@ -490,13 +489,13 @@ impl Vm {
                 let mut env = self.localenv_bp;
                 let localenv = localenv.as_ptr();
                 while env != localenv {
-                    for val in (*env).slots.as_mut_slice().iter_mut() {
+                    for val in (*env).slots.iter() {
                         (*val).ref_dec();
                     }
                     env = env.add(1);
                 }
                 env = localenv;
-                for val in (*env).slots.as_mut_slice().iter_mut() {
+                for val in (*env).slots.iter() {
                     (*val).ref_dec();
                 }
             }
@@ -577,7 +576,7 @@ impl Vm {
             {
                 let mut c = Compiler::new_append(self.code.take().unwrap());
                 for stmt in prog {
-                    stmt.emit(&mut c);
+                    stmt.emit(&mut c).unwrap();
                 }
                 c.cpushop(VmOpcode::OP_JMP_LONG);
                 c.cpush32(importer_ip);

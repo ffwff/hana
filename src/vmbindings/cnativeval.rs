@@ -2,7 +2,7 @@
 //! used by the virtual machine
 
 use super::function::Function;
-use super::gc::{ref_dec, ref_inc, Gc, GcManager, GcTraceable};
+use super::gc::{ref_dec, ref_inc, Gc};
 use super::record::Record;
 use super::value::{NativeFnData, Value};
 

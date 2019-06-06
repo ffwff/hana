@@ -129,10 +129,9 @@ impl GcManager {
         //eprintln!("GRAY NODES MARKING: {:?}, {:?}", gray_nodes, self.gray_nodes);
         // nothing left to traverse, sweeping phase:
         if self.gray_nodes.is_empty() && self.bytes_allocated > self.threshold {
-            let mut node: *mut GcNode = self.first_node;
             let mut prev: *mut GcNode = null_mut();
             // don't sweep nodes with at least one native reference
-            node = self.first_node;
+            let mut node = self.first_node;
             while !node.is_null() {
                 let next: *mut GcNode = (*node).next;
                 let ptr = node.add(1) as *mut c_void;
@@ -301,7 +300,7 @@ type GenericTraceFunction = unsafe fn(*mut c_void, *mut c_void);
 
 // native traceables
 impl GcTraceable for String {
-    unsafe fn trace(&self, manager: &mut Vec<*mut GcNode>) {}
+    unsafe fn trace(&self, _manager: &mut Vec<*mut GcNode>) {}
 }
 
 use super::cnativeval::NativeValue;

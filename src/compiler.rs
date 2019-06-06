@@ -205,7 +205,7 @@ impl Compiler {
                 &var[1..]
             } else {
                 var.as_str()
-            });
+            }).unwrap();
         } else if let Some(local) = self.get_local(&var) {
             // set existing local
             let mut slot = local.0;
@@ -231,7 +231,7 @@ impl Compiler {
                 &var[1..]
             } else {
                 var.as_str()
-            });
+            }).unwrap();
         } else if let Some(local) = self.get_local(&var) {
             // set existing local
             let mut slot = local.0;
@@ -259,7 +259,7 @@ impl Compiler {
                 &var[1..]
             } else {
                 var.as_str()
-            });
+            }).unwrap();
         } else {
             let local = local.unwrap();
             let slot = local.0;

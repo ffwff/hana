@@ -13,7 +13,9 @@ fn eval(s: Value::Str) -> Value {
         let mut c = Compiler::new_append(vm.code.take().unwrap());
         // generate code
         for stmt in prog {
-            stmt.emit(&mut c);
+            if stmt.emit(&mut c).is_err() {
+                return Value::False;
+            }
         }
         c.cpushop(VmOpcode::OP_HALT);
         vm.code = Some(c.into_code());

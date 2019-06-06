@@ -5,7 +5,7 @@ use super::cnativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
-use super::gc::Gc;
+
 use super::record::Record;
 use super::value::Value;
 use super::vm::Vm;
