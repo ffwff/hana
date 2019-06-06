@@ -15,6 +15,7 @@ use super::exframe::ExFrame;
 use super::function::Function;
 use super::gc::*;
 use super::record::Record;
+use super::value::Value;
 
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
@@ -128,13 +129,13 @@ pub enum VmOpcode {
 #[repr(C)]
 pub struct Vm {
     ip: u32, // current instruction pointer
-    localenv: Option<NonNull<Env>>,
     // pointer to current stack frame
-    localenv_bp: *mut Env, // rust owns this, so drop it pls
+    localenv: Option<NonNull<Env>>,
     // pointer to start of pool of stack frames
-    globalenv: Option<Box<CHashMap>>,
+    localenv_bp: *mut Env,
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
+    globalenv: Option<Box<CHashMap>>,
     exframes: Option<Vec<ExFrame>>, // exception frame
     pub code: Option<Vec<u8>>,      // where all the code is
     pub stack: Vec<NativeValue>,    // stack
@@ -238,11 +239,20 @@ impl Vm {
     pub fn gc_disable(&self) {
         self.gc_manager.as_ref().unwrap().borrow_mut().disable()
     }
+
     pub fn gc_enable(&self) {
         self.gc_manager.as_ref().unwrap().borrow_mut().enable()
     }
 
-    pub(crate) unsafe fn gc_new_gray_node_stack(&self) -> Vec<*mut GcNode> {
+    pub unsafe fn stack_push_gray(&mut self, val: Value) {
+        let w = val.wrap();
+        if let Some(ptr) = w.as_pointer() {
+            self.gc_manager.as_ref().unwrap().borrow_mut().push_gray_body(ptr);
+        }
+        self.stack.push(w);
+    }
+
+    pub unsafe fn gc_new_gray_node_stack(&self) -> Vec<*mut GcNode> {
         let mut vec = Vec::new();
         for (_, val) in self.global().iter() {
             if let Some(ptr) = val.as_pointer() {

@@ -105,6 +105,10 @@ impl GcManager {
         }
     }
 
+    pub unsafe fn push_gray_body(&mut self, ptr: *mut c_void) {
+        push_gray_body(&mut self.gray_nodes, ptr)
+    }
+
     // state
     pub fn enable(&mut self) {
         self.enabled = true;
@@ -123,6 +127,7 @@ impl GcManager {
         let gray_nodes = std::mem::replace(&mut self.gray_nodes, Vec::new());
         for node in gray_nodes.iter() {
             let body = node.add(1) as *mut c_void;
+            //eprintln!("{:p}", node);
             (**node).color = GcNodeColor::Black;
             ((**node).tracer)(body, std::mem::transmute(&mut self.gray_nodes));
         }
@@ -130,41 +135,13 @@ impl GcManager {
         // nothing left to traverse, sweeping phase:
         if self.gray_nodes.is_empty() && self.bytes_allocated > self.threshold {
             let mut prev: *mut GcNode = null_mut();
-            // don't sweep nodes with at least one native reference
-            let mut node = self.first_node;
-            while !node.is_null() {
-                let next: *mut GcNode = (*node).next;
-                let ptr = node.add(1) as *mut c_void;
-                if (*node).native_refs > 0 && (*node).color != GcNodeColor::Black {
-                    //eprintln!("{:p}", node);
-                    // get its children and subchildren
-                    let mut children: Vec<*mut GcNode> = Vec::new();
-                    ((*node).tracer)(std::mem::transmute(ptr), std::mem::transmute(&mut children));
-                    let mut i = 0;
-                    while i < children.len() {
-                        let node = children[i];
-                        ((*node).tracer)(
-                            std::mem::transmute(ptr),
-                            std::mem::transmute(&mut children),
-                        );
-                        i += 1;
-                    }
-                    // color them black
-                    //eprintln!("children: {:?}", children);
-                    for child in children {
-                        (*child).color = GcNodeColor::Black;
-                    }
-                }
-                node = next;
-            }
             // sweep
-            node = self.first_node;
+            let mut node = self.first_node;
             while !node.is_null() {
                 let next: *mut GcNode = (*node).next;
                 let mut freed = false;
                 if (*node).native_refs == 0 && (*node).color == GcNodeColor::White {
                     freed = true;
-                    //eprintln!("free {:p}", node);
                     let body = node.add(1);
 
                     // remove from ll

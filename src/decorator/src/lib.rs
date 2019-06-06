@@ -132,10 +132,10 @@ pub fn hana_function(_args: TokenStream, item: TokenStream) -> TokenStream {
                 #(#args_setup)*
                 #body
             }
-            let result : Value = #name(vm);
+            let result = #name(vm);
             match result {
                 Value::PropagateError => (),
-                _ => vm.stack.push(result.wrap()),
+                _ => unsafe{ vm.stack_push_gray(result) },
             }
         }
     )
