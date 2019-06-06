@@ -142,6 +142,7 @@ impl GcManager {
                 let mut freed = false;
                 if (*node).native_refs == 0 && (*node).color == GcNodeColor::White {
                     freed = true;
+                    //eprintln!("free {:p}", node);
                     let body = node.add(1);
 
                     // remove from ll
@@ -162,6 +163,8 @@ impl GcManager {
                     // free memory
                     let layout = Layout::from_size_align((*node).size, 2).unwrap();
                     dealloc(node as *mut u8, layout);
+                } else if (*node).native_refs != 0 {
+                    self.gray_nodes.push(node);
                 } else {
                     (*node).color = GcNodeColor::White;
                 }
@@ -170,8 +173,7 @@ impl GcManager {
                 }
                 node = next;
             }
-            // reset all root nodes to gray
-            self.gray_nodes = vm.gc_new_gray_node_stack();
+            self.gray_nodes.extend(vm.gc_new_gray_node_stack());
 
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
@@ -311,6 +313,7 @@ pub unsafe fn ref_dec(ptr: *mut c_void) {
 
 pub unsafe fn push_gray_body(gray_nodes: &mut Vec<*mut GcNode>, ptr: *mut c_void) {
     let node: *mut GcNode = (ptr as *mut GcNode).sub(1);
+    //eprintln!("node: {:p}", node);
     if (*node).color == GcNodeColor::Black || (*node).color == GcNodeColor::Gray {
         return;
     }
