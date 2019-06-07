@@ -183,9 +183,6 @@ impl GcManager {
     }
 }
 
-unsafe impl std::marker::Send for GcManager {}
-unsafe impl std::marker::Sync for GcManager {}
-
 impl std::ops::Drop for GcManager {
     fn drop(&mut self) {
         unsafe {

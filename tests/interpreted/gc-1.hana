@@ -1,7 +1,9 @@
-//function main() begin
-'x'
-args = Sys::args()
-inf = ""
-for i=0 to 2 then inf += 'a'
-chars = inf.chars()
-s = 'a' + 'b'
+function main() begin
+    args = Sys::args()
+    inf = ""
+    for i=0 to 30 then inf += 'a'
+    chars = inf.chars()
+    s = 'a' + 'b'
+end
+
+main()
