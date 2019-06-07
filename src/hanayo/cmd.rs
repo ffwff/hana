@@ -28,7 +28,7 @@ fn constructor(val: Value::Any) -> Value {
                 rec.as_mut().insert("where", Value::Int(0).wrap());
                 hana_raise!(vm, Value::Record(rec));
             }
-            let mut cmd = Command::new(match arr[0].unwrap() {
+            let mut cmd = Command::new(match unsafe{ arr[0].unwrap() } {
                 Value::Str(s) => s.as_ref().clone(),
                 _ => {
                     let rec = vm.malloc(Record::new());
@@ -49,7 +49,7 @@ fn constructor(val: Value::Any) -> Value {
             if arr.len() > 1 {
                 let slice = &arr.as_slice()[1..];
                 for val in slice {
-                    match val.unwrap() {
+                    match unsafe{ val.unwrap() } {
                         Value::Str(s) => cmd.arg(s.as_ref().clone()),
                         _ => {
                             let rec = vm.malloc(Record::new());
@@ -164,7 +164,7 @@ fn get_output(cmd: &mut Record, wait: bool) -> OutputResult {
         .spawn()
         .unwrap();
     if let Some(val) = cmd.get(&"input_buffer".to_string()) {
-        match val.unwrap() {
+        match unsafe{ val.unwrap() } {
             Value::Str(s) => {
                 p.stdin.as_mut().unwrap().write_all(s.as_ref().as_bytes());
             }

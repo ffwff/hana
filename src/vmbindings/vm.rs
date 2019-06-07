@@ -371,7 +371,7 @@ impl Vm {
         if self.exframes().len() == 0 {
             return false;
         }
-        let val = self.stack.last().unwrap().unwrap();
+        let val = unsafe{ self.stack.last().unwrap().unwrap() };
         for exframe in self.exframes.as_ref().unwrap().iter() {
             if let Some(handler) = exframe.get_handler(self, &val) {
                 self.ip = handler.ip;

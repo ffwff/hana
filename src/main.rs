@@ -175,7 +175,7 @@ fn handle_error(vm: &Vm, c: &compiler::Compiler) -> bool {
             println!("interpreter error: {}", vm.error);
             return true;
         }
-        if let Some(hint) = vm.error.hint(vm) {
+        if let Some(hint) = unsafe{ vm.error.hint(vm) } {
             eprintln!("{} {}", ac::Red.bold().paint("hint:"), hint);
         }
         let envs = vm.localenv_to_vec();
@@ -242,7 +242,7 @@ fn repl(flag: ParserFlag) {
                                     expr_stmt.expr.emit(c)?;
                                     return Ok(true);
                                 } else {
-                                    stmt.emit(c);
+                                    stmt.emit(c)?;
                                 }
                             } else {
                                 for stmt in prog {
@@ -252,6 +252,7 @@ fn repl(flag: ParserFlag) {
                             Ok(false)
                         };
                         // setup
+                        #[allow(unused_assignments)]
                         let mut pop_print = false;
                         if vm.code.is_none() {
                             match gencode(&mut c) {
@@ -288,7 +289,7 @@ fn repl(flag: ParserFlag) {
                             }
                         }
                         if !handle_error(&vm, &c) && pop_print {
-                            println!("=> {:?}", vm.stack.pop().unwrap().unwrap());
+                            println!("=> {:?}", unsafe{ vm.stack.pop().unwrap().unwrap() });
                         }
                     }
                     Err(err) => {

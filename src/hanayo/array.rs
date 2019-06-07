@@ -49,7 +49,7 @@ fn push(array: Value::Array, elem: Value::Any) -> Value {
 
 #[hana_function()]
 fn pop(array: Value::Array) -> Value {
-    array.as_mut().pop().unwrap().unwrap()
+    unsafe{ array.as_mut().pop().unwrap().unwrap() }
 }
 
 extern "C" {
@@ -61,12 +61,15 @@ extern "C" {
 fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
     let left = left.clone();
     let right = right.clone();
-    if unsafe { value_gt(left, right) }.unwrap().int() == 1 {
-        Ordering::Greater
-    } else if unsafe { value_lt(left, right) }.unwrap().int() == 1 {
-        Ordering::Less
-    } else {
-        Ordering::Equal
+
+    match unsafe { value_gt(left, right).unwrap() } {
+        Value::Int(1) => Ordering::Greater,
+        _ => {
+            match unsafe { value_lt(left, right).unwrap() } {
+                Value::Int(1) => Ordering::Less,
+                _ => Ordering::Equal
+            }
+        }
     }
 }
 
@@ -109,7 +112,7 @@ fn filter(array: Value::Array, fun: Value::Any) -> Value {
         args.clear();
         args.push(val.clone());
         if let Some(filter) = vm.call(fun.wrap(), &args) {
-            if filter.unwrap().is_true(vm) {
+            if unsafe{ filter.unwrap() }.is_true(vm) {
                 new_array.as_mut().push(val.clone());
             }
         } else {
@@ -128,7 +131,7 @@ fn reduce(array: Value::Array, fun: Value::Any, acc_: Value::Any) -> Value {
         args.push(acc.wrap().clone());
         args.push(val.clone());
         if let Some(val) = vm.call(fun.wrap(), &args) {
-            acc = val.unwrap();
+            acc = unsafe{ val.unwrap() };
         } else {
             return Value::PropagateError;
         }
@@ -144,8 +147,9 @@ extern "C" {
 fn index(array: Value::Array, elem: Value::Any) -> Value {
     let array = array.as_ref();
     for i in 0..(array.len() - 1) {
-        if unsafe { value_eq(array[i], elem.wrap()) }.unwrap().int() == 1 {
-            return Value::Int(i as i64);
+        match unsafe { value_eq(array[i], elem.wrap()).unwrap() } {
+            Value::Int(1) => return Value::Int(i as i64),
+            _ => (),
         }
     }
     Value::Int(-1)
@@ -157,13 +161,13 @@ fn join(array: Value::Array, delim: Value::Str) -> Value {
     let mut s = String::new();
     let array = array.as_ref();
     if array.len() > 0 {
-        s += format!("{}", array[0].unwrap()).as_str();
+        s += unsafe{ format!("{}", array[0].unwrap()).as_str() };
     }
     if array.len() > 1 {
         let mut i = 1;
         while i < array.len() {
             s += delim.as_ref();
-            s += format!("{}", array[i].unwrap()).as_str();
+            s += unsafe{ format!("{}", array[i].unwrap()).as_str() };
             i += 1;
         }
     }

@@ -32,26 +32,26 @@ pub struct NativeValue {
 
 impl NativeValue {
     /// Converts the native value into a wrapped Value.
-    pub fn unwrap(&self) -> Value {
+    pub unsafe fn unwrap(&self) -> Value {
         use std::mem::transmute;
         #[allow(non_camel_case_types)]
         match &self.r#type {
             NativeValueType::TYPE_NIL => Value::Nil,
-            NativeValueType::TYPE_INT => unsafe { Value::Int(transmute::<u64, i64>(self.data)) },
+            NativeValueType::TYPE_INT => { Value::Int(transmute::<u64, i64>(self.data)) },
             NativeValueType::TYPE_FLOAT => Value::Float(f64::from_bits(self.data)),
-            NativeValueType::TYPE_NATIVE_FN => unsafe {
+            NativeValueType::TYPE_NATIVE_FN => {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
             },
-            NativeValueType::TYPE_FN => unsafe {
+            NativeValueType::TYPE_FN => {
                 Value::Fn(Gc::from_raw(self.data as *mut Function))
             },
-            NativeValueType::TYPE_STR => unsafe {
+            NativeValueType::TYPE_STR => {
                 Value::Str(Gc::from_raw(self.data as *mut String))
             },
-            NativeValueType::TYPE_DICT => unsafe {
+            NativeValueType::TYPE_DICT => {
                 Value::Record(Gc::from_raw(self.data as *mut Record))
             },
-            NativeValueType::TYPE_ARRAY => unsafe {
+            NativeValueType::TYPE_ARRAY => {
                 Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
             },
             _ => panic!("type was: {:?}", self.r#type),

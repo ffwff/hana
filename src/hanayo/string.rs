@@ -12,7 +12,7 @@ pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
         vm.stack.push(Value::Str(vm.malloc(String::new())).wrap());
         return;
     } else if nargs == 1 {
-        let arg = vm.stack.pop().unwrap().unwrap();
+        let arg = unsafe{ vm.stack.pop().unwrap().unwrap() };
         vm.stack
             .push(Value::Str(vm.malloc(format!("{}", arg).to_string())).wrap());
     } else {

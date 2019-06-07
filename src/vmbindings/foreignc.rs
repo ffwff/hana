@@ -364,7 +364,7 @@ mod foreignc {
     // #region value
     #[no_mangle]
     #[allow(safe_packed_borrows)]
-    pub extern "C" fn value_print(val: NativeValue) {
+    pub unsafe extern "C" fn value_print(val: NativeValue) {
         if (val.r#type as u8) < 127 {
             eprint!("{:?}", val.unwrap());
         } else {

@@ -38,58 +38,6 @@ extern "C" {
 }
 
 impl Value {
-    // #region coerce value to type
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn int(&self) -> i64 {
-        match self {
-            Value::Int(s) => *s,
-            _ => {
-                panic!("Expected integer");
-            }
-        }
-    }
-
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn float(&self) -> f64 {
-        match self {
-            Value::Float(s) => *s,
-            _ => {
-                panic!("Expected float");
-            }
-        }
-    }
-
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn string(&self) -> &'static String {
-        match self {
-            Value::Str(s) => unsafe { &*s.to_raw() },
-            _ => {
-                panic!("Expected string");
-            }
-        }
-    }
-
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn array(&self) -> &'static Vec<NativeValue> {
-        match self {
-            Value::Array(s) => unsafe { &*s.to_raw() },
-            _ => {
-                panic!("Expected array");
-            }
-        }
-    }
-
-    #[cfg_attr(tarpaulin, skip)]
-    pub fn record(&self) -> &'static Record {
-        match self {
-            Value::Record(rec) => unsafe { &*rec.to_raw() },
-            _ => {
-                panic!("Expected record");
-            }
-        }
-    }
-    // #endregion
-
     // wrapper for native
     pub fn wrap(&self) -> NativeValue {
         use std::mem::transmute;

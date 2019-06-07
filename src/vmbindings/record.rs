@@ -54,12 +54,12 @@ impl Record {
     {
         let k: String = k.to_string();
         if k == "prototype" {
-            self.prototype = match &v.unwrap() {
+            self.prototype = unsafe{ match &v.unwrap() {
                 // since the borrow checker doesn't know that self.prototype
                 // can last as long as self, we'll have to use unsafe
-                Value::Record(x) => Some(unsafe { &*x.to_raw() }),
+                Value::Record(x) => Some(&*x.to_raw()),
                 _ => None,
-            };
+            } };
         }
         self.data.insert(k, v);
     }

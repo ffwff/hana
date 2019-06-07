@@ -62,7 +62,7 @@ impl VmError {
         }
     }
 
-    pub fn hint(&self, vm: &Vm) -> Option<String> {
+    pub unsafe fn hint(&self, vm: &Vm) -> Option<String> {
         match self {
             VmError::ERROR_OP_ADD
             | VmError::ERROR_OP_SUB
