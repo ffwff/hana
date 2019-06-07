@@ -808,6 +808,10 @@ Otherwise the garbage collector will handle it as normal.
 
 Upon exit the virtual machine will release all memory that is managed by the garbage collector.
 
+**Note:** all objects allocated by the virtual machine through `vm.malloc()` lasts as long as the virtual machine.
+
+**Do not** use these GC-allocated outside of the virtual machine's lifetime!
+
 ## Native functions
 
 Native functions callable from the virtual machine must have the following signature:

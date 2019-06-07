@@ -283,7 +283,7 @@ use super::cnativeval::NativeValue;
 impl GcTraceable for Vec<NativeValue> {
     unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {
         for val in self.iter() {
-            if let Some(ptr) = val.as_pointer() {
+            if let Some(ptr) = val.as_gc_pointer() {
                 push_gray_body(gray_nodes, ptr);
             }
         }

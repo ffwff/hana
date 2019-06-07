@@ -84,7 +84,7 @@ impl Record {
 impl GcTraceable for Record {
     unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {
         for (_, val) in self.iter() {
-            if let Some(ptr) = val.as_pointer() {
+            if let Some(ptr) = val.as_gc_pointer() {
                 push_gray_body(gray_nodes, ptr);
             }
         }

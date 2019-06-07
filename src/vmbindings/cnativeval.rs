@@ -58,7 +58,7 @@ impl NativeValue {
         }
     }
 
-    pub fn as_pointer(&self) -> Option<*mut libc::c_void> {
+    pub fn as_gc_pointer(&self) -> Option<*mut libc::c_void> {
         #[allow(non_camel_case_types)]
         match self.r#type {
             NativeValueType::TYPE_FN

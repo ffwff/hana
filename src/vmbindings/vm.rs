@@ -246,7 +246,7 @@ impl Vm {
 
     pub unsafe fn stack_push_gray(&mut self, val: Value) {
         let w = val.wrap();
-        if let Some(ptr) = w.as_pointer() {
+        if let Some(ptr) = w.as_gc_pointer() {
             self.gc_manager.as_ref().unwrap().borrow_mut().push_gray_body(ptr);
         }
         self.stack.push(w);
@@ -255,14 +255,14 @@ impl Vm {
     pub unsafe fn gc_new_gray_node_stack(&self) -> Vec<*mut GcNode> {
         let mut vec = Vec::new();
         for (_, val) in self.global().iter() {
-            if let Some(ptr) = val.as_pointer() {
+            if let Some(ptr) = val.as_gc_pointer() {
                 push_gray_body(&mut vec, ptr);
             }
         }
         // stack
         let stack = &self.stack;
         for val in stack.iter() {
-            if let Some(ptr) = val.as_pointer() {
+            if let Some(ptr) = val.as_gc_pointer() {
                 push_gray_body(&mut vec, ptr);
             }
         }
@@ -271,16 +271,16 @@ impl Vm {
             let mut env = self.localenv_bp;
             let localenv = localenv.as_ptr();
             while env != localenv {
-                for val in (*env).slots.as_slice().iter() {
-                    if let Some(ptr) = (*val).as_pointer() {
+                for val in (*env).slots.iter() {
+                    if let Some(ptr) = (*val).as_gc_pointer() {
                         push_gray_body(&mut vec, ptr);
                     }
                 }
                 env = env.add(1);
             }
             env = localenv;
-            for val in (*env).slots.as_slice().iter() {
-                if let Some(ptr) = (*val).as_pointer() {
+            for val in (*env).slots.iter() {
+                if let Some(ptr) = (*val).as_gc_pointer() {
                     push_gray_body(&mut vec, ptr);
                 }
             }
