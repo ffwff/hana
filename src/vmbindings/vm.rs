@@ -16,7 +16,7 @@ use super::function::Function;
 use super::gc::*;
 use super::record::Record;
 use super::value::Value;
-use super::internedstringmap::InternedStringMap;
+use super::interned_string_map::InternedStringMap;
 
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
@@ -543,7 +543,7 @@ impl Vm {
         let rc = self.modules_info.clone().unwrap();
 
         let pathobj = if path.starts_with("./") {
-            let mut c = rc.borrow_mut();
+            let c = rc.borrow_mut();
             let last_path = c.files.last().unwrap();
             let curpath = Path::new(&last_path);
             let mut pathobj = if let Some(parent) = curpath.parent() {
