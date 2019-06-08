@@ -16,13 +16,14 @@ use super::function::Function;
 use super::gc::*;
 use super::record::Record;
 use super::value::Value;
-use super::internedstringmap::InternedStringMap;
+use super::interned_string_map::InternedStringMap;
 
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
 use crate::hanayo::HanayoCtx;
 
 extern crate num_derive;
+use num_traits::FromPrimitive;
 
 const CALL_STACK_SIZE: usize = 512;
 
@@ -212,11 +213,50 @@ impl Vm {
     }
 
     pub fn execute(&mut self) {
-        if self.code.is_none() {
-            panic!("calling with nil code");
-        }
-        unsafe {
-            vm_execute(self);
+        let code = self.code.as_ref().unwrap();
+        loop {
+            match unsafe {
+                if let Some(op) = VmOpcode::from_u8(*code.get_unchecked(self.ip as usize)) {
+                    eprintln!("{:?}", op);
+                    op
+                } else {
+                    unreachable!()
+                }
+            } {
+                VmOpcode::OP_HALT => {
+                    return;
+                }
+                // stack manip
+                // #region push uint family
+                VmOpcode::OP_PUSH8 => {
+                    self.ip += 1;
+                    let num = unsafe{ *code.get_unchecked(self.ip as usize) };
+                    self.stack.push(Value::Int(num as i64).wrap());
+                    self.ip += 1;
+                }
+                // #endregion
+
+                // #region arithmetic
+                VmOpcode::OP_ADD => {
+                    self.ip += 1;
+                    let left  = unsafe{ self.stack.pop().unwrap().unwrap() };
+                    let right = unsafe{ self.stack.pop().unwrap().unwrap() };
+                    let retval = match left {
+                        Value::Int(x) => {
+                            match right {
+                                Value::Int(y) => {
+                                    Value::Int(x + y)
+                                }
+                                _ => unimplemented!()
+                            }
+                        }
+                        _ => unimplemented!()
+                    };
+                    self.stack.push(retval.wrap());
+                }
+                // #endregion
+                op => unimplemented!("{:?}", op)
+            }
         }
     }
 
