@@ -276,7 +276,7 @@ dependencies = [
  "ansi_term 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cc 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
  "cfg-if 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "haru-decorator 0.2.3",
+ "haru-decorator 0.21.0",
  "jemallocator 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.58 (registry+https://github.com/rust-lang/crates.io-index)",
  "libffi-sys 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -289,7 +289,7 @@ dependencies = [
 
 [[package]]
 name = "haru-decorator"
-version = "0.2.3"
+version = "0.21.0"
 dependencies = [
  "proc-macro2 0.4.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.6.12 (registry+https://github.com/rust-lang/crates.io-index)",
