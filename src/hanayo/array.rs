@@ -1,7 +1,7 @@
 //! Provides Array record for handling arrays
 use std::cmp::Ordering;
 
-use crate::vmbindings::cnativeval::NativeValue;
+use crate::vmbindings::nativeval::NativeValue;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 

@@ -1,7 +1,7 @@
 //! Bindings for the virtual machine.
 
-pub mod chmap;
-pub mod cnativeval;
+pub mod hmap;
+pub mod nativeval;
 pub mod env;
 pub mod exframe;
 mod foreignc;

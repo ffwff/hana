@@ -279,7 +279,7 @@ impl GcTraceable for String {
     unsafe fn trace(&self, _manager: &mut Vec<*mut GcNode>) {}
 }
 
-use super::cnativeval::NativeValue;
+use super::nativeval::NativeValue;
 impl GcTraceable for Vec<NativeValue> {
     unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {
         for val in self.iter() {

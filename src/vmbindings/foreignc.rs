@@ -1,7 +1,7 @@
 //! Foreign C bindings for the virtual machine
 
-use super::chmap::CHashMap;
-use super::cnativeval::NativeValue;
+use super::hmap::CHashMap;
+use super::nativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;

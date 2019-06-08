@@ -1,6 +1,6 @@
 //! Provides the stack frame for the virtual machine
 
-use super::cnativeval::NativeValue;
+use super::nativeval::NativeValue;
 use super::value::Value;
 
 #[derive(Clone)]

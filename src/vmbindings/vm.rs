@@ -8,8 +8,8 @@ use std::rc::Rc;
 
 extern crate libc;
 
-use super::chmap::CHashMap;
-use super::cnativeval::{NativeValue, NativeValueType};
+use super::hmap::CHashMap;
+use super::nativeval::{NativeValue, NativeValueType};
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;

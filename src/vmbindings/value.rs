@@ -1,6 +1,6 @@
 //! Provides an abstraction for native values
 
-use super::cnativeval::{NativeValue, NativeValueType};
+use super::nativeval::{NativeValue, NativeValueType};
 use super::function::Function;
 use super::gc::Gc;
 use super::record::Record;
