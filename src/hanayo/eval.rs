@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use crate::ast;
 use crate::compiler::{Compiler, ModulesInfo};
 use crate::vmbindings::value::Value;
-use crate::vmbindings::internedstringmap::InternedStringMap;
+use crate::vmbindings::interned_string_map::InternedStringMap;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vm::VmOpcode;
 

@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::vmbindings::vm::{Vm, VmOpcode};
-use crate::vmbindings::internedstringmap::InternedStringMap;
+use crate::vmbindings::interned_string_map::InternedStringMap;
 
 struct Scope {
     vars: Vec<String>,
