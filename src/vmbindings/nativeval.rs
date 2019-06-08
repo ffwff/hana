@@ -20,6 +20,7 @@ pub enum NativeValueType {
     TYPE_DICT = 6,
     TYPE_ARRAY = 7,
     TYPE_INTERPRETER_ERROR = 127,
+    TYPE_INTERPRETER_ITERATOR = 128,
 }
 
 #[repr(C, packed)]

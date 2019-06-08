@@ -363,13 +363,15 @@ mod foreignc {
 
     // #region value
     #[no_mangle]
+    unsafe extern "C" fn vm_get_interned_string(cvm: *const Vm, i: u16) -> *mut String {
+        let vm = &*cvm;
+        vm.malloc(vm.get_interned_string(i)).into_raw()
+    }
+
+    #[no_mangle]
     #[allow(safe_packed_borrows)]
-    pub unsafe extern "C" fn value_print(val: NativeValue) {
-        if (val.r#type as u8) < 127 {
-            eprint!("{:?}", val.unwrap());
-        } else {
-            eprint!("[interpreter {}]", val.data);
-        }
+    unsafe extern "C" fn value_print(val: NativeValue) {
+        //eprint!("{:?}", val.unwrap());
     }
     // #endregion
 

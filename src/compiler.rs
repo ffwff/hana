@@ -83,12 +83,12 @@ impl Compiler {
         }
     }
 
-    pub fn new_append(code: Vec<u8>) -> Compiler {
+    pub fn new_append(code: Vec<u8>, modules_info: Rc<RefCell<ModulesInfo>>) -> Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(code),
-            modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
+            modules_info,
         }
     }
 

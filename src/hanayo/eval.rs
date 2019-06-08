@@ -1,6 +1,8 @@
 //! Provides eval function for dynamically evaluating source code
+use std::rc::Rc;
+use std::cell::RefCell;
 use crate::ast;
-use crate::compiler::Compiler;
+use crate::compiler::{Compiler, ModulesInfo};
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vm::VmOpcode;
@@ -10,7 +12,7 @@ fn eval(s: Value::Str) -> Value {
     let s = s.as_ref();
     if let Ok(prog) = ast::grammar::start(&s) {
         let target_ip = vm.code.as_ref().unwrap().len() as u32;
-        let mut c = Compiler::new_append(vm.code.take().unwrap());
+        let mut c = Compiler::new_append(vm.code.take().unwrap(), Rc::new(RefCell::new(ModulesInfo::new())));
         // generate code
         for stmt in prog {
             if stmt.emit(&mut c).is_err() {

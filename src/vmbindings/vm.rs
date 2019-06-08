@@ -16,6 +16,7 @@ use super::function::Function;
 use super::gc::*;
 use super::record::Record;
 use super::value::Value;
+use super::internedstringmap::InternedStringMap;
 
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
@@ -155,6 +156,7 @@ pub struct Vm {
     native_call_depth: usize,
 
     // rust-specific fields
+    interned_strings: InternedStringMap,
     pub modules_info: Option<Rc<RefCell<ModulesInfo>>>,
     pub(crate) stdlib: Option<HanayoCtx>,
     gc_manager: Option<RefCell<GcManager>>,
@@ -193,6 +195,7 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: None,
             native_call_depth: 0,
+            interned_strings: InternedStringMap::new(),
             modules_info,
             stdlib: None,
             gc_manager: Some(RefCell::new(GcManager::new())),
@@ -214,6 +217,11 @@ impl Vm {
         unsafe {
             vm_execute(self);
         }
+    }
+
+    // interned string
+    pub unsafe fn get_interned_string(&self, i: u16) -> String {
+        self.interned_strings.get_unchecked(i).clone()
     }
 
     // globals
@@ -440,6 +448,7 @@ impl Vm {
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
+            interned_strings: std::mem::replace(&mut self.interned_strings, InternedStringMap::new()),
             exframe_fallthrough: self.exframe_fallthrough.take(),
             native_call_depth: self.native_call_depth,
             modules_info: None,
@@ -531,9 +540,9 @@ impl Vm {
         use std::io::Read;
 
         let rc = self.modules_info.clone().unwrap();
-        let mut c = rc.borrow_mut();
 
         let pathobj = if path.starts_with("./") {
+            let mut c = rc.borrow_mut();
             let last_path = c.files.last().unwrap();
             let curpath = Path::new(&last_path);
             let mut pathobj = if let Some(parent) = curpath.parent() {
@@ -568,23 +577,23 @@ impl Vm {
             }
         };
 
-        if c.modules_loaded.contains(&pathobj) {
+        if rc.borrow_mut().modules_loaded.contains(&pathobj) {
             return;
         } else {
-            c.modules_loaded.insert(pathobj.clone());
+            rc.borrow_mut().modules_loaded.insert(pathobj.clone());
         }
 
         if let Ok(mut file) = std::fs::File::open(pathobj) {
             let mut s = String::new();
             file.read_to_string(&mut s).unwrap();
             let prog = ast::grammar::start(&s).unwrap();
-            c.files.push(path.to_string());
-            c.sources.push(s);
+            rc.borrow_mut().files.push(path.to_string());
+            rc.borrow_mut().sources.push(s);
 
             let importer_ip = self.ip;
             let imported_ip = self.code.as_ref().unwrap().len();
             {
-                let mut c = Compiler::new_append(self.code.take().unwrap());
+                let mut c = Compiler::new_append(self.code.take().unwrap(), rc);
                 for stmt in prog {
                     stmt.emit(&mut c).unwrap();
                 }
