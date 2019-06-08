@@ -1,6 +1,6 @@
 //! Foreign C bindings for the virtual machine
 
-use super::hmap::CHashMap;
+use super::hmap::HaruHashMap;
 use super::nativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
@@ -40,7 +40,7 @@ mod foreignc {
     // #region hmap
     #[no_mangle]
     unsafe extern "C" fn hmap_get(
-        chm: *const CHashMap, ckey: *const libc::c_char,
+        chm: *const HaruHashMap, ckey: *const libc::c_char,
     ) -> *const NativeValue {
         let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
         let hm = &*chm;
@@ -53,7 +53,7 @@ mod foreignc {
 
     #[no_mangle]
     unsafe extern "C" fn hmap_set(
-        chm: *mut CHashMap, ckey: *const libc::c_char, val: NativeValue,
+        chm: *mut HaruHashMap, ckey: *const libc::c_char, val: NativeValue,
     ) {
         let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
         let hm = &mut *chm;

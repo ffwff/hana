@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 extern crate libc;
 
-use super::hmap::CHashMap;
+use super::hmap::HaruHashMap;
 use super::nativeval::{NativeValue, NativeValueType};
 use super::env::Env;
 use super::exframe::ExFrame;
@@ -135,7 +135,7 @@ pub struct Vm {
     localenv_bp: *mut Env,
     // global environment, all unscoped variables/variables
     // starting with '$' should also be stored here without '$'
-    globalenv: Option<Box<CHashMap>>,
+    globalenv: Option<Box<HaruHashMap>>,
     exframes: Option<Vec<ExFrame>>, // exception frame
     pub code: Option<Vec<u8>>,      // where all the code is
     pub stack: Vec<NativeValue>,    // stack
@@ -180,7 +180,7 @@ impl Vm {
                 let layout = Layout::from_size_align(size_of::<Env>() * CALL_STACK_SIZE, 4);
                 unsafe { alloc(layout.unwrap()) as *mut Env }
             },
-            globalenv: Some(Box::new(CHashMap::new())),
+            globalenv: Some(Box::new(HaruHashMap::new())),
             exframes: Some(Vec::with_capacity(2)),
             code,
             stack: Vec::with_capacity(2),
@@ -217,12 +217,12 @@ impl Vm {
     }
 
     // globals
-    pub fn global(&self) -> &CHashMap {
+    pub fn global(&self) -> &HaruHashMap {
         use std::borrow::Borrow;
         self.globalenv.as_ref().unwrap().borrow()
     }
 
-    pub fn mut_global(&mut self) -> &mut CHashMap {
+    pub fn mut_global(&mut self) -> &mut HaruHashMap {
         use std::borrow::BorrowMut;
         self.globalenv.as_mut().unwrap().borrow_mut()
     }

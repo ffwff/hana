@@ -1,6 +1,6 @@
 //! Provides a record value in Hana
 
-use super::hmap::CHashMap;
+use super::hmap::HaruHashMap;
 use super::nativeval::NativeValue;
 use super::gc::{push_gray_body, GcNode, GcTraceable};
 use super::value::Value;
@@ -11,7 +11,7 @@ use std::hash::Hash;
 
 /// A record value in Hana
 pub struct Record {
-    data: CHashMap,
+    data: HaruHashMap,
     prototype: Option<&'static Record>,
     // it says static but it lasts as long as Record, see below!
     /// Dynamic field for use in native functions
