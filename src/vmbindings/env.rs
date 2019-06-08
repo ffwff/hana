@@ -3,25 +3,26 @@
 use super::nativeval::NativeValue;
 use super::value::Value;
 
+#[repr(C)]
 #[derive(Clone)]
 /// Stack frame for the virtual machine
 pub struct Env {
+    /// Cached number of args the function was called with
+    pub nargs: u16,
+
+    /// Instruction pointer to return to on OP_RET
+    pub retip: u32,
+
     /// Local variable storage
     ///
     /// Slot indexes access SHOULD be bounded
     /// whenever the script is compiled to bytecode
     pub slots: Vec<NativeValue>,
 
-    /// Cached number of args the function was called with
-    pub nargs: u16,
-
     /// Lexical parent of the current environment
     ///
     /// This is used for getting values on the previous stack frame.
     pub lexical_parent: *const Env,
-
-    /// Instruction pointer to return to on OP_RET
-    pub retip: u32,
 }
 
 impl Env {
