@@ -26,9 +26,10 @@ impl InternedStringMap {
                 .next();
         if let Some((idx, _)) = it {
             Some(idx as u16)
+        } else if self.data.len() > MAX_LENGTH {
+            None
         } else {
             self.data.push(String::from(s));
-            assert!(self.data.len() < MAX_LENGTH);
             Some((self.data.len() - 1) as u16)
         }
     }
