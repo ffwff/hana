@@ -12,7 +12,7 @@ enum vm_opcode {
     OP_HALT,
     // stack manip
     OP_PUSH8, OP_PUSH16, OP_PUSH32, OP_PUSH64,
-    OP_PUSH_NIL, OP_PUSHSTR, OP_PUSHF64,
+    OP_PUSH_NIL, OP_PUSHSTR, OP_PUSHSTR_INTERNED, OP_PUSHF64,
     OP_POP,
     // arith
     OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD,
@@ -107,14 +107,16 @@ struct vm {
 };
 
 void vm_execute(struct vm*);
-typedef array(struct value) a_arguments;
+
+struct string;
+struct string *vm_get_interned_string(const struct vm*, const uint16_t n);
 
 struct exframe *vm_enter_exframe(struct vm *);
 bool vm_leave_exframe(struct vm *);
 bool vm_raise(struct vm *);
 
 struct function;
-struct value vm_call(struct vm *, const struct value, const a_arguments*);
+struct value vm_call(struct vm *, const struct value, const a_value*);
 struct env *vm_enter_env(struct vm *, struct function *);
 struct env *vm_enter_env_tail(struct vm *, struct function *);
 bool vm_leave_env(struct vm *);

@@ -57,7 +57,7 @@ void vm_execute(struct vm *vm) {
         X(OP_HALT),
         // stack manip
         X(OP_PUSH8), X(OP_PUSH16), X(OP_PUSH32), X(OP_PUSH64),
-        X(OP_PUSH_NIL), X(OP_PUSHSTR), X(OP_PUSHF64),
+        X(OP_PUSH_NIL), X(OP_PUSHSTR), X(OP_PUSHSTR_INTERNED), X(OP_PUSHF64),
         X(OP_POP),
         // arith
         X(OP_ADD), X(OP_SUB), X(OP_MUL), X(OP_DIV), X(OP_MOD),
@@ -162,6 +162,16 @@ void vm_execute(struct vm *vm) {
         vm->ip += (uint32_t)strlen(str) + 1;
         LOG("PUSH %s\n", str);
         array_push(vm->stack, value_str(str, vm));
+        dispatch();
+    }
+
+    doop(OP_PUSHSTR_INTERNED) : {
+        vm->ip++;
+        const uint16_t n = (uint16_t)(vm->code.data[vm->ip + 0] << 8 |
+                                      vm->code.data[vm->ip + 1]);
+        vm->ip += (uint32_t)sizeof(n);
+        LOG("PUSHSTR_INTERED %d\n", n);
+        array_push(vm->stack, value_pointer(TYPE_STR, vm_get_interned_string(vm, n)));
         dispatch();
     }
 
@@ -997,7 +1007,7 @@ void vm_execute(struct vm *vm) {
     }
 }
 
-struct value vm_call(struct vm *vm, const struct value fn, const a_arguments *args) {
+struct value vm_call(struct vm *vm, const struct value fn, const a_value *args) {
     struct function *ifn = NULL;
     const uint16_t nargs = args->length;
 

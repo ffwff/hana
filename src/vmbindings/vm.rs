@@ -60,6 +60,7 @@ pub enum VmOpcode {
     OP_PUSH64,
     OP_PUSH_NIL,
     OP_PUSHSTR,
+    OP_PUSHSTR_INTERNED,
     OP_PUSHF64,
     OP_POP,
     // arith
@@ -172,7 +173,7 @@ extern "C" {
 
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new(code: Option<Vec<u8>>, modules_info: Option<Rc<RefCell<ModulesInfo>>>) -> Vm {
+    pub fn new(code: Option<Vec<u8>>, modules_info: Option<Rc<RefCell<ModulesInfo>>>, interned_strings: Option<InternedStringMap>) -> Vm {
         Vm {
             ip: 0,
             localenv: None,
@@ -195,7 +196,7 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: None,
             native_call_depth: 0,
-            interned_strings: InternedStringMap::new(),
+            interned_strings: interned_strings.unwrap_or_else(|| InternedStringMap::new()),
             modules_info,
             stdlib: None,
             gc_manager: Some(RefCell::new(GcManager::new())),
@@ -593,12 +594,13 @@ impl Vm {
             let importer_ip = self.ip;
             let imported_ip = self.code.as_ref().unwrap().len();
             {
-                let mut c = Compiler::new_append(self.code.take().unwrap(), rc);
+                let mut c = Compiler::new_append(self.code.take().unwrap(), rc, std::mem::replace(&mut self.interned_strings, InternedStringMap::new()));
                 for stmt in prog {
                     stmt.emit(&mut c).unwrap();
                 }
                 c.cpushop(VmOpcode::OP_JMP_LONG);
                 c.cpush32(importer_ip);
+                self.interned_strings = std::mem::replace(&mut c.interned_strings, InternedStringMap::new());
                 self.code = Some(c.into_code());
             }
             self.ip = imported_ip as u32;

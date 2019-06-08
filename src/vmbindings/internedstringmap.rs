@@ -29,7 +29,7 @@ impl InternedStringMap {
         } else {
             self.data.push(String::from(s));
             assert!(self.data.len() < MAX_LENGTH);
-            Some(self.data.len() as u16)
+            Some((self.data.len() - 1) as u16)
         }
     }
 

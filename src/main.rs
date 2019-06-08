@@ -218,7 +218,7 @@ fn repl(flag: ParserFlag) {
         modules_info.files.push("[repl]".to_string());
         modules_info.sources.push(String::new());
     }
-    let mut vm = Vm::new(None, Some(c.modules_info.clone()));
+    let mut vm = Vm::new(None, Some(c.modules_info.clone()), None);
     hanayo::init(&mut vm);
     loop {
         let readline = rl.readline(">> ");

@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::vmbindings::vm::{Vm, VmOpcode};
+use crate::vmbindings::internedstringmap::InternedStringMap;
 
 struct Scope {
     vars: Vec<String>,
@@ -71,6 +72,7 @@ pub struct Compiler {
     scopes: Vec<Scope>,
     loop_stmts: Vec<LoopStatement>,
     code: Option<Vec<u8>>,
+    pub interned_strings: InternedStringMap,
     pub modules_info: Rc<RefCell<ModulesInfo>>,
 }
 impl Compiler {
@@ -79,22 +81,24 @@ impl Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(Vec::new()),
+            interned_strings: InternedStringMap::new(),
             modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
         }
     }
 
-    pub fn new_append(code: Vec<u8>, modules_info: Rc<RefCell<ModulesInfo>>) -> Compiler {
+    pub fn new_append(code: Vec<u8>, modules_info: Rc<RefCell<ModulesInfo>>, interned_strings: InternedStringMap) -> Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(code),
+            interned_strings,
             modules_info,
         }
     }
 
     // create
     pub fn into_vm(&mut self) -> Vm {
-        Vm::new(self.code.take(), Some(self.modules_info.clone()))
+        Vm::new(self.code.take(), Some(self.modules_info.clone()), Some(std::mem::replace(&mut self.interned_strings, InternedStringMap::new())))
     }
     pub fn into_code(self) -> Vec<u8> {
         self.code.unwrap()

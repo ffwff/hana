@@ -62,6 +62,18 @@ pub mod ast {
             }
         };
     }
+
+    macro_rules! op_push_str {
+        ($c:ident, $s:expr) => {
+            if let Some(idx) = $c.interned_strings.get_or_insert(&$s) {
+                $c.cpushop(VmOpcode::OP_PUSHSTR_INTERNED);
+                $c.cpush16(idx);
+            } else {
+                $c.cpushop(VmOpcode::OP_PUSHSTR);
+                try_nil!($c.cpushs($s.clone()));
+            }
+        };
+    }
     // #endregion
 
     /// Code generation result
@@ -121,8 +133,7 @@ pub mod ast {
         fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
-            c.cpushop(VmOpcode::OP_PUSHSTR);
-            try_nil!(c.cpushs(self.val.clone()));
+            op_push_str!(c, self.val);
             emit_end!(c, _smap_begin);
             Ok(())
         }
@@ -316,12 +327,10 @@ pub mod ast {
                 let any = stmt.as_any();
                 if let Some(stmt) = any.downcast_ref::<FunctionStatement>() {
                     stmt.def().emit(c)?;
-                    c.cpushop(VmOpcode::OP_PUSHSTR);
-                    try_nil!(c.cpushs(stmt.def().id.as_ref().unwrap().clone()));
+                    op_push_str!(c, stmt.def().id.as_ref().unwrap());
                 } else if let Some(stmt) = any.downcast_ref::<RecordStatement>() {
                     stmt.def().emit(c)?;
-                    c.cpushop(VmOpcode::OP_PUSHSTR);
-                    try_nil!(c.cpushs(stmt.def().id.as_ref().unwrap().clone()));
+                    op_push_str!(c, stmt.def().id.as_ref().unwrap());
                 } else if let Some(stmt) = any.downcast_ref::<ExprStatement>() {
                     let binexpr = stmt.expr.as_any().downcast_ref::<BinExpr>().unwrap();
                     let id =
@@ -331,8 +340,7 @@ pub mod ast {
                             return Err(CodeGenError::InvalidLeftHandSide)
                         };
                     binexpr.right.emit(c)?;
-                    c.cpushop(VmOpcode::OP_PUSHSTR);
-                    try_nil!(c.cpushs(id.val.clone()));
+                    op_push_str!(c, id.val);
                 }
             }
             if self.stmts.len() < 0x100 {

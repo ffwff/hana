@@ -9,6 +9,6 @@ pub mod function;
 pub mod gc;
 pub mod record;
 pub mod value;
-mod internedstringmap;
+pub mod internedstringmap;
 pub mod vm;
 pub mod vmerror;
