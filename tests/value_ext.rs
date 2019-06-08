@@ -1,6 +1,6 @@
 extern crate haru;
 use haru::vmbindings::value::Value;
-use haru::vmbindings::cnativeval::NativeValue;
+use haru::vmbindings::nativeval::NativeValue;
 use haru::vmbindings::record::Record;
 
 pub trait ValueExt {
