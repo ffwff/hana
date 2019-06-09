@@ -92,7 +92,7 @@ impl GcManager {
         (*node).color = GcNodeColor::Gray;
         self.gray_nodes.push(node);
         // return the body aka (start byte + sizeof(GCNode))
-        std::mem::replace(&mut *(node.add(1) as *mut T), x);
+        std::mem::forget(std::mem::replace(&mut *(node.add(1) as *mut T), x));
         node.add(1) as *mut T
     }
 
