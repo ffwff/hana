@@ -1,14 +1,16 @@
 //! Provides Int record for handling integers
+use std::path::PathBuf;
+use std::borrow::Borrow;
+
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 
-use std::path::PathBuf;
-
 #[hana_function()]
 fn constructor(path: Value::Str) -> Value {
     let rec = vm.malloc(Record::new());
-    rec.as_mut().native_field = Some(Box::new(PathBuf::from(path.as_ref())));
+    let path = path.as_ref().borrow() as &String;
+    rec.as_mut().native_field = Some(Box::new(PathBuf::from(path)));
     rec.as_mut().insert(
         "prototype",
         Value::Record(vm.stdlib.as_ref().unwrap().dir_rec.clone()).wrap(),
@@ -30,7 +32,9 @@ fn ls(dir: Value::Record) -> Value {
     for entry in read_dir {
         if let Ok(entry) = entry {
             if let Some(path) = entry.path().to_str() {
-                entries.as_mut().push(Value::Str(vm.malloc(path.to_string())).wrap());
+                entries.as_mut()
+                    .push(Value::Str(vm.malloc(path.to_string().into()))
+                    .wrap());
             }
         }
     }

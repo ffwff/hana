@@ -171,5 +171,5 @@ fn join(array: Value::Array, delim: Value::Str) -> Value {
             i += 1;
         }
     }
-    Value::Str(vm.malloc(s))
+    Value::Str(vm.malloc(s.into()))
 }

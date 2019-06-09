@@ -17,6 +17,7 @@ use super::gc::*;
 use super::record::Record;
 use super::value::Value;
 use super::interned_string_map::InternedStringMap;
+use super::string::HaruString;
 
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
@@ -221,8 +222,8 @@ impl Vm {
     }
 
     // interned string
-    pub unsafe fn get_interned_string(&self, i: u16) -> String {
-        self.interned_strings.get_unchecked(i).clone()
+    pub unsafe fn get_interned_string(&self, n: u16) -> HaruString {
+        HaruString::new_cow(n, &self.interned_strings)
     }
 
     // globals

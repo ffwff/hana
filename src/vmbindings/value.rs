@@ -2,9 +2,11 @@
 
 use super::nativeval::{NativeValue, NativeValueType};
 use super::function::Function;
+use super::string::HaruString;
 use super::gc::Gc;
 use super::record::Record;
 use super::vm::Vm;
+use std::borrow::Borrow;
 extern crate libc;
 
 pub type NativeFnData = extern "C" fn(*mut Vm, u16);
@@ -24,7 +26,7 @@ pub enum Value {
     Float(f64),
     NativeFn(NativeFnData),
     Fn(Gc<Function>),
-    Str(Gc<String>),
+    Str(Gc<HaruString>),
     Record(Gc<Record>),
     Array(Gc<Vec<NativeValue>>),
 
@@ -74,7 +76,7 @@ impl Value {
                 },
                 Value::Str(p) => NativeValue {
                     r#type: NativeValueType::TYPE_STR,
-                    data: transmute::<*const String, u64>(p.to_raw()),
+                    data: transmute::<*const HaruString, u64>(p.to_raw()),
                 },
                 Value::Record(p) => NativeValue {
                     r#type: NativeValueType::TYPE_DICT,
@@ -127,7 +129,7 @@ impl fmt::Display for Value {
             Value::Float(n) => write!(f, "{}", n),
             Value::NativeFn(_) => write!(f, "[native fn]"),
             Value::Fn(_) => write!(f, "[fn]"),
-            Value::Str(p) => write!(f, "{}", p.as_ref()),
+            Value::Str(p) => write!(f, "{}", p.as_ref().borrow() as &String),
             Value::Record(p) => write!(f, "[record {:p}]", p.to_raw()),
             Value::Array(p) => write!(f, "[array {:p}]", p.to_raw()),
             _ => unreachable!(),
@@ -146,7 +148,8 @@ impl fmt::Debug for Value {
             Value::Fn(_) => write!(f, "[fn]"),
             Value::Str(p) => {
                 let mut s = String::new();
-                for ch in p.as_ref().chars() {
+                let p = p.as_ref().borrow();
+                for ch in (p as &String).chars() {
                     match ch {
                         '\n' => s.push_str("\\n"),
                         '"' => s.push('"'),

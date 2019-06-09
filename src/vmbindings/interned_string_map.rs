@@ -17,7 +17,7 @@ impl InternedStringMap {
     pub fn get_or_insert<T: AsRef<str>>(&mut self, s: &T) -> Option<u16> {
         let s : &str = s.as_ref();
         // only intern string in this length range to save up memory
-        if (2..20).contains(&s.len()) {
+        if !(2..20).contains(&s.len()) {
             return None;
         }
         let it = self.data.iter()
@@ -32,6 +32,10 @@ impl InternedStringMap {
             self.data.push(String::from(s));
             Some((self.data.len() - 1) as u16)
         }
+    }
+
+    pub fn get(&self, idx: u16) -> Option<&String> {
+        self.data.get(idx as usize)
     }
 
     pub unsafe fn get_unchecked(&self, idx: u16) -> &String {

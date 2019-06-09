@@ -8,7 +8,7 @@ fn args() -> Value {
     for arg in std::env::args().skip(1) {
         array
             .as_mut()
-            .push(Value::Str(vm.malloc(arg.to_string())).wrap());
+            .push(Value::Str(vm.malloc(arg.to_string().into())).wrap());
     }
     Value::Array(array)
 }

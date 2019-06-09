@@ -86,7 +86,7 @@ fn sleep(time: Value::Any) -> Value {
                 rec.as_mut().insert(
                     "why",
                     Value::Str(
-                        vm.malloc("time must either be an Int or a Time record".to_string()),
+                        vm.malloc("time must either be an Int or a Time record".to_string().into()),
                     )
                     .wrap(),
                 );

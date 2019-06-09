@@ -1,9 +1,10 @@
 //"abc" + "bcd"
-while 1 begin
+while 1 then "abcde" + "bcdef"
+/* while 1 begin
     a = [0]
     b = [a]
     a[0] = b
-end
+end */
 /*
 //while 1 then print("abc" + "bcd", "\n")
 
