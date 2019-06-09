@@ -765,11 +765,6 @@ pub mod ast {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             self.left.emit(c)?;
-            let get_op = if !is_method_call {
-                VmOpcode::OP_MEMBER_GET
-            } else {
-                VmOpcode::OP_MEMBER_GET_NO_POP
-            };
             let any = self.right.as_any();
             // optimize static keys
             let val = {
@@ -782,11 +777,19 @@ pub mod ast {
                 }
             };
             if val.is_some() && !self.is_expr {
-                c.cpushop(get_op);
+                c.cpushop(if !is_method_call {
+                    VmOpcode::OP_MEMBER_GET
+                } else {
+                    VmOpcode::OP_MEMBER_GET_NO_POP
+                });
                 try_nil!(c.cpushs(val.unwrap().clone()));
             } else {
                 self.right.emit(c)?;
-                c.cpushop(VmOpcode::OP_INDEX_GET);
+                c.cpushop(if !is_method_call {
+                    VmOpcode::OP_INDEX_GET
+                } else {
+                    VmOpcode::OP_INDEX_GET_NO_POP
+                });
             }
             emit_end!(c, _smap_begin);
             Ok(())

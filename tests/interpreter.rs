@@ -500,6 +500,17 @@ y = a(0)
         );
         assert_eq!(vm.global().get("y").unwrap().unwraps(), Value::Int(1000));
     }
+    #[test]
+    fn function_call_memexpr_index() {
+        let vm: Vm = eval!(
+            "
+x = [_() = 0]
+y = x[0]
+z = y()
+"
+        );
+        assert_eq!(vm.global().get("z").unwrap().unwraps(), Value::Int(0));
+    }
     /* // TODO: this test won't work because vm halts
         #[test]
         fn function_call_from_native() {
