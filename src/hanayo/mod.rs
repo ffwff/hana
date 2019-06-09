@@ -63,7 +63,7 @@ pub struct HanayoCtx {
 pub fn init(vm: &mut Vm) {
     macro_rules! set_var {
         ($x:literal, $y:expr) => {
-            vm.mut_global().insert($x.to_string(), $y.wrap())
+            vm.mut_global().insert($x.to_string().into(), $y.wrap())
         };
     }
     macro_rules! set_obj_var {

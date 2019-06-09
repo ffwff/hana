@@ -223,7 +223,7 @@ impl Vm {
 
     // interned string
     pub unsafe fn get_interned_string(&self, n: u16) -> HaruString {
-        HaruString::new_cow(n, &self.interned_strings)
+        HaruString::new_cow(self.interned_strings.get_unchecked(n))
     }
 
     // globals

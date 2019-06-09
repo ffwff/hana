@@ -3,24 +3,18 @@ use std::borrow::BorrowMut;
 use super::gc::{GcTraceable, GcNode};
 use super::interned_string_map::InternedStringMap;
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CowStringData {
-    idx: u16,
-    // map must last as long as the virtual machine
+    // data must last as long as the virtual machine
     // usage outside of vm execution is undefined
     // TODO: might be a better idea to use Rc?
     // however since all data structures in vmbindings
     // assume that they last as long as the Vm, it might be moot
     // to do this :?
-    map: *const InternedStringMap,
+    data: *const String,
 }
 
-impl std::fmt::Debug for CowStringData {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "CowStringData {{}}")
-    }
-}
-
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq)]
 pub enum HaruStringData {
     CowString(CowStringData),
     String(String),
@@ -37,25 +31,60 @@ impl HaruStringData {
     fn as_cow(&self) -> &String {
         match self {
             HaruStringData::CowString(s) => unsafe {
-                (*s.map).get(s.idx).unwrap()
+                &*s.data
             },
             _ => unreachable!(),
         }
     }
 }
 
+impl std::cmp::PartialEq for HaruStringData {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (HaruStringData::CowString(x), HaruStringData::CowString(y))
+                => x == y,
+            (x, y) => {
+                let x = x.borrow() as &String;
+                let y = y.borrow() as &String;
+                x == y
+            }
+        }
+    }
+}
+
+impl std::hash::Hash for HaruStringData {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            HaruStringData::CowString(s) => (self.borrow() as &String).hash(state),
+            HaruStringData::String(s) => s.hash(state)
+        }
+    }
+}
+
+impl std::borrow::Borrow<String> for HaruStringData {
+    fn borrow(&self) -> &String {
+        match &self {
+            HaruStringData::CowString(s) => unsafe {
+                &*s.data
+            }
+            HaruStringData::String(s) => {
+                &s
+            }
+        }
+    }
+}
+
 // expose
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct HaruString {
     data: HaruStringData,
 }
 
 impl HaruString {
 
-    pub fn new_cow(idx: u16, map: *const InternedStringMap) -> HaruString {
-        eprintln!("idx: {}", idx);
+    pub fn new_cow(data: *const String) -> HaruString {
         HaruString {
-            data: HaruStringData::CowString(CowStringData { idx, map })
+            data: HaruStringData::CowString(CowStringData { data })
         }
     }
 
@@ -67,14 +96,12 @@ impl HaruString {
 
 impl std::borrow::Borrow<String> for HaruString {
     fn borrow(&self) -> &String {
-        match &self.data {
-            HaruStringData::CowString(s) => unsafe {
-                (*s.map).get(s.idx).unwrap()
-            }
-            HaruStringData::String(s) => {
-                &s
-            }
-        }
+        self.data.borrow()
+    }
+}
+impl std::borrow::Borrow<str> for HaruString {
+    fn borrow(&self) -> &str {
+        (self.borrow() as &String).as_str()
     }
 }
 impl std::borrow::BorrowMut<String> for HaruString {
@@ -111,6 +138,15 @@ impl Into<HaruString> for String {
     fn into(self) -> HaruString {
         HaruString {
             data: HaruStringData::String(self)
+        }
+    }
+
+}
+impl From<&str> for HaruString {
+
+    fn from(s: &str) -> Self {
+        HaruString {
+            data: HaruStringData::String(String::from(s))
         }
     }
 

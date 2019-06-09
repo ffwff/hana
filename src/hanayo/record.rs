@@ -15,7 +15,7 @@ fn keys(rec: Value::Record) -> Value {
     for (key, _) in rec.as_ref().iter() {
         array
             .as_mut()
-            .push(Value::Str(vm.malloc(key.clone().into())).wrap());
+            .push(Value::Str(vm.malloc(key.clone())).wrap());
     }
     Value::Array(array)
 }
@@ -23,7 +23,7 @@ fn keys(rec: Value::Record) -> Value {
 #[hana_function()]
 fn has_key(rec: Value::Record, needle: Value::Str) -> Value {
     for (key, _) in rec.as_ref().iter() {
-        if key == needle.as_ref().borrow() as &String {
+        if key == needle.as_ref() {
             return Value::True;
         }
     }

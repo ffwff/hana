@@ -45,6 +45,7 @@ mod foreignc {
         chm: *const HaruHashMap, ckey: *const libc::c_char,
     ) -> *const NativeValue {
         let key = CStr::from_ptr(ckey).to_string_lossy().to_string();
+        //eprintln!("{:?}", key);
         let hm = &*chm;
         if let Some(val) = hm.get(&key) {
             val
@@ -59,7 +60,7 @@ mod foreignc {
     ) {
         let key = CStr::from_ptr(ckey).to_string_lossy().to_string();
         let hm = &mut *chm;
-        hm.insert(key, val.clone());
+        hm.insert(key.into(), val.clone());
     }
     // #endregion
 
