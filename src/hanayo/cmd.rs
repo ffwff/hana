@@ -4,6 +4,7 @@ use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
 use std::io::Write;
+use std::borrow::Borrow;
 use std::process::{Child, Command, Output, Stdio};
 
 #[hana_function()]
@@ -21,7 +22,7 @@ fn constructor(val: Value::Any) -> Value {
                 rec.as_mut().insert(
                     "why",
                     Value::Str(
-                        vm.malloc("Expected argument array to have at least 1 member".to_string()),
+                        vm.malloc("Expected argument array to have at least 1 member".to_string().into()),
                     )
                     .wrap(),
                 );
@@ -29,7 +30,7 @@ fn constructor(val: Value::Any) -> Value {
                 hana_raise!(vm, Value::Record(rec));
             }
             let mut cmd = Command::new(match unsafe{ arr[0].unwrap() } {
-                Value::Str(s) => s.as_ref().clone(),
+                Value::Str(s) => (s.as_ref().borrow() as &String).clone(),
                 _ => {
                     let rec = vm.malloc(Record::new());
                     rec.as_mut().insert(
@@ -39,7 +40,7 @@ fn constructor(val: Value::Any) -> Value {
                     );
                     rec.as_mut().insert(
                         "why",
-                        Value::Str(vm.malloc("Expected command to be of string type".to_string()))
+                        Value::Str(vm.malloc("Expected command to be of string type".to_string().into()))
                             .wrap(),
                     );
                     rec.as_mut().insert("where", Value::Int(0).wrap());
@@ -50,7 +51,7 @@ fn constructor(val: Value::Any) -> Value {
                 let slice = &arr.as_slice()[1..];
                 for val in slice {
                     match unsafe{ val.unwrap() } {
-                        Value::Str(s) => cmd.arg(s.as_ref().clone()),
+                        Value::Str(s) => cmd.arg((s.as_ref().borrow() as &String).clone()),
                         _ => {
                             let rec = vm.malloc(Record::new());
                             rec.as_mut().insert(
@@ -64,7 +65,7 @@ fn constructor(val: Value::Any) -> Value {
                                 "why",
                                 Value::Str(
                                     vm.malloc(
-                                        "Expected argument to be of string type".to_string(),
+                                        "Expected argument to be of string type".to_string().into(),
                                     ),
                                 )
                                 .wrap(),
@@ -79,7 +80,7 @@ fn constructor(val: Value::Any) -> Value {
         }
         Value::Str(scmd) => {
             let mut cmd = Command::new("sh");
-            cmd.arg("-c").arg(scmd.as_ref().clone());
+            cmd.arg("-c").arg((scmd.as_ref().borrow() as &String).clone());
             cmd
         }
         _ => {
@@ -91,7 +92,7 @@ fn constructor(val: Value::Any) -> Value {
             rec.as_mut().insert(
                 "why",
                 Value::Str(
-                    vm.malloc("Expected argument to be of string or array type".to_string()),
+                    vm.malloc("Expected argument to be of string or array type".to_string().into()),
                 )
                 .wrap(),
             );
@@ -126,7 +127,7 @@ fn utf8_decoding_error(err: std::string::FromUtf8Error, vm: &Vm) -> Value {
         Value::Record(vm.stdlib.as_ref().unwrap().utf8_decoding_error.clone()).wrap(),
     );
     rec.as_mut()
-        .insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
+        .insert("why", Value::Str(vm.malloc(format!("{:?}", err).into())).wrap());
     rec.as_mut().insert("where", Value::Int(0).wrap());
     Value::Record(rec)
 }
@@ -184,7 +185,7 @@ fn out(cmd: Value::Record) -> Value {
     // stdout as string
     let out = get_output(cmd.as_mut(), true).as_output().unwrap();
     match String::from_utf8(out.stdout) {
-        Ok(s) => Value::Str(vm.malloc(s)),
+        Ok(s) => Value::Str(vm.malloc(s.into())),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
         }
@@ -196,7 +197,7 @@ fn err(cmd: Value::Record) -> Value {
     // stderr as string
     let out = get_output(cmd.as_mut(), true).as_output().unwrap();
     match String::from_utf8(out.stderr) {
-        Ok(s) => Value::Str(vm.malloc(s)),
+        Ok(s) => Value::Str(vm.malloc(s.into())),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
         }
@@ -209,13 +210,13 @@ fn outputs(cmd: Value::Record) -> Value {
     let out = get_output(cmd.as_mut(), true).as_output().unwrap();
     let arr = vm.malloc(Vec::new());
     match String::from_utf8(out.stdout) {
-        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
+        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s.into())).wrap()),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
         }
     }
     match String::from_utf8(out.stderr) {
-        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
+        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s.into())).wrap()),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
         }

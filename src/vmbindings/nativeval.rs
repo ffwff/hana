@@ -4,6 +4,7 @@
 use super::function::Function;
 use super::gc::{ref_dec, ref_inc, Gc};
 use super::record::Record;
+use super::string::HaruString;
 use super::value::{NativeFnData, Value};
 
 #[repr(u8)]
@@ -47,7 +48,7 @@ impl NativeValue {
                 Value::Fn(Gc::from_raw(self.data as *mut Function))
             },
             NativeValueType::TYPE_STR => {
-                Value::Str(Gc::from_raw(self.data as *mut String))
+                Value::Str(Gc::from_raw(self.data as *mut HaruString))
             },
             NativeValueType::TYPE_DICT => {
                 Value::Record(Gc::from_raw(self.data as *mut Record))
@@ -62,14 +63,22 @@ impl NativeValue {
     pub fn as_gc_pointer(&self) -> Option<*mut libc::c_void> {
         #[allow(non_camel_case_types)]
         match self.r#type {
+            NativeValueType::TYPE_STR => unsafe {
+                if self.data == 0 { return None; }
+                let string = &*(self.data as *mut HaruString);
+                if !string.is_cow() {
+                    Some(self.data as _)
+                } else {
+                    None
+                }
+            }
             NativeValueType::TYPE_FN
-            | NativeValueType::TYPE_STR
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
-                if self.data == 0 {
-                    None
+                if self.data != 0 {
+                    Some(self.data as _)
                 } else {
-                    Some(self.data as *mut libc::c_void)
+                    None
                 }
             }
             _ => None,
@@ -80,8 +89,13 @@ impl NativeValue {
     pub unsafe fn ref_inc(&self) {
         #[allow(non_camel_case_types)]
         match self.r#type {
+            NativeValueType::TYPE_STR => {
+                let string = &*(self.data as *mut HaruString);
+                if !string.is_cow() {
+                    ref_inc(self.data as *mut libc::c_void);
+                }
+            }
             NativeValueType::TYPE_FN
-            | NativeValueType::TYPE_STR
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
                 ref_inc(self.data as *mut libc::c_void);
@@ -93,8 +107,13 @@ impl NativeValue {
     pub unsafe fn ref_dec(&self) {
         #[allow(non_camel_case_types)]
         match self.r#type {
+            NativeValueType::TYPE_STR => {
+                let string = &*(self.data as *mut HaruString);
+                if !string.is_cow() {
+                    ref_dec(self.data as *mut libc::c_void);
+                }
+            }
             NativeValueType::TYPE_FN
-            | NativeValueType::TYPE_STR
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
                 ref_dec(self.data as *mut libc::c_void);

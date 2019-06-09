@@ -22,7 +22,7 @@ fn constructor(val: Value::Any) -> Value {
                     );
                     rec.as_mut().insert(
                         "why",
-                        Value::Str(vm.malloc("Can't convert string to integer".to_string()))
+                        Value::Str(vm.malloc("Can't convert string to integer".to_string().into()))
                             .wrap(),
                     );
                     rec.as_mut().insert("where", Value::Int(0).wrap());
@@ -40,7 +40,7 @@ fn constructor(val: Value::Any) -> Value {
                 );
                 rec.as_mut().insert(
                     "why",
-                    Value::Str(vm.malloc("Can't convert value to integer".to_string())).wrap(),
+                    Value::Str(vm.malloc("Can't convert value to integer".to_string().into())).wrap(),
                 );
                 rec.as_mut().insert("where", Value::Int(0).wrap());
                 Value::Record(rec)
@@ -52,7 +52,7 @@ fn constructor(val: Value::Any) -> Value {
 #[hana_function()]
 fn chr(i: Value::Int) -> Value {
     if let Some(ch) = std::char::from_u32(i as u32) {
-        Value::Str(vm.malloc(ch.to_string()))
+        Value::Str(vm.malloc(ch.to_string().into()))
     } else {
         Value::Nil
     }
@@ -60,5 +60,5 @@ fn chr(i: Value::Int) -> Value {
 
 #[hana_function()]
 fn hex(i: Value::Int) -> Value {
-    Value::Str(vm.malloc(format!("0x{:x}", i)))
+    Value::Str(vm.malloc(format!("0x{:x}", i).into()))
 }

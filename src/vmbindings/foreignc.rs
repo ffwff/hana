@@ -5,21 +5,23 @@ use super::nativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
-
 use super::record::Record;
+use super::string::HaruString;
 use super::value::Value;
 use super::vm::Vm;
+use super::gc::Gc;
 
+use std::borrow::Borrow;
+use std::alloc::{alloc_zeroed, realloc, Layout};
+use std::ffi::CStr;
+use std::ptr::{null, null_mut, NonNull};
+use unicode_segmentation::UnicodeSegmentation;
 extern crate unicode_segmentation;
 
 #[allow(unused_attributes)]
 mod foreignc {
 
     use super::*;
-    use std::alloc::{alloc_zeroed, realloc, Layout};
-    use std::ffi::CStr;
-    use std::ptr::{null, null_mut, NonNull};
-    use unicode_segmentation::UnicodeSegmentation;
 
     // #region memory allocation
     #[no_mangle]
@@ -43,6 +45,7 @@ mod foreignc {
         chm: *const HaruHashMap, ckey: *const libc::c_char,
     ) -> *const NativeValue {
         let key = CStr::from_ptr(ckey).to_string_lossy().to_string();
+        //eprintln!("{:?}", key);
         let hm = &*chm;
         if let Some(val) = hm.get(&key) {
             val
@@ -57,7 +60,7 @@ mod foreignc {
     ) {
         let key = CStr::from_ptr(ckey).to_string_lossy().to_string();
         let hm = &mut *chm;
-        hm.insert(key, val.clone());
+        hm.insert(key.into(), val.clone());
     }
     // #endregion
 
@@ -86,11 +89,11 @@ mod foreignc {
     }
     #[no_mangle]
     unsafe extern "C" fn dict_get_str(
-        cr: *const Record, ckey: *const String,
+        cr: *const Record, ckey: *const HaruString,
     ) -> *const NativeValue {
         let key = &*ckey;
         let r = &*cr;
-        if let Some(val) = r.get(key) {
+        if let Some(val) = r.get(key.borrow() as &String) {
             val
         } else {
             null()
@@ -104,8 +107,8 @@ mod foreignc {
         r.insert(key, val.clone());
     }
     #[no_mangle]
-    unsafe extern "C" fn dict_set_str(cr: *mut Record, ckey: *const String, val: NativeValue) {
-        let key = (&*ckey).clone();
+    unsafe extern "C" fn dict_set_str(cr: *mut Record, ckey: *const HaruString, val: NativeValue) {
+        let key : String = ((&*ckey).borrow() as &String).clone();
         let r = &mut *cr;
         r.insert(key, val.clone());
     }
@@ -121,34 +124,34 @@ mod foreignc {
 
     // #region string
     #[no_mangle]
-    unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char, vm: *const Vm) -> *mut String {
+    unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char, vm: *const Vm) -> *mut HaruString {
         let s = CStr::from_ptr(cstr).to_string_lossy().to_string();
-        (&*vm).malloc(s).into_raw()
+        (&*vm).malloc(s.into()).into_raw()
     }
 
     #[no_mangle]
     unsafe extern "C" fn string_append(
-        cleft: *const String, cright: *const String, vm: *const Vm,
-    ) -> *mut String {
-        let left: &'static String = &*cleft;
-        let right: &'static String = &*cright;
-        let mut newleft = left.clone();
+        cleft: *const HaruString, cright: *const HaruString, vm: *const Vm,
+    ) -> *mut HaruString {
+        let left  : &HaruString = &*cleft;
+        let right : &HaruString = &*cright;
+        let mut newleft : String = (left.borrow() as &String).clone();
         newleft += right;
-        (&*vm).malloc(newleft).into_raw()
+        (&*vm).malloc(newleft.into()).into_raw()
     }
 
     #[no_mangle]
     unsafe extern "C" fn string_repeat(
-        cleft: *const String, n: i64, vm: *const Vm,
-    ) -> *mut String {
-        let left: &'static String = &*cleft;
-        (&*vm).malloc(left.repeat(n as usize)).into_raw()
+        cleft: *const HaruString, n: i64, vm: *const Vm,
+    ) -> *mut HaruString {
+        let left: &'static HaruString = &*cleft;
+        (&*vm).malloc(left.repeat(n as usize).into()).into_raw()
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_cmp(cleft: *const String, cright: *const String) -> i64 {
-        let left: &'static String = &*cleft;
-        let right: &'static String = &*cright;
+    unsafe extern "C" fn string_cmp(cleft: *const HaruString, cright: *const HaruString) -> i64 {
+        let left: &'static String = (&*cleft).borrow();
+        let right: &'static String = (&*cright).borrow();
         if left == right {
             0
         } else if left < right {
@@ -159,43 +162,44 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_at(left: *const String, idx: i64, vm: *const Vm) -> *mut String {
-        let left: &'static String = &*left;
+    unsafe extern "C" fn string_at(left: *const HaruString, idx: i64, vm: *const Vm) -> *mut HaruString {
+        let left: &'static HaruString = &*left;
         if let Some(ch) = left.graphemes(true).nth(idx as usize) {
-            (&*vm).malloc(ch.to_string()).into_raw()
+            (&*vm).malloc(ch.to_string().into()).into_raw()
         } else {
             null_mut()
         }
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_is_empty(s: *const String) -> bool {
-        let left: &'static String = &*s;
+    unsafe extern "C" fn string_is_empty(s: *const HaruString) -> bool {
+        let left: &'static HaruString = &*s;
         left.is_empty()
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_chars(s: *const String, vm: *const Vm) -> *mut Vec<NativeValue> {
-        let s: &'static String = &*s;
+    unsafe extern "C" fn string_chars(s: *mut HaruString, vm: *const Vm) -> *mut Vec<NativeValue> {
+        let s = Gc::from_raw(s);
         let vm = &*vm;
         let chars = vm.malloc(Vec::new());
-        for ch in s.graphemes(true) {
+        for ch in s.as_ref().graphemes(true) {
             chars
                 .as_mut()
-                .push(Value::Str(vm.malloc(ch.to_string())).wrap());
+                .push(Value::Str(vm.malloc(ch.to_string().into()))
+                .wrap());
         }
         chars.into_raw()
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_append_in_place(left: *mut String, right: *const String) {
+    unsafe extern "C" fn string_append_in_place(left: *mut HaruString, right: *const HaruString) {
         let left = &mut *left;
         let right = &*right;
         left.push_str(right.as_str());
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_repeat_in_place(s: *mut String, n: i64) {
+    unsafe extern "C" fn string_repeat_in_place(s: *mut HaruString, n: i64) {
         let s = &mut *s;
         if n == 0 {
             s.clear();
@@ -209,7 +213,7 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_len(s: *const String) -> usize {
+    unsafe extern "C" fn string_len(s: *const HaruString) -> usize {
         let s = &*s;
         s.graphemes(true).count()
     }
@@ -364,7 +368,7 @@ mod foreignc {
 
     // #region value
     #[no_mangle]
-    unsafe extern "C" fn vm_get_interned_string(cvm: *const Vm, i: u16) -> *mut String {
+    unsafe extern "C" fn vm_get_interned_string(cvm: *const Vm, i: u16) -> *mut HaruString {
         let vm = &*cvm;
         vm.malloc(vm.get_interned_string(i)).into_raw()
     }
