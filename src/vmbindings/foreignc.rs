@@ -42,7 +42,7 @@ mod foreignc {
     unsafe extern "C" fn hmap_get(
         chm: *const HaruHashMap, ckey: *const libc::c_char,
     ) -> *const NativeValue {
-        let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
+        let key = CStr::from_ptr(ckey).to_string_lossy().to_string();
         let hm = &*chm;
         if let Some(val) = hm.get(&key) {
             val
@@ -55,7 +55,7 @@ mod foreignc {
     unsafe extern "C" fn hmap_set(
         chm: *mut HaruHashMap, ckey: *const libc::c_char, val: NativeValue,
     ) {
-        let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
+        let key = CStr::from_ptr(ckey).to_string_lossy().to_string();
         let hm = &mut *chm;
         hm.insert(key, val.clone());
     }
@@ -76,7 +76,7 @@ mod foreignc {
     unsafe extern "C" fn dict_get(
         cr: *const Record, ckey: *const libc::c_char,
     ) -> *const NativeValue {
-        let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
+        let key = CStr::from_ptr(ckey).to_string_lossy().to_string();
         let r = &*cr;
         if let Some(val) = r.get(&key) {
             val
@@ -99,7 +99,7 @@ mod foreignc {
 
     #[no_mangle]
     unsafe extern "C" fn dict_set(cr: *mut Record, ckey: *const libc::c_char, val: NativeValue) {
-        let key = String::from(CStr::from_ptr(ckey).to_str().unwrap());
+        let key = CStr::from_ptr(ckey).to_string_lossy().to_string();
         let r = &mut *cr;
         r.insert(key, val.clone());
     }
@@ -122,8 +122,8 @@ mod foreignc {
     // #region string
     #[no_mangle]
     unsafe extern "C" fn string_malloc(cstr: *mut libc::c_char, vm: *const Vm) -> *mut String {
-        let s = CStr::from_ptr(cstr).to_str().unwrap();
-        (&*vm).malloc(String::from(s)).into_raw()
+        let s = CStr::from_ptr(cstr).to_string_lossy().to_string();
+        (&*vm).malloc(s).into_raw()
     }
 
     #[no_mangle]
@@ -260,8 +260,9 @@ mod foreignc {
         let env = &mut *selfptr;
         env.reserve(nslots);
         let vm = &mut *cvm;
+        debug_assert!(vm.stack.len() >= env.nargs as usize);
         for i in 0..env.nargs {
-            let val = vm.stack.pop().unwrap();
+            let val = if let Some(val) = vm.stack.pop() { val } else { unreachable!() };
             env.set(i, val.clone());
         }
     }
@@ -355,9 +356,9 @@ mod foreignc {
     // #region modules
     #[no_mangle]
     unsafe extern "C" fn vm_load_module(cvm: *mut Vm, cpath: *const libc::c_char) {
-        let path = CStr::from_ptr(cpath).to_str().unwrap();
+        let path = CStr::from_ptr(cpath).to_string_lossy();
         let vm = &mut *cvm;
-        vm.load_module(path);
+        vm.load_module(&path);
     }
     // #endregion
 
