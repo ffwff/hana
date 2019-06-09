@@ -5,11 +5,11 @@ use super::nativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
-
 use super::record::Record;
 use super::string::HaruString;
 use super::value::Value;
 use super::vm::Vm;
+use super::gc::Gc;
 
 use std::borrow::Borrow;
 use std::alloc::{alloc_zeroed, realloc, Layout};
@@ -178,11 +178,11 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_chars(s: *const HaruString, vm: *const Vm) -> *mut Vec<NativeValue> {
-        let s: &'static HaruString = &*s;
+    unsafe extern "C" fn string_chars(s: *mut HaruString, vm: *const Vm) -> *mut Vec<NativeValue> {
+        let s = Gc::from_raw(s);
         let vm = &*vm;
         let chars = vm.malloc(Vec::new());
-        for ch in s.graphemes(true) {
+        for ch in s.as_ref().graphemes(true) {
             chars
                 .as_mut()
                 .push(Value::Str(vm.malloc(ch.to_string().into()))

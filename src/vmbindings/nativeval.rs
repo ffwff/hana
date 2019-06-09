@@ -64,6 +64,7 @@ impl NativeValue {
         #[allow(non_camel_case_types)]
         match self.r#type {
             NativeValueType::TYPE_STR => unsafe {
+                if self.data == 0 { return None; }
                 let string = &*(self.data as *mut HaruString);
                 if !string.is_cow() {
                     Some(self.data as _)
