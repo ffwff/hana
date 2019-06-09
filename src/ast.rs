@@ -65,9 +65,14 @@ pub mod ast {
 
     macro_rules! op_push_str {
         ($c:ident, $s:expr) => {
-            if let Some(idx) = $c.interned_strings.get_or_insert(&$s) {
-                $c.cpushop(VmOpcode::OP_PUSHSTR_INTERNED);
-                $c.cpush16(idx);
+            if let Some(interned_strings) = $c.interned_strings.as_mut() {
+                if let Some(idx) = interned_strings.get_or_insert(&$s) {
+                    $c.cpushop(VmOpcode::OP_PUSHSTR_INTERNED);
+                    $c.cpush16(idx);
+                } else {
+                    $c.cpushop(VmOpcode::OP_PUSHSTR);
+                    try_nil!($c.cpushs($s.clone()));
+                }
             } else {
                 $c.cpushop(VmOpcode::OP_PUSHSTR);
                 try_nil!($c.cpushs($s.clone()));

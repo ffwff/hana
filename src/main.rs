@@ -63,7 +63,7 @@ enum ProcessArg<'a> {
 }
 
 fn process(arg: ProcessArg, flag: ParserFlag) {
-    let mut c = compiler::Compiler::new();
+    let mut c = compiler::Compiler::new(true);
     let s: String = match arg {
         ProcessArg::Command(cmd) => {
             c.modules_info
@@ -212,7 +212,7 @@ fn handle_error(vm: &Vm, c: &compiler::Compiler) -> bool {
 // repl
 fn repl(flag: ParserFlag) {
     let mut rl = Editor::<()>::new();
-    let mut c = compiler::Compiler::new();
+    let mut c = compiler::Compiler::new(false);
     {
         let mut modules_info = c.modules_info.borrow_mut();
         modules_info.files.push("[repl]".to_string());

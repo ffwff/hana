@@ -600,7 +600,7 @@ impl Vm {
                 }
                 c.cpushop(VmOpcode::OP_JMP_LONG);
                 c.cpush32(importer_ip);
-                self.interned_strings = std::mem::replace(&mut c.interned_strings, InternedStringMap::new());
+                self.interned_strings = c.interned_strings.take().unwrap();
                 self.code = Some(c.into_code());
             }
             self.ip = imported_ip as u32;

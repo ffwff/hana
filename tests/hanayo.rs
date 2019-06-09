@@ -16,7 +16,7 @@ pub mod hanayo_tests {
     macro_rules! eval {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
-            let mut c = compiler::Compiler::new();
+            let mut c = compiler::Compiler::new(true);
             for stmt in prog {
                 stmt.emit(&mut c);
             }

@@ -15,7 +15,7 @@ pub mod interpreter_tests {
     macro_rules! eval {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
-            let mut c = compiler::Compiler::new();
+            let mut c = compiler::Compiler::new(true);
             for stmt in prog {
                 stmt.emit(&mut c);
             }
@@ -811,7 +811,7 @@ use '/tmp/module_absolute_import'
         ",
         )
         .unwrap();
-        let mut c = compiler::Compiler::new();
+        let mut c = compiler::Compiler::new(true);
         c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {
             stmt.emit(&mut c);
@@ -831,7 +831,7 @@ use './module_relative_import'
         ",
         )
         .unwrap();
-        let mut c = compiler::Compiler::new();
+        let mut c = compiler::Compiler::new(true);
         c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {
             stmt.emit(&mut c);
@@ -852,7 +852,7 @@ use 'module_native_import'
         ",
         )
         .unwrap();
-        let mut c = compiler::Compiler::new();
+        let mut c = compiler::Compiler::new(true);
         c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {
             stmt.emit(&mut c);

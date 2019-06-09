@@ -6,7 +6,7 @@
 //! use haru::ast;
 //! use haru::compiler::Compiler;
 //! use haru::vmbindings::vm::{Vm, VmOpcode};
-//! let mut c = Compiler::new();
+//! let mut c = Compiler::new(true);
 //! let prog = ast::grammar::start("print('Hello World')\n").unwrap();
 //! for stmt in prog {
 //!     stmt.emit(&mut c);
@@ -72,16 +72,16 @@ pub struct Compiler {
     scopes: Vec<Scope>,
     loop_stmts: Vec<LoopStatement>,
     code: Option<Vec<u8>>,
-    pub interned_strings: InternedStringMap,
+    pub interned_strings: Option<InternedStringMap>,
     pub modules_info: Rc<RefCell<ModulesInfo>>,
 }
 impl Compiler {
-    pub fn new() -> Compiler {
+    pub fn new(interned_strings_enabled: bool) -> Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(Vec::new()),
-            interned_strings: InternedStringMap::new(),
+            interned_strings: if interned_strings_enabled { Some(InternedStringMap::new()) } else { None },
             modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
         }
     }
@@ -91,14 +91,14 @@ impl Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(code),
-            interned_strings,
+            interned_strings: Some(interned_strings),
             modules_info,
         }
     }
 
     // create
     pub fn into_vm(&mut self) -> Vm {
-        Vm::new(self.code.take(), Some(self.modules_info.clone()), Some(std::mem::replace(&mut self.interned_strings, InternedStringMap::new())))
+        Vm::new(self.code.take(), Some(self.modules_info.clone()), self.interned_strings.take())
     }
     pub fn into_code(self) -> Vec<u8> {
         self.code.unwrap()
