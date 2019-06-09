@@ -1,18 +1,23 @@
 use std::borrow::Borrow;
 use std::borrow::BorrowMut;
+use std::rc::Rc;
 use super::gc::{GcTraceable, GcNode};
 use super::interned_string_map::InternedStringMap;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug)]
 pub struct CowStringData {
-    // data must last as long as the virtual machine
-    // usage outside of vm execution is undefined
-    // TODO: might be a better idea to use Rc?
-    // however since all data structures in vmbindings
-    // assume that they last as long as the Vm, it might be moot
-    // to do this :?
-    data: *const String,
+    data: Rc<String>,
 }
+
+impl std::cmp::PartialEq for CowStringData {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self.data.as_ref(), other.data.as_ref())
+    }
+}
+
+impl std::cmp::Eq for CowStringData {}
+
+//
 
 #[derive(Clone, Debug, Eq)]
 pub enum HaruStringData {
@@ -30,9 +35,7 @@ impl HaruStringData {
 
     fn as_cow(&self) -> &String {
         match self {
-            HaruStringData::CowString(s) => unsafe {
-                &*s.data
-            },
+            HaruStringData::CowString(s) => &*s.data,
             _ => unreachable!(),
         }
     }
@@ -64,9 +67,7 @@ impl std::hash::Hash for HaruStringData {
 impl std::borrow::Borrow<String> for HaruStringData {
     fn borrow(&self) -> &String {
         match &self {
-            HaruStringData::CowString(s) => unsafe {
-                &*s.data
-            }
+            HaruStringData::CowString(s) => self.as_cow(),
             HaruStringData::String(s) => {
                 &s
             }
@@ -82,7 +83,7 @@ pub struct HaruString {
 
 impl HaruString {
 
-    pub fn new_cow(data: *const String) -> HaruString {
+    pub fn new_cow(data: Rc<String>) -> HaruString {
         HaruString {
             data: HaruStringData::CowString(CowStringData { data })
         }

@@ -1,9 +1,9 @@
 //! Provides interned string map
-
+use std::rc::Rc;
 const MAX_LENGTH : usize = std::u16::MAX as usize;
 
 pub struct InternedStringMap {
-    data: Vec<String>,
+    data: Vec<Rc<String>>,
 }
 
 impl InternedStringMap {
@@ -29,16 +29,16 @@ impl InternedStringMap {
         } else if self.data.len() > MAX_LENGTH {
             None
         } else {
-            self.data.push(String::from(s));
+            self.data.push(Rc::new(String::from(s)));
             Some((self.data.len() - 1) as u16)
         }
     }
 
-    pub fn get(&self, idx: u16) -> Option<&String> {
+    pub fn get(&self, idx: u16) -> Option<&Rc<String>> {
         self.data.get(idx as usize)
     }
 
-    pub unsafe fn get_unchecked(&self, idx: u16) -> &String {
+    pub unsafe fn get_unchecked(&self, idx: u16) -> &Rc<String> {
         self.data.get_unchecked(idx as usize)
     }
 

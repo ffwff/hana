@@ -63,16 +63,8 @@ impl NativeValue {
     pub fn as_gc_pointer(&self) -> Option<*mut libc::c_void> {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            NativeValueType::TYPE_STR => unsafe {
-                if self.data == 0 { return None; }
-                let string = &*(self.data as *mut HaruString);
-                if !string.is_cow() {
-                    Some(self.data as _)
-                } else {
-                    None
-                }
-            }
-            NativeValueType::TYPE_FN
+            NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_FN
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
                 if self.data != 0 {
@@ -89,13 +81,8 @@ impl NativeValue {
     pub unsafe fn ref_inc(&self) {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            NativeValueType::TYPE_STR => {
-                let string = &*(self.data as *mut HaruString);
-                if !string.is_cow() {
-                    ref_inc(self.data as *mut libc::c_void);
-                }
-            }
-            NativeValueType::TYPE_FN
+            NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_FN
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
                 ref_inc(self.data as *mut libc::c_void);
@@ -107,13 +94,8 @@ impl NativeValue {
     pub unsafe fn ref_dec(&self) {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            NativeValueType::TYPE_STR => {
-                let string = &*(self.data as *mut HaruString);
-                if !string.is_cow() {
-                    ref_dec(self.data as *mut libc::c_void);
-                }
-            }
-            NativeValueType::TYPE_FN
+            NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_FN
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
                 ref_dec(self.data as *mut libc::c_void);
