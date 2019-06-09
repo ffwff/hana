@@ -40,8 +40,8 @@ type GenericFunction = unsafe fn(*mut c_void);
 // TODO maybe replace this with Any
 
 // manager
-const INITIAL_THRESHOLD: usize = 128;
-const USED_SPACE_RATIO: f64 = 0.8;
+const INITIAL_THRESHOLD: usize = 4096;
+const USED_SPACE_RATIO: f64 = 0.7;
 pub struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
@@ -122,6 +122,9 @@ impl GcManager {
         if !self.enabled {
             return;
         }
+        if self.bytes_allocated < self.threshold {
+            return;
+        }
         //eprintln!("GRAY NODES: {:?}", self.gray_nodes);
         // marking phase
         let gray_nodes = std::mem::replace(&mut self.gray_nodes, Vec::new());
@@ -133,7 +136,7 @@ impl GcManager {
         }
         //eprintln!("GRAY NODES MARKING: {:?}, {:?}", gray_nodes, self.gray_nodes);
         // nothing left to traverse, sweeping phase:
-        if self.gray_nodes.is_empty() && self.bytes_allocated > self.threshold {
+        if self.gray_nodes.is_empty() {
             let mut prev: *mut GcNode = null_mut();
             // sweep
             let mut node = self.first_node;
