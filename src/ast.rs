@@ -553,7 +553,7 @@ pub mod ast {
                     let any = self.left.as_any();
                     if let Some(id) = any.downcast_ref::<Identifier>() {
                         self.right.emit(c)?;
-                        c.emit_set_var(id.val.clone());
+                        c.emit_set_var(id.val.clone(), false);
                     } else if let Some(memexpr) = any.downcast_ref::<MemExpr>() {
                         self.right.emit(c)?;
                         memexpr._emit(c, MemExprEmit::SetOp)?;
@@ -611,7 +611,7 @@ pub mod ast {
                         };
                         if id != "_" {
                             // _ for id is considered a anonymous function decl
-                            c.emit_set_var_fn(id);
+                            c.emit_set_var(id, true);
                         }
                     } else {
                         return Err(CodeGenError::InvalidLeftHandSide);
@@ -639,7 +639,7 @@ pub mod ast {
                             }
                             _ => {}
                         };
-                        c.emit_set_var(id.val.clone());
+                        c.emit_set_var(id.val.clone(), false);
                     } else if let Some(memexpr) = any.downcast_ref::<MemExpr>() {
                         memexpr.left.emit(c)?;
                         // optimize static member vars
@@ -1034,7 +1034,7 @@ pub mod ast {
 
             // start
             self.from.emit(c)?;
-            c.emit_set_var(self.id.clone());
+            c.emit_set_var(self.id.clone(), false);
             c.cpushop(VmOpcode::OP_POP);
 
             c.cpushop(VmOpcode::OP_JMP);
@@ -1052,7 +1052,7 @@ pub mod ast {
             } else {
                 VmOpcode::OP_SUB
             });
-            c.emit_set_var(self.id.clone());
+            c.emit_set_var(self.id.clone(), false);
             c.cpushop(VmOpcode::OP_POP);
 
             c.fill_label16(begin_label, (c.clen() - begin_label) as u16);
@@ -1110,7 +1110,7 @@ pub mod ast {
             let next_it_label = c.clen();
             c.cpushop(VmOpcode::OP_FOR_IN);
             let end_label = c.reserve_label16();
-            c.emit_set_var(self.id.clone());
+            c.emit_set_var(self.id.clone(), false);
             c.cpushop(VmOpcode::OP_POP);
             self.stmt.emit(c)?;
             c.cpushop(VmOpcode::OP_JMP);
@@ -1194,7 +1194,7 @@ pub mod ast {
             self.def.emit(c)?;
 
             // set var
-            c.emit_set_var_fn(self.def.id.as_ref().unwrap().clone());
+            c.emit_set_var(self.def.id.as_ref().unwrap().clone(), true);
             c.cpushop(VmOpcode::OP_POP);
             Ok(())
         }
@@ -1265,7 +1265,7 @@ pub mod ast {
             self.def.emit(c)?;
 
             // set var
-            c.emit_set_var(self.def.id.as_ref().unwrap().clone());
+            c.emit_set_var(self.def.id.as_ref().unwrap().clone(), false);
             c.cpushop(VmOpcode::OP_POP);
             Ok(())
         }
@@ -1303,7 +1303,7 @@ pub mod ast {
                         .unwrap()
                         .val
                         .clone();
-                    c.emit_set_var(id);
+                    c.emit_set_var(id, false);
                     c.cpushop(VmOpcode::OP_POP);
                 }
                 // body
