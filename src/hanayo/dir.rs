@@ -1,6 +1,6 @@
 //! Provides Int record for handling integers
-use std::path::PathBuf;
 use std::borrow::Borrow;
+use std::path::PathBuf;
 
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
@@ -23,18 +23,17 @@ fn ls(dir: Value::Record) -> Value {
     let field = dir.as_ref().native_field.as_ref().unwrap();
     let dir = field.downcast_ref::<PathBuf>().unwrap();
     let entries = vm.malloc(Vec::new());
-    let read_dir =
-        if let Ok(read_dir) = std::fs::read_dir(dir) {
-            read_dir
-        } else {
-            return Value::Array(entries);
-        };
+    let read_dir = if let Ok(read_dir) = std::fs::read_dir(dir) {
+        read_dir
+    } else {
+        return Value::Array(entries);
+    };
     for entry in read_dir {
         if let Ok(entry) = entry {
             if let Some(path) = entry.path().to_str() {
-                entries.as_mut()
-                    .push(Value::Str(vm.malloc(path.to_string().into()))
-                    .wrap());
+                entries
+                    .as_mut()
+                    .push(Value::Str(vm.malloc(path.to_string().into())).wrap());
             }
         }
     }

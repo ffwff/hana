@@ -18,8 +18,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::vmbindings::vm::{Vm, VmOpcode};
 use crate::vmbindings::interned_string_map::InternedStringMap;
+use crate::vmbindings::vm::{Vm, VmOpcode};
 
 struct Scope {
     vars: Vec<String>,
@@ -81,12 +81,18 @@ impl Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(Vec::new()),
-            interned_strings: if interned_strings_enabled { Some(InternedStringMap::new()) } else { None },
+            interned_strings: if interned_strings_enabled {
+                Some(InternedStringMap::new())
+            } else {
+                None
+            },
             modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
         }
     }
 
-    pub fn new_append(code: Vec<u8>, modules_info: Rc<RefCell<ModulesInfo>>, interned_strings: InternedStringMap) -> Compiler {
+    pub fn new_append(
+        code: Vec<u8>, modules_info: Rc<RefCell<ModulesInfo>>, interned_strings: InternedStringMap,
+    ) -> Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
@@ -98,7 +104,11 @@ impl Compiler {
 
     // create
     pub fn into_vm(&mut self) -> Vm {
-        Vm::new(self.code.take(), Some(self.modules_info.clone()), self.interned_strings.take())
+        Vm::new(
+            self.code.take(),
+            Some(self.modules_info.clone()),
+            self.interned_strings.take(),
+        )
     }
     pub fn into_code(self) -> Vec<u8> {
         self.code.unwrap()
@@ -209,7 +219,8 @@ impl Compiler {
                 &var[1..]
             } else {
                 var.as_str()
-            }).unwrap();
+            })
+            .unwrap();
         } else if let Some(local) = self.get_local(&var) {
             // set existing local
             let mut slot = local.0;
@@ -235,7 +246,8 @@ impl Compiler {
                 &var[1..]
             } else {
                 var.as_str()
-            }).unwrap();
+            })
+            .unwrap();
         } else if let Some(local) = self.get_local(&var) {
             // set existing local
             let mut slot = local.0;
@@ -263,7 +275,8 @@ impl Compiler {
                 &var[1..]
             } else {
                 var.as_str()
-            }).unwrap();
+            })
+            .unwrap();
         } else {
             let local = local.unwrap();
             let slot = local.0;

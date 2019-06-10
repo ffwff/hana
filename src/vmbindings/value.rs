@@ -1,10 +1,10 @@
 //! Provides an abstraction for native values
 
-use super::nativeval::{NativeValue, NativeValueType};
 use super::function::Function;
-use super::string::HaruString;
 use super::gc::Gc;
+use super::nativeval::{NativeValue, NativeValueType};
 use super::record::Record;
+use super::string::HaruString;
 use super::vm::Vm;
 use std::borrow::Borrow;
 extern crate libc;

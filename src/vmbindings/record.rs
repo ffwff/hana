@@ -1,10 +1,10 @@
 //! Provides a record value in Hana
 
+use super::gc::{push_gray_body, GcNode, GcTraceable};
 use super::hmap::HaruHashMap;
 use super::nativeval::NativeValue;
-use super::gc::{push_gray_body, GcNode, GcTraceable};
-use super::value::Value;
 use super::string::HaruString;
+use super::value::Value;
 use std::any::Any;
 use std::borrow::Borrow;
 use std::boxed::Box;
@@ -55,12 +55,14 @@ impl Record {
     {
         let k = k.into();
         if (k.borrow() as &String) == "prototype" {
-            self.prototype = unsafe{ match &v.unwrap() {
-                // since the borrow checker doesn't know that self.prototype
-                // can last as long as self, we'll have to use unsafe
-                Value::Record(x) => Some(&*x.to_raw()),
-                _ => None,
-            } };
+            self.prototype = unsafe {
+                match &v.unwrap() {
+                    // since the borrow checker doesn't know that self.prototype
+                    // can last as long as self, we'll have to use unsafe
+                    Value::Record(x) => Some(&*x.to_raw()),
+                    _ => None,
+                }
+            };
         }
         self.data.insert(k, v);
     }

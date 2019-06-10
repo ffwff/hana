@@ -1,18 +1,19 @@
 //! Provides String record for handling UTF-8 strings
 extern crate unicode_segmentation;
-use unicode_segmentation::UnicodeSegmentation;
-use std::borrow::Borrow;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
+use std::borrow::Borrow;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
-        vm.stack.push(Value::Str(vm.malloc(String::new().into())).wrap());
+        vm.stack
+            .push(Value::Str(vm.malloc(String::new().into())).wrap());
         return;
     } else if nargs == 1 {
-        let arg = unsafe{ vm.stack.pop().unwrap().unwrap() };
+        let arg = unsafe { vm.stack.pop().unwrap().unwrap() };
         vm.stack
             .push(Value::Str(vm.malloc(format!("{}", arg).to_string().into())).wrap());
     } else {
@@ -125,16 +126,14 @@ fn split(s: Value::Str, delim: Value::Str) -> Value {
     for ss in s.split(delim.as_ref().borrow() as &String) {
         array
             .as_mut()
-            .push(
-                Value::Str(vm.malloc(ss.clone().to_string().into()))
-                .wrap());
+            .push(Value::Str(vm.malloc(ss.clone().to_string().into())).wrap());
     }
     Value::Array(array)
 }
 
 #[hana_function()]
 fn index(s: Value::Str, needle: Value::Str) -> Value {
-    let s : &String = s.as_ref().borrow();
+    let s: &String = s.as_ref().borrow();
     match s.find(needle.as_ref().borrow() as &String) {
         Some(x) => Value::Int({
             let mut idx_grapheme = 0;
@@ -160,8 +159,7 @@ fn chars(s: Value::Str) -> Value {
     let array = vm.malloc(Vec::new());
     let array_ref = array.as_mut();
     for ch in s.as_ref().graphemes(true) {
-        array_ref
-            .push(Value::Str(vm.malloc(ch.to_string().into())).wrap());
+        array_ref.push(Value::Str(vm.malloc(ch.to_string().into())).wrap());
     }
     Value::Array(array)
 }

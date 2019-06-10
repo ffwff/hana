@@ -1,18 +1,18 @@
 //! Foreign C bindings for the virtual machine
 
-use super::hmap::HaruHashMap;
-use super::nativeval::NativeValue;
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
+use super::gc::Gc;
+use super::hmap::HaruHashMap;
+use super::nativeval::NativeValue;
 use super::record::Record;
 use super::string::HaruString;
 use super::value::Value;
 use super::vm::Vm;
-use super::gc::Gc;
 
-use std::borrow::Borrow;
 use std::alloc::{alloc_zeroed, realloc, Layout};
+use std::borrow::Borrow;
 use std::ffi::CStr;
 use std::ptr::{null, null_mut, NonNull};
 use unicode_segmentation::UnicodeSegmentation;
@@ -107,7 +107,7 @@ mod foreignc {
     }
     #[no_mangle]
     unsafe extern "C" fn dict_set_str(cr: *mut Record, ckey: *const HaruString, val: NativeValue) {
-        let key : String = ((&*ckey).borrow() as &String).clone();
+        let key: String = ((&*ckey).borrow() as &String).clone();
         let r = &mut *cr;
         r.insert(key, val.clone());
     }
@@ -132,9 +132,9 @@ mod foreignc {
     unsafe extern "C" fn string_append(
         cleft: *const HaruString, cright: *const HaruString, vm: *const Vm,
     ) -> *mut HaruString {
-        let left  : &HaruString = &*cleft;
-        let right : &HaruString = &*cright;
-        let mut newleft : String = (left.borrow() as &String).clone();
+        let left: &HaruString = &*cleft;
+        let right: &HaruString = &*cright;
+        let mut newleft: String = (left.borrow() as &String).clone();
         newleft += right;
         (&*vm).malloc(newleft.into()).into_raw()
     }
@@ -161,7 +161,9 @@ mod foreignc {
     }
 
     #[no_mangle]
-    unsafe extern "C" fn string_at(left: *const HaruString, idx: i64, vm: *const Vm) -> *mut HaruString {
+    unsafe extern "C" fn string_at(
+        left: *const HaruString, idx: i64, vm: *const Vm,
+    ) -> *mut HaruString {
         let left: &'static HaruString = &*left;
         if let Some(ch) = left.graphemes(true).nth(idx as usize) {
             (&*vm).malloc(ch.to_string().into()).into_raw()
@@ -184,8 +186,7 @@ mod foreignc {
         for ch in s.as_ref().graphemes(true) {
             chars
                 .as_mut()
-                .push(Value::Str(vm.malloc(ch.to_string().into()))
-                .wrap());
+                .push(Value::Str(vm.malloc(ch.to_string().into())).wrap());
         }
         chars.into_raw()
     }
@@ -265,7 +266,11 @@ mod foreignc {
         let vm = &mut *cvm;
         debug_assert!(vm.stack.len() >= env.nargs as usize);
         for i in 0..env.nargs {
-            let val = if let Some(val) = vm.stack.pop() { val } else { unreachable!() };
+            let val = if let Some(val) = vm.stack.pop() {
+                val
+            } else {
+                unreachable!()
+            };
             env.set(i, val.clone());
         }
     }
@@ -376,7 +381,7 @@ mod foreignc {
     #[allow(safe_packed_borrows)]
     unsafe extern "C" fn value_print(val: NativeValue) {
         if (val.r#type as u8) < 127 {
-        //eprint!("{:?}", val.unwrap());
+            //eprint!("{:?}", val.unwrap());
             eprint!("{:?}", val.unwrap());
         } else {
             eprint!("[interpreter {}]", val.data);

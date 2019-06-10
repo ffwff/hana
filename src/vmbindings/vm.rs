@@ -8,16 +8,16 @@ use std::rc::Rc;
 
 extern crate libc;
 
-use super::hmap::HaruHashMap;
-use super::nativeval::{NativeValue, NativeValueType};
 use super::env::Env;
 use super::exframe::ExFrame;
 use super::function::Function;
 use super::gc::*;
-use super::record::Record;
-use super::value::Value;
+use super::hmap::HaruHashMap;
 use super::interned_string_map::InternedStringMap;
+use super::nativeval::{NativeValue, NativeValueType};
+use super::record::Record;
 use super::string::HaruString;
+use super::value::Value;
 
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
@@ -174,7 +174,10 @@ extern "C" {
 
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
-    pub fn new(code: Option<Vec<u8>>, modules_info: Option<Rc<RefCell<ModulesInfo>>>, interned_strings: Option<InternedStringMap>) -> Vm {
+    pub fn new(
+        code: Option<Vec<u8>>, modules_info: Option<Rc<RefCell<ModulesInfo>>>,
+        interned_strings: Option<InternedStringMap>,
+    ) -> Vm {
         Vm {
             ip: 0,
             localenv: None,
@@ -257,7 +260,11 @@ impl Vm {
     pub unsafe fn stack_push_gray(&mut self, val: Value) {
         let w = val.wrap();
         if let Some(ptr) = w.as_gc_pointer() {
-            self.gc_manager.as_ref().unwrap().borrow_mut().push_gray_body(ptr);
+            self.gc_manager
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .push_gray_body(ptr);
         }
         self.stack.push(w);
     }
@@ -381,7 +388,7 @@ impl Vm {
         if self.exframes().len() == 0 {
             return false;
         }
-        let val = unsafe{ self.stack.last().unwrap().unwrap() };
+        let val = unsafe { self.stack.last().unwrap().unwrap() };
         for exframe in self.exframes.as_ref().unwrap().iter() {
             if let Some(handler) = exframe.get_handler(self, &val) {
                 self.ip = handler.ip;
@@ -450,7 +457,10 @@ impl Vm {
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
-            interned_strings: std::mem::replace(&mut self.interned_strings, InternedStringMap::new()),
+            interned_strings: std::mem::replace(
+                &mut self.interned_strings,
+                InternedStringMap::new(),
+            ),
             exframe_fallthrough: self.exframe_fallthrough.take(),
             native_call_depth: self.native_call_depth,
             modules_info: None,
@@ -595,7 +605,11 @@ impl Vm {
             let importer_ip = self.ip;
             let imported_ip = self.code.as_ref().unwrap().len();
             {
-                let mut c = Compiler::new_append(self.code.take().unwrap(), rc, std::mem::replace(&mut self.interned_strings, InternedStringMap::new()));
+                let mut c = Compiler::new_append(
+                    self.code.take().unwrap(),
+                    rc,
+                    std::mem::replace(&mut self.interned_strings, InternedStringMap::new()),
+                );
                 for stmt in prog {
                     stmt.emit(&mut c).unwrap();
                 }

@@ -21,9 +21,9 @@ macro_rules! hana_raise {
 }
 
 pub mod cmd;
+pub mod dir;
 pub mod env;
 pub mod eval;
-pub mod dir;
 pub mod file;
 pub mod io;
 pub mod math;

@@ -288,9 +288,7 @@ pub mod ast {
             if let Some(id) = &self.id {
                 let len = c.clen() - 1;
                 let mut modules_info = c.modules_info.borrow_mut();
-                modules_info
-                    .symbol
-                    .insert(len, id.clone());
+                modules_info.symbol.insert(len, id.clone());
             }
 
             // default return
@@ -338,12 +336,11 @@ pub mod ast {
                     op_push_str!(c, stmt.def().id.as_ref().unwrap());
                 } else if let Some(stmt) = any.downcast_ref::<ExprStatement>() {
                     let binexpr = stmt.expr.as_any().downcast_ref::<BinExpr>().unwrap();
-                    let id =
-                        if let Some(id) = binexpr.left.as_any().downcast_ref::<Identifier>() {
-                            id
-                        } else {
-                            return Err(CodeGenError::InvalidLeftHandSide)
-                        };
+                    let id = if let Some(id) = binexpr.left.as_any().downcast_ref::<Identifier>() {
+                        id
+                    } else {
+                        return Err(CodeGenError::InvalidLeftHandSide);
+                    };
                     binexpr.right.emit(c)?;
                     op_push_str!(c, id.val);
                 }
@@ -567,10 +564,12 @@ pub mod ast {
                         let function_end = c.reserve_label16();
 
                         c.set_local(
-                            if let Some(callee) = callexpr.callee.as_any().downcast_ref::<Identifier>() {
+                            if let Some(callee) =
+                                callexpr.callee.as_any().downcast_ref::<Identifier>()
+                            {
                                 callee.val.clone()
                             } else {
-                                return Err(CodeGenError::ExpectedIdentifier)
+                                return Err(CodeGenError::ExpectedIdentifier);
                             },
                         );
                         c.scope();
@@ -583,7 +582,7 @@ pub mod ast {
                                 if let Some(arg) = arg.as_any().downcast_ref::<Identifier>() {
                                     arg.val.clone()
                                 } else {
-                                    return Err(CodeGenError::ExpectedIdentifier)
+                                    return Err(CodeGenError::ExpectedIdentifier);
                                 },
                             );
                         }
@@ -603,12 +602,13 @@ pub mod ast {
                         c.fill_label16(nslot_label, nslots);
                         c.fill_label16(function_end, (c.clen() - function_end) as u16);
 
-                        let id =
-                            if let Some(id) = &callexpr.callee.as_any().downcast_ref::<Identifier>() {
-                                id.val.clone()
-                            } else {
-                                return Err(CodeGenError::ExpectedIdentifier)
-                            };
+                        let id = if let Some(id) =
+                            &callexpr.callee.as_any().downcast_ref::<Identifier>()
+                        {
+                            id.val.clone()
+                        } else {
+                            return Err(CodeGenError::ExpectedIdentifier);
+                        };
                         if id != "_" {
                             // _ for id is considered a anonymous function decl
                             c.emit_set_var_fn(id);

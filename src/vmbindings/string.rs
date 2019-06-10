@@ -1,7 +1,7 @@
+use super::gc::{GcNode, GcTraceable};
 use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use std::rc::Rc;
-use super::gc::{GcTraceable, GcNode};
 
 #[derive(Clone, Debug)]
 pub struct CowStringData {
@@ -43,8 +43,7 @@ impl HaruStringData {
 impl std::cmp::PartialEq for HaruStringData {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (HaruStringData::CowString(x), HaruStringData::CowString(y))
-                => x == y,
+            (HaruStringData::CowString(x), HaruStringData::CowString(y)) => x == y,
             (x, y) => {
                 let x = x.borrow() as &String;
                 let y = y.borrow() as &String;
@@ -58,7 +57,7 @@ impl std::hash::Hash for HaruStringData {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
             HaruStringData::CowString(s) => (self.borrow() as &String).hash(state),
-            HaruStringData::String(s) => s.hash(state)
+            HaruStringData::String(s) => s.hash(state),
         }
     }
 }
@@ -67,9 +66,7 @@ impl std::borrow::Borrow<String> for HaruStringData {
     fn borrow(&self) -> &String {
         match &self {
             HaruStringData::CowString(_) => self.as_cow(),
-            HaruStringData::String(s) => {
-                &s
-            }
+            HaruStringData::String(s) => &s,
         }
     }
 }
@@ -81,17 +78,15 @@ pub struct HaruString {
 }
 
 impl HaruString {
-
     pub fn new_cow(data: Rc<String>) -> HaruString {
         HaruString {
-            data: HaruStringData::CowString(CowStringData { data })
+            data: HaruStringData::CowString(CowStringData { data }),
         }
     }
 
     pub fn is_cow(&self) -> bool {
         self.data.is_cow()
     }
-
 }
 
 impl std::borrow::Borrow<String> for HaruString {
@@ -134,20 +129,16 @@ impl GcTraceable for HaruString {
 
 // conversion
 impl Into<HaruString> for String {
-
     fn into(self) -> HaruString {
         HaruString {
-            data: HaruStringData::String(self)
+            data: HaruStringData::String(self),
         }
     }
-
 }
 impl From<&str> for HaruString {
-
     fn from(s: &str) -> Self {
         HaruString {
-            data: HaruStringData::String(String::from(s))
+            data: HaruStringData::String(String::from(s)),
         }
     }
-
 }

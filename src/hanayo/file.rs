@@ -1,8 +1,8 @@
 //! Provides File record for handling files
+use std::borrow::Borrow;
 use std::boxed::Box;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::borrow::Borrow;
 
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
@@ -39,8 +39,10 @@ fn constructor(path: Value::Str, mode: Value::Str) -> Value {
                 "prototype",
                 Value::Record(vm.stdlib.as_ref().unwrap().io_error.clone()).wrap(),
             );
-            rec.as_mut()
-                .insert("why", Value::Str(vm.malloc(format!("{:?}", err).into())).wrap());
+            rec.as_mut().insert(
+                "why",
+                Value::Str(vm.malloc(format!("{:?}", err).into())).wrap(),
+            );
             rec.as_mut().insert("where", Value::Str(path).wrap());
             hana_raise!(vm, Value::Record(rec));
         }
@@ -78,11 +80,13 @@ fn read_up_to(file: Value::Record, n: Value::Int) -> Value {
     let mut bytes: Vec<u8> = Vec::new();
     bytes.resize(n as usize, 0);
     file.read_exact(&mut bytes);
-    Value::Str(vm.malloc(
-        String::from_utf8(bytes)
-            .unwrap_or_else(|e| panic!("error decoding file: {:?}", e))
-            .into()
-    ))
+    Value::Str(
+        vm.malloc(
+            String::from_utf8(bytes)
+                .unwrap_or_else(|e| panic!("error decoding file: {:?}", e))
+                .into(),
+        ),
+    )
 }
 
 // write

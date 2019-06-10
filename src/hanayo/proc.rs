@@ -25,8 +25,10 @@ fn utf8_decoding_error(err: std::string::FromUtf8Error, vm: &Vm) -> Value {
         "prototype",
         Value::Record(vm.stdlib.as_ref().unwrap().utf8_decoding_error.clone()).wrap(),
     );
-    rec.as_mut()
-        .insert("why", Value::Str(vm.malloc(format!("{:?}", err).into())).wrap());
+    rec.as_mut().insert(
+        "why",
+        Value::Str(vm.malloc(format!("{:?}", err).into())).wrap(),
+    );
     rec.as_mut().insert("where", Value::Int(0).wrap());
     Value::Record(rec)
 }

@@ -3,10 +3,10 @@ use value_ext::*;
 extern crate haru;
 use haru::ast::grammar;
 use haru::compiler;
+use haru::hanayo;
 use haru::vmbindings::value::Value;
 use haru::vmbindings::vm::{Vm, VmOpcode};
 use haru::vmbindings::vmerror::VmError;
-use haru::hanayo;
 
 #[cfg(test)]
 pub mod hanayo_tests {

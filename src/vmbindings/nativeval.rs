@@ -39,23 +39,17 @@ impl NativeValue {
         #[allow(non_camel_case_types)]
         match &self.r#type {
             NativeValueType::TYPE_NIL => Value::Nil,
-            NativeValueType::TYPE_INT => { Value::Int(transmute::<u64, i64>(self.data)) },
+            NativeValueType::TYPE_INT => Value::Int(transmute::<u64, i64>(self.data)),
             NativeValueType::TYPE_FLOAT => Value::Float(f64::from_bits(self.data)),
             NativeValueType::TYPE_NATIVE_FN => {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
-            },
-            NativeValueType::TYPE_FN => {
-                Value::Fn(Gc::from_raw(self.data as *mut Function))
-            },
-            NativeValueType::TYPE_STR => {
-                Value::Str(Gc::from_raw(self.data as *mut HaruString))
-            },
-            NativeValueType::TYPE_DICT => {
-                Value::Record(Gc::from_raw(self.data as *mut Record))
-            },
+            }
+            NativeValueType::TYPE_FN => Value::Fn(Gc::from_raw(self.data as *mut Function)),
+            NativeValueType::TYPE_STR => Value::Str(Gc::from_raw(self.data as *mut HaruString)),
+            NativeValueType::TYPE_DICT => Value::Record(Gc::from_raw(self.data as *mut Record)),
             NativeValueType::TYPE_ARRAY => {
                 Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
-            },
+            }
             _ => panic!("type was: {:?}", self.r#type),
         }
     }

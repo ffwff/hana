@@ -2,8 +2,8 @@
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
-use std::env;
 use std::borrow::Borrow;
+use std::env;
 
 #[hana_function()]
 fn get(key: Value::Str) -> Value {
@@ -15,7 +15,10 @@ fn get(key: Value::Str) -> Value {
 
 #[hana_function()]
 fn set(key: Value::Str, val: Value::Str) -> Value {
-    env::set_var(key.as_ref().borrow() as &String, val.as_ref().borrow() as &String);
+    env::set_var(
+        key.as_ref().borrow() as &String,
+        val.as_ref().borrow() as &String,
+    );
     Value::Nil
 }
 

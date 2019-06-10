@@ -1,7 +1,7 @@
 extern crate haru;
-use haru::vmbindings::value::Value;
 use haru::vmbindings::nativeval::NativeValue;
 use haru::vmbindings::record::Record;
+use haru::vmbindings::value::Value;
 
 pub trait ValueExt {
     fn int(&self) -> i64;
@@ -74,6 +74,6 @@ pub trait UnwrapUnsafe {
 impl UnwrapUnsafe for NativeValue {
     type Output = Value;
     fn unwraps(&self) -> Value {
-        unsafe{ self.unwrap() }
+        unsafe { self.unwrap() }
     }
 }

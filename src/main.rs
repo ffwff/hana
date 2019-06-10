@@ -175,7 +175,7 @@ fn handle_error(vm: &Vm, c: &compiler::Compiler) -> bool {
             println!("interpreter error: {}", vm.error);
             return true;
         }
-        if let Some(hint) = unsafe{ vm.error.hint(vm) } {
+        if let Some(hint) = unsafe { vm.error.hint(vm) } {
             eprintln!("{} {}", ac::Red.bold().paint("hint:"), hint);
         }
         let envs = vm.localenv_to_vec();
@@ -232,25 +232,28 @@ fn repl(flag: ParserFlag) {
                             println!("{:?}", prog);
                             continue;
                         }
-                        let gencode = |c: &mut compiler::Compiler| -> Result<bool, ast::ast::CodeGenError> {
-                            if let Some(_) = prog.last() {
-                                let stmt = prog.pop().unwrap();
-                                for stmt in prog {
-                                    stmt.emit(c)?;
-                                }
-                                if let Some(expr_stmt) = stmt.as_any().downcast_ref::<ast::ast::ExprStatement>() {
-                                    expr_stmt.expr.emit(c)?;
-                                    return Ok(true);
+                        let gencode =
+                            |c: &mut compiler::Compiler| -> Result<bool, ast::ast::CodeGenError> {
+                                if let Some(_) = prog.last() {
+                                    let stmt = prog.pop().unwrap();
+                                    for stmt in prog {
+                                        stmt.emit(c)?;
+                                    }
+                                    if let Some(expr_stmt) =
+                                        stmt.as_any().downcast_ref::<ast::ast::ExprStatement>()
+                                    {
+                                        expr_stmt.expr.emit(c)?;
+                                        return Ok(true);
+                                    } else {
+                                        stmt.emit(c)?;
+                                    }
                                 } else {
-                                    stmt.emit(c)?;
+                                    for stmt in prog {
+                                        stmt.emit(c)?;
+                                    }
                                 }
-                            } else {
-                                for stmt in prog {
-                                    stmt.emit(c)?;
-                                }
-                            }
-                            Ok(false)
-                        };
+                                Ok(false)
+                            };
                         // setup
                         #[allow(unused_assignments)]
                         let mut pop_print = false;
@@ -289,7 +292,7 @@ fn repl(flag: ParserFlag) {
                             }
                         }
                         if !handle_error(&vm, &c) && pop_print {
-                            println!("=> {:?}", unsafe{ vm.stack.pop().unwrap().unwrap() });
+                            println!("=> {:?}", unsafe { vm.stack.pop().unwrap().unwrap() });
                         }
                     }
                     Err(err) => {

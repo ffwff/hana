@@ -37,7 +37,10 @@ pub mod interpreter_tests {
     #[test]
     fn float_literal() {
         let vm: Vm = eval!("y = 420.69");
-        assert_eq!(vm.global().get("y").unwrap().unwraps(), Value::Float(420.69));
+        assert_eq!(
+            vm.global().get("y").unwrap().unwraps(),
+            Value::Float(420.69)
+        );
     }
 
     #[test]
