@@ -69,8 +69,8 @@ impl GcManager {
         let size = GcNode::alloc_size::<T>();
         let node: *mut GcNode = self.cycle(vm, size).unwrap_or_else(|| {
             let layout = Layout::from_size_align(size, 2).unwrap();
-            alloc_zeroed(layout) as *mut GcNode
-        });
+            NonNull::new(alloc_zeroed(layout) as *mut GcNode).unwrap()
+        }).as_ptr();
         // append node
         if self.first_node.is_null() {
             self.first_node = node;
@@ -119,7 +119,7 @@ impl GcManager {
     }
 
     // gc algorithm
-    unsafe fn cycle(&mut self, vm: &Vm, size: usize) -> Option<*mut GcNode> {
+    unsafe fn cycle(&mut self, vm: &Vm, size: usize) -> Option<NonNull<GcNode>> {
         if !self.enabled || self.bytes_allocated < self.threshold {
             return None;
         }
@@ -135,7 +135,7 @@ impl GcManager {
             let mut prev: *mut GcNode = null_mut();
             // sweep
             let mut node = self.first_node;
-            let mut first_fitting_node: *mut GcNode = null_mut();
+            let mut first_fitting_node: Option<NonNull<GcNode>> = None;
             while !node.is_null() {
                 let next: *mut GcNode = (*node).next;
                 let mut freed = false;
@@ -159,9 +159,9 @@ impl GcManager {
                     finalizer(body as *mut c_void);
 
                     // if this node fits then record it
-                    if (*node).size == size && first_fitting_node.is_null() {
+                    if (*node).size == size && first_fitting_node.is_none() {
                         std::ptr::write_bytes(node as *mut u8, 0, (*node).size);
-                        first_fitting_node = node;
+                        first_fitting_node = Some(NonNull::new_unchecked(node));
                     } else { // else just free it
                         let layout = Layout::from_size_align((*node).size, 2).unwrap();
                         dealloc(node as *mut u8, layout);
@@ -184,11 +184,10 @@ impl GcManager {
             }
 
             // return first fitting node if there is any
-            if first_fitting_node.is_null() { return None; }
-            else { return Some(first_fitting_node); }
+            first_fitting_node
+        } else {
+            None
         }
-
-        None
     }
 }
 

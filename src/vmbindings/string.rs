@@ -56,7 +56,7 @@ impl std::cmp::PartialEq for HaruStringData {
 impl std::hash::Hash for HaruStringData {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
-            HaruStringData::CowString(s) => (self.borrow() as &String).hash(state),
+            HaruStringData::CowString(_) => (self.borrow() as &String).hash(state),
             HaruStringData::String(s) => s.hash(state),
         }
     }
