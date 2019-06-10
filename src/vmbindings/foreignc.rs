@@ -16,7 +16,6 @@ use std::alloc::{alloc_zeroed, realloc, Layout};
 use std::ffi::CStr;
 use std::ptr::{null, null_mut, NonNull};
 use unicode_segmentation::UnicodeSegmentation;
-extern crate unicode_segmentation;
 
 #[allow(unused_attributes)]
 mod foreignc {

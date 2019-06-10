@@ -783,7 +783,7 @@ pub mod ast {
                     }
                     // or optimize statically
                     c.cpushop(VmOpcode::OP_MEMBER_SET);
-                    c.cpushs(val.clone());
+                    try_nil!(c.cpushs(val.clone()));
                 } else {
                     // do it normally
                     self.right.emit(c)?;

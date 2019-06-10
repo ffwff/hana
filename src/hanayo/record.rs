@@ -2,7 +2,6 @@
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
-use std::borrow::Borrow;
 
 #[hana_function()]
 fn constructor() -> Value {

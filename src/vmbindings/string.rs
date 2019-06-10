@@ -2,7 +2,6 @@ use std::borrow::Borrow;
 use std::borrow::BorrowMut;
 use std::rc::Rc;
 use super::gc::{GcTraceable, GcNode};
-use super::interned_string_map::InternedStringMap;
 
 #[derive(Clone, Debug)]
 pub struct CowStringData {
@@ -67,7 +66,7 @@ impl std::hash::Hash for HaruStringData {
 impl std::borrow::Borrow<String> for HaruStringData {
     fn borrow(&self) -> &String {
         match &self {
-            HaruStringData::CowString(s) => self.as_cow(),
+            HaruStringData::CowString(_) => self.as_cow(),
             HaruStringData::String(s) => {
                 &s
             }
