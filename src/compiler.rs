@@ -15,7 +15,7 @@
 //! ```
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use crate::vmbindings::interned_string_map::InternedStringMap;
@@ -50,7 +50,7 @@ pub struct ModulesInfo {
     pub smap: Vec<SourceMap>,
     pub files: Vec<String>,
     pub modules_loaded: std::collections::HashSet<std::path::PathBuf>,
-    pub symbol: HashMap<usize, String>,
+    pub symbol: BTreeMap<usize, String>,
     pub sources: Vec<String>,
 }
 
@@ -60,7 +60,7 @@ impl ModulesInfo {
             smap: Vec::new(),
             files: Vec::new(),
             modules_loaded: std::collections::HashSet::new(),
-            symbol: HashMap::new(),
+            symbol: BTreeMap::new(),
             sources: Vec::new(),
         }
     }

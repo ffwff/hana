@@ -159,7 +159,7 @@ impl GcManager {
                     finalizer(body as *mut c_void);
 
                     // if this node fits then record it
-                    if ((*node).size == size && first_fitting_node.is_null()) {
+                    if (*node).size == size && first_fitting_node.is_null() {
                         std::ptr::write_bytes(node as *mut u8, 0, (*node).size);
                         first_fitting_node = node;
                     } else { // else just free it

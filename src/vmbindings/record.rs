@@ -22,7 +22,7 @@ pub struct Record {
 impl Record {
     pub fn new() -> Record {
         Record {
-            data: std::collections::HashMap::new(),
+            data: HaruHashMap::new(),
             prototype: None,
             native_field: None,
         }
@@ -30,7 +30,7 @@ impl Record {
 
     pub fn with_capacity(n: usize) -> Record {
         Record {
-            data: std::collections::HashMap::with_capacity(n),
+            data: HaruHashMap::with_capacity(n),
             prototype: None,
             native_field: None,
         }
@@ -67,7 +67,7 @@ impl Record {
         self.data.insert(k, v);
     }
 
-    pub fn iter(&self) -> std::collections::hash_map::Iter<HaruString, NativeValue> {
+    pub fn iter(&self) -> hashbrown::hash_map::Iter<HaruString, NativeValue> {
         self.data.iter()
     }
 

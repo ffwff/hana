@@ -2,7 +2,7 @@
 
 use super::nativeval::NativeValue;
 use super::string::HaruString;
-use std::collections::HashMap;
+use hashbrown::HashMap;
 
 /// A hashmap of String-NativeValue
 pub type HaruHashMap = HashMap<HaruString, NativeValue>;

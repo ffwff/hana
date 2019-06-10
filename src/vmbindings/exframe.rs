@@ -1,5 +1,5 @@
 //! Provides an exception frame interface for storing try..case data
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::ptr::NonNull;
 
 use super::env::Env;
@@ -11,7 +11,7 @@ use super::vm::Vm;
 /// Exception frame
 pub struct ExFrame {
     /// Exception frame handlers
-    handlers: HashMap<*const Record, Function>,
+    handlers: BTreeMap<*const Record, Function>,
     /// The target call stack frame to rewind to
     pub unwind_env: Option<NonNull<Env>>,
     /// The target virtual machine stack index to rewind to
@@ -25,7 +25,7 @@ impl ExFrame {
         unwind_env: Option<NonNull<Env>>, unwind_stack: usize, unwind_native_call_depth: usize,
     ) -> ExFrame {
         ExFrame {
-            handlers: HashMap::new(),
+            handlers: BTreeMap::new(),
             unwind_env,
             unwind_stack,
             unwind_native_call_depth,
