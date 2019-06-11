@@ -112,7 +112,7 @@ impl Value {
     }
 
     // bool
-    pub fn is_true(self, vm: &Vm) -> bool {
+    pub fn is_true(self) -> bool {
         // TODO document this
         match self {
             Value::Int(x) => x > 0,
@@ -123,6 +123,7 @@ impl Value {
     }
 
     // #region binary ops
+    // #region arithmetic
     pub fn add(self, other: Value, vm: &Vm) -> Result<Value, VmError> {
         match (self, other) {
             (Value::Int(x), Value::Int(y)) => Ok(Value::Int(x + y)),
@@ -185,9 +186,37 @@ impl Value {
     } */
     // #endregion
 
+
+    // #region in place
+    pub fn add_in_place(self, other: Value, vm: &Vm) -> Result<(bool, Value), VmError> {
+        match (&self, &other) {
+            (Value::Str(x), Value::Str(y)) => {
+                use std::borrow::BorrowMut;
+                let string: &mut String = x.as_mut().borrow_mut();
+                string.push_str(y.as_ref());
+                Ok((true, self))
+            },
+            _ => self.add(other, vm).map(|val| (false, val)),
+        }
+    }
+    pub fn mul_in_place(self, other: Value, vm: &Vm) -> Result<(bool, Value), VmError> {
+        match (&self, &other) {
+            (Value::Str(x), Value::Int(y)) => {
+                use std::borrow::BorrowMut;
+                let string: &mut String = x.as_mut().borrow_mut();
+                string.push_str(&string.clone().as_str().repeat(*y as usize - 1));
+                Ok((true, self))
+            },
+            _ => self.mul(other, vm).map(|val| (false, val)),
+        }
+    }
+    // #endregion
+
+    // #endregion
+
     // #region unary ops
     pub fn not(self, vm: &Vm) -> Result<Value, VmError> {
-        Ok(Value::Int(!self.is_true(vm) as i64))
+        Ok(Value::Int(!self.is_true() as i64))
     }
     pub fn negate(self, vm: &Vm) -> Result<Value, VmError> {
         match self {

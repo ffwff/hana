@@ -236,6 +236,15 @@ impl Vm {
                 self.stack.pop().unwrap_or_else(|| unreachable!())
             };
         }
+        macro_rules! consume_u8 {
+            () => {
+                {
+                    let n = unsafe{ *code.get_unchecked(self.ip as usize) };
+                    self.ip += 1;
+                    n
+                }
+            };
+        }
         macro_rules! consume_u16 {
             () => {
                 {
@@ -271,6 +280,30 @@ impl Vm {
                     let left  = unsafe{ pop!().unwrap() };
                     match left.$func(right, &self) {
                         Ok(retval) => self.stack.push(retval.wrap()),
+                        Err(e) => {
+                            self.error = e;
+                            return;
+                        }
+                    }
+                }
+            };
+        }
+        macro_rules! op_binary_in_place {
+            ($func:ident) => {
+                {
+                    self.ip += 1;
+                    let right = unsafe{ pop!().unwrap() };
+                    let left = unsafe{ pop!().unwrap() };
+                    match left.$func(right, &self) {
+                        Ok((in_place, retval)) => {
+                            self.stack.push(retval.wrap());
+                            if in_place {
+                                let ip = consume_u8!();
+                                self.ip += ip as u32;
+                            } else {
+                                self.ip += 1;
+                            }
+                        }
                         Err(e) => {
                             self.error = e;
                             return;
@@ -341,6 +374,10 @@ impl Vm {
                 VmOpcode::OP_SUB => op_binary!(sub),
                 VmOpcode::OP_MUL => op_binary!(mul),
                 VmOpcode::OP_DIV => op_binary!(div),
+
+                // in place
+                VmOpcode::OP_IADD => op_binary_in_place!(add_in_place),
+                VmOpcode::OP_IMUL => op_binary_in_place!(mul_in_place),
                 // #endregion
 
                 // #region unary ops

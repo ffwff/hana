@@ -110,7 +110,7 @@ fn filter(array: Value::Array, fun: Value::Any) -> Value {
         args.clear();
         args.push(val.clone());
         if let Some(filter) = vm.call(fun.wrap(), &args) {
-            if unsafe { filter.unwrap() }.is_true(vm) {
+            if unsafe { filter.unwrap() }.is_true() {
                 new_array.as_mut().push(val.clone());
             }
         } else {
