@@ -5,6 +5,7 @@ use std::mem::ManuallyDrop;
 use std::path::Path;
 use std::ptr::{null_mut, NonNull};
 use std::rc::Rc;
+use std::ffi::CStr;
 
 extern crate libc;
 
@@ -220,6 +221,36 @@ impl Vm {
 
     pub fn execute(&mut self) {
         let code = self.code.as_ref().unwrap();
+        if self.globalenv.is_none() {
+            panic!("globalenv must not be none");
+        }
+
+        // #region macros
+        macro_rules! global {
+            () => {
+                self.globalenv.as_mut().unwrap_or_else(|| unreachable!())
+            };
+        }
+        macro_rules! pop {
+            () => {
+                self.stack.pop().unwrap_or_else(|| unreachable!())
+            };
+        }
+        macro_rules! consume_u16 {
+            () => {
+                {
+                    let mut num: [u8; 2] = Default::default();
+                    num.copy_from_slice(unsafe{ code.get_unchecked((self.ip as usize)..(self.ip as usize + 2)) });
+                    self.ip += 2;
+                    u16::from_be_bytes(num)
+                }
+            };
+        }
+        macro_rules! consume_string {
+            () => {
+                unsafe{ CStr::from_ptr(std::mem::transmute(code.get_unchecked(self.ip as usize))) }.to_string_lossy().to_string()
+            };
+        }
         macro_rules! op_push_int {
             ($type:ty) => {
                 {
@@ -232,10 +263,28 @@ impl Vm {
                 }
             };
         }
+        macro_rules! op_binary {
+            ($func:ident) => {
+                {
+                    self.ip += 1;
+                    let right = unsafe{ pop!().unwrap() };
+                    let left  = unsafe{ pop!().unwrap() };
+                    match left.$func(right, &self) {
+                        Ok(retval) => self.stack.push(retval.wrap()),
+                        Err(e) => {
+                            self.error = e;
+                            return;
+                        }
+                    }
+                }
+            };
+        }
+        // #endregion
+
         loop {
             match unsafe {
                 if let Some(op) = VmOpcode::from_u8(*code.get_unchecked(self.ip as usize)) {
-                    if cfg!(debug) || cfg!(test) { eprintln!("{:?}", op); }
+                    eprintln!("{:?}", op);
                     op
                 } else {
                     unreachable!()
@@ -244,7 +293,17 @@ impl Vm {
                 VmOpcode::OP_HALT => {
                     return;
                 }
-                // stack manip
+                // #region stack manip
+                VmOpcode::OP_POP => {
+                    self.ip += 1;
+                    pop!();
+                }
+
+                VmOpcode::OP_PUSH_NIL => {
+                    self.ip += 1;
+                    self.stack.push(Value::Nil.wrap());
+                }
+
                 // #region push uint family
                 VmOpcode::OP_PUSH8  => op_push_int!(u8),
                 VmOpcode::OP_PUSH16 => op_push_int!(u16),
@@ -261,30 +320,73 @@ impl Vm {
                     self.ip += n as u32;
                 }
 
-                // #region arithmetic
-                VmOpcode::OP_ADD => {
+                // #region push str
+                VmOpcode::OP_PUSHSTR => {
                     self.ip += 1;
-                    let left  = unsafe{ self.stack.pop().unwrap().unwrap() };
-                    let right = unsafe{ self.stack.pop().unwrap().unwrap() };
-                    let retval = match left {
-                        Value::Int(x) => {
-                            match right {
-                                Value::Int(y) => {
-                                    Value::Int(x + y)
-                                }
-                                _ => unimplemented!()
-                            }
-                        }
-                        _ => unimplemented!()
-                    };
-                    self.stack.push(retval.wrap());
+                    let s = consume_string!();
+                    self.ip += s.len() as u32 + 1;
+                    self.stack.push(Value::Str(self.malloc(s.into())).wrap());
+                }
+
+                VmOpcode::OP_PUSHSTR_INTERNED => {
+                    self.ip += 1;
+                    let idx = consume_u16!();
+                    let inst = unsafe { HaruString::new_cow(self.interned_strings.get_unchecked(idx).clone()) };
+                    self.stack.push(Value::Str(self.malloc(inst)).wrap());
                 }
                 // #endregion
+
+                // #region binary ops
+                VmOpcode::OP_ADD => op_binary!(add),
+                VmOpcode::OP_SUB => op_binary!(sub),
+                VmOpcode::OP_MUL => op_binary!(mul),
+                VmOpcode::OP_DIV => op_binary!(div),
+                // #endregion
+
+                // #region unary ops
+                VmOpcode::OP_NEGATE => {
+                    self.ip += 1;
+                    let val = unsafe{ pop!().unwrap() };
+                    match val.negate(&self) {
+                        Ok(retval) => self.stack.push(retval.wrap()),
+                        Err(e) => {
+                            self.error = e;
+                            return;
+                        }
+                    }
+                }
+                VmOpcode::OP_NOT => {
+                    self.ip += 1;
+                    let val = unsafe{ pop!().unwrap() };
+                    match val.not(&self) {
+                        Ok(retval) => self.stack.push(retval.wrap()),
+                        Err(e) => {
+                            self.error = e;
+                            return;
+                        }
+                    }
+                }
+                // #endregion
+                // #endregion
+
+                // #region globals
+                VmOpcode::OP_GET_GLOBAL => {
+                    self.ip += 1;
+                    let var = consume_string!();
+                    self.ip += var.len() as u32 + 1;
+                    self.stack.push(global!().get(var.as_str()).unwrap().clone());
+                }
+                VmOpcode::OP_SET_GLOBAL => {
+                    self.ip += 1;
+                    let var = consume_string!();
+                    self.ip += var.len() as u32 + 1;
+                    global!().insert(var.into(), self.stack.last().unwrap_or_else(|| unreachable!()).clone());
+                }
+                // #endregion
+
                 op => unimplemented!("{:?}", op)
             }
-            if cfg!(debug) || cfg!(test) {
-                unsafe{ self.print_stack(); }
-            }
+            unsafe{ self.print_stack(); }
         }
     }
 

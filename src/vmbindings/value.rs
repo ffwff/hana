@@ -6,6 +6,7 @@ use super::nativeval::{NativeValue, NativeValueType};
 use super::record::Record;
 use super::string::HaruString;
 use super::vm::Vm;
+use super::vmerror::VmError;
 use std::borrow::Borrow;
 extern crate libc;
 
@@ -96,11 +97,6 @@ impl Value {
         unsafe { value_get_prototype(vm, self.wrap()) }
     }
 
-    // bool
-    pub fn is_true(&self, vm: *const Vm) -> bool {
-        unsafe { value_is_true(self.wrap(), vm) }
-    }
-
     #[cfg_attr(tarpaulin, skip)]
     pub fn type_name(&self) -> &str {
         match self {
@@ -114,6 +110,88 @@ impl Value {
             _ => "unk",
         }
     }
+
+    // bool
+    pub fn is_true(&self, vm: &Vm) -> bool {
+        unimplemented!()
+    }
+
+    // #region binary ops
+    pub fn add(self, other: Value, vm: &Vm) -> Result<Value, VmError> {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => Ok(Value::Int(x + y)),
+            (Value::Float(x), Value::Float(y)) => Ok(Value::Float(x + y)),
+            (Value::Int(x), Value::Float(y)) => Ok(Value::Float(x as f64 + y)),
+            (Value::Float(x), Value::Int(y)) => Ok(Value::Float(x + y as f64)),
+            (Value::Str(x), Value::Str(y)) => {
+                let mut string = x.as_ref().to_string();
+                string += y.as_ref();
+                Ok(Value::Str(vm.malloc(string.into())))
+            },
+            _ => Err(VmError::ERROR_OP_ADD),
+        }
+    }
+    pub fn sub(self, other: Value, vm: &Vm) -> Result<Value, VmError> {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => Ok(Value::Int(x - y)),
+            (Value::Float(x), Value::Float(y)) => Ok(Value::Float(x - y)),
+            (Value::Int(x), Value::Float(y)) => Ok(Value::Float(x as f64 - y)),
+            (Value::Float(x), Value::Int(y)) => Ok(Value::Float(x - y as f64)),
+            _ => Err(VmError::ERROR_OP_SUB),
+        }
+    }
+    pub fn mul(self, other: Value, vm: &Vm) -> Result<Value, VmError> {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => Ok(Value::Int(x * y)),
+            (Value::Float(x), Value::Float(y)) => Ok(Value::Float(x * y)),
+            (Value::Int(x), Value::Float(y)) => Ok(Value::Float(x as f64 * y)),
+            (Value::Float(x), Value::Int(y)) => Ok(Value::Float(x * y as f64)),
+            (Value::Str(x), Value::Int(y)) => Ok(Value::Str(vm.malloc(x.as_ref().repeat(y as usize).into()))),
+            _ => Err(VmError::ERROR_OP_MUL),
+        }
+    }
+    pub fn div(self, other: Value, vm: &Vm) -> Result<Value, VmError> {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => Ok(Value::Float(x as f64 / y as f64)),
+            (Value::Float(x), Value::Float(y)) => Ok(Value::Float(x / y)),
+            (Value::Int(x), Value::Float(y)) => Ok(Value::Float(x as f64 / y)),
+            (Value::Float(x), Value::Int(y)) => Ok(Value::Float(x / y as f64)),
+            _ => Err(VmError::ERROR_OP_DIV),
+        }
+    }
+    /* pub fn mul(&self, other: Value, vm: &Vm) -> Result<Value, VmError> {
+        match &self {
+            Value::Int() => (),
+            _ => Err(VmError::ERROR_OP_MUL),
+        }
+    }
+    pub fn div(&self, other: Value, vm: &Vm) -> Result<Value, VmError> {
+        match &self {
+            Value::Int() => (),
+            _ => Err(VmError::ERROR_OP_DIV),
+        }
+    }
+    pub fn mod(&self, other: Value, vm: &Vm) -> Result<Value, VmError> {
+        match &self {
+            Value::Int() => (),
+            _ => Err(VmError::ERROR_OP_MOD),
+        }
+    } */
+    // #endregion
+
+    // #region unary ops
+    pub fn not(self, vm: &Vm) -> Result<Value, VmError> {
+        Ok(Value::Int(!self.is_true(vm) as i64))
+    }
+    pub fn negate(self, vm: &Vm) -> Result<Value, VmError> {
+        match self {
+            Value::Int(x) => Ok(Value::Int(-x)),
+            Value::Float(x) => Ok(Value::Float(-x)),
+            other => Ok(other),
+        }
+    }
+    // #endregion
+
 }
 
 use std::fmt;
