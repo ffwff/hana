@@ -123,6 +123,7 @@ impl Value {
     }
 
     // #region binary ops
+
     // #region arithmetic
     pub fn add(self, other: Value, vm: &Vm) -> Result<Value, VmError> {
         match (self, other) {
@@ -166,27 +167,12 @@ impl Value {
             _ => Err(VmError::ERROR_OP_DIV),
         }
     }
-    /* pub fn mul(&self, other: Value, vm: &Vm) -> Result<Value, VmError> {
-        match &self {
-            Value::Int() => (),
-            _ => Err(VmError::ERROR_OP_MUL),
-        }
-    }
-    pub fn div(&self, other: Value, vm: &Vm) -> Result<Value, VmError> {
-        match &self {
-            Value::Int() => (),
-            _ => Err(VmError::ERROR_OP_DIV),
-        }
-    }
-    pub fn mod(&self, other: Value, vm: &Vm) -> Result<Value, VmError> {
-        match &self {
-            Value::Int() => (),
+    pub fn r#mod(self, other: Value, vm: &Vm) -> Result<Value, VmError> {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => Ok(Value::Int(x % y)),
             _ => Err(VmError::ERROR_OP_MOD),
         }
-    } */
-    // #endregion
-
-
+    }
     // #region in place
     pub fn add_in_place(self, other: Value, vm: &Vm) -> Result<(bool, Value), VmError> {
         match (&self, &other) {
@@ -211,13 +197,67 @@ impl Value {
         }
     }
     // #endregion
+    // #endregion
+
+    // #region comparison
+    pub fn lt(self, other: Value) -> bool {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => x < y,
+            (Value::Float(x), Value::Float(y)) => x < y,
+            (Value::Int(x), Value::Float(y)) => (x as f64) < y,
+            (Value::Float(x), Value::Int(y)) => x < (y as f64),
+            (Value::Str(x), Value::Str(y)) => x.as_ref().as_str() < y.as_ref().as_str(),
+            _ => false,
+        }
+    }
+    pub fn gt(self, other: Value) -> bool {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => x > y,
+            (Value::Float(x), Value::Float(y)) => x > y,
+            (Value::Int(x), Value::Float(y)) => (x as f64) > y,
+            (Value::Float(x), Value::Int(y)) => x > (y as f64),
+            (Value::Str(x), Value::Str(y)) => x.as_ref().as_str() > y.as_ref().as_str(),
+            _ => false,
+        }
+    }
+    pub fn eq(self, other: Value) -> bool {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => x == y,
+            (Value::Float(x), Value::Float(y)) => x == y,
+            (Value::Int(x), Value::Float(y)) => (x as f64) == y,
+            (Value::Float(x), Value::Int(y)) => x == (y as f64),
+            (Value::Str(x), Value::Str(y)) => x.as_ref().as_str() == y.as_ref().as_str(),
+            (x, y) => x.wrap() == y.wrap(),
+        }
+    }
+    pub fn geq(self, other: Value) -> bool {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => x >= y,
+            (Value::Float(x), Value::Float(y)) => x >= y,
+            (Value::Int(x), Value::Float(y)) => (x as f64) >= y,
+            (Value::Float(x), Value::Int(y)) => x >= (y as f64),
+            (Value::Str(x), Value::Str(y)) => x.as_ref().as_str() >= y.as_ref().as_str(),
+            _ => false,
+        }
+    }
+    pub fn leq(self, other: Value) -> bool {
+        match (self, other) {
+            (Value::Int(x), Value::Int(y)) => x <= y,
+            (Value::Float(x), Value::Float(y)) => x <= y,
+            (Value::Int(x), Value::Float(y)) => (x as f64) <= y,
+            (Value::Float(x), Value::Int(y)) => x <= (y as f64),
+            (Value::Str(x), Value::Str(y)) => x.as_ref().as_str() <= y.as_ref().as_str(),
+            _ => false,
+        }
+    }
+    pub fn neq(self, other: Value) -> bool {
+        !self.eq(other)
+    }
+    // #endregion
 
     // #endregion
 
     // #region unary ops
-    pub fn not(self, vm: &Vm) -> Result<Value, VmError> {
-        Ok(Value::Int(!self.is_true() as i64))
-    }
     pub fn negate(self, vm: &Vm) -> Result<Value, VmError> {
         match self {
             Value::Int(x) => Ok(Value::Int(-x)),

@@ -331,6 +331,16 @@ impl Vm {
                 }
             };
         }
+        macro_rules! op_compare {
+            ($func:ident) => {
+                {
+                    self.ip += 1;
+                    let right = unsafe{ pop!().unwrap() };
+                    let left  = unsafe{ pop!().unwrap() };
+                    self.stack.push(Value::Int(left.$func(right) as i64).wrap());
+                }
+            };
+        }
         // #endregion
         // #endregion
 
@@ -394,7 +404,13 @@ impl Vm {
                 VmOpcode::OP_SUB => op_binary!(sub),
                 VmOpcode::OP_MUL => op_binary!(mul),
                 VmOpcode::OP_DIV => op_binary!(div),
-
+                // comparisons
+                VmOpcode::OP_GT => op_compare!(gt),
+                VmOpcode::OP_LT => op_compare!(lt),
+                VmOpcode::OP_EQ => op_compare!(eq),
+                VmOpcode::OP_GEQ => op_compare!(geq),
+                VmOpcode::OP_LEQ => op_compare!(leq),
+                VmOpcode::OP_NEQ => op_compare!(neq),
                 // in place
                 VmOpcode::OP_IADD => op_binary_in_place!(add_in_place),
                 VmOpcode::OP_IMUL => op_binary_in_place!(mul_in_place),
@@ -415,13 +431,7 @@ impl Vm {
                 VmOpcode::OP_NOT => {
                     self.ip += 1;
                     let val = unsafe{ pop!().unwrap() };
-                    match val.not(&self) {
-                        Ok(retval) => self.stack.push(retval.wrap()),
-                        Err(e) => {
-                            self.error = e;
-                            return;
-                        }
-                    }
+                    self.stack.push(Value::Int(!val.is_true() as i64).wrap());
                 }
                 // #endregion
                 // #endregion
@@ -430,14 +440,14 @@ impl Vm {
                 VmOpcode::OP_JMP => {
                     self.ip += 1;
                     let ip = peek_i16!();
-                    self.ip += ip as u32;
+                    self.ip = (self.ip as i32 + ip as i32) as u32;
                 }
                 VmOpcode::OP_JCOND => {
                     self.ip += 1;
                     let ip = peek_i16!();
                     let val = unsafe{ pop!().unwrap() };
                     if val.is_true() {
-                        self.ip += ip as u32;
+                        self.ip = (self.ip as i32 + ip as i32) as u32;
                     } else {
                         self.ip += 2;
                     }
@@ -447,7 +457,7 @@ impl Vm {
                     let ip = peek_i16!();
                     let val = unsafe{ pop!().unwrap() };
                     if !val.is_true() {
-                        self.ip += ip as u32;
+                        self.ip = (self.ip as i32 + ip as i32) as u32;
                     } else {
                         self.ip += 2;
                     }
@@ -457,7 +467,7 @@ impl Vm {
                     let ip = peek_i16!();
                     let val = unsafe{ last!().unwrap() };
                     if val.is_true() {
-                        self.ip += ip as u32;
+                        self.ip = (self.ip as i32 + ip as i32) as u32;
                     } else {
                         self.ip += 2;
                     }
@@ -467,7 +477,7 @@ impl Vm {
                     let ip = peek_i16!();
                     let val = unsafe{ last!().unwrap() };
                     if !val.is_true() {
-                        self.ip += ip as u32;
+                        self.ip = (self.ip as i32 + ip as i32) as u32;
                     } else {
                         self.ip += 2;
                     }
