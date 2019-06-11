@@ -231,11 +231,19 @@ impl Vm {
                 self.globalenv.as_mut().unwrap_or_else(|| unreachable!())
             };
         }
+        // #region stack
         macro_rules! pop {
             () => {
                 self.stack.pop().unwrap_or_else(|| unreachable!())
             };
         }
+        macro_rules! last {
+            () => {
+                self.stack.last().unwrap_or_else(|| unreachable!())
+            };
+        }
+        // #endregion
+        // #region code
         macro_rules! consume_u8 {
             () => {
                 {
@@ -255,11 +263,22 @@ impl Vm {
                 }
             };
         }
+        macro_rules! peek_i16 {
+            () => {
+                {
+                    let mut num: [u8; 2] = Default::default();
+                    num.copy_from_slice(unsafe{ code.get_unchecked((self.ip as usize)..(self.ip as usize + 2)) });
+                    i16::from_be_bytes(num)
+                }
+            };
+        }
         macro_rules! consume_string {
             () => {
                 unsafe{ CStr::from_ptr(std::mem::transmute(code.get_unchecked(self.ip as usize))) }.to_string_lossy().to_string()
             };
         }
+        // #endregion
+        // #region opcode
         macro_rules! op_push_int {
             ($type:ty) => {
                 {
@@ -312,6 +331,7 @@ impl Vm {
                 }
             };
         }
+        // #endregion
         // #endregion
 
         loop {
@@ -406,6 +426,54 @@ impl Vm {
                 // #endregion
                 // #endregion
 
+                // #region control flow
+                VmOpcode::OP_JMP => {
+                    self.ip += 1;
+                    let ip = peek_i16!();
+                    self.ip += ip as u32;
+                }
+                VmOpcode::OP_JCOND => {
+                    self.ip += 1;
+                    let ip = peek_i16!();
+                    let val = unsafe{ pop!().unwrap() };
+                    if val.is_true() {
+                        self.ip += ip as u32;
+                    } else {
+                        self.ip += 2;
+                    }
+                }
+                VmOpcode::OP_JNCOND => {
+                    self.ip += 1;
+                    let ip = peek_i16!();
+                    let val = unsafe{ pop!().unwrap() };
+                    if !val.is_true() {
+                        self.ip += ip as u32;
+                    } else {
+                        self.ip += 2;
+                    }
+                }
+                VmOpcode::OP_JCOND_NO_POP => {
+                    self.ip += 1;
+                    let ip = peek_i16!();
+                    let val = unsafe{ last!().unwrap() };
+                    if val.is_true() {
+                        self.ip += ip as u32;
+                    } else {
+                        self.ip += 2;
+                    }
+                }
+                VmOpcode::OP_JNCOND_NO_POP => {
+                    self.ip += 1;
+                    let ip = peek_i16!();
+                    let val = unsafe{ last!().unwrap() };
+                    if !val.is_true() {
+                        self.ip += ip as u32;
+                    } else {
+                        self.ip += 2;
+                    }
+                }
+                // #endregion
+
                 // #region globals
                 VmOpcode::OP_GET_GLOBAL => {
                     self.ip += 1;
@@ -417,7 +485,7 @@ impl Vm {
                     self.ip += 1;
                     let var = consume_string!();
                     self.ip += var.len() as u32 + 1;
-                    global!().insert(var.into(), self.stack.last().unwrap_or_else(|| unreachable!()).clone());
+                    global!().insert(var.into(), last!().clone());
                 }
                 // #endregion
 
