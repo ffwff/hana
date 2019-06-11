@@ -18,7 +18,6 @@ use super::nativeval::{NativeValue, NativeValueType};
 use super::record::Record;
 use super::string::HaruString;
 use super::value::Value;
-use super::interned_string_map::InternedStringMap;
 
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
@@ -209,20 +208,34 @@ impl Vm {
         }
     }
 
+    // helper
     #[cfg_attr(tarpaulin, skip)]
-    pub fn print_stack(&self) {
+    pub unsafe fn print_stack(&self) {
         // TODO: move vm_print_stack here and expose function through C ffi
-        unsafe {
-            vm_print_stack(self);
+        for val in &self.stack {
+            eprint!("{:?} ", val.unwrap());
         }
+        eprintln!();
     }
 
     pub fn execute(&mut self) {
         let code = self.code.as_ref().unwrap();
+        macro_rules! op_push_int {
+            ($type:ty) => {
+                {
+                    self.ip += 1;
+                    let n = std::mem::size_of::<$type>();
+                    let mut num: [u8; std::mem::size_of::<$type>()] = Default::default();
+                    num.copy_from_slice(unsafe{ code.get_unchecked((self.ip as usize)..(self.ip as usize + n)) });
+                    self.stack.push(Value::Int(<$type>::from_be_bytes(num) as i64).wrap());
+                    self.ip += n as u32;
+                }
+            };
+        }
         loop {
             match unsafe {
                 if let Some(op) = VmOpcode::from_u8(*code.get_unchecked(self.ip as usize)) {
-                    eprintln!("{:?}", op);
+                    if cfg!(debug) || cfg!(test) { eprintln!("{:?}", op); }
                     op
                 } else {
                     unreachable!()
@@ -233,13 +246,20 @@ impl Vm {
                 }
                 // stack manip
                 // #region push uint family
-                VmOpcode::OP_PUSH8 => {
-                    self.ip += 1;
-                    let num = unsafe{ *code.get_unchecked(self.ip as usize) };
-                    self.stack.push(Value::Int(num as i64).wrap());
-                    self.ip += 1;
-                }
+                VmOpcode::OP_PUSH8  => op_push_int!(u8),
+                VmOpcode::OP_PUSH16 => op_push_int!(u16),
+                VmOpcode::OP_PUSH32 => op_push_int!(u32),
+                VmOpcode::OP_PUSH64 => op_push_int!(u64),
                 // #endregion
+
+                VmOpcode::OP_PUSHF64 => {
+                    self.ip += 1;
+                    let n = std::mem::size_of::<f64>();
+                    let mut num: [u8; std::mem::size_of::<f64>()] = Default::default();
+                    num.copy_from_slice(unsafe{ code.get_unchecked((self.ip as usize)..(self.ip as usize + n)) });
+                    self.stack.push(Value::Float(unsafe{ std::mem::transmute(num) }).wrap());
+                    self.ip += n as u32;
+                }
 
                 // #region arithmetic
                 VmOpcode::OP_ADD => {
@@ -262,15 +282,18 @@ impl Vm {
                 // #endregion
                 op => unimplemented!("{:?}", op)
             }
+            if cfg!(debug) || cfg!(test) {
+                unsafe{ self.print_stack(); }
+            }
         }
     }
 
-    // interned string
+    // interned strings
     pub unsafe fn get_interned_string(&self, n: u16) -> HaruString {
         HaruString::new_cow(self.interned_strings.get_unchecked(n).clone())
     }
 
-    // globals
+    // #region globals
     pub fn global(&self) -> &HaruHashMap {
         use std::borrow::Borrow;
         self.globalenv.as_ref().unwrap().borrow()
@@ -280,8 +303,9 @@ impl Vm {
         use std::borrow::BorrowMut;
         self.globalenv.as_mut().unwrap().borrow_mut()
     }
+    // #endregion
 
-    // gc
+    // #region gc
     pub fn malloc<T: Sized + GcTraceable>(&self, val: T) -> Gc<T> {
         self.gc_manager
             .as_ref()
@@ -345,8 +369,9 @@ impl Vm {
         }
         vec
     }
+    // #endregion
 
-    // call stack
+    // #region call stack
     pub unsafe fn enter_env(&mut self, fun: &'static Function) {
         if self.localenv.is_none() {
             self.localenv = NonNull::new(self.localenv_bp);
@@ -406,8 +431,9 @@ impl Vm {
         }
         vec
     }
+    // #endregion
 
-    // exceptions
+    // #region exceptions
     fn exframes(&self) -> &Vec<ExFrame> {
         self.exframes.as_ref().unwrap()
     }
@@ -444,8 +470,9 @@ impl Vm {
         }
         false
     }
+    // #endregion
 
-    // functions
+    // #region functions
     pub fn call(&mut self, fun: NativeValue, args: &Vec<NativeValue>) -> Option<NativeValue> {
         let val = unsafe { vm_call(self, fun, args) };
         if val.r#type == NativeValueType::TYPE_INTERPRETER_ERROR {
@@ -454,8 +481,9 @@ impl Vm {
             Some(val)
         }
     }
+    // #endregion
 
-    // execution context for eval
+    // #region execution context for eval
     pub fn new_exec_ctx(&mut self) -> ManuallyDrop<Vm> {
         // prevent context's local variables from being freed
         unsafe {
@@ -576,8 +604,9 @@ impl Vm {
         // prevent double freeing:
         ctx.localenv_bp = null_mut();
     }
+    // #endregion
 
-    // instruction pointer
+    // #region instruction pointer
     pub fn ip(&self) -> u32 {
         self.ip
     }
@@ -585,6 +614,7 @@ impl Vm {
         assert!(ip < self.code.as_ref().unwrap().len() as u32);
         self.ip = ip;
     }
+    // #endregion
 
     // imports
     pub fn load_module(&mut self, path: &str) {
