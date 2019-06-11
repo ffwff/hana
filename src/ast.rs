@@ -760,7 +760,8 @@ pub mod ast {
             // optimize static keys
             let val = {
                 if let Some(id) = any.downcast_ref::<Identifier>() {
-                    Some(&id.val)
+                    if !self.is_expr { Some(&id.val) }
+                    else { None }
                 } else if let Some(str) = any.downcast_ref::<StrLiteral>() {
                     Some(&str.val)
                 } else {

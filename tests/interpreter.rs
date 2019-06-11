@@ -628,6 +628,48 @@ y = A['x']
     }
 
     #[test]
+    fn memexpr_indexed_record_key() {
+        let vm: Vm = eval!(
+            "
+record A
+    x = 10
+end
+a = 'x'
+y = A[a]
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwraps().int(), 10);
+    }
+    #[test]
+    fn memexpr_indexed_set_record_key() {
+        let vm: Vm = eval!(
+            "
+record A
+    x = 10
+end
+a = 'x'
+A[a] = 15
+y = A.x
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwraps().int(), 15);
+    }
+    #[test]
+    fn memexpr_indexed_adds_record_key() {
+        let vm: Vm = eval!(
+            "
+record A
+    x = 10
+end
+a = 'x'
+A[a] += 5
+y = A.x
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwraps().int(), 15);
+    }
+
+    #[test]
     fn memexpr_set() {
         let vm: Vm = eval!(
             "
