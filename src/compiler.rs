@@ -6,7 +6,7 @@
 //! use haru::ast;
 //! use haru::compiler::Compiler;
 //! use haru::vmbindings::vm::{Vm, VmOpcode};
-//! let mut c = Compiler::new();
+//! let mut c = Compiler::new(true);
 //! let prog = ast::grammar::start("print('Hello World')\n").unwrap();
 //! for stmt in prog {
 //!     stmt.emit(&mut c);
@@ -15,11 +15,11 @@
 //! ```
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
+use crate::vmbindings::interned_string_map::InternedStringMap;
 use crate::vmbindings::vm::{Vm, VmOpcode};
-use crate::vmbindings::internedstringmap::InternedStringMap;
 
 struct Scope {
     vars: Vec<String>,
@@ -50,7 +50,7 @@ pub struct ModulesInfo {
     pub smap: Vec<SourceMap>,
     pub files: Vec<String>,
     pub modules_loaded: std::collections::HashSet<std::path::PathBuf>,
-    pub symbol: HashMap<usize, String>,
+    pub symbol: BTreeMap<usize, String>,
     pub sources: Vec<String>,
 }
 
@@ -60,7 +60,7 @@ impl ModulesInfo {
             smap: Vec::new(),
             files: Vec::new(),
             modules_loaded: std::collections::HashSet::new(),
-            symbol: HashMap::new(),
+            symbol: BTreeMap::new(),
             sources: Vec::new(),
         }
     }
@@ -72,33 +72,43 @@ pub struct Compiler {
     scopes: Vec<Scope>,
     loop_stmts: Vec<LoopStatement>,
     code: Option<Vec<u8>>,
-    pub interned_strings: InternedStringMap,
+    pub interned_strings: Option<InternedStringMap>,
     pub modules_info: Rc<RefCell<ModulesInfo>>,
 }
 impl Compiler {
-    pub fn new() -> Compiler {
+    pub fn new(interned_strings_enabled: bool) -> Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(Vec::new()),
-            interned_strings: InternedStringMap::new(),
+            interned_strings: if interned_strings_enabled {
+                Some(InternedStringMap::new())
+            } else {
+                None
+            },
             modules_info: Rc::new(RefCell::new(ModulesInfo::new())),
         }
     }
 
-    pub fn new_append(code: Vec<u8>, modules_info: Rc<RefCell<ModulesInfo>>, interned_strings: InternedStringMap) -> Compiler {
+    pub fn new_append(
+        code: Vec<u8>, modules_info: Rc<RefCell<ModulesInfo>>, interned_strings: InternedStringMap,
+    ) -> Compiler {
         Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(code),
-            interned_strings,
+            interned_strings: Some(interned_strings),
             modules_info,
         }
     }
 
     // create
     pub fn into_vm(&mut self) -> Vm {
-        Vm::new(self.code.take(), Some(self.modules_info.clone()), Some(std::mem::replace(&mut self.interned_strings, InternedStringMap::new())))
+        Vm::new(
+            self.code.take(),
+            Some(self.modules_info.clone()),
+            self.interned_strings.take(),
+        )
     }
     pub fn into_code(self) -> Vec<u8> {
         self.code.unwrap()
@@ -201,7 +211,7 @@ impl Compiler {
     }
 
     // emit set var
-    pub fn emit_set_var(&mut self, var: String) {
+    pub fn emit_set_var(&mut self, var: String, is_function: bool) {
         if var.starts_with("$") || self.scopes.len() == 0 {
             // set global
             self.cpushop(VmOpcode::OP_SET_GLOBAL);
@@ -209,7 +219,8 @@ impl Compiler {
                 &var[1..]
             } else {
                 var.as_str()
-            }).unwrap();
+            })
+            .unwrap();
         } else if let Some(local) = self.get_local(&var) {
             // set existing local
             let mut slot = local.0;
@@ -218,38 +229,17 @@ impl Compiler {
                 let local = self.set_local(var.clone()).unwrap();
                 slot = local.0;
             }
-            self.cpushop(VmOpcode::OP_SET_LOCAL);
-            self.cpush16(slot);
-        } else {
-            let local = self.set_local(var.clone()).unwrap();
-            let slot = local.0;
-            self.cpushop(VmOpcode::OP_SET_LOCAL);
-            self.cpush16(slot);
-        }
-    }
-    pub fn emit_set_var_fn(&mut self, var: String) {
-        if var.starts_with("$") || self.scopes.len() == 0 {
-            // set global
-            self.cpushop(VmOpcode::OP_SET_GLOBAL);
-            self.cpushs(if var.starts_with("$") {
-                &var[1..]
+            if is_function {
+                self.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+                self.cpush16(slot);
             } else {
-                var.as_str()
-            }).unwrap();
-        } else if let Some(local) = self.get_local(&var) {
-            // set existing local
-            let mut slot = local.0;
-            let relascope = local.1;
-            if relascope != 0 {
-                let local = self.set_local(var.clone()).unwrap();
-                slot = local.0;
+                self.cpushop(VmOpcode::OP_SET_LOCAL);
+                self.cpush16(slot);
             }
-            self.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
-            self.cpush16(slot);
         } else {
             let local = self.set_local(var.clone()).unwrap();
             let slot = local.0;
-            self.cpushop(VmOpcode::OP_SET_LOCAL_FUNCTION_DEF);
+            self.cpushop(VmOpcode::OP_SET_LOCAL);
             self.cpush16(slot);
         }
     }
@@ -263,7 +253,8 @@ impl Compiler {
                 &var[1..]
             } else {
                 var.as_str()
-            }).unwrap();
+            })
+            .unwrap();
         } else {
             let local = local.unwrap();
             let slot = local.0;

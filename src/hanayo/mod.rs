@@ -21,9 +21,9 @@ macro_rules! hana_raise {
 }
 
 pub mod cmd;
+pub mod dir;
 pub mod env;
 pub mod eval;
-pub mod dir;
 pub mod file;
 pub mod io;
 pub mod math;
@@ -63,7 +63,7 @@ pub struct HanayoCtx {
 pub fn init(vm: &mut Vm) {
     macro_rules! set_var {
         ($x:literal, $y:expr) => {
-            vm.mut_global().insert($x.to_string(), $y.wrap())
+            vm.mut_global().insert($x.to_string().into(), $y.wrap())
         };
     }
     macro_rules! set_obj_var {
@@ -240,7 +240,7 @@ pub fn init(vm: &mut Vm) {
     set_obj_var!(
         invalid_argument_error,
         "what",
-        Value::Str(vm.malloc("Invalid argument error".to_string()))
+        Value::Str(vm.malloc("Invalid argument error".to_string().into()))
     );
     set_var!(
         "InvalidArgumentError",
@@ -252,7 +252,7 @@ pub fn init(vm: &mut Vm) {
     set_obj_var!(
         io_error,
         "what",
-        Value::Str(vm.malloc("IO error".to_string()))
+        Value::Str(vm.malloc("IO error".to_string().into()))
     );
     set_var!("IOError", Value::Record(io_error.clone()));
 
@@ -261,7 +261,7 @@ pub fn init(vm: &mut Vm) {
     set_obj_var!(
         utf8_decoding_error,
         "what",
-        Value::Str(vm.malloc("UTF-8 decoding error".to_string()))
+        Value::Str(vm.malloc("UTF-8 decoding error".to_string().into()))
     );
     set_var!(
         "Utf8DecodingError",

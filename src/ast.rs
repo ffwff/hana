@@ -65,9 +65,14 @@ pub mod ast {
 
     macro_rules! op_push_str {
         ($c:ident, $s:expr) => {
-            if let Some(idx) = $c.interned_strings.get_or_insert(&$s) {
-                $c.cpushop(VmOpcode::OP_PUSHSTR_INTERNED);
-                $c.cpush16(idx);
+            if let Some(interned_strings) = $c.interned_strings.as_mut() {
+                if let Some(idx) = interned_strings.get_or_insert(&$s) {
+                    $c.cpushop(VmOpcode::OP_PUSHSTR_INTERNED);
+                    $c.cpush16(idx);
+                } else {
+                    $c.cpushop(VmOpcode::OP_PUSHSTR);
+                    try_nil!($c.cpushs($s.clone()));
+                }
             } else {
                 $c.cpushop(VmOpcode::OP_PUSHSTR);
                 try_nil!($c.cpushs($s.clone()));
@@ -283,9 +288,7 @@ pub mod ast {
             if let Some(id) = &self.id {
                 let len = c.clen() - 1;
                 let mut modules_info = c.modules_info.borrow_mut();
-                modules_info
-                    .symbol
-                    .insert(len, id.clone());
+                modules_info.symbol.insert(len, id.clone());
             }
 
             // default return
@@ -333,12 +336,11 @@ pub mod ast {
                     op_push_str!(c, stmt.def().id.as_ref().unwrap());
                 } else if let Some(stmt) = any.downcast_ref::<ExprStatement>() {
                     let binexpr = stmt.expr.as_any().downcast_ref::<BinExpr>().unwrap();
-                    let id =
-                        if let Some(id) = binexpr.left.as_any().downcast_ref::<Identifier>() {
-                            id
-                        } else {
-                            return Err(CodeGenError::InvalidLeftHandSide)
-                        };
+                    let id = if let Some(id) = binexpr.left.as_any().downcast_ref::<Identifier>() {
+                        id
+                    } else {
+                        return Err(CodeGenError::InvalidLeftHandSide);
+                    };
                     binexpr.right.emit(c)?;
                     op_push_str!(c, id.val);
                 }
@@ -551,30 +553,10 @@ pub mod ast {
                     let any = self.left.as_any();
                     if let Some(id) = any.downcast_ref::<Identifier>() {
                         self.right.emit(c)?;
-                        c.emit_set_var(id.val.clone());
+                        c.emit_set_var(id.val.clone(), false);
                     } else if let Some(memexpr) = any.downcast_ref::<MemExpr>() {
                         self.right.emit(c)?;
-                        memexpr.left.emit(c)?;
-                        let any = memexpr.right.as_any();
-                        // optimize static member vars
-                        let val = {
-                            if let Some(id) = any.downcast_ref::<Identifier>() {
-                                Some(&id.val)
-                            } else if let Some(str) = any.downcast_ref::<StrLiteral>() {
-                                Some(&str.val)
-                            } else {
-                                None
-                            }
-                        };
-                        if val.is_some() && !memexpr.is_expr {
-                            let val = val.unwrap();
-                            c.cpushop(VmOpcode::OP_MEMBER_SET);
-                            try_nil!(c.cpushs(val.clone()));
-                        } else {
-                            // otherwise, do OP_INDEX_SET as normal
-                            memexpr.right.emit(c)?;
-                            c.cpushop(VmOpcode::OP_INDEX_SET);
-                        }
+                        memexpr._emit(c, MemExprEmit::SetOp)?;
                     } else if let Some(callexpr) = any.downcast_ref::<CallExpr>() {
                         // definition
                         c.cpushop(VmOpcode::OP_DEF_FUNCTION_PUSH);
@@ -582,10 +564,12 @@ pub mod ast {
                         let function_end = c.reserve_label16();
 
                         c.set_local(
-                            if let Some(callee) = callexpr.callee.as_any().downcast_ref::<Identifier>() {
+                            if let Some(callee) =
+                                callexpr.callee.as_any().downcast_ref::<Identifier>()
+                            {
                                 callee.val.clone()
                             } else {
-                                return Err(CodeGenError::ExpectedIdentifier)
+                                return Err(CodeGenError::ExpectedIdentifier);
                             },
                         );
                         c.scope();
@@ -598,7 +582,7 @@ pub mod ast {
                                 if let Some(arg) = arg.as_any().downcast_ref::<Identifier>() {
                                     arg.val.clone()
                                 } else {
-                                    return Err(CodeGenError::ExpectedIdentifier)
+                                    return Err(CodeGenError::ExpectedIdentifier);
                                 },
                             );
                         }
@@ -618,15 +602,16 @@ pub mod ast {
                         c.fill_label16(nslot_label, nslots);
                         c.fill_label16(function_end, (c.clen() - function_end) as u16);
 
-                        let id =
-                            if let Some(id) = &callexpr.callee.as_any().downcast_ref::<Identifier>() {
-                                id.val.clone()
-                            } else {
-                                return Err(CodeGenError::ExpectedIdentifier)
-                            };
+                        let id = if let Some(id) =
+                            &callexpr.callee.as_any().downcast_ref::<Identifier>()
+                        {
+                            id.val.clone()
+                        } else {
+                            return Err(CodeGenError::ExpectedIdentifier);
+                        };
                         if id != "_" {
                             // _ for id is considered a anonymous function decl
-                            c.emit_set_var_fn(id);
+                            c.emit_set_var(id, true);
                         }
                     } else {
                         return Err(CodeGenError::InvalidLeftHandSide);
@@ -654,7 +639,7 @@ pub mod ast {
                             }
                             _ => {}
                         };
-                        c.emit_set_var(id.val.clone());
+                        c.emit_set_var(id.val.clone(), false);
                     } else if let Some(memexpr) = any.downcast_ref::<MemExpr>() {
                         memexpr.left.emit(c)?;
                         // optimize static member vars
@@ -760,33 +745,65 @@ pub mod ast {
         pub is_expr: bool,
         pub is_namespace: bool,
     }
+    #[derive(PartialEq)]
+    enum MemExprEmit {
+        Default,
+        MethodCall,
+        SetOp,
+    }
     impl MemExpr {
-        fn _emit(&self, c: &mut compiler::Compiler, is_method_call: bool) -> CodeGenResult {
+        fn _emit(&self, c: &mut compiler::Compiler, emit_type: MemExprEmit) -> CodeGenResult {
             emit_begin!(self, c);
             let _smap_begin = smap_begin!(c);
             self.left.emit(c)?;
-            let get_op = if !is_method_call {
-                VmOpcode::OP_MEMBER_GET
-            } else {
-                VmOpcode::OP_MEMBER_GET_NO_POP
-            };
             let any = self.right.as_any();
             // optimize static keys
             let val = {
                 if let Some(id) = any.downcast_ref::<Identifier>() {
-                    Some(&id.val)
+                    if !self.is_expr { Some(&id.val) }
+                    else { None }
                 } else if let Some(str) = any.downcast_ref::<StrLiteral>() {
                     Some(&str.val)
                 } else {
                     None
                 }
             };
-            if val.is_some() && !self.is_expr {
-                c.cpushop(get_op);
+            if emit_type == MemExprEmit::SetOp {
+                // optimize if it's a string
+                if let Some(val) = val {
+                    // optimize if it's interned
+                    if let Some(interned_strings) = c.interned_strings.as_mut() {
+                        if let Some(idx) = interned_strings.get_or_insert(&val) {
+                            c.cpushop(VmOpcode::OP_PUSHSTR_INTERNED);
+                            c.cpush16(idx);
+                            c.cpushop(VmOpcode::OP_INDEX_SET);
+
+                            emit_end!(c, _smap_begin);
+                            return Ok(());
+                        }
+                    }
+                    // or optimize statically
+                    c.cpushop(VmOpcode::OP_MEMBER_SET);
+                    try_nil!(c.cpushs(val.clone()));
+                } else {
+                    // do it normally
+                    self.right.emit(c)?;
+                    c.cpushop(VmOpcode::OP_INDEX_SET);
+                }
+            } else if val.is_some() && !self.is_expr {
+                c.cpushop(if emit_type == MemExprEmit::MethodCall {
+                    VmOpcode::OP_MEMBER_GET_NO_POP
+                } else {
+                    VmOpcode::OP_MEMBER_GET
+                });
                 try_nil!(c.cpushs(val.unwrap().clone()));
             } else {
                 self.right.emit(c)?;
-                c.cpushop(VmOpcode::OP_INDEX_GET);
+                c.cpushop(if emit_type == MemExprEmit::MethodCall {
+                    VmOpcode::OP_INDEX_GET_NO_POP
+                } else {
+                    VmOpcode::OP_INDEX_GET
+                });
             }
             emit_end!(c, _smap_begin);
             Ok(())
@@ -805,7 +822,7 @@ pub mod ast {
     impl AST for MemExpr {
         ast_impl!();
         fn emit(&self, c: &mut compiler::Compiler) -> CodeGenResult {
-            self._emit(c, false)
+            self._emit(c, MemExprEmit::Default)
         }
     }
 
@@ -830,11 +847,11 @@ pub mod ast {
             if let Some(memexpr) = self.callee.as_any().downcast_ref::<MemExpr>() {
                 let right = memexpr.right.as_any();
                 if memexpr.is_namespace {
-                    memexpr._emit(c, false)?;
+                    memexpr._emit(c, MemExprEmit::Default)?;
                     c.cpushop(op);
                     c.cpush16(self.args.len() as u16);
                 } else {
-                    memexpr._emit(c, true)?;
+                    memexpr._emit(c, MemExprEmit::MethodCall)?;
                     c.cpushop(op);
                     c.cpush16((self.args.len() as u16) + 1);
                 }
@@ -1018,7 +1035,7 @@ pub mod ast {
 
             // start
             self.from.emit(c)?;
-            c.emit_set_var(self.id.clone());
+            c.emit_set_var(self.id.clone(), false);
             c.cpushop(VmOpcode::OP_POP);
 
             c.cpushop(VmOpcode::OP_JMP);
@@ -1036,7 +1053,7 @@ pub mod ast {
             } else {
                 VmOpcode::OP_SUB
             });
-            c.emit_set_var(self.id.clone());
+            c.emit_set_var(self.id.clone(), false);
             c.cpushop(VmOpcode::OP_POP);
 
             c.fill_label16(begin_label, (c.clen() - begin_label) as u16);
@@ -1094,7 +1111,7 @@ pub mod ast {
             let next_it_label = c.clen();
             c.cpushop(VmOpcode::OP_FOR_IN);
             let end_label = c.reserve_label16();
-            c.emit_set_var(self.id.clone());
+            c.emit_set_var(self.id.clone(), false);
             c.cpushop(VmOpcode::OP_POP);
             self.stmt.emit(c)?;
             c.cpushop(VmOpcode::OP_JMP);
@@ -1178,7 +1195,7 @@ pub mod ast {
             self.def.emit(c)?;
 
             // set var
-            c.emit_set_var_fn(self.def.id.as_ref().unwrap().clone());
+            c.emit_set_var(self.def.id.as_ref().unwrap().clone(), true);
             c.cpushop(VmOpcode::OP_POP);
             Ok(())
         }
@@ -1249,7 +1266,7 @@ pub mod ast {
             self.def.emit(c)?;
 
             // set var
-            c.emit_set_var(self.def.id.as_ref().unwrap().clone());
+            c.emit_set_var(self.def.id.as_ref().unwrap().clone(), false);
             c.cpushop(VmOpcode::OP_POP);
             Ok(())
         }
@@ -1287,7 +1304,7 @@ pub mod ast {
                         .unwrap()
                         .val
                         .clone();
-                    c.emit_set_var(id);
+                    c.emit_set_var(id, false);
                     c.cpushop(VmOpcode::OP_POP);
                 }
                 // body

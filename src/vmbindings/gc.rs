@@ -40,8 +40,8 @@ type GenericFunction = unsafe fn(*mut c_void);
 // TODO maybe replace this with Any
 
 // manager
-const INITIAL_THRESHOLD: usize = 128;
-const USED_SPACE_RATIO: f64 = 0.8;
+const INITIAL_THRESHOLD: usize = 4096;
+const USED_SPACE_RATIO: f64 = 0.7;
 pub struct GcManager {
     first_node: *mut GcNode,
     last_node: *mut GcNode,
@@ -66,10 +66,11 @@ impl GcManager {
     unsafe fn malloc_raw<T: Sized + GcTraceable>(
         &mut self, vm: &Vm, x: T, finalizer: GenericFunction,
     ) -> *mut T {
-        self.cycle(vm);
-        // tfw no qt malloc function
-        let layout = Layout::from_size_align(GcNode::alloc_size::<T>(), 2).unwrap();
-        let node: *mut GcNode = alloc_zeroed(layout) as *mut GcNode;
+        let size = GcNode::alloc_size::<T>();
+        let node: *mut GcNode = self.cycle(vm, size).unwrap_or_else(|| {
+            let layout = Layout::from_size_align(size, 2).unwrap();
+            NonNull::new(alloc_zeroed(layout) as *mut GcNode).unwrap()
+        }).as_ptr();
         // append node
         if self.first_node.is_null() {
             self.first_node = node;
@@ -83,7 +84,7 @@ impl GcManager {
         (*node).native_refs = 1;
         (*node).tracer = std::mem::transmute(T::trace as *mut c_void);
         (*node).finalizer = finalizer;
-        (*node).size = GcNode::alloc_size::<T>();
+        (*node).size = size;
         self.bytes_allocated += (*node).size;
         // gray out the node
         // TODO: we currently move the write barrier forward rather than backwards
@@ -92,7 +93,7 @@ impl GcManager {
         (*node).color = GcNodeColor::Gray;
         self.gray_nodes.push(node);
         // return the body aka (start byte + sizeof(GCNode))
-        std::mem::replace(&mut *(node.add(1) as *mut T), x);
+        std::mem::forget(std::mem::replace(&mut *(node.add(1) as *mut T), x));
         node.add(1) as *mut T
     }
 
@@ -118,31 +119,28 @@ impl GcManager {
     }
 
     // gc algorithm
-    unsafe fn cycle(&mut self, vm: &Vm) {
-        if !self.enabled {
-            return;
+    unsafe fn cycle(&mut self, vm: &Vm, size: usize) -> Option<NonNull<GcNode>> {
+        if !self.enabled || self.bytes_allocated < self.threshold {
+            return None;
         }
-        //eprintln!("GRAY NODES: {:?}", self.gray_nodes);
         // marking phase
         let gray_nodes = std::mem::replace(&mut self.gray_nodes, Vec::new());
         for node in gray_nodes.iter() {
             let body = node.add(1) as *mut c_void;
-            //eprintln!("{:p}", node);
             (**node).color = GcNodeColor::Black;
             ((**node).tracer)(body, std::mem::transmute(&mut self.gray_nodes));
         }
-        //eprintln!("GRAY NODES MARKING: {:?}, {:?}", gray_nodes, self.gray_nodes);
         // nothing left to traverse, sweeping phase:
-        if self.gray_nodes.is_empty() && self.bytes_allocated > self.threshold {
+        if self.gray_nodes.is_empty() {
             let mut prev: *mut GcNode = null_mut();
             // sweep
             let mut node = self.first_node;
+            let mut first_fitting_node: Option<NonNull<GcNode>> = None;
             while !node.is_null() {
                 let next: *mut GcNode = (*node).next;
                 let mut freed = false;
                 if (*node).native_refs == 0 && (*node).color == GcNodeColor::White {
                     freed = true;
-                    //eprintln!("free {:p}", node);
                     let body = node.add(1);
 
                     // remove from ll
@@ -160,9 +158,14 @@ impl GcManager {
                     let finalizer = (*node).finalizer;
                     finalizer(body as *mut c_void);
 
-                    // free memory
-                    let layout = Layout::from_size_align((*node).size, 2).unwrap();
-                    dealloc(node as *mut u8, layout);
+                    // if this node fits then record it
+                    if (*node).size == size && first_fitting_node.is_none() {
+                        std::ptr::write_bytes(node as *mut u8, 0, (*node).size);
+                        first_fitting_node = Some(NonNull::new_unchecked(node));
+                    } else { // else just free it
+                        let layout = Layout::from_size_align((*node).size, 2).unwrap();
+                        dealloc(node as *mut u8, layout);
+                    }
                 } else if (*node).native_refs != 0 {
                     self.gray_nodes.push(node);
                 } else {
@@ -179,6 +182,11 @@ impl GcManager {
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {
                 self.threshold = (self.bytes_allocated as f64 / USED_SPACE_RATIO) as usize;
             }
+
+            // return first fitting node if there is any
+            first_fitting_node
+        } else {
+            None
         }
     }
 }
@@ -275,10 +283,6 @@ pub trait GcTraceable {
 type GenericTraceFunction = unsafe fn(*mut c_void, *mut c_void);
 
 // native traceables
-impl GcTraceable for String {
-    unsafe fn trace(&self, _manager: &mut Vec<*mut GcNode>) {}
-}
-
 use super::nativeval::NativeValue;
 impl GcTraceable for Vec<NativeValue> {
     unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {

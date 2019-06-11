@@ -1,7 +1,8 @@
 //! Provides a hashmap of String-NativeValue
 
 use super::nativeval::NativeValue;
-use std::collections::HashMap;
+use super::string::HaruString;
+use hashbrown::HashMap;
 
 /// A hashmap of String-NativeValue
-pub type HaruHashMap = HashMap<String, NativeValue>;
+pub type HaruHashMap = HashMap<HaruString, NativeValue>;

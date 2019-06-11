@@ -1,20 +1,21 @@
 //! Provides String record for handling UTF-8 strings
 extern crate unicode_segmentation;
-use unicode_segmentation::UnicodeSegmentation;
-
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
 use crate::vmbindings::vmerror::VmError;
+use std::borrow::Borrow;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub extern "C" fn constructor(cvm: *mut Vm, nargs: u16) {
     let vm = unsafe { &mut *cvm };
     if nargs == 0 {
-        vm.stack.push(Value::Str(vm.malloc(String::new())).wrap());
+        vm.stack
+            .push(Value::Str(vm.malloc(String::new().into())).wrap());
         return;
     } else if nargs == 1 {
-        let arg = unsafe{ vm.stack.pop().unwrap().unwrap() };
+        let arg = unsafe { vm.stack.pop().unwrap().unwrap() };
         vm.stack
-            .push(Value::Str(vm.malloc(format!("{}", arg).to_string())).wrap());
+            .push(Value::Str(vm.malloc(format!("{}", arg).to_string().into())).wrap());
     } else {
         vm.error = VmError::ERROR_MISMATCH_ARGUMENTS;
         vm.error_expected = 1;
@@ -34,11 +35,13 @@ fn bytesize(s: Value::Str) -> Value {
 // check
 #[hana_function()]
 fn startswith(s: Value::Str, left: Value::Str) -> Value {
-    Value::Int(s.as_ref().starts_with(left.as_ref()) as i64)
+    let s = s.as_ref().borrow() as &String;
+    Value::Int(s.starts_with(left.as_ref().borrow() as &String) as i64)
 }
 #[hana_function()]
 fn endswith(s: Value::Str, left: Value::Str) -> Value {
-    Value::Int(s.as_ref().ends_with(left.as_ref()) as i64)
+    let s = s.as_ref().borrow() as &String;
+    Value::Int(s.ends_with(left.as_ref().borrow() as &String) as i64)
 }
 
 // basic manip
@@ -63,7 +66,7 @@ fn delete(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
             }
         })
         .collect::<String>();
-    Value::Str(vm.malloc(ss))
+    Value::Str(vm.malloc(ss.into()))
 }
 
 #[hana_function()]
@@ -103,7 +106,7 @@ fn copy(s: Value::Str, from_pos: Value::Int, nchars: Value::Int) -> Value {
             }
         })
         .collect::<String>();
-    Value::Str(vm.malloc(ss))
+    Value::Str(vm.malloc(ss.into()))
 }
 
 #[hana_function()]
@@ -119,18 +122,19 @@ fn insert_(dst: Value::Str, from_pos: Value::Int, src: Value::Str) -> Value {
 #[hana_function()]
 fn split(s: Value::Str, delim: Value::Str) -> Value {
     let array = vm.malloc(Vec::new());
-    for ss in s.as_ref().split(delim.as_ref()) {
+    let s = s.as_ref().borrow() as &String;
+    for ss in s.split(delim.as_ref().borrow() as &String) {
         array
             .as_mut()
-            .push(Value::Str(vm.malloc(ss.clone().to_string())).wrap());
+            .push(Value::Str(vm.malloc(ss.clone().to_string().into())).wrap());
     }
     Value::Array(array)
 }
 
 #[hana_function()]
 fn index(s: Value::Str, needle: Value::Str) -> Value {
-    let s = s.as_ref();
-    match s.find(needle.as_ref()) {
+    let s: &String = s.as_ref().borrow();
+    match s.find(needle.as_ref().borrow() as &String) {
         Some(x) => Value::Int({
             let mut idx_grapheme = 0;
             if let Some(_) = s
@@ -155,7 +159,7 @@ fn chars(s: Value::Str) -> Value {
     let array = vm.malloc(Vec::new());
     let array_ref = array.as_mut();
     for ch in s.as_ref().graphemes(true) {
-        array_ref.push(Value::Str(vm.malloc(ch.to_string())).wrap());
+        array_ref.push(Value::Str(vm.malloc(ch.to_string().into())).wrap());
     }
     Value::Array(array)
 }

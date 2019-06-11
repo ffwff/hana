@@ -2,19 +2,23 @@
 use crate::vmbindings::record::Record;
 use crate::vmbindings::value::Value;
 use crate::vmbindings::vm::Vm;
+use std::borrow::Borrow;
 use std::env;
 
 #[hana_function()]
 fn get(key: Value::Str) -> Value {
-    match env::var(key.as_ref()) {
-        Ok(value) => Value::Str(vm.malloc(value)),
+    match env::var(key.as_ref().borrow() as &String) {
+        Ok(value) => Value::Str(vm.malloc(value.into())),
         Err(_) => Value::Nil,
     }
 }
 
 #[hana_function()]
 fn set(key: Value::Str, val: Value::Str) -> Value {
-    env::set_var(key.as_ref(), val.as_ref());
+    env::set_var(
+        key.as_ref().borrow() as &String,
+        val.as_ref().borrow() as &String,
+    );
     Value::Nil
 }
 
@@ -24,7 +28,7 @@ fn vars() -> Value {
     for (key, value) in env::vars() {
         record
             .as_mut()
-            .insert(key, Value::Str(vm.malloc(value)).wrap());
+            .insert(key, Value::Str(vm.malloc(value.into())).wrap());
     }
     Value::Record(record)
 }

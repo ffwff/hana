@@ -25,8 +25,10 @@ fn utf8_decoding_error(err: std::string::FromUtf8Error, vm: &Vm) -> Value {
         "prototype",
         Value::Record(vm.stdlib.as_ref().unwrap().utf8_decoding_error.clone()).wrap(),
     );
-    rec.as_mut()
-        .insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
+    rec.as_mut().insert(
+        "why",
+        Value::Str(vm.malloc(format!("{:?}", err).into())).wrap(),
+    );
     rec.as_mut().insert("where", Value::Int(0).wrap());
     Value::Record(rec)
 }
@@ -44,7 +46,7 @@ fn out(process: Value::Record) -> Value {
         .unwrap();
     let out = p.wait_with_output().unwrap();
     match String::from_utf8(out.stdout) {
-        Ok(s) => Value::Str(vm.malloc(s)),
+        Ok(s) => Value::Str(vm.malloc(s.into())),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
         }
@@ -63,7 +65,7 @@ fn err(process: Value::Record) -> Value {
         .unwrap();
     let out = p.wait_with_output().unwrap();
     match String::from_utf8(out.stderr) {
-        Ok(s) => Value::Str(vm.malloc(s)),
+        Ok(s) => Value::Str(vm.malloc(s.into())),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
         }
@@ -83,13 +85,13 @@ fn outputs(process: Value::Record) -> Value {
     let out = p.wait_with_output().unwrap();
     let arr = vm.malloc(Vec::new());
     match String::from_utf8(out.stdout) {
-        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
+        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s.into())).wrap()),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
         }
     }
     match String::from_utf8(out.stderr) {
-        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s)).wrap()),
+        Ok(s) => arr.as_mut().push(Value::Str(vm.malloc(s.into())).wrap()),
         Err(err) => {
             hana_raise!(vm, utf8_decoding_error(err, vm));
         }

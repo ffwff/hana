@@ -480,47 +480,48 @@ void vm_execute(struct vm *vm) {
             vm->error != ERROR_NO_ERROR)                                                      \
             return;                                                                           \
     } while (0)
-#define JMP_INTERPRETED_FN_(POP, UNWIND, END_IF_NATIVE)                                             \
-    do {                                                                                            \
+#define JMP_INTERPRETED_FN_(POP, UNWIND, END_IF_NATIVE)                                  \
+    do {                                                                                 \
         if (val.type == TYPE_DICT) {                                                     \
-            do {                                                                                    \
-                POP                                                                                 \
-            } while (0);                                                                            \
+            do {                                                                         \
+                POP                                                                      \
+            } while (0);                                                                 \
             const struct value *pctor = dict_get(value_get_pointer(val), "constructor"); \
-            if (pctor == NULL) {                                                                    \
-                ERROR(ERROR_RECORD_NO_CONSTRUCTOR, UNWIND);                                         \
-            }                                                                                       \
-            const struct value ctor = *pctor;                                                       \
+            if (pctor == NULL) {                                                         \
+                ERROR(ERROR_RECORD_NO_CONSTRUCTOR, UNWIND);                              \
+            }                                                                            \
+            const struct value ctor = *pctor;                                            \
             switch (ctor.type) {                                                         \
-                case TYPE_NATIVE_FN: {                                                              \
-                    CALL_NATIVE(((value_fn)value_get_pointer(ctor)));               \
-                    do {                                                                            \
-                        END_IF_NATIVE                                                               \
-                    } while (0);                                                                    \
-                    break;                                                                          \
-                }                                                                                   \
-                case TYPE_FN: {                                                                     \
-                    ifn = value_get_pointer(ctor);                                         \
-                    if (nargs + 1 != ifn->nargs) {                                                  \
-                        ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);                 \
-                    }                                                                               \
-                    struct value new_val = value_dict(vm);                                          \
+                case TYPE_NATIVE_FN: {                                                   \
+                    CALL_NATIVE(((value_fn)value_get_pointer(ctor)));                    \
+                    do {                                                                 \
+                        END_IF_NATIVE                                                    \
+                    } while (0);                                                         \
+                    break;                                                               \
+                }                                                                        \
+                case TYPE_FN: {                                                          \
+                    ifn = value_get_pointer(ctor);                                       \
+                    if (nargs + 1 != ifn->nargs) {                                       \
+                        ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);      \
+                    }                                                                    \
+                    struct value new_val = value_dict(vm);                               \
                     dict_set(value_get_pointer(new_val), "prototype", val);              \
-                    array_push(vm->stack, new_val);                                                 \
-                    break;                                                                          \
-                }                                                                                   \
-                default:                                                                            \
-                    ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);                                  \
-            }                                                                                       \
-        } else {                                                                                    \
-            do {                                                                                    \
-                POP                                                                                 \
-            } while (0);                                                                            \
-            ifn = value_get_pointer(val);                                                  \
-            if (nargs != ifn->nargs) {                                                              \
-                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);                         \
-            }                                                                                       \
-        }                                                                                           \
+                    array_push(vm->stack, new_val);                                      \
+                    break;                                                               \
+                }                                                                        \
+                default:                                                                 \
+                    ERROR(ERROR_CONSTRUCTOR_NOT_FUNCTION, UNWIND);                       \
+            }                                                                            \
+        } else {                                                                         \
+            do {                                                                         \
+                POP                                                                      \
+            } while (0);                                                                 \
+            ifn = value_get_pointer(val);                                                \
+            LOG("= %d %d\n", ifn->nargs, nargs);                                         \
+            if (nargs != ifn->nargs) {                                                   \
+                ERROR_EXPECT(ERROR_MISMATCH_ARGUMENTS, ifn->nargs, UNWIND);              \
+            }                                                                            \
+        }                                                                                \
     } while (0)
 #define JMP_INTERPRETED_FN(UNWIND, END_IF_NATIVE) JMP_INTERPRETED_FN_(array_pop(vm->stack);, UNWIND, END_IF_NATIVE)
 #define JMP_INTERPRETED_FN_NO_POP(UNWIND, END_IF_NATIVE) JMP_INTERPRETED_FN_(do{}while(0);, UNWIND, END_IF_NATIVE)

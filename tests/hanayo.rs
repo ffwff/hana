@@ -3,10 +3,10 @@ use value_ext::*;
 extern crate haru;
 use haru::ast::grammar;
 use haru::compiler;
+use haru::hanayo;
 use haru::vmbindings::value::Value;
 use haru::vmbindings::vm::{Vm, VmOpcode};
 use haru::vmbindings::vmerror::VmError;
-use haru::hanayo;
 
 #[cfg(test)]
 pub mod hanayo_tests {
@@ -16,7 +16,7 @@ pub mod hanayo_tests {
     macro_rules! eval {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
-            let mut c = compiler::Compiler::new();
+            let mut c = compiler::Compiler::new(true);
             for stmt in prog {
                 stmt.emit(&mut c);
             }
@@ -437,7 +437,7 @@ y = a.reduce(f(x, y) = x + y, 0)
         let vm: Vm = eval!(
             "
 a=[1,2,3,5,6]
-y = a.map(f(x) = x+1).filter(f(x) = x>5).reduce(f(prev, curr) = prev+curr, 0)
+y = a.map(_(x) = x+1).filter(_(x) = x>5).reduce(_(prev, curr) = prev+curr, 0)
 "
         );
         assert_eq!(vm.global().get("y").unwrap().unwraps(), Value::Int(13));

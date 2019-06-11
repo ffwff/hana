@@ -1,4 +1,5 @@
 //! Provides File record for handling files
+use std::borrow::Borrow;
 use std::boxed::Box;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -29,7 +30,7 @@ fn constructor(path: Value::Str, mode: Value::Str) -> Value {
     // file object
     let rec = vm.malloc(Record::new());
     // store native file
-    match options.open(path.as_ref()) {
+    match options.open(path.as_ref().borrow() as &String) {
         Ok(file) => {
             rec.as_mut().native_field = Some(Box::new(file));
         }
@@ -38,8 +39,10 @@ fn constructor(path: Value::Str, mode: Value::Str) -> Value {
                 "prototype",
                 Value::Record(vm.stdlib.as_ref().unwrap().io_error.clone()).wrap(),
             );
-            rec.as_mut()
-                .insert("why", Value::Str(vm.malloc(format!("{:?}", err))).wrap());
+            rec.as_mut().insert(
+                "why",
+                Value::Str(vm.malloc(format!("{:?}", err).into())).wrap(),
+            );
             rec.as_mut().insert("where", Value::Str(path).wrap());
             hana_raise!(vm, Value::Record(rec));
         }
@@ -65,9 +68,9 @@ fn close(file: Value::Record) -> Value {
 fn read(file: Value::Record) -> Value {
     let field = file.as_mut().native_field.as_mut().unwrap();
     let file = field.downcast_mut::<File>().unwrap();
-    let s = vm.malloc(String::new());
-    file.read_to_string(s.as_mut());
-    Value::Str(s)
+    let mut s = String::new();
+    file.read_to_string(&mut s);
+    Value::Str(vm.malloc(s.into()))
 }
 
 #[hana_function()]
@@ -77,9 +80,13 @@ fn read_up_to(file: Value::Record, n: Value::Int) -> Value {
     let mut bytes: Vec<u8> = Vec::new();
     bytes.resize(n as usize, 0);
     file.read_exact(&mut bytes);
-    Value::Str(vm.malloc(
-        String::from_utf8(bytes).unwrap_or_else(|e| panic!("error decoding file: {:?}", e)),
-    ))
+    Value::Str(
+        vm.malloc(
+            String::from_utf8(bytes)
+                .unwrap_or_else(|e| panic!("error decoding file: {:?}", e))
+                .into(),
+        ),
+    )
 }
 
 // write

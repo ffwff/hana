@@ -49,7 +49,7 @@ fn push(array: Value::Array, elem: Value::Any) -> Value {
 
 #[hana_function()]
 fn pop(array: Value::Array) -> Value {
-    unsafe{ array.as_mut().pop().unwrap().unwrap() }
+    unsafe { array.as_mut().pop().unwrap().unwrap() }
 }
 
 extern "C" {
@@ -64,12 +64,10 @@ fn value_cmp(left: &NativeValue, right: &NativeValue) -> Ordering {
 
     match unsafe { value_gt(left, right).unwrap() } {
         Value::Int(1) => Ordering::Greater,
-        _ => {
-            match unsafe { value_lt(left, right).unwrap() } {
-                Value::Int(1) => Ordering::Less,
-                _ => Ordering::Equal
-            }
-        }
+        _ => match unsafe { value_lt(left, right).unwrap() } {
+            Value::Int(1) => Ordering::Less,
+            _ => Ordering::Equal,
+        },
     }
 }
 
@@ -112,7 +110,7 @@ fn filter(array: Value::Array, fun: Value::Any) -> Value {
         args.clear();
         args.push(val.clone());
         if let Some(filter) = vm.call(fun.wrap(), &args) {
-            if unsafe{ filter.unwrap() }.is_true(vm) {
+            if unsafe { filter.unwrap() }.is_true(vm) {
                 new_array.as_mut().push(val.clone());
             }
         } else {
@@ -131,7 +129,7 @@ fn reduce(array: Value::Array, fun: Value::Any, acc_: Value::Any) -> Value {
         args.push(acc.wrap().clone());
         args.push(val.clone());
         if let Some(val) = vm.call(fun.wrap(), &args) {
-            acc = unsafe{ val.unwrap() };
+            acc = unsafe { val.unwrap() };
         } else {
             return Value::PropagateError;
         }
@@ -161,15 +159,15 @@ fn join(array: Value::Array, delim: Value::Str) -> Value {
     let mut s = String::new();
     let array = array.as_ref();
     if array.len() > 0 {
-        s += unsafe{ format!("{}", array[0].unwrap()).as_str() };
+        s += unsafe { format!("{}", array[0].unwrap()).as_str() };
     }
     if array.len() > 1 {
         let mut i = 1;
         while i < array.len() {
             s += delim.as_ref();
-            s += unsafe{ format!("{}", array[i].unwrap()).as_str() };
+            s += unsafe { format!("{}", array[i].unwrap()).as_str() };
             i += 1;
         }
     }
-    Value::Str(vm.malloc(s))
+    Value::Str(vm.malloc(s.into()))
 }

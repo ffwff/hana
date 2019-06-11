@@ -4,6 +4,7 @@
 use super::function::Function;
 use super::gc::{ref_dec, ref_inc, Gc};
 use super::record::Record;
+use super::string::HaruString;
 use super::value::{NativeFnData, Value};
 
 #[repr(u8)]
@@ -38,23 +39,17 @@ impl NativeValue {
         #[allow(non_camel_case_types)]
         match &self.r#type {
             NativeValueType::TYPE_NIL => Value::Nil,
-            NativeValueType::TYPE_INT => { Value::Int(transmute::<u64, i64>(self.data)) },
+            NativeValueType::TYPE_INT => Value::Int(transmute::<u64, i64>(self.data)),
             NativeValueType::TYPE_FLOAT => Value::Float(f64::from_bits(self.data)),
             NativeValueType::TYPE_NATIVE_FN => {
                 Value::NativeFn(transmute::<u64, NativeFnData>(self.data))
-            },
-            NativeValueType::TYPE_FN => {
-                Value::Fn(Gc::from_raw(self.data as *mut Function))
-            },
-            NativeValueType::TYPE_STR => {
-                Value::Str(Gc::from_raw(self.data as *mut String))
-            },
-            NativeValueType::TYPE_DICT => {
-                Value::Record(Gc::from_raw(self.data as *mut Record))
-            },
+            }
+            NativeValueType::TYPE_FN => Value::Fn(Gc::from_raw(self.data as *mut Function)),
+            NativeValueType::TYPE_STR => Value::Str(Gc::from_raw(self.data as *mut HaruString)),
+            NativeValueType::TYPE_DICT => Value::Record(Gc::from_raw(self.data as *mut Record)),
             NativeValueType::TYPE_ARRAY => {
                 Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
-            },
+            }
             _ => panic!("type was: {:?}", self.r#type),
         }
     }
@@ -62,14 +57,14 @@ impl NativeValue {
     pub fn as_gc_pointer(&self) -> Option<*mut libc::c_void> {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            NativeValueType::TYPE_FN
-            | NativeValueType::TYPE_STR
+            NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_FN
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
-                if self.data == 0 {
-                    None
+                if self.data != 0 {
+                    Some(self.data as _)
                 } else {
-                    Some(self.data as *mut libc::c_void)
+                    None
                 }
             }
             _ => None,
@@ -80,8 +75,8 @@ impl NativeValue {
     pub unsafe fn ref_inc(&self) {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            NativeValueType::TYPE_FN
-            | NativeValueType::TYPE_STR
+            NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_FN
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
                 ref_inc(self.data as *mut libc::c_void);
@@ -93,8 +88,8 @@ impl NativeValue {
     pub unsafe fn ref_dec(&self) {
         #[allow(non_camel_case_types)]
         match self.r#type {
-            NativeValueType::TYPE_FN
-            | NativeValueType::TYPE_STR
+            NativeValueType::TYPE_STR
+            | NativeValueType::TYPE_FN
             | NativeValueType::TYPE_DICT
             | NativeValueType::TYPE_ARRAY => {
                 ref_dec(self.data as *mut libc::c_void);

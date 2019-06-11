@@ -1,0 +1,8 @@
+function main() begin
+    x = []
+    for i=0 to 5 then x.push(_()=i)
+    y = x[1]
+    print(y())
+end
+
+main()

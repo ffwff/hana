@@ -15,7 +15,7 @@ pub mod interpreter_tests {
     macro_rules! eval {
         ($x:expr) => {{
             let prog = grammar::start($x).unwrap();
-            let mut c = compiler::Compiler::new();
+            let mut c = compiler::Compiler::new(true);
             for stmt in prog {
                 stmt.emit(&mut c);
             }
@@ -37,7 +37,10 @@ pub mod interpreter_tests {
     #[test]
     fn float_literal() {
         let vm: Vm = eval!("y = 420.69");
-        assert_eq!(vm.global().get("y").unwrap().unwraps(), Value::Float(420.69));
+        assert_eq!(
+            vm.global().get("y").unwrap().unwraps(),
+            Value::Float(420.69)
+        );
     }
 
     #[test]
@@ -500,6 +503,17 @@ y = a(0)
         );
         assert_eq!(vm.global().get("y").unwrap().unwraps(), Value::Int(1000));
     }
+    #[test]
+    fn function_call_memexpr_index() {
+        let vm: Vm = eval!(
+            "
+x = [_() = 0]
+y = x[0]
+z = y()
+"
+        );
+        assert_eq!(vm.global().get("z").unwrap().unwraps(), Value::Int(0));
+    }
     /* // TODO: this test won't work because vm halts
         #[test]
         fn function_call_from_native() {
@@ -611,6 +625,48 @@ y = A['x']
 "
         );
         assert_eq!(vm.global().get("y").unwrap().unwraps().int(), 10);
+    }
+
+    #[test]
+    fn memexpr_indexed_record_key() {
+        let vm: Vm = eval!(
+            "
+record A
+    x = 10
+end
+a = 'x'
+y = A[a]
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwraps().int(), 10);
+    }
+    #[test]
+    fn memexpr_indexed_set_record_key() {
+        let vm: Vm = eval!(
+            "
+record A
+    x = 10
+end
+a = 'x'
+A[a] = 15
+y = A.x
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwraps().int(), 15);
+    }
+    #[test]
+    fn memexpr_indexed_adds_record_key() {
+        let vm: Vm = eval!(
+            "
+record A
+    x = 10
+end
+a = 'x'
+A[a] += 5
+y = A.x
+"
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwraps().int(), 15);
     }
 
     #[test]
@@ -800,7 +856,7 @@ use '/tmp/module_absolute_import'
         ",
         )
         .unwrap();
-        let mut c = compiler::Compiler::new();
+        let mut c = compiler::Compiler::new(true);
         c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {
             stmt.emit(&mut c);
@@ -820,7 +876,7 @@ use './module_relative_import'
         ",
         )
         .unwrap();
-        let mut c = compiler::Compiler::new();
+        let mut c = compiler::Compiler::new(true);
         c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {
             stmt.emit(&mut c);
@@ -841,7 +897,7 @@ use 'module_native_import'
         ",
         )
         .unwrap();
-        let mut c = compiler::Compiler::new();
+        let mut c = compiler::Compiler::new(true);
         c.modules_info.borrow_mut().files.push("/tmp/x".to_string());
         for stmt in prog {
             stmt.emit(&mut c);

@@ -1,8 +1,9 @@
 //! Provides a record value in Hana
 
+use super::gc::{push_gray_body, GcNode, GcTraceable};
 use super::hmap::HaruHashMap;
 use super::nativeval::NativeValue;
-use super::gc::{push_gray_body, GcNode, GcTraceable};
+use super::string::HaruString;
 use super::value::Value;
 use std::any::Any;
 use std::borrow::Borrow;
@@ -21,7 +22,7 @@ pub struct Record {
 impl Record {
     pub fn new() -> Record {
         Record {
-            data: std::collections::HashMap::new(),
+            data: HaruHashMap::new(),
             prototype: None,
             native_field: None,
         }
@@ -29,7 +30,7 @@ impl Record {
 
     pub fn with_capacity(n: usize) -> Record {
         Record {
-            data: std::collections::HashMap::with_capacity(n),
+            data: HaruHashMap::with_capacity(n),
             prototype: None,
             native_field: None,
         }
@@ -37,7 +38,7 @@ impl Record {
 
     pub fn get<T: ?Sized>(&self, k: &T) -> Option<&NativeValue>
     where
-        String: Borrow<T>,
+        HaruString: Borrow<T>,
         T: Hash + Eq,
     {
         if let Some(v) = self.data.get(k) {
@@ -50,21 +51,23 @@ impl Record {
 
     pub fn insert<K>(&mut self, k: K, v: NativeValue)
     where
-        K: std::string::ToString + Hash + Eq,
+        K: Into<HaruString> + Hash + Eq,
     {
-        let k: String = k.to_string();
-        if k == "prototype" {
-            self.prototype = unsafe{ match &v.unwrap() {
-                // since the borrow checker doesn't know that self.prototype
-                // can last as long as self, we'll have to use unsafe
-                Value::Record(x) => Some(&*x.to_raw()),
-                _ => None,
-            } };
+        let k = k.into();
+        if (k.borrow() as &String) == "prototype" {
+            self.prototype = unsafe {
+                match &v.unwrap() {
+                    // since the borrow checker doesn't know that self.prototype
+                    // can last as long as self, we'll have to use unsafe
+                    Value::Record(x) => Some(&*x.to_raw()),
+                    _ => None,
+                }
+            };
         }
         self.data.insert(k, v);
     }
 
-    pub fn iter(&self) -> std::collections::hash_map::Iter<String, NativeValue> {
+    pub fn iter(&self) -> hashbrown::hash_map::Iter<HaruString, NativeValue> {
         self.data.iter()
     }
 

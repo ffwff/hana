@@ -7,7 +7,7 @@ use crate::vmbindings::vm::Vm;
 pub extern "C" fn print(cvm: *mut Vm, nargs: u16) {
     let vm = unsafe { &mut *cvm };
     for _ in 0..nargs {
-        let val = unsafe{ vm.stack.pop().unwrap().unwrap() };
+        let val = unsafe { vm.stack.pop().unwrap().unwrap() };
         std::print!("{}", val);
     }
     std::io::stdout().flush().unwrap();
@@ -16,10 +16,10 @@ pub extern "C" fn print(cvm: *mut Vm, nargs: u16) {
 
 #[hana_function()]
 fn input() -> Value {
-    let buffer = vm.malloc(String::new());
-    std::io::stdin().read_line(buffer.as_mut()).unwrap();
-    buffer.as_mut().pop(); // remove newline
-    Value::Str(buffer)
+    let mut buffer = String::new();
+    std::io::stdin().read_line(&mut buffer).unwrap();
+    buffer.pop(); // remove newline
+    Value::Str(vm.malloc(buffer.into()))
 }
 
 #[hana_function()]
