@@ -112,8 +112,14 @@ impl Value {
     }
 
     // bool
-    pub fn is_true(&self, vm: &Vm) -> bool {
-        unimplemented!()
+    pub fn is_true(self, vm: &Vm) -> bool {
+        // TODO document this
+        match self {
+            Value::Int(x) => x > 0,
+            Value::Float(x) => x > 0.0,
+            Value::Str(x) => !x.as_ref().is_empty(),
+            _ => false
+        }
     }
 
     // #region binary ops
