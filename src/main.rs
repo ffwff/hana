@@ -30,6 +30,7 @@ mod ast;
 mod vmbindings;
 use vmbindings::vm::{Vm, VmOpcode};
 use vmbindings::vmerror::VmError;
+use vmbindings::value::Value;
 //mod hanayo;
 
 fn print_error(
@@ -143,6 +144,13 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     // execute!
     c.modules_info.borrow_mut().sources.push(s);
     let mut vm = c.into_vm();
+    let global = vm.mut_global();
+    extern fn print(vm: *mut Vm, nargs: u16) {
+        let vm = unsafe {&mut *vm};
+        eprintln!("{}", vm.stack.pop().unwrap());
+        vm.stack.push(Value::Nil);
+    }
+    global.insert("print".to_string().into(), Value::NativeFn(print));
     //hanayo::init(&mut vm);
     vm.gc_enable();
     vm.execute();
