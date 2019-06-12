@@ -2,7 +2,6 @@
 
 use super::function::Function;
 use super::gc::Gc;
-use super::nativeval::{NativeValue, NativeValueType};
 use super::record::Record;
 use super::string::HaruString;
 use super::vm::Vm;
@@ -20,81 +19,21 @@ pub enum Value {
     // types, so this is a convenient wrapper for (de)serialising
     // hana's values
     Nil,
-    True,
-    False,
-
     Int(i64),
     Float(f64),
     NativeFn(NativeFnData),
     Fn(Gc<Function>),
     Str(Gc<HaruString>),
     Record(Gc<Record>),
-    Array(Gc<Vec<NativeValue>>),
+    Array(Gc<Vec<Value>>),
 
     PropagateError,
 }
 
-#[allow(improper_ctypes)]
-extern "C" {
-    fn value_get_prototype(vm: *const Vm, val: NativeValue) -> *const Record;
-    fn value_is_true(left: NativeValue, vm: *const Vm) -> bool;
-}
-
 impl Value {
-    // wrapper for native
-    pub fn wrap(&self) -> NativeValue {
-        use std::mem::transmute;
-        #[allow(non_camel_case_types)]
-        unsafe {
-            match &self {
-                Value::Nil => NativeValue {
-                    r#type: NativeValueType::TYPE_NIL,
-                    data: 0,
-                },
-                Value::True => NativeValue {
-                    r#type: NativeValueType::TYPE_INT,
-                    data: 1,
-                },
-                Value::False => NativeValue {
-                    r#type: NativeValueType::TYPE_INT,
-                    data: 0,
-                },
-                Value::Int(n) => NativeValue {
-                    r#type: NativeValueType::TYPE_INT,
-                    data: transmute::<i64, u64>(*n),
-                },
-                Value::Float(n) => NativeValue {
-                    r#type: NativeValueType::TYPE_FLOAT,
-                    data: transmute::<f64, u64>(*n),
-                },
-                Value::NativeFn(f) => NativeValue {
-                    r#type: NativeValueType::TYPE_NATIVE_FN,
-                    data: transmute::<NativeFnData, u64>(*f),
-                },
-                Value::Fn(p) => NativeValue {
-                    r#type: NativeValueType::TYPE_FN,
-                    data: transmute::<*const Function, u64>(p.to_raw()),
-                },
-                Value::Str(p) => NativeValue {
-                    r#type: NativeValueType::TYPE_STR,
-                    data: transmute::<*const HaruString, u64>(p.to_raw()),
-                },
-                Value::Record(p) => NativeValue {
-                    r#type: NativeValueType::TYPE_DICT,
-                    data: transmute::<*const Record, u64>(p.to_raw()),
-                },
-                Value::Array(p) => NativeValue {
-                    r#type: NativeValueType::TYPE_ARRAY,
-                    data: transmute::<*const Vec<NativeValue>, u64>(p.to_raw()),
-                },
-                _ => unimplemented!(),
-            }
-        }
-    }
-
     // prototype
     pub fn get_prototype(&self, vm: *const Vm) -> *const Record {
-        unsafe { value_get_prototype(vm, self.wrap()) }
+        unimplemented!()
     }
 
     #[cfg_attr(tarpaulin, skip)]
@@ -227,7 +166,8 @@ impl Value {
             (Value::Int(x), Value::Float(y)) => (x as f64) == y,
             (Value::Float(x), Value::Int(y)) => x == (y as f64),
             (Value::Str(x), Value::Str(y)) => x.as_ref().as_str() == y.as_ref().as_str(),
-            (x, y) => x.wrap() == y.wrap(),
+            _ => false,// TODO
+            //(x, y) => x.wrap() == y.wrap(),
         }
     }
     pub fn geq(self, other: Value) -> bool {
@@ -267,6 +207,17 @@ impl Value {
     }
     // #endregion
 
+    pub fn as_gc_pointer(&self) -> Option<*mut libc::c_void> {
+        unimplemented!()
+    }
+
+    pub fn ref_inc(&self) {
+        return;
+    }
+    pub fn ref_dec(&self) {
+        return;
+    }
+
 }
 
 use std::fmt;
@@ -276,8 +227,6 @@ impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Value::Nil => write!(f, "[nil]"),
-            Value::True => write!(f, "1"),
-            Value::False => write!(f, "0"),
             Value::Int(n) => write!(f, "{}", n),
             Value::Float(n) => write!(f, "{}", n),
             Value::NativeFn(_) => write!(f, "[native fn]"),

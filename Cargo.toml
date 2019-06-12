@@ -21,7 +21,7 @@ path = "src/main.rs"
 name = "haru"
 
 [dependencies]
-haru-decorator = { version = "0.21.0", path = "./src/decorator/" }
+# haru-decorator = { version = "0.21.0", path = "./src/decorator/" }
 libc = "0.2.58"
 cfg-if = "0.1.9"
 num-traits = "0.2.8"
@@ -40,7 +40,6 @@ cffi = ["libffi-sys"]
 
 [build-dependencies]
 peg = "0.5.7"
-cc = { version = "1.0.37", features = ["parallel"] }
 
 [profile.release]
 lto = true

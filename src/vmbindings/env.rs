@@ -1,6 +1,5 @@
 //! Provides the stack frame for the virtual machine
 
-use super::nativeval::NativeValue;
 use super::value::Value;
 
 #[repr(C)]
@@ -17,7 +16,7 @@ pub struct Env {
     ///
     /// Slot indexes access SHOULD be bounded
     /// whenever the script is compiled to bytecode
-    pub slots: Vec<NativeValue>,
+    pub slots: Vec<Value>,
 
     /// Lexical parent of the current environment
     ///
@@ -45,12 +44,12 @@ impl Env {
     }
 
     #[inline(always)]
-    pub unsafe fn get(&self, idx: u16) -> NativeValue {
+    pub unsafe fn get(&self, idx: u16) -> Value {
         self.slots.get_unchecked(idx as usize).clone()
     }
 
     #[inline(always)]
-    pub unsafe fn get_up(&self, up: u16, idx: u16) -> NativeValue {
+    pub unsafe fn get_up(&self, up: u16, idx: u16) -> Value {
         let mut env = self.lexical_parent;
         for _ in 1..up {
             env = (*env).lexical_parent;
@@ -59,13 +58,13 @@ impl Env {
     }
 
     #[inline(always)]
-    pub unsafe fn set(&mut self, idx: u16, val: NativeValue) {
+    pub unsafe fn set(&mut self, idx: u16, val: Value) {
         let elem = self.slots.get_unchecked_mut(idx as usize);
         *elem = val;
     }
 
     #[inline(always)]
     pub fn reserve(&mut self, nslots: u16) {
-        self.slots.resize(nslots as usize, Value::Nil.wrap());
+        self.slots.resize(nslots as usize, Value::Nil);
     }
 }

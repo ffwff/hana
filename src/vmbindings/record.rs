@@ -2,7 +2,6 @@
 
 use super::gc::{push_gray_body, GcNode, GcTraceable};
 use super::hmap::HaruHashMap;
-use super::nativeval::NativeValue;
 use super::string::HaruString;
 use super::value::Value;
 use std::any::Any;
@@ -36,7 +35,7 @@ impl Record {
         }
     }
 
-    pub fn get<T: ?Sized>(&self, k: &T) -> Option<&NativeValue>
+    pub fn get<T: ?Sized>(&self, k: &T) -> Option<&Value>
     where
         HaruString: Borrow<T>,
         T: Hash + Eq,
@@ -49,14 +48,14 @@ impl Record {
         None
     }
 
-    pub fn insert<K>(&mut self, k: K, v: NativeValue)
+    pub fn insert<K>(&mut self, k: K, v: Value)
     where
         K: Into<HaruString> + Hash + Eq,
     {
         let k = k.into();
         if (k.borrow() as &String) == "prototype" {
             self.prototype = unsafe {
-                match &v.unwrap() {
+                match &v {
                     // since the borrow checker doesn't know that self.prototype
                     // can last as long as self, we'll have to use unsafe
                     Value::Record(x) => Some(&*x.to_raw()),
@@ -67,7 +66,7 @@ impl Record {
         self.data.insert(k, v);
     }
 
-    pub fn iter(&self) -> hashbrown::hash_map::Iter<HaruString, NativeValue> {
+    pub fn iter(&self) -> hashbrown::hash_map::Iter<HaruString, Value> {
         self.data.iter()
     }
 

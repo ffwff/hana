@@ -283,14 +283,15 @@ pub trait GcTraceable {
 type GenericTraceFunction = unsafe fn(*mut c_void, *mut c_void);
 
 // native traceables
-use super::nativeval::NativeValue;
-impl GcTraceable for Vec<NativeValue> {
+use super::value::Value;
+impl GcTraceable for Vec<Value> {
     unsafe fn trace(&self, gray_nodes: &mut Vec<*mut GcNode>) {
-        for val in self.iter() {
+        unimplemented!()
+        /* for val in self.iter() {
             if let Some(ptr) = val.as_gc_pointer() {
                 push_gray_body(gray_nodes, ptr);
             }
-        }
+        } */
     }
 }
 // #endregion

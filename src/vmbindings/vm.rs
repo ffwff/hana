@@ -15,14 +15,13 @@ use super::function::Function;
 use super::gc::*;
 use super::hmap::HaruHashMap;
 use super::interned_string_map::InternedStringMap;
-use super::nativeval::{NativeValue, NativeValueType};
 use super::record::Record;
 use super::string::HaruString;
 use super::value::Value;
 
 use super::vmerror::VmError;
 use crate::compiler::{Compiler, ModulesInfo};
-use crate::hanayo::HanayoCtx;
+//use crate::hanayo::HanayoCtx;
 
 extern crate num_derive;
 use num_traits::FromPrimitive;
@@ -147,7 +146,7 @@ pub struct Vm {
     globalenv: Option<Box<HaruHashMap>>,
     exframes: Option<Vec<ExFrame>>, // exception frame
     pub code: Option<Vec<u8>>,      // where all the code is
-    pub stack: Vec<NativeValue>,    // stack
+    pub stack: Vec<Value>,    // stack
 
     // prototype types for primitive values
     pub(crate) dstr: Option<Gc<Record>>,
@@ -166,7 +165,8 @@ pub struct Vm {
     // rust-specific fields
     interned_strings: InternedStringMap,
     pub modules_info: Option<Rc<RefCell<ModulesInfo>>>,
-    pub(crate) stdlib: Option<HanayoCtx>,
+    //pub(crate) stdlib: Option<HanayoCtx>,
+    stdlib: Option<u8>,
     gc_manager: Option<RefCell<GcManager>>,
 }
 
@@ -175,7 +175,6 @@ pub struct Vm {
 extern "C" {
     fn vm_execute(vm: *mut Vm);
     fn vm_print_stack(vm: *const Vm);
-    fn vm_call(vm: *mut Vm, fun: NativeValue, args: *const Vec<NativeValue>) -> NativeValue;
 }
 
 impl Vm {
@@ -219,7 +218,7 @@ impl Vm {
         // TODO: move vm_print_stack here and expose function through C ffi
         eprint!("[");
         for val in &self.stack {
-            eprint!("{:?} ", val.unwrap());
+            eprint!("{:?} ", val);
         }
         eprintln!("]");
     }
@@ -310,7 +309,7 @@ impl Vm {
                     let n = std::mem::size_of::<$type>();
                     let mut num: [u8; std::mem::size_of::<$type>()] = Default::default();
                     num.copy_from_slice(unsafe{ code.get_unchecked((self.ip as usize)..(self.ip as usize + n)) });
-                    self.stack.push(Value::Int(<$type>::from_be_bytes(num) as i64).wrap());
+                    self.stack.push(Value::Int(<$type>::from_be_bytes(num) as i64));
                     self.ip += n as u32;
                 }
             };
@@ -319,10 +318,10 @@ impl Vm {
             ($func:ident) => {
                 {
                     self.ip += 1;
-                    let right = unsafe{ pop!().unwrap() };
-                    let left  = unsafe{ pop!().unwrap() };
+                    let right = pop!();
+                    let left  = pop!();
                     match left.$func(right, &self) {
-                        Ok(retval) => self.stack.push(retval.wrap()),
+                        Ok(retval) => self.stack.push(retval),
                         Err(e) => {
                             self.error = e;
                             return;
@@ -335,11 +334,11 @@ impl Vm {
             ($func:ident) => {
                 {
                     self.ip += 1;
-                    let right = unsafe{ pop!().unwrap() };
-                    let left = unsafe{ pop!().unwrap() };
+                    let right = pop!();
+                    let left = pop!();
                     match left.$func(right, &self) {
                         Ok((in_place, retval)) => {
-                            self.stack.push(retval.wrap());
+                            self.stack.push(retval);
                             if in_place {
                                 let ip = consume_u8!();
                                 self.ip += ip as u32;
@@ -359,9 +358,9 @@ impl Vm {
             ($func:ident) => {
                 {
                     self.ip += 1;
-                    let right = unsafe{ pop!().unwrap() };
-                    let left  = unsafe{ pop!().unwrap() };
-                    self.stack.push(Value::Int(left.$func(right) as i64).wrap());
+                    let right = pop!();
+                    let left  = pop!();
+                    self.stack.push(Value::Int(left.$func(right) as i64));
                 }
             };
         }
@@ -407,7 +406,7 @@ impl Vm {
 
                 VmOpcode::OP_PUSH_NIL => {
                     self.ip += 1;
-                    self.stack.push(Value::Nil.wrap());
+                    self.stack.push(Value::Nil);
                 }
 
                 // #region push uint family
@@ -422,7 +421,7 @@ impl Vm {
                     let n = std::mem::size_of::<f64>();
                     let mut num: [u8; std::mem::size_of::<f64>()] = Default::default();
                     num.copy_from_slice(unsafe{ code.get_unchecked((self.ip as usize)..(self.ip as usize + n)) });
-                    self.stack.push(Value::Float(unsafe{ std::mem::transmute(num) }).wrap());
+                    self.stack.push(Value::Float(unsafe{ std::mem::transmute(num) }));
                     self.ip += n as u32;
                 }
 
@@ -430,31 +429,31 @@ impl Vm {
                 VmOpcode::OP_PUSHSTR => {
                     self.ip += 1;
                     let s = consume_string!();
-                    self.stack.push(Value::Str(self.malloc(s.into())).wrap());
+                    self.stack.push(Value::Str(self.malloc(s.into())));
                 }
 
                 VmOpcode::OP_PUSHSTR_INTERNED => {
                     self.ip += 1;
                     let idx = consume_u16!();
                     let inst = unsafe { HaruString::new_cow(self.interned_strings.get_unchecked(idx).clone()) };
-                    self.stack.push(Value::Str(self.malloc(inst)).wrap());
+                    self.stack.push(Value::Str(self.malloc(inst)));
                 }
                 // #endregion
 
                 // push arrays
                 VmOpcode::OP_ARRAY_LOAD => {
                     self.ip += 1;
-                    let len = unsafe{ pop!().unwrap() };
+                    let len = pop!();
                     match len {
-                        Value::Int(0) => self.stack.push(Value::Array(self.malloc(Vec::new())).wrap()),
+                        Value::Int(0) => self.stack.push(Value::Array(self.malloc(Vec::new()))),
                         Value::Int(len) => {
                             let mut len = len as usize;
-                            let mut v = self.malloc(vec![Value::Nil.wrap(); len]);
+                            let mut v = self.malloc(vec![Value::Nil; len]);
                             while len > 0 {
                                 v.as_mut()[len - 1] = pop!();
                                 len -= 1;
                             }
-                            self.stack.push(Value::Array(v).wrap());
+                            self.stack.push(Value::Array(v));
                         }
                         _ => unreachable!()
                     }
@@ -462,14 +461,14 @@ impl Vm {
                 // push dicts
                 VmOpcode::OP_DICT_LOAD => {
                     self.ip += 1;
-                    let len = unsafe{ pop!().unwrap() };
+                    let len = pop!();
                     match len {
-                        Value::Int(0) => self.stack.push(Value::Record(self.malloc(Record::new())).wrap()),
+                        Value::Int(0) => self.stack.push(Value::Record(self.malloc(Record::new()))),
                         Value::Int(len) => {
                             let mut len = len as usize;
                             let mut v = self.malloc(Record::with_capacity(len));
                             while len > 0 {
-                                let key = unsafe{ pop!().unwrap() };
+                                let key = pop!();
                                 let val = unsafe{ pop!() };
                                 match key {
                                     Value::Str(key) => {
@@ -480,7 +479,7 @@ impl Vm {
                                 }
                                 len -= 1;
                             }
-                            self.stack.push(Value::Record(v).wrap());
+                            self.stack.push(Value::Record(v));
                         }
                         _ => unreachable!()
                     }
@@ -492,7 +491,7 @@ impl Vm {
                     let nargs = consume_u16!();
                     let pos = peek_u16!();
                     unsafe {
-                        self.stack.push(Value::Fn(self.malloc(Function::new(self.ip + 2, nargs, self.localenv))).wrap());
+                        self.stack.push(Value::Fn(self.malloc(Function::new(self.ip + 2, nargs, self.localenv))));
                     }
                     self.ip += pos as u32;
                 }
@@ -517,9 +516,9 @@ impl Vm {
                 // #region unary ops
                 VmOpcode::OP_NEGATE => {
                     self.ip += 1;
-                    let val = unsafe{ pop!().unwrap() };
+                    let val = pop!();
                     match val.negate(&self) {
-                        Ok(retval) => self.stack.push(retval.wrap()),
+                        Ok(retval) => self.stack.push(retval),
                         Err(e) => {
                             self.error = e;
                             return;
@@ -528,8 +527,8 @@ impl Vm {
                 }
                 VmOpcode::OP_NOT => {
                     self.ip += 1;
-                    let val = unsafe{ pop!().unwrap() };
-                    self.stack.push(Value::Int(!val.is_true() as i64).wrap());
+                    let val = pop!();
+                    self.stack.push(Value::Int(!val.is_true() as i64));
                 }
                 // #endregion
                 // #endregion
@@ -538,11 +537,11 @@ impl Vm {
                 op @ VmOpcode::OP_INDEX_GET
                 | op @ VmOpcode::OP_INDEX_GET_NO_POP => {
                     self.ip += 1;
-                    let index = unsafe{ pop!().unwrap() };
+                    let index = pop!();
                     let indexor = if op == VmOpcode::OP_INDEX_GET {
-                        unsafe{ pop!().unwrap() }
+                        pop!()
                     } else {
-                        unsafe{ last!().unwrap() }
+                        last!().clone()
                     };
 
                     match indexor {
@@ -571,7 +570,7 @@ impl Vm {
                                 }
                             };
                             if let Some(val) = string.as_ref().as_str().graphemes(true).skip(idx).next() {
-                                self.stack.push(Value::Str(self.malloc(val.clone().into())).wrap());
+                                self.stack.push(Value::Str(self.malloc(val.clone().into())));
                             } else {
                                 self.error = VmError::ERROR_UNBOUNDED_ACCESS;
                                 return;
@@ -598,9 +597,9 @@ impl Vm {
 
                 VmOpcode::OP_INDEX_SET => {
                     self.ip += 1;
-                    let index = unsafe{ pop!().unwrap() };
-                    let indexor = unsafe{ pop!().unwrap() };
-                    let val = unsafe{ last!().unwrap() };
+                    let index = pop!();
+                    let indexor = pop!();
+                    let val = last!().clone();
 
                     match indexor {
                         Value::Array(array) => {
@@ -612,7 +611,7 @@ impl Vm {
                                 }
                             };
                             if (0..array.as_ref().len()).contains(&idx) {
-                                array.as_mut()[idx] = val.wrap();
+                                array.as_mut()[idx] = val;
                             } else {
                                 self.error = VmError::ERROR_UNBOUNDED_ACCESS;
                                 return;
@@ -626,7 +625,7 @@ impl Vm {
                                     return;
                                 }
                             };
-                            rec.as_mut().insert(idx, val.wrap());
+                            rec.as_mut().insert(idx, val);
                         }
                         _ => panic!("cant access")
                     }
@@ -636,7 +635,7 @@ impl Vm {
                 | op @ VmOpcode::OP_MEMBER_GET_NO_POP => {
                     self.ip += 1;
                     let key = consume_string!();
-                    let last = unsafe { last!().unwrap() };
+                    let last = last!().clone();
                     let dict = match last {
                         Value::Record(d) => d,
                         Value::Str(_) =>   self.dstr.clone().unwrap(),
@@ -654,8 +653,8 @@ impl Vm {
                 VmOpcode::OP_MEMBER_SET => {
                     self.ip += 1;
                     let key = consume_string!();
-                    let last = unsafe { pop!().unwrap() };
-                    let val = unsafe{ last!().unwrap() };
+                    let last = pop!().clone();
+                    let val = last!().clone();
                     let dict = match last {
                         Value::Record(d) => d,
                         Value::Str(_) =>   self.dstr.clone().unwrap(),
@@ -664,7 +663,7 @@ impl Vm {
                         Value::Array(_) => self.darray.clone().unwrap(),
                         _ => panic!("nope")
                     };
-                    dict.as_mut().insert(key, val.wrap());
+                    dict.as_mut().insert(key, val);
 
                 }
                 // #endregion
@@ -678,7 +677,7 @@ impl Vm {
                 VmOpcode::OP_JCOND => {
                     self.ip += 1;
                     let ip = peek_i16!();
-                    let val = unsafe{ pop!().unwrap() };
+                    let val = pop!();
                     if val.is_true() {
                         self.ip = (self.ip as i32 + ip as i32) as u32;
                     } else {
@@ -688,7 +687,7 @@ impl Vm {
                 VmOpcode::OP_JNCOND => {
                     self.ip += 1;
                     let ip = peek_i16!();
-                    let val = unsafe{ pop!().unwrap() };
+                    let val = pop!();
                     if !val.is_true() {
                         self.ip = (self.ip as i32 + ip as i32) as u32;
                     } else {
@@ -698,7 +697,7 @@ impl Vm {
                 VmOpcode::OP_JCOND_NO_POP => {
                     self.ip += 1;
                     let ip = peek_i16!();
-                    let val = unsafe{ last!().unwrap() };
+                    let val = last!().clone();
                     if val.is_true() {
                         self.ip = (self.ip as i32 + ip as i32) as u32;
                     } else {
@@ -708,7 +707,7 @@ impl Vm {
                 VmOpcode::OP_JNCOND_NO_POP => {
                     self.ip += 1;
                     let ip = peek_i16!();
-                    let val = unsafe{ last!().unwrap() };
+                    let val = last!().clone();
                     if !val.is_true() {
                         self.ip = (self.ip as i32 + ip as i32) as u32;
                     } else {
@@ -721,7 +720,7 @@ impl Vm {
                 VmOpcode::OP_CALL => {
                     self.ip += 1;
                     let nargs = consume_u16!();
-                    let val = unsafe{ last!().unwrap() };
+                    let val = last!().clone();
                     match val {
                         Value::NativeFn(x) => {
                             pop!();
@@ -823,7 +822,7 @@ impl Vm {
                     let val = last!();
                     unsafe {
                         self.localenv().unwrap().as_mut().set(slot, val.clone());
-                        match unsafe{ val.unwrap() } {
+                        match val {
                             Value::Fn(func) => {
                                 func.as_mut().get_mut_bound().set(0, val.clone());
                             }
@@ -889,7 +888,7 @@ impl Vm {
     }
 
     pub unsafe fn stack_push_gray(&mut self, val: Value) {
-        let w = val.wrap();
+        let w = val;
         if let Some(ptr) = w.as_gc_pointer() {
             self.gc_manager
                 .as_ref()
@@ -1021,7 +1020,7 @@ impl Vm {
         if self.exframes().len() == 0 {
             return false;
         }
-        let val = unsafe { self.stack.last().unwrap().unwrap() };
+        let val = unsafe { self.stack.last().unwrap() };
         for exframe in self.exframes.as_ref().unwrap().iter() {
             if let Some(handler) = exframe.get_handler(self, &val) {
                 self.ip = handler.ip;
@@ -1035,17 +1034,6 @@ impl Vm {
             }
         }
         false
-    }
-    // #endregion
-
-    // #region functions
-    pub fn call(&mut self, fun: NativeValue, args: &Vec<NativeValue>) -> Option<NativeValue> {
-        let val = unsafe { vm_call(self, fun, args) };
-        if val.r#type == NativeValueType::TYPE_INTERPRETER_ERROR {
-            None
-        } else {
-            Some(val)
-        }
     }
     // #endregion
 
