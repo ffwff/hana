@@ -176,7 +176,7 @@ impl GcManager {
                 }
                 node = next;
             }
-            self.gray_nodes.extend(vm.gc_new_gray_node_stack());
+            vm.trace(&mut self.gray_nodes);
 
             // we didn't collect enough, grow the ratio
             if ((self.bytes_allocated as f64) / (self.threshold as f64)) > USED_SPACE_RATIO {

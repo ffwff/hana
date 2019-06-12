@@ -269,42 +269,6 @@ impl Vm {
         self.stack.push(w);
     }
 
-    pub unsafe fn gc_new_gray_node_stack(&self) -> Vec<*mut GcNode> {
-        let mut vec = Vec::new();
-        for (_, val) in self.global().iter() {
-            if let Some(ptr) = val.as_gc_pointer() {
-                push_gray_body(&mut vec, ptr);
-            }
-        }
-        // stack
-        let stack = &self.stack;
-        for val in stack.iter() {
-            if let Some(ptr) = val.as_gc_pointer() {
-                push_gray_body(&mut vec, ptr);
-            }
-        }
-        // call stack
-        if let Some(localenv) = self.localenv {
-            let mut env = self.localenv_bp;
-            let localenv = localenv.as_ptr();
-            while env != localenv {
-                for val in (*env).slots.iter() {
-                    if let Some(ptr) = (*val).as_gc_pointer() {
-                        push_gray_body(&mut vec, ptr);
-                    }
-                }
-                env = env.add(1);
-            }
-            env = localenv;
-            for val in (*env).slots.iter() {
-                if let Some(ptr) = (*val).as_gc_pointer() {
-                    push_gray_body(&mut vec, ptr);
-                }
-            }
-        }
-        vec
-    }
-
     // call stack
     pub unsafe fn enter_env(&mut self, fun: &'static Function) {
         if self.localenv.is_none() {
@@ -644,4 +608,42 @@ impl std::ops::Drop for Vm {
             dealloc(self.localenv_bp as *mut u8, layout.unwrap());
         }
     }
+}
+
+impl GcTraceable for Vm {
+
+    unsafe fn trace(&self, vec: &mut Vec<*mut GcNode>) {
+        for (_, val) in self.global().iter() {
+            if let Some(ptr) = val.as_gc_pointer() {
+                push_gray_body(vec, ptr);
+            }
+        }
+        // stack
+        let stack = &self.stack;
+        for val in stack.iter() {
+            if let Some(ptr) = val.as_gc_pointer() {
+                push_gray_body(vec, ptr);
+            }
+        }
+        // call stack
+        if let Some(localenv) = self.localenv {
+            let mut env = self.localenv_bp;
+            let localenv = localenv.as_ptr();
+            while env != localenv {
+                for val in (*env).slots.iter() {
+                    if let Some(ptr) = (*val).as_gc_pointer() {
+                        push_gray_body(vec, ptr);
+                    }
+                }
+                env = env.add(1);
+            }
+            env = localenv;
+            for val in (*env).slots.iter() {
+                if let Some(ptr) = (*val).as_gc_pointer() {
+                    push_gray_body(vec, ptr);
+                }
+            }
+        }
+    }
+
 }
