@@ -223,9 +223,14 @@ impl Vm {
         }
 
         // #region macros
+        macro_rules! unreachable_unchecked {
+            () => {
+                unsafe{ std::hint::unreachable_unchecked() }
+            };
+        }
         macro_rules! global {
             () => {
-                self.globalenv.as_mut().unwrap_or_else(|| unreachable!())
+                self.globalenv.as_mut().unwrap_or_else(|| unreachable_unchecked!())
             };
         }
         // #region stack
@@ -242,7 +247,7 @@ impl Vm {
         }
         macro_rules! last {
             () => {
-                self.stack.last().unwrap_or_else(|| unreachable!())
+                self.stack.last().unwrap_or_else(|| unreachable_unchecked!())
             };
         }
         // #endregion
@@ -381,12 +386,14 @@ impl Vm {
 
         loop {
             match unsafe {
-                if let Some(op) = VmOpcode::from_u8(*code.get_unchecked(self.ip as usize)) {
-                    //eprintln!("{:?}", op);
-                    op
-                } else {
-                    unreachable!()
-                }
+                VmOpcode::from_u8(*code.get_unchecked(self.ip as usize))
+                    .map_or_else(
+                        || unreachable_unchecked!(),
+                        |op| {
+                            //eprintln!("{:?}", op);
+                            op
+                        }
+                    )
             } {
                 VmOpcode::OP_HALT => {
                     return;
@@ -448,7 +455,7 @@ impl Vm {
                             }
                             self.stack.push(Value::Array(v));
                         }
-                        _ => unreachable!()
+                        _ => unreachable_unchecked!()
                     }
                 }
                 // push dicts
@@ -474,7 +481,7 @@ impl Vm {
                             }
                             self.stack.push(Value::Record(v));
                         }
-                        _ => unreachable!()
+                        _ => unreachable_unchecked!()
                     }
                 }
 
@@ -819,7 +826,7 @@ impl Vm {
                             Value::Fn(func) => {
                                 func.as_mut().get_mut_bound().set(0, val.clone());
                             }
-                            _ => unreachable!()
+                            _ => unreachable_unchecked!()
                         }
                     }
                 }
@@ -840,7 +847,7 @@ impl Vm {
 
                 // #endregion
 
-                op => unimplemented!("{:?}", op)
+                op => unreachable_unchecked!()
             }
             //unsafe{ self.print_stack(); }
         }
