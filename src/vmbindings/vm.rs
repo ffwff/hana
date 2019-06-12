@@ -170,13 +170,6 @@ pub struct Vm {
     gc_manager: Option<RefCell<GcManager>>,
 }
 
-#[link(name = "hana", kind = "static")]
-#[allow(improper_ctypes)]
-extern "C" {
-    fn vm_execute(vm: *mut Vm);
-    fn vm_print_stack(vm: *const Vm);
-}
-
 impl Vm {
     #[cfg_attr(tarpaulin, skip)]
     pub fn new(

@@ -17,8 +17,8 @@ cfg_if! {
 }
 
 use std::io::{self, Read, Write};
-#[macro_use]
-extern crate decorator;
+//#[macro_use]
+//extern crate decorator;
 extern crate ansi_term;
 use ansi_term::Color as ac;
 use rustyline::error::ReadlineError;
@@ -30,7 +30,7 @@ mod ast;
 mod vmbindings;
 use vmbindings::vm::{Vm, VmOpcode};
 use vmbindings::vmerror::VmError;
-mod hanayo;
+//mod hanayo;
 
 fn print_error(
     s: &String, lineno: usize, col: usize, _lineno_end: usize, col_end: usize, etype: &str,
@@ -143,7 +143,7 @@ fn process(arg: ProcessArg, flag: ParserFlag) {
     // execute!
     c.modules_info.borrow_mut().sources.push(s);
     let mut vm = c.into_vm();
-    hanayo::init(&mut vm);
+    //hanayo::init(&mut vm);
     vm.gc_enable();
     vm.execute();
     handle_error(&vm, &c);
@@ -219,7 +219,7 @@ fn repl(flag: ParserFlag) {
         modules_info.sources.push(String::new());
     }
     let mut vm = Vm::new(None, Some(c.modules_info.clone()), None);
-    hanayo::init(&mut vm);
+    //hanayo::init(&mut vm);
     loop {
         let readline = rl.readline(">> ");
         match readline {
@@ -292,7 +292,7 @@ fn repl(flag: ParserFlag) {
                             }
                         }
                         if !handle_error(&vm, &c) && pop_print {
-                            println!("=> {:?}", unsafe { vm.stack.pop().unwrap().unwrap() });
+                            println!("=> {:?}", unsafe { vm.stack.pop().unwrap() });
                         }
                     }
                     Err(err) => {
