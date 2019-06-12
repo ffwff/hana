@@ -1,3 +1,4 @@
+/*
 mod value_ext;
 use value_ext::*;
 extern crate haru;
@@ -929,3 +930,4 @@ eval('y = 10')
     // #endregion
 
 }
+*/

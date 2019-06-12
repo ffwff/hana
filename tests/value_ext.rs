@@ -1,5 +1,4 @@
 extern crate haru;
-use haru::vmbindings::nativeval::NativeValue;
 use haru::vmbindings::record::Record;
 use haru::vmbindings::value::Value;
 
@@ -7,7 +6,7 @@ pub trait ValueExt {
     fn int(&self) -> i64;
     fn float(&self) -> f64;
     fn string(&self) -> &'static String;
-    fn array(&self) -> &'static Vec<NativeValue>;
+    fn array(&self) -> &'static Vec<Value>;
     fn record(&self) -> &'static Record;
 }
 
@@ -44,7 +43,7 @@ impl ValueExt for Value {
     }
 
     #[cfg_attr(tarpaulin, skip)]
-    fn array(&self) -> &'static Vec<NativeValue> {
+    fn array(&self) -> &'static Vec<Value> {
         match self {
             Value::Array(s) => unsafe { &*s.to_raw() },
             _ => {
@@ -63,17 +62,4 @@ impl ValueExt for Value {
         }
     }
     // #endregion
-}
-
-// TODO FIXME
-pub trait UnwrapUnsafe {
-    type Output;
-    fn unwraps(&self) -> Self::Output;
-}
-
-impl UnwrapUnsafe for NativeValue {
-    type Output = Value;
-    fn unwraps(&self) -> Value {
-        unsafe { self.unwrap() }
-    }
 }
