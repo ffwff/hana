@@ -275,7 +275,11 @@ impl Vm {
         }
         macro_rules! consume_string {
             () => {
-                unsafe{ CStr::from_ptr(std::mem::transmute(code.get_unchecked(self.ip as usize))) }.to_string_lossy().to_string()
+                {
+                    let s = unsafe{ CStr::from_ptr(std::mem::transmute(code.get_unchecked(self.ip as usize))) }.to_string_lossy().to_string();
+                    self.ip += s.len() as u32 + 1;
+                    s
+                }
             };
         }
         // #endregion
@@ -388,7 +392,6 @@ impl Vm {
                 VmOpcode::OP_PUSHSTR => {
                     self.ip += 1;
                     let s = consume_string!();
-                    self.ip += s.len() as u32 + 1;
                     self.stack.push(Value::Str(self.malloc(s.into())).wrap());
                 }
 
@@ -579,6 +582,42 @@ impl Vm {
                         _ => panic!("cant access")
                     }
                 }
+
+                op @ VmOpcode::OP_MEMBER_GET
+                | op @ VmOpcode::OP_MEMBER_GET_NO_POP => {
+                    self.ip += 1;
+                    let key = consume_string!();
+                    let last = unsafe { last!().unwrap() };
+                    let dict = match last {
+                        Value::Record(d) => d,
+                        Value::Str(_) =>   self.dstr.clone().unwrap(),
+                        Value::Int(_) =>   self.dint.clone().unwrap(),
+                        Value::Float(_) => self.dfloat.clone().unwrap(),
+                        Value::Array(_) => self.darray.clone().unwrap(),
+                        _ => panic!("nope")
+                    };
+                    if op == VmOpcode::OP_MEMBER_GET {
+                        pop!();
+                    }
+                    self.stack.push(dict.as_ref().get(&key).unwrap().clone());
+                }
+
+                VmOpcode::OP_MEMBER_SET => {
+                    self.ip += 1;
+                    let key = consume_string!();
+                    let last = unsafe { pop!().unwrap() };
+                    let val = unsafe{ last!().unwrap() };
+                    let dict = match last {
+                        Value::Record(d) => d,
+                        Value::Str(_) =>   self.dstr.clone().unwrap(),
+                        Value::Int(_) =>   self.dint.clone().unwrap(),
+                        Value::Float(_) => self.dfloat.clone().unwrap(),
+                        Value::Array(_) => self.darray.clone().unwrap(),
+                        _ => panic!("nope")
+                    };
+                    dict.as_mut().insert(key, val.wrap());
+
+                }
                 // #endregion
 
                 // #region control flow
@@ -633,13 +672,11 @@ impl Vm {
                 VmOpcode::OP_GET_GLOBAL => {
                     self.ip += 1;
                     let var = consume_string!();
-                    self.ip += var.len() as u32 + 1;
                     self.stack.push(global!().get(var.as_str()).unwrap().clone());
                 }
                 VmOpcode::OP_SET_GLOBAL => {
                     self.ip += 1;
                     let var = consume_string!();
-                    self.ip += var.len() as u32 + 1;
                     global!().insert(var.into(), last!().clone());
                 }
                 // #endregion
