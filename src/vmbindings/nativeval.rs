@@ -34,6 +34,7 @@ pub struct NativeValue {
 
 impl NativeValue {
     /// Converts the native value into a wrapped Value.
+    #[inline(always)]
     pub unsafe fn unwrap(&self) -> Value {
         use std::mem::transmute;
         #[allow(non_camel_case_types)]
@@ -54,6 +55,7 @@ impl NativeValue {
         }
     }
 
+    #[inline(always)]
     pub fn as_gc_pointer(&self) -> Option<*mut libc::c_void> {
         #[allow(non_camel_case_types)]
         match self.r#type {

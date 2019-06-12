@@ -224,7 +224,8 @@ mod foreignc {
     unsafe extern "C" fn function_malloc(
         addr: u32, nargs: u16, env: *const Env, vm: *const Vm,
     ) -> *mut Function {
-        (&*vm).malloc(Function::new(addr, nargs, env)).into_raw()
+        unimplemented!()
+        //(&*vm).malloc(Function::new(addr, nargs, env)).into_raw()
     }
 
     #[no_mangle]

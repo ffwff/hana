@@ -44,9 +44,12 @@ impl Env {
         }
     }
 
+    #[inline(always)]
     pub unsafe fn get(&self, idx: u16) -> NativeValue {
         self.slots.get_unchecked(idx as usize).clone()
     }
+
+    #[inline(always)]
     pub unsafe fn get_up(&self, up: u16, idx: u16) -> NativeValue {
         let mut env = self.lexical_parent;
         for _ in 1..up {
@@ -55,11 +58,13 @@ impl Env {
         (*env).get(idx)
     }
 
+    #[inline(always)]
     pub unsafe fn set(&mut self, idx: u16, val: NativeValue) {
         let elem = self.slots.get_unchecked_mut(idx as usize);
         *elem = val;
     }
 
+    #[inline(always)]
     pub fn reserve(&mut self, nslots: u16) {
         self.slots.resize(nslots as usize, Value::Nil.wrap());
     }

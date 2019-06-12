@@ -2,7 +2,7 @@
 
 use super::env::Env;
 use crate::vmbindings::gc::{push_gray_body, GcNode, GcTraceable};
-use std::ptr::null_mut;
+use std::ptr::{NonNull, null_mut};
 
 #[repr(C)]
 #[derive(Clone)]
@@ -23,16 +23,20 @@ pub struct Function {
 }
 
 impl Function {
-    pub unsafe fn new(ip: u32, nargs: u16, env: *const Env) -> Function {
+    pub unsafe fn new(ip: u32, nargs: u16, env: Option<NonNull<Env>>) -> Function {
         Function {
             ip: ip,
             nargs: nargs,
-            bound: if env.is_null() {
+            bound: if env.is_none() {
                 Env::new(0, null_mut(), nargs)
             } else {
-                Env::copy(&*env)
+                Env::copy(env.unwrap().as_ref())
             },
         }
+    }
+
+    pub fn get_mut_bound(&mut self) -> &mut Env {
+        &mut self.bound
     }
 
     pub unsafe fn get_bound_ptr(&self) -> *const Env {

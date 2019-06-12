@@ -48,6 +48,10 @@ impl<T: Sized> ConstNonNull<T> {
             None
         }
     }
+
+    pub unsafe fn as_ref(&self) -> &T {
+        &*(std::mem::transmute::<_, *const T>(self.pointer))
+    }
 }
 
 //
@@ -235,7 +239,13 @@ impl Vm {
         // #region stack
         macro_rules! pop {
             () => {
-                self.stack.pop().unwrap_or_else(|| unreachable!())
+                {
+                    let last = last!().clone();
+                    unsafe {
+                        self.stack.set_len(self.stack.len() - 1);
+                    }
+                    last
+                }
             };
         }
         macro_rules! last {
@@ -270,6 +280,15 @@ impl Vm {
                     let mut num: [u8; 2] = Default::default();
                     num.copy_from_slice(unsafe{ code.get_unchecked((self.ip as usize)..(self.ip as usize + 2)) });
                     i16::from_be_bytes(num)
+                }
+            };
+        }
+        macro_rules! peek_u16 {
+            () => {
+                {
+                    let mut num: [u8; 2] = Default::default();
+                    num.copy_from_slice(unsafe{ code.get_unchecked((self.ip as usize)..(self.ip as usize + 2)) });
+                    u16::from_be_bytes(num)
                 }
             };
         }
@@ -346,13 +365,32 @@ impl Vm {
                 }
             };
         }
+        macro_rules! call_native {
+            ($func:expr, $nargs:expr) => {
+                self.native_call_depth += 1;
+                unsafe {
+                    // TODO this is a hack to get around the borrow checker
+                    // pls fix this or it makes ferris sad
+                    ($func)(std::mem::transmute(&*self), $nargs);
+                }
+                self.native_call_depth -= 1;
+                if let Some(exframe) = &self.exframe_fallthrough {
+                    let exframe = unsafe{ exframe.as_ref() };
+                    if exframe.unwind_native_call_depth != self.native_call_depth {
+                        return;
+                    }
+                } else if self.error != VmError::ERROR_NO_ERROR {
+                    return;
+                }
+            };
+        }
         // #endregion
         // #endregion
 
         loop {
             match unsafe {
                 if let Some(op) = VmOpcode::from_u8(*code.get_unchecked(self.ip as usize)) {
-                    eprintln!("{:?}", op);
+                    //eprintln!("{:?}", op);
                     op
                 } else {
                     unreachable!()
@@ -446,6 +484,17 @@ impl Vm {
                         }
                         _ => unreachable!()
                     }
+                }
+
+                // push functions
+                VmOpcode::OP_DEF_FUNCTION_PUSH => {
+                    self.ip += 1;
+                    let nargs = consume_u16!();
+                    let pos = peek_u16!();
+                    unsafe {
+                        self.stack.push(Value::Fn(self.malloc(Function::new(self.ip + 2, nargs, self.localenv))).wrap());
+                    }
+                    self.ip += pos as u32;
                 }
 
                 // #region binary ops
@@ -668,6 +717,122 @@ impl Vm {
                 }
                 // #endregion
 
+                // #region calling
+                VmOpcode::OP_CALL => {
+                    self.ip += 1;
+                    let nargs = consume_u16!();
+                    let val = unsafe{ last!().unwrap() };
+                    match val {
+                        Value::NativeFn(x) => {
+                            pop!();
+                            call_native!(x, nargs);
+                        }
+                        Value::Fn(x) => {
+                            pop!();
+                            if x.as_ref().nargs != nargs {
+                                panic!("nop");
+                            }
+                            let func = x.as_ref();
+                            unsafe {
+                                if self.localenv.is_none() {
+                                    self.localenv = NonNull::new(self.localenv_bp);
+                                } else {
+                                    let localenv = self.localenv.unwrap().as_ptr();
+                                    if localenv.offset_from(self.localenv_bp) > (CALL_STACK_SIZE as isize) {
+                                        panic!("maximum stack depth exceeded");
+                                    } else {
+                                        self.localenv = NonNull::new(localenv.add(1));
+                                    }
+                                }
+                                std::ptr::write(
+                                    self.localenv.unwrap().as_ptr(),
+                                    Env::new(self.ip, func.get_bound_ptr(), func.nargs),
+                                );
+                            }
+                            self.ip = func.ip;
+                        }
+                        _ => panic!("uncallable")
+                    }
+                }
+
+                VmOpcode::OP_ENV_NEW => {
+                    self.ip += 1;
+                    let nslots = consume_u16!();
+                    unsafe {
+                        let mut ptr = self.localenv().clone().unwrap();
+                        let env = ptr.as_mut();
+                        env.reserve(nslots);
+                        for i in 0..env.nargs {
+                            let val = pop!();
+                            env.set(i, val.clone());
+                        }
+                    }
+                }
+
+                VmOpcode::OP_RET => {
+                    let mut ptr = self.localenv().clone().unwrap();
+                    unsafe {
+                        let env = ptr.as_mut();
+                        if env.retip == std::u32::MAX {
+                            return;
+                        }
+                        if let Some(localenv) = self.localenv {
+                            let localenv = localenv.as_ptr();
+                            self.ip = (*localenv).retip;
+                            if localenv == self.localenv_bp {
+                                std::ptr::drop_in_place(localenv);
+                                self.localenv = None;
+                            } else {
+                                std::ptr::drop_in_place(localenv);
+                                self.localenv = NonNull::new(localenv.sub(1));
+                            }
+                        }
+                    }
+                }
+                // #endregion
+
+                // #region variables
+
+                // #region locals
+                VmOpcode::OP_GET_LOCAL => {
+                    self.ip += 1;
+                    let slot = consume_u16!();
+                    unsafe {
+                        self.stack.push(self.localenv().unwrap().as_mut().get(slot).clone());
+                    }
+                }
+                VmOpcode::OP_GET_LOCAL_UP => {
+                    self.ip += 1;
+                    let slot = consume_u16!();
+                    let relascope = consume_u16!();
+                    unsafe {
+                        self.stack.push(self.localenv().unwrap().as_mut().get_up(relascope, slot).clone());
+                    }
+                }
+                VmOpcode::OP_SET_LOCAL => {
+                    self.ip += 1;
+                    let slot = consume_u16!();
+                    let val = last!();
+                    unsafe {
+                        self.localenv().unwrap().as_mut().set(slot, val.clone());
+                    }
+                }
+                VmOpcode::OP_SET_LOCAL_FUNCTION_DEF => {
+                    self.ip += 1;
+                    let slot = consume_u16!();
+                    let val = last!();
+                    unsafe {
+                        self.localenv().unwrap().as_mut().set(slot, val.clone());
+                        match unsafe{ val.unwrap() } {
+                            Value::Fn(func) => {
+                                func.as_mut().get_mut_bound().set(0, val.clone());
+                            }
+                            _ => unreachable!()
+                        }
+                    }
+                }
+                // #endregion
+
                 // #region globals
                 VmOpcode::OP_GET_GLOBAL => {
                     self.ip += 1;
@@ -681,9 +846,11 @@ impl Vm {
                 }
                 // #endregion
 
+                // #endregion
+
                 op => unimplemented!("{:?}", op)
             }
-            unsafe{ self.print_stack(); }
+            //unsafe{ self.print_stack(); }
         }
     }
 
@@ -771,7 +938,7 @@ impl Vm {
     // #endregion
 
     // #region call stack
-    pub unsafe fn enter_env(&mut self, fun: &'static Function) {
+    pub unsafe fn enter_env(&mut self, fun: &Function) {
         if self.localenv.is_none() {
             self.localenv = NonNull::new(self.localenv_bp);
         } else {
