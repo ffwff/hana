@@ -213,10 +213,11 @@ impl Vm {
     #[cfg_attr(tarpaulin, skip)]
     pub unsafe fn print_stack(&self) {
         // TODO: move vm_print_stack here and expose function through C ffi
+        eprint!("[");
         for val in &self.stack {
             eprint!("{:?} ", val.unwrap());
         }
-        eprintln!();
+        eprintln!("]");
     }
 
     pub fn execute(&mut self) {
@@ -399,6 +400,51 @@ impl Vm {
                 }
                 // #endregion
 
+                // push arrays
+                VmOpcode::OP_ARRAY_LOAD => {
+                    self.ip += 1;
+                    let len = unsafe{ pop!().unwrap() };
+                    match len {
+                        Value::Int(0) => self.stack.push(Value::Array(self.malloc(Vec::new())).wrap()),
+                        Value::Int(len) => {
+                            let mut len = len as usize;
+                            let mut v = self.malloc(vec![Value::Nil.wrap(); len]);
+                            while len > 0 {
+                                v.as_mut()[len - 1] = pop!();
+                                len -= 1;
+                            }
+                            self.stack.push(Value::Array(v).wrap());
+                        }
+                        _ => unreachable!()
+                    }
+                }
+                // push dicts
+                VmOpcode::OP_DICT_LOAD => {
+                    self.ip += 1;
+                    let len = unsafe{ pop!().unwrap() };
+                    match len {
+                        Value::Int(0) => self.stack.push(Value::Record(self.malloc(Record::new())).wrap()),
+                        Value::Int(len) => {
+                            let mut len = len as usize;
+                            let mut v = self.malloc(Record::with_capacity(len));
+                            while len > 0 {
+                                let key = unsafe{ pop!().unwrap() };
+                                let val = unsafe{ pop!() };
+                                match key {
+                                    Value::Str(key) => {
+                                        let key = key.as_ref().clone();
+                                        v.as_mut().insert(key, val.clone());
+                                    }
+                                    _ => panic!("must be string"),
+                                }
+                                len -= 1;
+                            }
+                            self.stack.push(Value::Record(v).wrap());
+                        }
+                        _ => unreachable!()
+                    }
+                }
+
                 // #region binary ops
                 VmOpcode::OP_ADD => op_binary!(add),
                 VmOpcode::OP_SUB => op_binary!(sub),
@@ -434,6 +480,105 @@ impl Vm {
                     self.stack.push(Value::Int(!val.is_true() as i64).wrap());
                 }
                 // #endregion
+                // #endregion
+
+                // #region indexing
+                op @ VmOpcode::OP_INDEX_GET
+                | op @ VmOpcode::OP_INDEX_GET_NO_POP => {
+                    self.ip += 1;
+                    let index = unsafe{ pop!().unwrap() };
+                    let indexor = if op == VmOpcode::OP_INDEX_GET {
+                        unsafe{ pop!().unwrap() }
+                    } else {
+                        unsafe{ last!().unwrap() }
+                    };
+
+                    match indexor {
+                        Value::Array(array) => {
+                            let idx = match index {
+                                Value::Int(idx) => idx as usize,
+                                _ => {
+                                    self.error = VmError::ERROR_KEY_NON_INT;
+                                    return;
+                                }
+                            };
+                            if let Some(val) = array.as_ref().get(idx) {
+                                self.stack.push(val.clone());
+                            } else {
+                                self.error = VmError::ERROR_UNBOUNDED_ACCESS;
+                                return;
+                            }
+                        }
+                        Value::Str(string) => {
+                            use unicode_segmentation::UnicodeSegmentation;
+                            let idx: usize = match index {
+                                Value::Int(idx) => idx as usize,
+                                _ => {
+                                    self.error = VmError::ERROR_KEY_NON_INT;
+                                    return;
+                                }
+                            };
+                            if let Some(val) = string.as_ref().as_str().graphemes(true).skip(idx).next() {
+                                self.stack.push(Value::Str(self.malloc(val.clone().into())).wrap());
+                            } else {
+                                self.error = VmError::ERROR_UNBOUNDED_ACCESS;
+                                return;
+                            }
+                        }
+                        Value::Record(rec) => {
+                            let idx: String = match index {
+                                Value::Str(s) => s.as_ref().as_str().to_string(),
+                                _ => {
+                                    self.error = VmError::ERROR_RECORD_KEY_NON_STRING;
+                                    return;
+                                }
+                            };
+                            if let Some(val) = rec.as_ref().get(&idx) {
+                                self.stack.push(val.clone());
+                            } else {
+                                self.error = VmError::ERROR_UNKNOWN_KEY;
+                                return;
+                            }
+                        }
+                        _ => panic!("cant access")
+                    }
+                }
+
+                VmOpcode::OP_INDEX_SET => {
+                    self.ip += 1;
+                    let index = unsafe{ pop!().unwrap() };
+                    let indexor = unsafe{ pop!().unwrap() };
+                    let val = unsafe{ last!().unwrap() };
+
+                    match indexor {
+                        Value::Array(array) => {
+                            let idx: usize = match index {
+                                Value::Int(idx) => idx as usize,
+                                _ => {
+                                    self.error = VmError::ERROR_KEY_NON_INT;
+                                    return;
+                                }
+                            };
+                            if (0..array.as_ref().len()).contains(&idx) {
+                                array.as_mut()[idx] = val.wrap();
+                            } else {
+                                self.error = VmError::ERROR_UNBOUNDED_ACCESS;
+                                return;
+                            }
+                        }
+                        Value::Record(rec) => {
+                            let idx: HaruString = match index {
+                                Value::Str(s) => s.as_ref().clone(),
+                                _ => {
+                                    self.error = VmError::ERROR_RECORD_KEY_NON_STRING;
+                                    return;
+                                }
+                            };
+                            rec.as_mut().insert(idx, val.wrap());
+                        }
+                        _ => panic!("cant access")
+                    }
+                }
                 // #endregion
 
                 // #region control flow
