@@ -16,7 +16,7 @@ fn eval(s: Value::Str) -> Value {
         let mut c = Compiler::new_append(
             vm.code.take().unwrap(),
             Rc::new(RefCell::new(ModulesInfo::new())),
-            InternedStringMap::new(),
+            vm.interned_strings.take().unwrap(),
         );
         // generate code
         for stmt in prog {
@@ -25,7 +25,8 @@ fn eval(s: Value::Str) -> Value {
             }
         }
         c.cpushop(VmOpcode::OP_HALT);
-        let interned_strings = c.interned_strings.take();
+        //panic!("{:?}", c.interned_strings);
+        vm.interned_strings = c.interned_strings.take();
         vm.code = Some(c.into_code());
         let ctx = vm.new_exec_ctx();
         vm.jmp(target_ip);

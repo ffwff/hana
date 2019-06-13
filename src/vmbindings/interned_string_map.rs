@@ -2,6 +2,7 @@
 use std::rc::Rc;
 const MAX_LENGTH: usize = std::u16::MAX as usize;
 
+#[derive(Debug)]
 pub struct InternedStringMap {
     data: Vec<Rc<String>>,
 }
