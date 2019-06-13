@@ -27,7 +27,7 @@ fn eval(s: Value::Str) -> Value {
         c.cpushop(VmOpcode::OP_HALT);
         let interned_strings = c.interned_strings.take();
         vm.code = Some(c.into_code());
-        let ctx = vm.new_exec_ctx(interned_strings);
+        let ctx = vm.new_exec_ctx();
         vm.jmp(target_ip);
         vm.execute();
         vm.restore_exec_ctx(ctx);

@@ -158,7 +158,7 @@ pub struct Vm {
     native_call_depth: usize,
 
     // rust-specific fields
-    pub interned_strings: InternedStringMap,
+    pub interned_strings: Option<InternedStringMap>,
     pub modules_info: Option<Rc<RefCell<ModulesInfo>>>,
     pub(crate) stdlib: Option<HanayoCtx>,
     gc_manager: Option<RefCell<GcManager>>,
@@ -200,7 +200,7 @@ impl Vm {
             error_expected: 0,
             exframe_fallthrough: None,
             native_call_depth: 0,
-            interned_strings: interned_strings.unwrap_or_else(|| InternedStringMap::new()),
+            interned_strings,
             modules_info,
             stdlib: None,
             gc_manager: Some(RefCell::new(GcManager::new())),
@@ -226,7 +226,7 @@ impl Vm {
 
     // interned string
     pub unsafe fn get_interned_string(&self, n: u16) -> HaruString {
-        HaruString::new_cow(self.interned_strings.get_unchecked(n).clone())
+        HaruString::new_cow(self.interned_strings.as_ref().unwrap().get_unchecked(n).clone())
     }
 
     // globals
@@ -379,7 +379,7 @@ impl Vm {
     }
 
     // execution context for eval
-    pub fn new_exec_ctx(&mut self, interned_strings: Option<InternedStringMap>) -> ManuallyDrop<Vm> {
+    pub fn new_exec_ctx(&mut self) -> ManuallyDrop<Vm> {
         // prevent context's local variables from being freed
         unsafe {
             // stack
@@ -421,14 +421,7 @@ impl Vm {
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
-            interned_strings: if let Some(interned_strings) = interned_strings {
-                std::mem::replace(
-                    &mut self.interned_strings,
-                    interned_strings,
-                )
-            } else {
-                InternedStringMap::new()
-            },
+            interned_strings: None,
             exframe_fallthrough: self.exframe_fallthrough.take(),
             native_call_depth: self.native_call_depth,
             modules_info: None,
@@ -576,14 +569,14 @@ impl Vm {
                 let mut c = Compiler::new_append(
                     self.code.take().unwrap(),
                     rc,
-                    std::mem::replace(&mut self.interned_strings, InternedStringMap::new()),
+                    self.interned_strings.take().unwrap(),
                 );
                 for stmt in prog {
                     stmt.emit(&mut c).unwrap();
                 }
                 c.cpushop(VmOpcode::OP_JMP_LONG);
                 c.cpush32(importer_ip);
-                self.interned_strings = c.interned_strings.take().unwrap();
+                self.interned_strings = c.interned_strings.take();
                 self.code = Some(c.into_code());
             }
             self.ip = imported_ip as u32;
