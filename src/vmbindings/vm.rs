@@ -158,7 +158,7 @@ pub struct Vm {
     native_call_depth: usize,
 
     // rust-specific fields
-    interned_strings: InternedStringMap,
+    pub interned_strings: InternedStringMap,
     pub modules_info: Option<Rc<RefCell<ModulesInfo>>>,
     pub(crate) stdlib: Option<HanayoCtx>,
     gc_manager: Option<RefCell<GcManager>>,

@@ -926,6 +926,15 @@ eval('y = 10')
         );
         assert_eq!(vm.global().get("y").unwrap().unwraps(), Value::Int(10));
     }
+    #[test]
+    fn eval_interned() {
+        let vm: Vm = eval!(
+            r#"
+eval('y = "a"')
+"#
+        );
+        assert_eq!(vm.global().get("y").unwrap().unwraps().string(), "a");
+    }
     // #endregion
 
 }

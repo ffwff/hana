@@ -97,7 +97,7 @@ impl Compiler {
             scopes: Vec::new(),
             loop_stmts: Vec::new(),
             code: Some(code),
-            interned_strings: None,
+            interned_strings: Some(interned_strings),
             modules_info,
         }
     }
