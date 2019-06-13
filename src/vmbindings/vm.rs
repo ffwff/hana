@@ -379,7 +379,7 @@ impl Vm {
     }
 
     // execution context for eval
-    pub fn new_exec_ctx(&mut self) -> ManuallyDrop<Vm> {
+    pub fn new_exec_ctx(&mut self, interned_strings: Option<InternedStringMap>) -> ManuallyDrop<Vm> {
         // prevent context's local variables from being freed
         unsafe {
             // stack
@@ -421,10 +421,14 @@ impl Vm {
             // shared
             error: VmError::ERROR_NO_ERROR,
             error_expected: 0,
-            interned_strings: std::mem::replace(
-                &mut self.interned_strings,
-                InternedStringMap::new(),
-            ),
+            interned_strings: if let Some(interned_strings) = interned_strings {
+                std::mem::replace(
+                    &mut self.interned_strings,
+                    interned_strings,
+                )
+            } else {
+                InternedStringMap::new()
+            },
             exframe_fallthrough: self.exframe_fallthrough.take(),
             native_call_depth: self.native_call_depth,
             modules_info: None,
