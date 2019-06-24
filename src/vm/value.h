@@ -42,8 +42,6 @@ struct value value_array(const struct vm *);
 struct value value_array_n(size_t n, const struct vm *);
 struct value value_interpreter_error();
 
-void value_print(struct value);
-
 struct value value_add(const struct value left, const struct value right, const struct vm *);
 struct value value_sub(const struct value left, const struct value right, const struct vm *);
 struct value value_mul(const struct value left, const struct value right, const struct vm *);

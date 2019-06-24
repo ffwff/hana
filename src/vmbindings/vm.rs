@@ -168,7 +168,6 @@ pub struct Vm {
 #[allow(improper_ctypes)]
 extern "C" {
     fn vm_execute(vm: *mut Vm);
-    fn vm_print_stack(vm: *const Vm);
     fn vm_call(vm: *mut Vm, fun: NativeValue, args: *const Vec<NativeValue>) -> NativeValue;
 }
 
@@ -210,9 +209,11 @@ impl Vm {
     #[cfg_attr(tarpaulin, skip)]
     pub fn print_stack(&self) {
         // TODO: move vm_print_stack here and expose function through C ffi
-        unsafe {
-            vm_print_stack(self);
+        eprint!("[");
+        for value in &self.stack {
+            eprint!("{:?} ", unsafe{ value.unwrap() });
         }
+        eprint!("]\n");
     }
 
     pub fn execute(&mut self) {

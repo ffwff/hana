@@ -1085,12 +1085,3 @@ struct value vm_call(struct vm *vm, const struct value fn, const a_value *args) 
     array_pop(vm->stack);
     return val;
 }
-
-void vm_print_stack(const struct vm *vm) {
-    fprintf(stderr, "[");
-    for(size_t i = 0; i < vm->stack.length; i++) {
-        value_print(vm->stack.data[i]);
-        fprintf(stderr, " ");
-    }
-    fprintf(stderr, "]\n");
-}

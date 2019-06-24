@@ -378,6 +378,12 @@ mod foreignc {
     }
 
     #[no_mangle]
+    unsafe extern "C" fn vm_print_stack(vm: *const Vm) {
+        let vm = &*vm;
+        vm.print_stack();
+    }
+
+    #[no_mangle]
     #[allow(safe_packed_borrows)]
     unsafe extern "C" fn value_print(val: NativeValue) {
         if (val.r#type as u8) < 127 {

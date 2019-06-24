@@ -50,7 +50,7 @@ impl NativeValue {
             NativeValueType::TYPE_ARRAY => {
                 Value::Array(Gc::from_raw(self.data as *mut Vec<NativeValue>))
             }
-            _ => panic!("type was: {:?}", self.r#type),
+            _ => Value::Nil,
         }
     }
 
